@@ -9,7 +9,16 @@
 
 ## What is Preq Station
 
-Preq Station is an owner-only project management service built for a single developer. It provides a Kanban board, task tracking, and work logging — plus the PREQSTATION REST API so AI agents (Claude, Codex, Gemini) can read and update tasks programmatically without touching the UI.
+Preq Station is the core app and system of record in the PREQSTATION stack. It provides the Kanban board, task lifecycle, work logging, and the PREQSTATION API/MCP surfaces that coding agents use to read and update tasks programmatically.
+
+PREQSTATION as a whole is a multi-surface system:
+
+- `preqstation` — core app, task lifecycle, API, architecture
+- `preqstation-dispatcher` — optional dispatcher path that launches coding agents in isolated worktrees
+- `preqstation-skill` — worker/runtime setup for Claude Code, Codex, and Gemini
+- `preqstation-lp` — umbrella onboarding and public guide
+
+If you are new to the system, start with the landing/guide surface first, then return here for the core app and architecture details.
 
 ---
 
@@ -158,6 +167,12 @@ Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `a
 - Exposed read tools include `preq_list_projects`, `preq_list_tasks`, `preq_get_task`, and `preq_get_project_settings`
 
 See [`docs/architecture.md`](docs/architecture.md) for the current API and workflow contract.
+
+For first-time system onboarding, prefer:
+
+- `preqstation-lp` for the umbrella guide and recommended reading order
+- `preqstation-skill` for worker/runtime setup
+- `preqstation-dispatcher` for the optional dispatcher path
 
 ---
 
