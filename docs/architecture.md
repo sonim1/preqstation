@@ -4,11 +4,17 @@
 
 PREQSTATION is a task management platform designed for AI-agent-driven development workflows. It consists of three interconnected systems:
 
-| System                   | Role                                                                                                                              | Repository             |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| **preqstation**          | Central web service — task CRUD, Kanban UI, REST API, Telegram notifications                                                      | `preqstation`          |
-| **preqstation-openclaw** | Trigger layer — receives Telegram messages via OpenClaw and launches coding agents in isolated worktrees (`preqstation-dispatch`) | `preqstation-openclaw` |
-| **preqstation-skill**    | Agent client — MCP server and shell helpers that coding agents use to call Preq Station APIs (`preqstation`)                      | `preqstation-skill`    |
+| System                     | Role                                                                                                                             | Repository               |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| **preqstation**            | Central web service — task CRUD, Kanban UI, REST API, Telegram notifications                                                     | `preqstation`            |
+| **preqstation-dispatcher** | OpenClaw-native dispatcher layer — receives Telegram/OpenClaw dispatch requests and launches coding agents in isolated worktrees | `preqstation-dispatcher` |
+| **preqstation-skill**      | Agent client — MCP server and shell helpers that coding agents use to call Preq Station APIs (`preqstation`)                     | `preqstation-skill`      |
+
+Important naming note:
+
+- the durable public repo/system name is `preqstation-dispatcher`
+- some current package/plugin/config identifiers may still use `preqstation-openclaw` for compatibility
+- architecture docs should prefer `preqstation-dispatcher` except when a specific technical identifier is required
 
 ## System Diagram
 
@@ -73,9 +79,9 @@ User creates task in Kanban UI
 ```
 preqstation  →  Telegram message
                         →  OpenClaw receives
-                           →  preqstation-dispatch skill triggers
+                           →  preqstation-dispatcher intercepts the dispatch
                               →  Parses: engine, task ID, project key
-                              →  Resolves project path from MEMORY.md
+                              →  Resolves project path from explicit path, plugin config, shared mapping file, or MEMORY.md
                               →  Creates git worktree (isolated env)
                               →  Launches coding agent (claude/codex/gemini CLI)
 ```
@@ -244,11 +250,17 @@ Work logs automatically created when agents submit `result` payloads, storing ex
 
 ---
 
-## preqstation-openclaw
+## preqstation-dispatcher
 
 ### Purpose
 
-Bridges Telegram notifications to coding agent execution. When a user sends a task request through Telegram and it reaches OpenClaw, this skill parses the intent and launches the appropriate coding agent in an isolated git worktree.
+Bridges Telegram/OpenClaw dispatch requests to coding agent execution. When a user sends a task request through Telegram and it reaches OpenClaw, the dispatcher parses the intent, resolves the target project path, and launches the appropriate coding agent in an isolated git worktree.
+
+Important naming note:
+
+- the durable public repo name is `preqstation-dispatcher`
+- some package, plugin, or config identifiers may still use `preqstation-openclaw` for compatibility
+- treat those legacy identifiers as technical implementation details, not the preferred public system name
 
 ### Execution Flow
 
@@ -261,30 +273,34 @@ Bridges Telegram notifications to coding agent execution. When a user sends a ta
    → objective
 
 2. Resolve project path
-   → Lookup project key in MEMORY.md (key → absolute path mapping)
-   → If missing, prompt user for path
+   → explicit absolute path in the message, if present
+   → saved plugin mapping
+   → shared `~/.preqstation-dispatch/projects.json`
+   → fallback `MEMORY.md`
 
 3. Create isolated worktree
    → git -C <project_cwd> worktree add -b <branch> <worktree_path> HEAD
-   → Worktree root: ${OPENCLAW_WORKTREE_ROOT:-/tmp/openclaw-worktrees}
+   → Worktree root: `${OPENCLAW_WORKTREE_ROOT:-/tmp/openclaw-worktrees}`
 
-4. Render prompt template
-   → Task ID, project key, branch, objective, execution constraints
+4. Render prompt bootstrap
+   → write `.preqstation-prompt.txt`
+   → include task context, branch, objective, and execution constraints
 
-5. Launch coding agent (PTY + background)
+5. Launch coding agent as a detached process
    → Claude:  claude --dangerously-skip-permissions '<prompt>'
    → Codex:   codex exec --dangerously-bypass-approvals-and-sandbox '<prompt>'
    → Gemini:  GEMINI_SANDBOX=false gemini -p '<prompt>'
 
-6. Monitor via process actions
-   → poll (check status), log (read output), write/submit (send input)
+6. Monitor via detached runtime artifacts
+   → `.preqstation-dispatch/<engine>.pid`
+   → `.preqstation-dispatch/<engine>.log`
 ```
 
 ### Key Design Decisions
 
 - **Worktree-first execution** — Agents never run in the primary checkout. Every task gets its own worktree for isolation.
-- **PTY + background by default** — Non-blocking execution with session monitoring.
-- **MEMORY.md project mappings** — Simple key-value table (`key | cwd | note`) for resolving project paths.
+- **Detached launch model** — The dispatcher no longer treats PTY/background session monitoring as the primary public contract.
+- **Layered project-path resolution** — Project paths resolve from explicit paths, plugin config, the shared mapping file, or fallback `MEMORY.md`.
 - **Branch naming** — Must include project key. Format: `preqstation/<project_key>/<branch_slug>`.
 - **Worktree cleanup** — The coding agent cleans up its own worktree (`git worktree remove` + `prune`) as the final step before exiting, regardless of success or failure.
 - **PREQSTATION workflow in prompt** — The rendered prompt includes explicit instructions for the agent to use `preq_*` MCP tools (fetch task, check deploy strategy, update status, submit results). Each run follows exactly one lifecycle branch; execution starts from `todo`, uses `runState` to show `queued` / `running`, stops after `preq_complete_task` moves the task to `ready`, and only `ready` tasks should proceed to `preq_review_task`.
@@ -378,7 +394,7 @@ For existing deployments, update the existing owner row in place so related data
 
 Recommended MCP installs now target `https://<preqstation-domain>/mcp` directly and authenticate with OAuth instead of local REST tokens.
 
-### preqstation-openclaw
+### preqstation-dispatcher
 
 | Variable                 | Required | Purpose                                                 |
 | ------------------------ | -------- | ------------------------------------------------------- |
@@ -410,7 +426,7 @@ Recommended MCP installs now target `https://<preqstation-domain>/mcp` directly 
 
 ### Agent Isolation
 
-- preqstation-openclaw enforces worktree-first execution
+- preqstation-dispatcher enforces worktree-first execution
 - Agents never run in primary checkout directories
 - Agents never run in `~/clawd/` or `~/.openclaw/`
 - `dangerously-*` flags allowed only after safety gate validation in resolved worktrees
