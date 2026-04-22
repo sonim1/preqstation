@@ -1,0 +1,2 @@
+export const DEFAULT_WORK_LOG_PAGE_SIZE = 40;
+export const PROJECT_WORK_LOG_PAGE_SIZE = 10;

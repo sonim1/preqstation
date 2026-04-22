@@ -1,0 +1,143 @@
+.panel {
+  position: relative;
+  overflow: hidden;
+  --dashboard-seam-color-local: var(
+    --dashboard-seam-color,
+    color-mix(in srgb, var(--ui-border), transparent 34%)
+  );
+  --dashboard-seam-fade-local: var(
+    --dashboard-seam-fade,
+    color-mix(in srgb, var(--ui-border), transparent 84%)
+  );
+  --dashboard-seam-span-local: var(--dashboard-seam-span, clamp(5rem, 18vw, 8rem));
+}
+
+.panelEmbedded {
+  padding: 0;
+}
+
+.header {
+  gap: clamp(0.75rem, 1vw, 1rem);
+  padding-bottom: 0.9rem;
+  position: relative;
+}
+
+.header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: min(100%, calc(var(--dashboard-seam-span-local) * 1.6));
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--dashboard-seam-color-local),
+    var(--dashboard-seam-fade-local)
+  );
+}
+
+.summaryCluster {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.summaryMeta {
+  color: var(--ui-muted-text);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.summaryMetaCurrent {
+  color: var(--ui-text);
+}
+
+.row {
+  padding: 0.95rem 0;
+  position: relative;
+}
+
+.row + .row {
+}
+
+.row + .row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: min(100%, calc(var(--dashboard-seam-span-local) * 1.8));
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--dashboard-seam-color-local),
+    var(--dashboard-seam-fade-local)
+  );
+}
+
+.rowHeader {
+  gap: 0.75rem;
+}
+
+.titleWrap {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.taskKey {
+  color: var(--ui-muted-text);
+  letter-spacing: 0.08em;
+}
+
+.taskTitle {
+  color: var(--ui-text);
+  line-height: 1.2;
+  max-width: 34ch;
+}
+
+.taskMeta {
+  color: var(--ui-muted-text);
+}
+
+.statusChip {
+  border-color: color-mix(in srgb, var(--ui-accent), var(--ui-border) 42%);
+  background: color-mix(in srgb, var(--ui-accent-soft), var(--ui-surface-soft) 78%);
+  color: var(--ui-text);
+}
+
+.statusChipAttention {
+  border-color: color-mix(in srgb, var(--ui-warning), var(--ui-border) 48%);
+  background: color-mix(in srgb, var(--ui-warning-soft), var(--ui-surface-soft) 78%);
+  color: var(--ui-text);
+}
+
+.statusChipReady {
+  border-color: color-mix(in srgb, var(--ui-success), var(--ui-border) 42%);
+  background: color-mix(in srgb, var(--ui-success-soft), var(--ui-surface-soft) 78%);
+  color: var(--ui-text);
+}
+
+.track {
+  margin-top: 0.65rem;
+}
+
+.stepIconGlyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.actions {
+  align-self: flex-start;
+}
+
+@media (max-width: 62rem) {
+  .rowHeader {
+    flex-wrap: wrap;
+  }
+
+  .actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

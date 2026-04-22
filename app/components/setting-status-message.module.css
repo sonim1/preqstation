@@ -1,0 +1,11 @@
+.message {
+  overflow-wrap: anywhere;
+}
+
+.success {
+  color: var(--ui-success);
+}
+
+.error {
+  color: var(--ui-danger);
+}

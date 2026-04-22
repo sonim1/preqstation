@@ -1,0 +1,76 @@
+.root {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.statusSlot {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.titleText {
+  min-width: 0;
+  font-size: clamp(1rem, 1.1vw + 0.8rem, 1.35rem);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--mantine-color-text);
+  overflow-wrap: anywhere;
+}
+
+.placeholder {
+  color: var(--mantine-color-dimmed);
+}
+
+.editor {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+
+.input:focus {
+  outline: none;
+}
+
+.editButton {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.editButton svg {
+  display: block;
+}
+
+.hiddenInput {
+  display: none;
+}
+
+@media (max-width: 48em) {
+  .row {
+    gap: 0.35rem;
+  }
+
+  .titleText {
+    font-size: 1rem;
+  }
+}

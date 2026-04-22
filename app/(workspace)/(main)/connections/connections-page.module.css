@@ -1,0 +1,285 @@
+.legacyNote {
+  max-width: 72ch;
+  padding-left: 14px;
+  border-left: 2px solid color-mix(in srgb, var(--ui-border), var(--ui-warning) 18%);
+}
+
+.pageSection {
+  display: grid;
+  gap: 18px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sectionEmptyState {
+  align-items: flex-start;
+  text-align: left;
+  padding-block: 8px 2px;
+}
+
+.emptyStateIcon {
+  --ti-bg: color-mix(in srgb, var(--ui-accent-soft), var(--ui-surface-soft) 30%);
+  --ti-color: var(--ui-accent);
+  --ti-bd: 1px solid color-mix(in srgb, var(--ui-border), transparent 12%);
+}
+
+.sectionEyebrow {
+  color: var(--ui-muted-text);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.summaryRail {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding: 6px 0 2px;
+}
+
+.summaryHeadline {
+  letter-spacing: -0.01em;
+}
+
+.summaryHeadlineHealthy {
+  color: var(--ui-muted-text);
+}
+
+.summaryHeadlineWarning {
+  color: var(--ui-warning);
+}
+
+.summaryHeadlineAttention {
+  color: var(--ui-danger);
+}
+
+.summaryMeta {
+  color: var(--ui-muted-text);
+  letter-spacing: 0.01em;
+}
+
+.tableShells {
+  display: grid;
+  gap: 18px;
+}
+
+.tableShell {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
+  border-radius: 6px;
+  background: var(--ui-surface);
+  box-shadow: none;
+}
+
+.tableScroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  outline: none;
+}
+
+.tableScroller:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ui-neutral-strong), transparent 72%);
+  outline-offset: -2px;
+}
+
+.tableCaption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.dataTable {
+  width: 100%;
+  min-width: 38rem;
+  border-collapse: collapse;
+}
+
+.dataTable thead th {
+  padding: 12px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--ui-border), transparent 10%);
+  color: var(--ui-muted-text);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.dataTable td {
+  padding: 12px 16px;
+  vertical-align: top;
+}
+
+.dataTable tbody tr + tr th,
+.dataTable tbody tr + tr td {
+  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
+}
+
+.dataCellPrimary {
+  min-width: 0;
+}
+
+.dataRowHeader {
+  padding: 12px 16px;
+  vertical-align: top;
+  text-align: left;
+  font-weight: 400;
+}
+
+.dataCellTitle {
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.dataCellMeta {
+  max-width: 36ch;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+
+.mutedText {
+  color: var(--ui-muted-text);
+}
+
+.dataCellStack {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.contextCell {
+  min-width: 0;
+}
+
+.dataCellLabel {
+  display: none;
+  color: var(--ui-muted-text);
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.statusCell {
+  min-width: 10rem;
+}
+
+.actionCell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 6rem;
+}
+
+.actionGroup {
+  justify-content: flex-end;
+}
+
+.actionButton {
+  --button-height: var(--ui-hit-touch-min);
+  min-height: var(--ui-hit-touch-min);
+  min-width: var(--ui-hit-touch-min);
+}
+
+:global(html[data-mantine-color-scheme='dark']) .tableShell {
+  border-color: color-mix(in srgb, var(--ui-border), transparent 0%);
+  box-shadow: none;
+}
+
+@media (max-width: 64em) {
+  .statusCell {
+    min-width: 9rem;
+  }
+}
+
+@media (max-width: 56rem) {
+  .sectionHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dataCellMeta {
+    max-width: none;
+  }
+
+  .tableScroller {
+    overflow-x: visible;
+    overflow-y: visible;
+  }
+
+  .dataTable {
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  .dataTable thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .dataTable,
+  .dataTable tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .dataTable tbody tr + tr th,
+  .dataTable tbody tr + tr td {
+    border-top: 0;
+  }
+
+  .dataRow {
+    display: grid;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .dataRow + .dataRow {
+    border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
+  }
+
+  .dataRowHeader,
+  .contextCell,
+  .statusCell,
+  .actionCell {
+    display: block;
+    width: 100%;
+    padding: 0;
+  }
+
+  .statusCell {
+    min-width: 0;
+  }
+
+  .dataCellLabel {
+    display: inline-flex;
+  }
+
+  .actionCell,
+  .actionGroup {
+    justify-content: flex-start;
+  }
+
+  .actionGroup :global(form) {
+    width: auto;
+  }
+}

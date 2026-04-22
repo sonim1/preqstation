@@ -1,0 +1,152 @@
+import { Stack, Text } from '@mantine/core';
+import { IconTag } from '@tabler/icons-react';
+
+import settingsClasses from '@/app/(workspace)/(main)/settings/settings-page.module.css';
+import { EmptyState } from '@/app/components/empty-state';
+import controlClasses from '@/app/components/settings-controls.module.css';
+import {
+  SettingsLabelForm,
+  SettingsLabelNameInput,
+  TaskLabelColorField,
+} from '@/app/components/settings-label-form';
+import { SubmitButton } from '@/app/components/submit-button';
+import { TODO_LABEL_NAME_MAX_LENGTH } from '@/lib/content-limits';
+
+type LabelActionState =
+  | { ok: true }
+  | { ok: false; message: string; field?: 'color' | 'form' | 'name' }
+  | null;
+
+type ProjectLabelsPanelProps = {
+  labels: Array<{ id: string; name: string; color: string }>;
+  taskPluralLower: string;
+  createLabelAction: (prevState: unknown, formData: FormData) => Promise<LabelActionState>;
+  updateLabelAction: (prevState: unknown, formData: FormData) => Promise<LabelActionState>;
+  deleteLabelAction: (prevState: unknown, formData: FormData) => Promise<LabelActionState>;
+};
+
+export function ProjectLabelsPanel({
+  labels,
+  taskPluralLower,
+  createLabelAction,
+  updateLabelAction,
+  deleteLabelAction,
+}: ProjectLabelsPanelProps) {
+  const usedLabelColors = Array.from(new Set(labels.map((label) => label.color)));
+
+  return (
+    <Stack gap="md" data-layout="project-label-management">
+      <div className={settingsClasses.labelCreate} data-panel="project-label-create">
+        <div className={settingsClasses.labelSubhead}>
+          <Text fw={600} className={settingsClasses.labelSubheadTitle}>
+            Create label
+          </Text>
+          <Text className={settingsClasses.labelSectionDescription} size="sm">
+            {`Add a reusable label for this project's ${taskPluralLower}.`}
+          </Text>
+        </div>
+
+        <SettingsLabelForm action={createLabelAction}>
+          <div className={settingsClasses.labelCreateForm} data-slot="project-label-create-form">
+            <SettingsLabelNameInput
+              name="name"
+              aria-label="New project label name"
+              placeholder="Improvement, Bug, Refactor..."
+              required
+              maxLength={TODO_LABEL_NAME_MAX_LENGTH}
+              className={`${settingsClasses.labelNameInput} ${controlClasses.touchInput}`}
+              size="sm"
+            />
+            <TaskLabelColorField
+              defaultColor="blue"
+              usedColors={usedLabelColors}
+              label="New project label color"
+              ariaLabel="New project label color"
+              showLabel={false}
+              size="sm"
+            />
+            <SubmitButton size="sm" className={controlClasses.touchButton}>
+              Add label
+            </SubmitButton>
+          </div>
+        </SettingsLabelForm>
+      </div>
+
+      <div className={settingsClasses.labelManage} data-panel="project-label-manage">
+        <div className={settingsClasses.labelSubhead}>
+          <Text fw={600} className={settingsClasses.labelSubheadTitle}>
+            Manage labels
+          </Text>
+          <Text className={settingsClasses.labelSectionDescription} size="sm">
+            Rename, recolor, or remove labels without leaving this project.
+          </Text>
+        </div>
+
+        {labels.length === 0 ? (
+          <EmptyState
+            icon={<IconTag size={24} />}
+            title="No labels yet"
+            description={`Create your first project label above to categorize this project's ${taskPluralLower}.`}
+          />
+        ) : (
+          <div className={settingsClasses.labelList}>
+            {labels.map((label) => (
+              <article
+                key={label.id}
+                className={settingsClasses.labelRow}
+                data-label-row={label.id}
+              >
+                <SettingsLabelForm action={updateLabelAction}>
+                  <div className={settingsClasses.labelRowEditor} data-slot="label-row-editor">
+                    <input type="hidden" name="id" value={label.id} />
+                    <SettingsLabelNameInput
+                      name="name"
+                      aria-label={`${label.name} label name`}
+                      defaultValue={label.name}
+                      required
+                      maxLength={TODO_LABEL_NAME_MAX_LENGTH}
+                      className={`${settingsClasses.labelNameInput} ${controlClasses.touchInput}`}
+                      size="sm"
+                    />
+                    <TaskLabelColorField
+                      defaultColor={label.color}
+                      usedColors={usedLabelColors}
+                      label={`${label.name} label color`}
+                      ariaLabel={`${label.name} label color`}
+                      showLabel={false}
+                      size="sm"
+                    />
+                    <SubmitButton
+                      variant="default"
+                      size="sm"
+                      className={controlClasses.touchButton}
+                    >
+                      Save
+                    </SubmitButton>
+                  </div>
+                </SettingsLabelForm>
+
+                <SettingsLabelForm action={deleteLabelAction}>
+                  <input type="hidden" name="id" value={label.id} />
+                  <div
+                    className={settingsClasses.labelRowSecondaryActions}
+                    data-slot="label-row-secondary-actions"
+                  >
+                    <SubmitButton
+                      color="red"
+                      variant="subtle"
+                      size="sm"
+                      className={controlClasses.touchButton}
+                    >
+                      Delete
+                    </SubmitButton>
+                  </div>
+                </SettingsLabelForm>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </Stack>
+  );
+}

@@ -1,0 +1,60 @@
+/* Hero panel */
+.heroPanel {
+  position: relative;
+  overflow: hidden;
+  border-color: var(--ui-border);
+  background: var(--ui-hero-bg);
+  box-shadow: var(--ui-shadow);
+  isolation: isolate;
+}
+
+.heroPanel::before,
+.heroPanel::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.heroPanel::before {
+  inset: 0;
+  background: var(--ui-glow);
+  opacity: 0.52;
+  z-index: -2;
+}
+
+.heroPanel::after {
+  width: 160px;
+  height: 160px;
+  right: -44px;
+  bottom: -58px;
+  border-radius: 999px;
+  background: var(--ui-panel-orb);
+  opacity: 0.82;
+  z-index: -1;
+}
+
+/* Section panel */
+.sectionPanel {
+  border-color: var(--ui-border);
+  background: var(--ui-surface);
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: blur(var(--ui-panel-blur));
+}
+
+/* Dark mode */
+:global(html[data-mantine-color-scheme='dark']) .heroPanel,
+:global(html[data-mantine-color-scheme='dark']) .sectionPanel {
+  border-color: var(--ui-border);
+}
+
+:global(html[data-mantine-color-scheme='dark']) .heroPanel {
+  background: var(--ui-hero-bg);
+}
+
+:global(html[data-mantine-color-scheme='dark']) .heroPanel::after {
+  background: var(--ui-panel-orb);
+}
+
+:global(html[data-mantine-color-scheme='dark']) .sectionPanel {
+  background: var(--ui-surface);
+}

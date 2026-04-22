@@ -1,0 +1,79 @@
+.field {
+  flex: 1 1 14rem;
+  min-width: 0;
+  width: 100%;
+  max-width: 22rem;
+}
+
+.fieldWide {
+  flex: 1 1 18rem;
+  min-width: 0;
+  width: 100%;
+  max-width: 26rem;
+}
+
+.touchInput {
+  --input-height: var(--ui-hit-touch-min);
+}
+
+.touchPasswordInput {
+  --input-height: var(--ui-hit-touch-min);
+  --psi-button-size: var(--ui-hit-touch-min);
+}
+
+.touchButton {
+  --button-height: var(--ui-hit-touch-min);
+}
+
+.touchCheckbox,
+.touchSwitch {
+  min-height: var(--ui-hit-touch-min);
+}
+
+.touchCheckbox :global(.mantine-Checkbox-body),
+.touchSwitch :global(.mantine-Switch-body) {
+  min-height: var(--ui-hit-touch-min);
+  align-items: center;
+}
+
+.touchCheckbox :global(.mantine-Checkbox-labelWrapper),
+.touchSwitch :global(.mantine-Switch-body) {
+  justify-content: center;
+}
+
+.buttonGroup {
+  width: 100%;
+}
+
+.statusSlot {
+  min-height: 1.5rem;
+}
+
+.colorTrigger {
+  --button-height: var(--ui-hit-touch-min);
+  width: 100%;
+  min-width: 0;
+}
+
+.swatchButton {
+  width: var(--ui-hit-touch-min);
+  height: var(--ui-hit-touch-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+
+@media (max-width: 36rem) {
+  .field,
+  .fieldWide,
+  .touchButton {
+    max-width: none;
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .buttonGroup > * {
+    width: 100%;
+  }
+}

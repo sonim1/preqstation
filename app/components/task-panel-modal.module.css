@@ -1,0 +1,110 @@
+.inner {
+  transition: padding 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  max-height: min(calc(100dvh - 3rem), 78rem);
+  min-height: min(calc(100dvh - 3rem), 52rem);
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 8%);
+  background: color-mix(in srgb, var(--ui-surface-strong), transparent 4%);
+  box-shadow: var(--ui-elevation-3);
+  backdrop-filter: blur(18px);
+  overflow: hidden;
+  transition:
+    flex-basis 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    min-height 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    max-height 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.header {
+  padding: clamp(0.95rem, 1.6vw, 1.15rem) clamp(1rem, 2vw, 1.35rem);
+  border-bottom: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-surface-soft), transparent 2%),
+    color-mix(in srgb, var(--ui-surface), transparent 6%)
+  );
+  transition: padding 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.title {
+  width: 100%;
+  min-width: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.titleRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.titleText {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.titleCenter {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.controls {
+  margin-left: auto;
+}
+
+.body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: clamp(1rem, 2.2vw, 1.4rem);
+  background: color-mix(in srgb, var(--ui-surface), transparent 4%);
+  transition: padding 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.content[data-full-screen='true'] {
+  min-height: 100dvh;
+  max-height: none;
+}
+
+@media (max-width: 48em) {
+  .content {
+    border-radius: 0;
+    min-height: 100dvh;
+    max-height: none;
+  }
+
+  .titleCenter {
+    display: none;
+  }
+
+  .header {
+    padding: 0.95rem 1rem;
+  }
+
+  .body {
+    padding: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inner,
+  .content,
+  .header,
+  .body {
+    transition: none;
+  }
+}

@@ -1,0 +1,99 @@
+.heroPanel {
+  border-color: color-mix(in srgb, var(--ui-accent), var(--ui-border) 72%);
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--ui-accent-soft), var(--ui-surface-strong) 46%),
+    color-mix(in srgb, var(--ui-surface-soft), var(--ui-surface) 70%)
+  );
+  box-shadow: var(--ui-shadow);
+}
+
+.heroTitle {
+  color: var(--ui-text);
+}
+
+.heroMeta {
+  color: var(--ui-muted-text);
+}
+
+.heroSummary {
+  max-width: 38rem;
+  color: color-mix(in srgb, var(--ui-text), var(--ui-muted-text) 38%);
+}
+
+.exceptionCard {
+  border-color: color-mix(in srgb, var(--ui-warning), var(--ui-border) 70%);
+  background: color-mix(in srgb, var(--ui-warning-soft), var(--ui-surface-soft) 72%);
+}
+
+.exceptionLabel {
+  color: var(--ui-muted-text);
+}
+
+.exceptionText {
+  color: var(--ui-text);
+}
+
+.weekPanel {
+  border-color: color-mix(in srgb, var(--ui-border), transparent 10%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-surface-soft), var(--ui-surface-strong) 62%),
+    color-mix(in srgb, var(--ui-surface), var(--ui-surface-soft) 78%)
+  );
+  box-shadow: var(--ui-shadow);
+}
+
+.radarPanel {
+  border-color: color-mix(in srgb, var(--ui-accent), var(--ui-border) 74%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-accent-soft), var(--ui-surface-strong) 42%),
+    color-mix(in srgb, var(--ui-surface), var(--ui-surface-soft) 68%)
+  );
+  box-shadow: var(--ui-shadow);
+}
+
+.weekLabel,
+.radarLabel {
+  color: var(--ui-muted-text);
+}
+
+.sectionContext {
+  max-width: 42rem;
+  color: color-mix(in srgb, var(--ui-text), var(--ui-muted-text) 44%);
+}
+
+.metricCard {
+  border-color: color-mix(in srgb, var(--ui-border), transparent 14%);
+  background: color-mix(in srgb, var(--ui-surface-strong), var(--ui-accent-soft) 8%);
+  box-shadow: var(--ui-elevation-1);
+}
+
+.signalCard {
+  border-color: color-mix(in srgb, var(--ui-accent), var(--ui-border) 70%);
+  background: color-mix(in srgb, var(--ui-accent-soft), var(--ui-surface-strong) 50%);
+  box-shadow: var(--ui-elevation-2);
+}
+
+.metricValue,
+.signalValue {
+  color: var(--ui-text);
+}
+
+.metricLabel,
+.signalLabel {
+  color: var(--ui-muted-text);
+}
+
+.infoHint {
+  flex-shrink: 0;
+}
+
+.infoHintLight {
+  color: color-mix(in srgb, var(--ui-muted-text), transparent 10%);
+}
+
+.infoHintDark {
+  color: color-mix(in srgb, var(--ui-text), transparent 28%);
+}

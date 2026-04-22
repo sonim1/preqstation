@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "node scripts/vercel-build.mjs",
+  "crons": [
+    {
+      "path": "/api/events/cleanup",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

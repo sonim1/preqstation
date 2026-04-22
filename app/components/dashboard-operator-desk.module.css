@@ -1,0 +1,748 @@
+.board {
+  display: grid;
+  gap: 1rem;
+  --dashboard-seam-color: color-mix(in srgb, var(--ui-border), transparent 34%);
+  --dashboard-seam-fade: color-mix(in srgb, var(--ui-border), transparent 84%);
+  --dashboard-seam-span: clamp(5rem, 18vw, 8rem);
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.actions {
+  justify-content: flex-end;
+}
+
+.portfolioOverview {
+  padding-block: 0.25rem 0.5rem;
+}
+
+.portfolioColumns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(20rem, 0.92fr);
+  align-items: start;
+  position: relative;
+}
+
+.portfolioColumns::before,
+.portfolioColumns::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--dashboard-seam-fade),
+    var(--dashboard-seam-color) 18%,
+    var(--dashboard-seam-color) 82%,
+    var(--dashboard-seam-fade)
+  );
+}
+
+.portfolioColumns::before {
+  top: 0;
+}
+
+.portfolioColumns::after {
+  bottom: 0;
+}
+
+.portfolioPrimaryColumn {
+  min-width: 0;
+  padding-right: 1rem;
+}
+
+.portfolioActivityColumn {
+  min-width: 0;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.portfolioActivityColumn::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.9rem;
+  bottom: 0.9rem;
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    var(--dashboard-seam-color) 18%,
+    var(--dashboard-seam-color) 82%,
+    transparent
+  );
+}
+
+.sectionMeta {
+  color: var(--ui-muted-text);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.sectionMetaCurrent {
+  color: var(--ui-text);
+}
+
+.portfolioDistMoving {
+  background: color-mix(in srgb, var(--ui-success), transparent 10%);
+}
+
+.portfolioDistWatch {
+  background: color-mix(in srgb, var(--ui-warning), transparent 8%);
+}
+
+.portfolioDistRisk {
+  background: color-mix(in srgb, var(--ui-danger), transparent 6%);
+}
+
+.portfolioDistQuiet {
+  background: color-mix(in srgb, var(--ui-muted-text), transparent 36%);
+}
+
+.portfolioLead {
+  padding: 0.95rem 0 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+}
+
+.portfolioMatrixCard,
+.portfolioActivityCard {
+  padding: 0.95rem 0;
+}
+
+.portfolioMatrixRail {
+  padding: 0.95rem 0 0;
+}
+
+.portfolioSubhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.7rem;
+}
+
+.portfolioSubheadMeta {
+  color: var(--ui-muted-text);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding-top: 0.2rem;
+}
+
+.portfolioMatrixShell {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+.portfolioMatrixLoadScale {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  color: var(--ui-muted-text);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding-block: 0.35rem 2rem;
+}
+
+.portfolioMatrixCanvas {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.portfolioMatrix {
+  position: relative;
+  min-height: 16rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 14%);
+  background:
+    linear-gradient(color-mix(in srgb, var(--ui-border), transparent 70%) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--ui-border), transparent 70%) 1px,
+      transparent 1px
+    );
+  background-size: 50% 50%;
+  overflow: hidden;
+}
+
+.portfolioMatrixZone {
+  position: absolute;
+  inset: 0;
+}
+
+.portfolioMatrixZoneHot {
+  clip-path: inset(0 50% 50% 0);
+  background: color-mix(in srgb, var(--ui-danger-soft), transparent 18%);
+}
+
+.portfolioMatrixZoneWarm {
+  clip-path: inset(0 0 50% 50%);
+  background: color-mix(in srgb, var(--ui-warning-soft), transparent 12%);
+}
+
+.portfolioMatrixZoneCalm {
+  clip-path: inset(50% 50% 0 0);
+  background: color-mix(in srgb, var(--ui-success-soft), transparent 10%);
+}
+
+.portfolioMatrixZoneQuiet {
+  clip-path: inset(50% 0 0 50%);
+  background: color-mix(in srgb, var(--ui-accent-soft), transparent 16%);
+}
+
+.portfolioMatrixRecencyScale {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ui-muted-text);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portfolioMatrixPoint {
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  transform: translate(-50%, -50%);
+  z-index: 1;
+  outline: none;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.portfolioMatrixPoint:hover,
+.portfolioMatrixPoint:focus,
+.portfolioMatrixPoint:focus-visible {
+  z-index: 4;
+}
+
+.portfolioMatrixDot {
+  width: 0.78rem;
+  height: 0.78rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ui-accent-soft), transparent 8%);
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 4%);
+  color: var(--ui-text);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white, transparent 90%),
+    0 6px 14px -12px rgba(15, 23, 42, 0.92);
+}
+
+.portfolioMatrixDotWatch {
+  background: color-mix(in srgb, var(--ui-warning-soft), transparent 10%);
+}
+
+.portfolioMatrixDotRisk {
+  background: color-mix(in srgb, var(--ui-danger-soft), transparent 10%);
+}
+
+.portfolioMatrixPoint[data-overlap-size]:not([data-overlap-size='1']) .portfolioMatrixDot {
+  width: 1.05rem;
+  height: 1.05rem;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white, transparent 88%),
+    0 0 0 1px color-mix(in srgb, var(--ui-surface), transparent 10%),
+    0 10px 20px -16px rgba(15, 23, 42, 0.96);
+}
+
+.portfolioMatrixCount {
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.portfolioMatrixTooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.55rem);
+  transform: translate(-50%, 0.3rem);
+  display: grid;
+  gap: 0.18rem;
+  min-width: 10.5rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--ui-surface-strong), black 4%);
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 10%);
+  color: var(--ui-text);
+  font-size: 0.68rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+  box-shadow: 0 16px 34px -24px rgba(15, 23, 42, 0.98);
+}
+
+.portfolioMatrixTooltipLine {
+  display: block;
+}
+
+.portfolioMatrixPoint[data-label-position='bottom'] .portfolioMatrixTooltip {
+  top: calc(100% + 0.55rem);
+  bottom: auto;
+  transform: translate(-50%, -0.3rem);
+}
+
+.portfolioMatrixPoint[data-label-position='left'] .portfolioMatrixTooltip {
+  left: auto;
+  right: calc(100% + 0.55rem);
+  top: 50%;
+  bottom: auto;
+  transform: translate(0.3rem, -50%);
+}
+
+.portfolioMatrixPoint[data-label-position='right'] .portfolioMatrixTooltip {
+  left: calc(100% + 0.55rem);
+  top: 50%;
+  bottom: auto;
+  transform: translate(-0.3rem, -50%);
+}
+
+.portfolioMatrixPoint:hover .portfolioMatrixTooltip,
+.portfolioMatrixPoint:focus .portfolioMatrixTooltip,
+.portfolioMatrixPoint:focus-visible .portfolioMatrixTooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.portfolioMatrixPoint[data-label-position='bottom']:hover .portfolioMatrixTooltip,
+.portfolioMatrixPoint[data-label-position='bottom']:focus .portfolioMatrixTooltip,
+.portfolioMatrixPoint[data-label-position='bottom']:focus-visible .portfolioMatrixTooltip {
+  transform: translate(-50%, 0);
+}
+
+.portfolioMatrixPoint[data-label-position='left']:hover .portfolioMatrixTooltip,
+.portfolioMatrixPoint[data-label-position='left']:focus .portfolioMatrixTooltip,
+.portfolioMatrixPoint[data-label-position='left']:focus-visible .portfolioMatrixTooltip {
+  transform: translate(0, -50%);
+}
+
+.portfolioMatrixPoint[data-label-position='right']:hover .portfolioMatrixTooltip,
+.portfolioMatrixPoint[data-label-position='right']:focus .portfolioMatrixTooltip,
+.portfolioMatrixPoint[data-label-position='right']:focus-visible .portfolioMatrixTooltip {
+  transform: translate(0, -50%);
+}
+
+.portfolioMatrixSummary,
+.portfolioActivityDaySummary {
+  display: none;
+}
+
+.portfolioMatrixSummaryItem,
+.portfolioActivityDaySummaryItem {
+  display: grid;
+  gap: 0.14rem;
+  min-width: 0;
+  padding: 0.5rem 0;
+  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 22%);
+}
+
+.portfolioMatrixSummaryMeta,
+.portfolioActivityDaySummaryMeta {
+  color: var(--ui-muted-text);
+  letter-spacing: 0.04em;
+}
+
+.portfolioActivityBarsList {
+  margin-top: 0.75rem;
+}
+
+.portfolioActivityLabelsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  color: var(--ui-muted-text);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portfolioActivityTooltipTarget {
+  display: block;
+}
+
+.portfolioActivityBarRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.7rem 0 0.55rem;
+}
+
+.portfolioActivityBarTrack {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.portfolioActivityBarFill {
+  min-width: 0;
+  min-height: 2.25rem;
+  display: flex;
+  align-items: center;
+  border-radius: 999px;
+}
+
+.portfolioActivityBarTrack[data-activity-label-position='inside'] .portfolioActivityBarFill {
+  padding: 0 0.8rem;
+}
+
+.portfolioActivityBarTrack[data-activity-label-position='outside'] .portfolioActivityBarFill {
+  flex: 0 0 auto;
+}
+
+.portfolioActivityTooltipTarget[data-activity-highlighted='true'] {
+  background: color-mix(in srgb, var(--ui-accent-soft), transparent 88%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-accent), transparent 72%);
+}
+
+.portfolioActivityBarLabel {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 700;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--ui-text);
+}
+
+.portfolioActivityBarTrack[data-activity-label-position='inside'] .portfolioActivityBarLabel {
+  color: inherit;
+}
+
+.portfolioActivityBarValue {
+  color: var(--ui-muted-text);
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.portfolioActivityFooter {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.portfolioActivityFooterStat {
+  min-width: 0;
+  display: grid;
+  gap: 0.2rem;
+  align-content: start;
+}
+
+.portfolioActivityFooterValue {
+  color: var(--ui-text);
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.portfolioActivityFooterMeta {
+  color: var(--ui-muted-text);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.portfolioActivityEmpty {
+  display: grid;
+  gap: 0.55rem;
+  padding: 0.95rem 0;
+}
+
+.kpiRail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 10%);
+  border-radius: 1.2rem;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-surface-soft), white 2%),
+      color-mix(in srgb, var(--ui-surface), black 2%)
+    ),
+    var(--ui-surface);
+  overflow: hidden;
+}
+
+.kpiSegment {
+  min-height: 7.75rem;
+  padding: 1rem;
+}
+
+.kpiSegment + .kpiSegment {
+  border-left: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
+}
+
+.kpiHeader {
+  color: var(--ui-muted-text);
+  letter-spacing: 0.08em;
+}
+
+.kpiMetaBadge {
+  background: color-mix(in srgb, var(--ui-neutral-soft), transparent 8%);
+  color: var(--ui-muted-text);
+  border-color: transparent;
+}
+
+.kpiValue {
+  color: var(--ui-text);
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(19rem, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.mainColumn {
+  min-width: 0;
+}
+
+.rail {
+  border-color: color-mix(in srgb, var(--ui-border), transparent 8%);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-surface-soft), transparent 2%),
+      color-mix(in srgb, var(--ui-surface), black 4%)
+    ),
+    var(--ui-surface);
+}
+
+.panelEmbeddedRail {
+  padding: 0;
+}
+
+.railModule + .railModule {
+  padding-top: 1.1rem;
+  position: relative;
+}
+
+.railModule + .railModule::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: min(100%, calc(var(--dashboard-seam-span) * 1.4));
+  height: 1px;
+  background: linear-gradient(90deg, var(--dashboard-seam-color), var(--dashboard-seam-fade));
+}
+
+.railHeader {
+  gap: clamp(0.75rem, 1vw, 1rem);
+  padding-bottom: 0.9rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.railHeader::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: min(100%, calc(var(--dashboard-seam-span) * 1.4));
+  height: 1px;
+  background: linear-gradient(90deg, var(--dashboard-seam-color), var(--dashboard-seam-fade));
+}
+
+.passList {
+  display: grid;
+}
+
+.passRow {
+  padding: 0.75rem 0;
+}
+
+.passRow + .passRow {
+  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+}
+
+.passRowBody {
+  min-width: 0;
+}
+
+.passTokenKey {
+  color: var(--ui-muted-text);
+  letter-spacing: 0.08em;
+}
+
+.passTokenTitle {
+  color: var(--ui-text);
+  line-height: 1.25;
+}
+
+.passTokenMeta,
+.passEmpty {
+  color: var(--ui-muted-text);
+}
+
+.passTokenMeta {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.passLoadMore {
+  padding-left: 0;
+  padding-right: 0;
+  color: var(--ui-muted-text);
+}
+
+.miniMetricBar {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.miniMetricLabel {
+  color: var(--ui-muted-text);
+}
+
+.sparklineWrap {
+  min-height: 4.5rem;
+  display: grid;
+  align-items: end;
+}
+
+.paceLegend {
+  color: var(--ui-muted-text);
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 74rem) {
+  .kpiRail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .kpiSegment {
+    border-left: none;
+  }
+
+  .kpiSegment:nth-child(2n) {
+    border-left: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
+  }
+
+  .kpiSegment:nth-child(n + 3) {
+    border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
+  }
+
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolioColumns {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolioActivityColumn {
+    padding-left: 0;
+  }
+
+  .portfolioActivityColumn::before {
+    left: 0;
+    top: 0;
+    bottom: auto;
+    width: min(100%, var(--dashboard-seam-span));
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--dashboard-seam-color) 22%,
+      var(--dashboard-seam-color) 78%,
+      transparent
+    );
+  }
+
+  .portfolioPrimaryColumn {
+    padding-right: 0;
+  }
+
+  .portfolioActivityCard {
+    border-left: 0;
+  }
+}
+
+@media (max-width: 48rem) {
+  .portfolioLead,
+  .portfolioMatrixCard,
+  .portfolioActivityCard {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .portfolioMatrixShell {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolioMatrixLoadScale {
+    flex-direction: row;
+    padding-block: 0;
+  }
+
+  .portfolioMatrixPoint {
+    width: var(--ui-hit-touch-min);
+    height: var(--ui-hit-touch-min);
+  }
+
+  .portfolioActivityChartShell {
+    padding-inline: 0.55rem;
+  }
+
+  .portfolioActivityLegend {
+    grid-template-columns: 1fr;
+  }
+
+  .portfolioMatrixSummary,
+  .portfolioActivityDaySummary {
+    display: grid;
+    gap: 0;
+    margin-top: 0.7rem;
+  }
+
+  .kpiRail {
+    grid-template-columns: 1fr;
+  }
+
+  .kpiSegment:nth-child(n) {
+    border-left: none;
+  }
+
+  .kpiSegment + .kpiSegment {
+    border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+
+  .passTokenMeta {
+    white-space: normal;
+  }
+}

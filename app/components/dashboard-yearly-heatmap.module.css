@@ -1,0 +1,94 @@
+.panel {
+  --heatmap-cell-size: clamp(0.62rem, 1.6vw, 0.82rem);
+  --heatmap-gap: 0.24rem;
+  --heatmap-weekday-width: 2rem;
+}
+
+.calendar {
+  overflow-x: auto;
+  padding-bottom: 0.1rem;
+}
+
+.monthRow {
+  display: grid;
+  gap: var(--heatmap-gap);
+  margin-left: calc(var(--heatmap-weekday-width) + var(--heatmap-gap));
+  min-width: max-content;
+}
+
+.monthLabel {
+  min-height: 1rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.body {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--heatmap-gap);
+  min-width: max-content;
+}
+
+.weekdayRail {
+  width: var(--heatmap-weekday-width);
+  display: grid;
+  gap: var(--heatmap-gap);
+  grid-template-rows: repeat(7, var(--heatmap-cell-size));
+}
+
+.weekdayLabel {
+  display: flex;
+  align-items: center;
+  min-height: var(--heatmap-cell-size);
+}
+
+.weekColumns {
+  display: grid;
+  gap: var(--heatmap-gap);
+}
+
+.weekColumn {
+  display: grid;
+  gap: var(--heatmap-gap);
+  grid-template-rows: repeat(7, var(--heatmap-cell-size));
+}
+
+.cell,
+.placeholder {
+  width: var(--heatmap-cell-size);
+  height: var(--heatmap-cell-size);
+  border-radius: 4px;
+}
+
+.cell {
+  border: 1px solid rgba(132, 151, 176, 0.18);
+  background: rgba(162, 180, 204, 0.16);
+}
+
+.cell[data-level='1'] {
+  background: rgba(53, 160, 111, 0.32);
+}
+
+.cell[data-level='2'] {
+  background: rgba(53, 160, 111, 0.48);
+}
+
+.cell[data-level='3'] {
+  background: rgba(32, 132, 90, 0.68);
+}
+
+.cell[data-level='4'] {
+  background: rgba(18, 104, 70, 0.88);
+}
+
+.placeholder {
+  background: transparent;
+}
+
+@media (max-width: 48rem) {
+  .panel {
+    --heatmap-cell-size: 0.68rem;
+    --heatmap-gap: 0.2rem;
+    --heatmap-weekday-width: 1.7rem;
+  }
+}

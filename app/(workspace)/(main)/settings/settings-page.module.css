@@ -1,0 +1,177 @@
+.page {
+  gap: 1rem;
+}
+
+.section {
+  border-color: color-mix(in srgb, var(--ui-border), transparent 10%);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-surface-soft), white 2%),
+      color-mix(in srgb, var(--ui-surface), black 2%)
+    ),
+    var(--ui-surface);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.sectionTitleGroup {
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.sectionDescription,
+.sectionMeta,
+.labelSectionDescription {
+  color: var(--ui-muted-text);
+}
+
+.sectionDescription {
+  max-width: 46rem;
+}
+
+.sectionHeader {
+  padding-bottom: 0.9rem;
+  margin-bottom: 0.9rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--ui-border), transparent 20%);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: -0.03em;
+}
+
+.sectionMeta {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.labelManagement {
+  display: grid;
+  gap: 1rem;
+}
+
+.labelCreate {
+  display: grid;
+  gap: 0.85rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--ui-border), transparent 20%);
+}
+
+.labelSubhead {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.labelSubheadTitle {
+  color: var(--ui-text);
+}
+
+.labelCreateForm {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1.6fr) auto auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.labelManage {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.labelList {
+  display: grid;
+}
+
+.labelRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.85rem 1rem;
+  align-items: center;
+  padding: 0.85rem 0;
+}
+
+.labelRow + .labelRow {
+  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 20%);
+}
+
+.labelRowEditor {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) auto auto;
+  gap: 0.75rem;
+  align-items: end;
+  min-width: 0;
+}
+
+.labelNameInput {
+  min-width: 0;
+}
+
+.labelRowSecondaryActions {
+  justify-self: end;
+}
+
+.sectionBody {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.preferenceList {
+  display: grid;
+  gap: 1rem;
+}
+
+.preferenceItem {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.preferenceItem + .preferenceItem {
+  padding-top: 1rem;
+  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 20%);
+}
+
+.preferenceHeader {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.preferenceTitle {
+  color: var(--ui-text);
+}
+
+.preferenceDescription {
+  color: var(--ui-muted-text);
+  max-width: 46rem;
+}
+
+.preferenceBody {
+  display: grid;
+  gap: 0.2rem;
+}
+
+@media (max-width: 62rem) {
+  .labelRow {
+    grid-template-columns: 1fr;
+  }
+
+  .labelRowEditor,
+  .labelCreateForm {
+    grid-template-columns: 1fr;
+  }
+
+  .labelRowSecondaryActions {
+    justify-self: start;
+  }
+}

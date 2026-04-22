@@ -1,0 +1,11 @@
+.overviewPanel {
+  border-color: color-mix(in srgb, var(--ui-border), transparent 10%);
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-surface-soft), var(--ui-surface-strong) 72%),
+      color-mix(in srgb, var(--ui-surface), var(--ui-surface-soft) 84%)
+    ),
+    var(--ui-surface);
+  box-shadow: var(--ui-shadow);
+}
