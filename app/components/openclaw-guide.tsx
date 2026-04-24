@@ -33,7 +33,7 @@ export function buildPrompt(
 
   if (pairs.length === 0) return '';
 
-  return ['/preqsetup auto', ...pairs].join(' ');
+  return ['preqstation-dispatcher setup auto', ...pairs].join(' ');
 }
 
 export function OpenClawGuide({ projects }: OpenClawGuideProps) {
@@ -47,7 +47,7 @@ export function OpenClawGuide({ projects }: OpenClawGuideProps) {
         <span className={cardStyles.guideSummaryCopy}>
           <IconTerminal2 size={16} color="var(--mantine-color-teal-5)" style={{ flexShrink: 0 }} />
           <Text size="xs" c="dimmed" truncate>
-            Send to OpenClaw to auto-match local repos for agent execution
+            Copy a dispatcher setup command to auto-match local repos for Hermes execution
           </Text>
         </span>
         <span className={cardStyles.guideSummaryHint}>
@@ -61,7 +61,7 @@ export function OpenClawGuide({ projects }: OpenClawGuideProps) {
       <Paper withBorder radius="md" p="xs" className={cardStyles.guideBar}>
         <div className={cardStyles.guideContent}>
           <Text size="xs" c="dimmed">
-            Preview the exact prompt before copying it into OpenClaw.
+            Preview the exact command before copying it into the Hermes host shell.
           </Text>
           <Text
             component="pre"
@@ -79,7 +79,7 @@ export function OpenClawGuide({ projects }: OpenClawGuideProps) {
                     color={copied ? 'teal' : 'gray'}
                     onClick={copy}
                     size="sm"
-                    aria-label="Copy OpenClaw auto-setup prompt"
+                    aria-label="Copy dispatcher auto-setup command"
                   >
                     {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
                   </ActionIcon>

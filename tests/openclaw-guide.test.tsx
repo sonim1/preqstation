@@ -16,7 +16,7 @@ function renderOpenClawGuide(
 }
 
 describe('app/components/openclaw-guide', () => {
-  it('builds a /preqsetup auto payload from linked project repos', () => {
+  it('builds a preqstation-dispatcher setup auto payload from linked project repos', () => {
     expect(
       buildPrompt([
         {
@@ -30,7 +30,7 @@ describe('app/components/openclaw-guide', () => {
           repoUrl: null,
         },
       ]),
-    ).toBe('/preqsetup auto PROJ=https://github.com/sonim1/preqstation');
+    ).toBe('preqstation-dispatcher setup auto PROJ=https://github.com/sonim1/preqstation');
   });
 
   it('renders a labeled copy control when projects are available', () => {
@@ -44,10 +44,16 @@ describe('app/components/openclaw-guide', () => {
 
     expect(html).toContain('data-openclaw-guide="true"');
     expect(html).toContain('Show setup prompt');
-    expect(html).toContain('Preview the exact prompt before copying it into OpenClaw.');
-    expect(html).toContain('Copy OpenClaw auto-setup prompt');
-    expect(html).toContain('Send to OpenClaw to auto-match local repos for agent execution');
-    expect(html).toContain('/preqsetup auto PROJ=https://github.com/sonim1/preqstation');
+    expect(html).toContain(
+      'Preview the exact command before copying it into the Hermes host shell.',
+    );
+    expect(html).toContain('Copy dispatcher auto-setup command');
+    expect(html).toContain(
+      'Copy a dispatcher setup command to auto-match local repos for Hermes execution',
+    );
+    expect(html).toContain(
+      'preqstation-dispatcher setup auto PROJ=https://github.com/sonim1/preqstation',
+    );
   });
 
   it('stays hidden when there are no projects to map', () => {
