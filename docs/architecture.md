@@ -188,7 +188,6 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 | `POST`   | `/api/task-labels`        | Create task label               |
 | `PATCH`  | `/api/task-labels/:id`    | Update task label               |
 | `DELETE` | `/api/task-labels/:id`    | Delete task label               |
-| `GET`    | `/api/events`             | List event outbox entries       |
 | `POST`   | `/api/events/cleanup`     | Clean up old outbox entries     |
 | `GET`    | `/api/settings`           | Get/update user settings        |
 | `POST`   | `/api/telegram/send`      | Send Telegram message           |

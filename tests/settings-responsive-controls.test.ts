@@ -15,10 +15,6 @@ const timezoneSource = fs.readFileSync(
   path.join(process.cwd(), 'app/components/timezone-settings.tsx'),
   'utf8',
 );
-const syncSource = fs.readFileSync(
-  path.join(process.cwd(), 'app/components/sync-settings.tsx'),
-  'utf8',
-);
 
 describe('settings responsive control fixes', () => {
   it('defines shared touch-friendly settings control sizes', () => {
@@ -35,7 +31,6 @@ describe('settings responsive control fixes', () => {
 
   it('removes the fixed inline minWidth settings that caused mobile overflow risk', () => {
     expect(timezoneSource).not.toContain('minWidth: 280');
-    expect(syncSource).not.toContain('minWidth: 200');
   });
 
   it('stops using compact delete controls in settings label rows', () => {

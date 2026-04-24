@@ -32,12 +32,6 @@ vi.mock('drizzle-orm', async (importOriginal) => {
   };
 });
 
-vi.mock('@/app/components/event-poller', () => ({
-  EventPoller: ({ intervalMs }: { intervalMs?: number }) => (
-    <div data-event-poller={String(intervalMs)}>poller</div>
-  ),
-}));
-
 vi.mock('@/app/components/sign-out-form', () => ({
   SignOutForm: () => <div data-sign-out-form="true" />,
 }));
@@ -74,7 +68,7 @@ vi.mock('@/lib/owner', () => ({
 
 vi.mock('@/lib/user-settings', () => ({
   SETTING_KEYS: {
-    SYNC_INTERVAL: 'sync_interval',
+    TELEGRAM_ENABLED: 'telegram_enabled',
   },
   getUserSetting: mocked.getUserSetting,
 }));
@@ -89,15 +83,11 @@ describe('app/(workspace)/(main)/layout', () => {
     mocked.getUserSetting.mockResolvedValue('60000');
   });
 
-  it('mounts the event poller when a sync interval exists', async () => {
+  it('does not read the removed sync interval setting', async () => {
     const page = await MainLayout({ children: <div>Board</div> });
     const html = renderToStaticMarkup(page);
 
-    expect(html).toContain('data-event-poller="60000"');
-    expect(mocked.getUserSetting).toHaveBeenCalledWith(
-      'owner-1',
-      'sync_interval',
-      expect.anything(),
-    );
+    expect(html).toContain('data-workspace-shell="owner@example.com"');
+    expect(mocked.getUserSetting).not.toHaveBeenCalled();
   });
 });

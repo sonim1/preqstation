@@ -6,7 +6,6 @@ import type { DbClientOrTx } from '@/lib/db/types';
 
 export const SETTING_KEYS = {
   KITCHEN_MODE: 'kitchen_mode',
-  SYNC_INTERVAL: 'sync_interval',
   TELEGRAM_BOT_TOKEN: 'telegram_bot_token',
   TELEGRAM_CHAT_ID: 'telegram_chat_id',
   TELEGRAM_ENABLED: 'telegram_enabled',
@@ -15,7 +14,6 @@ export const SETTING_KEYS = {
 
 export const SETTING_DEFAULTS: Record<string, string> = {
   [SETTING_KEYS.KITCHEN_MODE]: 'false',
-  [SETTING_KEYS.SYNC_INTERVAL]: '60000',
   [SETTING_KEYS.TELEGRAM_BOT_TOKEN]: '',
   [SETTING_KEYS.TELEGRAM_CHAT_ID]: '',
   [SETTING_KEYS.TELEGRAM_ENABLED]: 'false',

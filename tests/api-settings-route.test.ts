@@ -92,6 +92,14 @@ describe('app/api/settings/route', () => {
     expect(mocked.setUserSetting).not.toHaveBeenCalled();
   });
 
+  it('rejects the removed sync interval key', async () => {
+    const response = await PATCH(patchRequest({ key: 'sync_interval', value: '30000' }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'Invalid setting key' });
+    expect(mocked.setUserSetting).not.toHaveBeenCalled();
+  });
+
   it('accepts the kitchen mode key', async () => {
     const response = await PATCH(patchRequest({ key: 'kitchen_mode', value: 'true' }));
 

@@ -17,7 +17,6 @@ import { redirect } from 'next/navigation';
 import classes from '@/app/(workspace)/(main)/settings/settings-page.module.css';
 import { KitchenModeSettings } from '@/app/components/kitchen-mode-settings';
 import panelStyles from '@/app/components/panels.module.css';
-import { SyncSettings } from '@/app/components/sync-settings';
 import { TaskPriorityIcon } from '@/app/components/task-priority-icon';
 import { TelegramSettings } from '@/app/components/telegram-settings';
 import { TimezoneSettings } from '@/app/components/timezone-settings';
@@ -164,8 +163,7 @@ export default async function SettingsPage() {
                 Workspace Preferences
               </Title>
               <Text className={classes.sectionDescription} size="sm">
-                Keep display terminology, timezone, and live refresh behavior together in one
-                lighter settings group.
+                Keep display terminology and timezone together in one lighter settings group.
               </Text>
             </div>
           </div>
@@ -195,21 +193,6 @@ export default async function SettingsPage() {
               </div>
               <div className={classes.preferenceBody}>
                 <TimezoneSettings defaultValue={settings.timezone} />
-              </div>
-            </section>
-
-            <section className={classes.preferenceItem} data-settings-item="live-sync">
-              <div className={classes.preferenceHeader}>
-                <Text fw={600} className={classes.preferenceTitle}>
-                  Live Sync
-                </Text>
-                <Text className={classes.preferenceDescription} size="sm">
-                  Choose how often the workspace checks for API changes while the backend is
-                  reachable.
-                </Text>
-              </div>
-              <div className={classes.preferenceBody}>
-                <SyncSettings defaultValue={settings.sync_interval} />
               </div>
             </section>
           </div>

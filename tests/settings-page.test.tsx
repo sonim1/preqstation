@@ -39,10 +39,6 @@ vi.mock('@/app/components/panels.module.css', () => ({
   },
 }));
 
-vi.mock('@/app/components/sync-settings', () => ({
-  SyncSettings: () => <div>Sync settings</div>,
-}));
-
 vi.mock('@/app/components/telegram-settings', () => ({
   TelegramSettings: () => <div>Telegram settings</div>,
 }));
@@ -123,7 +119,6 @@ describe('app/(workspace)/(main)/settings/page', () => {
     mocked.getOwnerUserOrNull.mockResolvedValue({ id: 'owner-1' });
     mocked.getUserSettings.mockResolvedValue({
       kitchen_mode: 'false',
-      sync_interval: '30',
       telegram_bot_token: '',
       telegram_chat_id: '',
       telegram_enabled: 'false',
@@ -156,15 +151,13 @@ describe('app/(workspace)/(main)/settings/page', () => {
     expect(html).toContain('data-settings-group="workspace-preferences"');
     expect(html).toContain('data-settings-item="kitchen-mode"');
     expect(html).toContain('data-settings-item="timezone"');
-    expect(html).toContain('data-settings-item="live-sync"');
   });
 
-  it('renders sync settings instead of disabled live-sync copy', async () => {
+  it('does not render the removed live sync preference', async () => {
     const html = await renderSettingsPage();
 
-    expect(html).toContain('data-settings-item="live-sync"');
-    expect(html).toContain('Sync settings');
-    expect(html).not.toContain('Live Sync is temporarily disabled.');
+    expect(html).not.toContain('data-settings-item="live-sync"');
+    expect(html).not.toContain('Live Sync');
   });
 
   it('does not render the removed engine preset section', async () => {

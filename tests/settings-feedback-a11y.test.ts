@@ -27,10 +27,6 @@ const kitchenSource = fs.readFileSync(
   path.join(process.cwd(), 'app/components/kitchen-mode-settings.tsx'),
   'utf8',
 );
-const syncSource = fs.readFileSync(
-  path.join(process.cwd(), 'app/components/sync-settings.tsx'),
-  'utf8',
-);
 const telegramSource = fs.readFileSync(
   path.join(process.cwd(), 'app/components/telegram-settings.tsx'),
   'utf8',
@@ -53,7 +49,6 @@ describe('settings feedback accessibility fixes', () => {
   it('uses the shared status message component across mutable settings controls', () => {
     expect(timezoneSource).toContain('SettingStatusMessage');
     expect(kitchenSource).toContain('SettingStatusMessage');
-    expect(syncSource).toContain('SettingStatusMessage');
     expect(telegramSource).toContain('SettingStatusMessage');
   });
 
@@ -70,6 +65,5 @@ describe('settings feedback accessibility fixes', () => {
   it('restores save-on-change controls to the last persisted value after a failed patch', () => {
     expect(timezoneSource).toContain('setValue(previousValue)');
     expect(kitchenSource).toContain('setEnabled(previousValue)');
-    expect(syncSource).toContain('setInterval(previousValue)');
   });
 });
