@@ -2,6 +2,10 @@ import path from 'node:path';
 
 import { defineConfig } from 'vitest/config';
 
+import { loadOptionalEnvFile } from './lib/load-optional-env-file';
+
+loadOptionalEnvFile('.env.local');
+
 export default defineConfig({
   resolve: {
     alias: {

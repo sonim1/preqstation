@@ -13,7 +13,7 @@ describe('task edit keyboard source coverage', () => {
     expect(source).toContain("window.addEventListener('keydown'");
     expect(source).toContain("event.key === 'Enter'");
     expect(source).toContain('event.metaKey || event.ctrlKey');
-    expect(source).toContain('sendDispatch()');
+    expect(source).toContain('sendDispatchRef.current?.()');
   });
 
   it('keeps Escape inside the active task edit inputs', () => {

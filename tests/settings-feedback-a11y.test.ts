@@ -11,6 +11,14 @@ const settingsPageSource = fs.readFileSync(
   path.join(process.cwd(), 'app/(workspace)/(main)/settings/page.tsx'),
   'utf8',
 );
+const projectPageSource = fs.readFileSync(
+  path.join(process.cwd(), 'app/(workspace)/(main)/project/[key]/page.tsx'),
+  'utf8',
+);
+const projectLabelsPanelSource = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/panels/project-labels-panel.tsx'),
+  'utf8',
+);
 const timezoneSource = fs.readFileSync(
   path.join(process.cwd(), 'app/components/timezone-settings.tsx'),
   'utf8',
@@ -36,10 +44,10 @@ describe('settings feedback accessibility fixes', () => {
     expect(labelFormSource).toContain('SettingsLabelNameInput');
     expect(labelFormSource).toContain('formState?.nameError ? formState.feedbackId : undefined');
     expect(labelFormSource).toContain('formState?.colorError ? formState.feedbackId : undefined');
-    expect(settingsPageSource).toContain('SettingsLabelNameInput');
-    expect(settingsPageSource).toContain('<TaskLabelColorField');
-    expect(settingsPageSource).toContain("field: 'name'");
-    expect(settingsPageSource).toContain("field: 'color'");
+    expect(projectLabelsPanelSource).toContain('SettingsLabelNameInput');
+    expect(projectLabelsPanelSource).toContain('<TaskLabelColorField');
+    expect(projectPageSource).toContain("field: 'name'");
+    expect(projectPageSource).toContain("field: 'color'");
   });
 
   it('uses the shared status message component across mutable settings controls', () => {

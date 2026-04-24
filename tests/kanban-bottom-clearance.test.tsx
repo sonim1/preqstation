@@ -236,7 +236,7 @@ describe('kanban bottom clearance hooks', () => {
       /\.kanban-mobile-refresh-indicator\s*\{[\s\S]*height:\s*var\(--kanban-mobile-refresh-offset,\s*0px\);/,
     );
     expect(globalsCss).toMatch(
-      /\.kanban-mobile-refresh-indicator\[data-armed='true'\]\s*\{[\s\S]*color:\s*var\(--ui-accent-strong\);/,
+      /\.kanban-mobile-refresh-indicator\[data-armed='true'\]\s+\.kanban-mobile-refresh-icon\s*\{[\s\S]*filter:\s*drop-shadow\(/,
     );
   });
 
