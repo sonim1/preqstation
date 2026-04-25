@@ -11,7 +11,7 @@ import {
   TextInput,
   UnstyledButton,
 } from '@mantine/core';
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useState } from 'react';
 
 import { SettingStatusMessage } from '@/app/components/setting-status-message';
 import controlClasses from '@/app/components/settings-controls.module.css';
@@ -187,13 +187,9 @@ export function TelegramSettings({
     ? { tone: state.ok ? 'success' : 'error', message: state.message }
     : null;
   const showSaveStatus = saveStatus && (saveStatus.tone === 'success' || saveErrorField === 'form');
-
-  useEffect(() => {
-    const config = CHANNEL_CONFIGS.find((channel) => channel.errorField === saveErrorField);
-    if (config) {
-      setActiveChannel(config.key);
-    }
-  }, [saveErrorField]);
+  const activeErrorChannel =
+    CHANNEL_CONFIGS.find((channel) => channel.errorField === saveErrorField)?.key ?? null;
+  const visibleChannel = activeErrorChannel ?? activeChannel;
 
   async function handleTestMessage(channel: TelegramChannel, message?: string) {
     const trimmedBotToken = botToken.trim();
@@ -291,7 +287,7 @@ export function TelegramSettings({
             {CHANNEL_CONFIGS.map((channel) => {
               const state = channelState[channel.key];
               const status = resolveChannelStatus(state.enabled, state.chatId);
-              const selected = activeChannel === channel.key;
+              const selected = visibleChannel === channel.key;
 
               return (
                 <UnstyledButton
@@ -335,7 +331,7 @@ export function TelegramSettings({
                 id={`telegram-${channel.key}-panel`}
                 role="tabpanel"
                 aria-labelledby={`telegram-${channel.key}-tab`}
-                hidden={activeChannel !== channel.key}
+                hidden={visibleChannel !== channel.key}
                 className={classes.channelPanel}
               >
                 <div className={classes.channelPanelHeader}>
