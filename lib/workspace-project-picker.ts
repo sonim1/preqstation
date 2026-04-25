@@ -1,4 +1,11 @@
-export type WorkspaceProjectOption = { id: string; name: string; projectKey: string };
+import { PAUSED_PROJECT_STATUS, type ProjectStatus } from '@/lib/project-meta';
+
+export type WorkspaceProjectOption = {
+  id: string;
+  name: string;
+  projectKey: string;
+  status: ProjectStatus;
+};
 
 export const LAST_PROJECT_KEY_STORAGE = 'pm:lastProjectKey';
 export const RECENT_PROJECTS_STORAGE = 'pm:recentProjects';
@@ -59,6 +66,19 @@ export function findProjectByKey(
   );
 }
 
+export function isVisibleWorkspaceProject(project: WorkspaceProjectOption) {
+  return project.status !== PAUSED_PROJECT_STATUS;
+}
+
+export function findVisibleProjectByKey(
+  projectOptions: WorkspaceProjectOption[],
+  projectKey: string | null | undefined,
+) {
+  const project = findProjectByKey(projectOptions, projectKey);
+  if (!project || !isVisibleWorkspaceProject(project)) return null;
+  return project;
+}
+
 export function resolvePickerProject(params: {
   pathname: string;
   rememberedProjectKey: string | null;
@@ -68,7 +88,7 @@ export function resolvePickerProject(params: {
   const fromPath = findProjectByKey(params.projectOptions, pathProjectKey);
   if (fromPath) return { project: fromPath, source: 'path' as const };
 
-  const fromMemory = findProjectByKey(params.projectOptions, params.rememberedProjectKey);
+  const fromMemory = findVisibleProjectByKey(params.projectOptions, params.rememberedProjectKey);
   if (fromMemory) return { project: fromMemory, source: 'memory' as const };
 
   return { project: null, source: 'none' as const };
