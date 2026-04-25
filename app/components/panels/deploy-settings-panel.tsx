@@ -202,12 +202,17 @@ export function DeploySettingsPanel({
                 label="Auto-create PR on push"
               />
               <Tooltip
-                label="Requires GitHub MCP server installed on the coding agent"
+                label="Requires GitHub access on the coding agent (`gh auth` or GitHub MCP)"
                 withArrow
                 multiline
                 w={240}
               >
-                <IconInfoCircle size={16} color="var(--mantine-color-dimmed)" />
+                <IconInfoCircle
+                  size={16}
+                  color="var(--mantine-color-dimmed)"
+                  title="Requires GitHub access on the coding agent (`gh auth` or GitHub MCP)"
+                  aria-label="Requires GitHub access on the coding agent (`gh auth` or GitHub MCP)"
+                />
               </Tooltip>
             </Group>
           </>

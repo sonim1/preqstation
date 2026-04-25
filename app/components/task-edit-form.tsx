@@ -555,12 +555,7 @@ export function useTaskEditFormController({
   const selectedLabels = selectedLabelIds
     .map((labelId) => labelById.get(labelId) ?? null)
     .filter((label): label is TaskEditLabelOption => label !== null);
-  const latestPreqResultLog =
-    status === 'hold'
-      ? (editableTodo.workLogs
-          ?.filter((log) => log.title.startsWith('PREQSTATION Result') && Boolean(log.detail))
-          .sort((left, right) => right.workedAt.getTime() - left.workedAt.getTime())[0] ?? null)
-      : null;
+  const latestPreqResultLog = selectLatestPreqResultLog(editableTodo.workLogs);
 
   const flushOnBlur = () => {
     if (!shouldFlushAutoSaveOnBlur(isDirtyRef.current)) return;
@@ -631,6 +626,22 @@ export function applyTaskEditNotesModeChange(
     revision: nextRevision,
     taskKey: nextTaskKey,
   };
+}
+
+function selectLatestPreqResultLog(
+  workLogs: NonNullable<TaskEditFormProps['editableTodo']['workLogs']> | undefined,
+) {
+  return (
+    workLogs
+      ?.filter((log) => log.title.startsWith('PREQSTATION Result') && Boolean(log.detail))
+      .sort((left, right) => right.workedAt.getTime() - left.workedAt.getTime())[0] ?? null
+  );
+}
+
+function shouldSurfaceLatestPreqResult(status: string, detail: string | null | undefined) {
+  if (!detail) return false;
+  if (status === 'hold') return true;
+  return status === 'ready' && detail.includes('**PR:**');
 }
 
 export function resolveTaskEditNotesMode(
@@ -707,6 +718,7 @@ function TaskEditFormContent({
     onTaskQueued?.(taskKey, queuedAt);
     onDispatchQueued?.();
   };
+  const showLatestPreqResult = shouldSurfaceLatestPreqResult(status, latestPreqResultLog?.detail);
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       setNoteMarkdown(draftNote);
@@ -813,10 +825,20 @@ function TaskEditFormContent({
                   />
                 ) : null}
 
-                {latestPreqResultLog?.detail ? (
-                  <Alert color="yellow" variant="light" icon={<IconAlertCircle size={16} />}>
+                {showLatestPreqResult ? (
+                  <Alert
+                    color={status === 'hold' ? 'yellow' : 'blue'}
+                    variant="light"
+                    icon={
+                      status === 'hold' ? (
+                        <IconAlertCircle size={16} />
+                      ) : (
+                        <IconInfoCircle size={16} />
+                      )
+                    }
+                  >
                     <MarkdownViewer
-                      markdown={latestPreqResultLog.detail}
+                      markdown={latestPreqResultLog?.detail}
                       className="markdown-output"
                     />
                   </Alert>

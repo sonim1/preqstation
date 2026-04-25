@@ -108,4 +108,33 @@ describe('app/components/panels/deploy-settings-panel', () => {
     expect(html).toContain('white-space:pre-wrap');
     expect(html).toContain('overflow-wrap:anywhere');
   });
+
+  it('describes auto PR requirements in terms of gh auth or GitHub MCP', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <DeploySettingsPanel
+          action={vi.fn(async () => null)}
+          singleProject
+          defaultProjectId="project-1"
+          projects={[
+            {
+              id: 'project-1',
+              name: 'Project One',
+              deployStrategy: {
+                strategy: 'feature_branch',
+                default_branch: 'main',
+                auto_pr: true,
+                commit_on_review: true,
+                squash_merge: false,
+              },
+            },
+          ]}
+        />
+      </MantineProvider>,
+    );
+
+    expect(html).toContain('Requires GitHub access on the coding agent');
+    expect(html).toContain('gh auth');
+    expect(html).toContain('GitHub MCP');
+  });
 });
