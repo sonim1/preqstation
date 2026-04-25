@@ -405,6 +405,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(/data-project-card-slot="lane"[\s\S]*?Hold Project/.test(html)).toBe(true);
     expect(/data-project-card-slot="lane"[\s\S]*?Drift Project/.test(html)).toBe(true);
     expect(/data-project-card-slot="quiet"[\s\S]*?Paused Project/.test(html)).toBe(true);
+    expect(html).not.toMatch(/<span>Paused<\/span>/);
     expect(
       /data-project-card-slot="lead"[\s\S]*?data-project-card-background="image"[\s\S]*?Recent Project/.test(
         html,

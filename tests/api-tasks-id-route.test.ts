@@ -961,7 +961,6 @@ describe('app/api/tasks/[id]/route', () => {
     expect(mocked.setFn).not.toHaveBeenCalled();
     expect(mocked.valuesFn).not.toHaveBeenCalled();
   });
-
   it('PATCH lifecycle_action complete logs the underlying insert failure before returning 500', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 

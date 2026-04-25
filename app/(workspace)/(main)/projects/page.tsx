@@ -241,9 +241,6 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
   const activeProjectCount = projectSummaries.filter(
     (summary) => summary.project.status === ACTIVE_PROJECT_STATUS,
   ).length;
-  const pausedProjectCount = projectSummaries.filter(
-    (summary) => summary.project.status === PAUSED_PROJECT_STATUS,
-  ).length;
   const touchedThisWeekCount = projectSummaries.filter(
     (summary) => now.getTime() - summary.lastActivityAt.getTime() <= WEEK_MS,
   ).length;
@@ -302,7 +299,6 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
     { label: 'Live projects', value: activeProjectCount },
     { label: 'Ready next', value: readyNextProjectCount },
     { label: 'Drifting', value: driftingProjectCount },
-    { label: 'Paused', value: pausedProjectCount },
     { label: 'Touched in 7d', value: touchedThisWeekCount },
   ];
 

@@ -206,7 +206,6 @@ export function TelegramSettings({
       }),
     );
   }, [defaultHermesChatId, defaultHermesEnabled, defaultOpenClawChatId, defaultOpenClawEnabled]);
-
   async function handleTestMessage(channel: TelegramChannel, message?: string) {
     const trimmedBotToken = botToken.trim();
     const chatId = channel === 'openclaw' ? openClawChatId : hermesChatId;

@@ -110,7 +110,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('task-dispatch-target-segments');
     expect(html).toContain('task-dispatch-mode-segments');
     expect(html).toMatch(
-      /task-dispatch-target-segments"[^>]*data-option-count="2"[^>]*data-selected-index="0"/,
+      /task-dispatch-target-segments"[^>]*data-option-count="3"[^>]*data-selected-index="0"/,
     );
     expect(html).toMatch(
       /task-dispatch-engine-segments"[^>]*data-option-count="3"[^>]*data-selected-index="1"/,
@@ -144,9 +144,11 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('Cmd+Enter');
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');
+    expect(html).toContain('Channels');
     expect(html).toContain('🦞 Telegram');
     expect(html).toContain('H Telegram');
-    expect(html).not.toContain('Channels');
+    expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
+    expect(html).toContain('aria-label="Select target: Channels"');
     expect(html).toContain(
       '!/skill preqstation-dispatch implement PROJ-224 using codex branch_name=&quot;task/proj-224/move-status-test-button&quot;',
     );
@@ -223,34 +225,37 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('!/skill preqstation-dispatch');
   });
 
-  it('can hide Hermes while keeping the OpenClaw Telegram target available', () => {
+  it('keeps Channels available while hiding Hermes', () => {
     const html = renderTaskCopyActions({
       engine: 'codex',
       telegramEnabled: true,
       hermesTelegramEnabled: false,
     });
 
+    expect(html).toContain('Channels');
     expect(html).toContain('🦞 Telegram');
     expect(html).not.toContain('H Telegram');
     expect(html).toMatch(
-      /task-dispatch-target-segments"[^>]*data-option-count="1"[^>]*data-selected-index="0"/,
+      /task-dispatch-target-segments"[^>]*data-option-count="2"[^>]*data-selected-index="0"/,
     );
+    expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
   });
 
-  it('can show Hermes alone when only the Hermes channel is enabled', () => {
+  it('keeps Channels available when Hermes is the only Telegram target', () => {
     const html = renderTaskCopyActions({
       engine: 'codex',
       telegramEnabled: false,
       hermesTelegramEnabled: true,
     });
 
+    expect(html).toContain('Channels');
     expect(html).not.toContain('🦞 Telegram');
     expect(html).toContain('H Telegram');
-    expect(html).not.toContain('Channels');
+    expect(html).toContain('aria-label="Selected target: H Telegram"');
     expect(html).toContain('/preq_dispatch@PreqHermesBot');
   });
 
-  it('falls back to Telegram when the stored target is invalid for the selected engine', () => {
+  it('keeps Channels selected when the stored target is valid for a non-Claude engine', () => {
     localStorage.setItem(
       TASK_DISPATCH_PREFERENCES_STORAGE,
       JSON.stringify({
@@ -265,8 +270,7 @@ describe('app/components/task-copy-actions', () => {
     const html = renderTaskCopyActions({ engine: 'codex' });
 
     expect(html).toContain('aria-label="Selected engine: Gemini"');
-    expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
-    expect(html).not.toContain('aria-label="Selected target: Channels"');
+    expect(html).toContain('aria-label="Selected target: Channels"');
   });
 
   it('falls back to Channels when Telegram is unavailable, including legacy copy-telegram preferences', () => {
