@@ -150,6 +150,13 @@ function resolveTaskEditDispatchActions(
   if (hermesTelegramEnabled) {
     actions.push('send-hermes-telegram');
   }
+  if (
+    normalizedEngineKey !== 'claude-code' &&
+    (telegramEnabled || hermesTelegramEnabled) &&
+    !actions.includes('send-claude-code')
+  ) {
+    actions.push('send-claude-code');
+  }
 
   return actions;
 }
