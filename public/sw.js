@@ -1,5 +1,7 @@
 const BOARD_CACHE = 'preq-board-v2';
 const STATIC_CACHE = 'preq-static-v2';
+const MANAGED_CACHES = [BOARD_CACHE, STATIC_CACHE];
+const MANAGED_CACHE_PREFIXES = ['preq-board-', 'preq-static-'];
 const PRECACHED_ASSETS = ['/manifest.webmanifest'];
 
 function isSameOrigin(url) {
@@ -36,7 +38,11 @@ self.addEventListener('activate', (event) => {
     caches.keys().then(async (cacheNames) => {
       await Promise.all(
         cacheNames
-          .filter((cacheName) => ![BOARD_CACHE, STATIC_CACHE].includes(cacheName))
+          .filter(
+            (cacheName) =>
+              MANAGED_CACHE_PREFIXES.some((prefix) => cacheName.startsWith(prefix)) &&
+              !MANAGED_CACHES.includes(cacheName),
+          )
           .map((cacheName) => caches.delete(cacheName)),
       );
       await self.clients.claim();

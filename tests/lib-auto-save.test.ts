@@ -236,4 +236,52 @@ describe('app/hooks/use-auto-save helpers', () => {
     expect(customSubmit).toHaveBeenCalledTimes(1);
     expect(requestSubmit).not.toHaveBeenCalled();
   });
+
+  it('retries the same snapshot after a failed autosave submit', async () => {
+    const formState = {
+      title: 'Task',
+      noteMd: 'Before',
+    };
+    const customSubmit = vi
+      .fn<() => Promise<void>>()
+      .mockRejectedValueOnce(new Error('offline queue failed'))
+      .mockResolvedValueOnce(undefined);
+    const formRef = {
+      current: {
+        requestSubmit: vi.fn(),
+      },
+    } as unknown as RefObject<HTMLFormElement | null>;
+
+    vi.stubGlobal(
+      'FormData',
+      class extends FormData {
+        constructor() {
+          super();
+          Object.entries(formState).forEach(([key, value]) => this.set(key, value));
+        }
+      } as typeof FormData,
+    );
+
+    const harness = createAutoSaveHarness(formRef, { submit: customSubmit });
+
+    let hook = harness.useHook();
+    hook.syncSnapshot();
+
+    formState.noteMd = 'After';
+
+    hook = harness.useHook();
+    hook.markDirty();
+    hook = harness.useHook();
+    hook.flushSave();
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    hook = harness.useHook();
+    expect(hook.isDirty).toBe(true);
+
+    hook.flushSave();
+
+    expect(customSubmit).toHaveBeenCalledTimes(2);
+  });
 });

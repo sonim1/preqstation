@@ -209,4 +209,37 @@ describe('lib/offline/mutation-sync', () => {
       focusedTask: null,
     });
   });
+
+  it('halts replay on transient server failures and leaves later mutations queued', async () => {
+    listQueuedOfflineMutationsMock.mockResolvedValueOnce([
+      {
+        id: 'patch:PROJ-500',
+        kind: 'patch',
+        createdAt: '2026-04-25T12:00:00.000Z',
+        taskKey: 'PROJ-500',
+        payload: { title: 'Retry later' },
+      },
+      {
+        id: 'patch:PROJ-513',
+        kind: 'patch',
+        createdAt: '2026-04-25T12:01:00.000Z',
+        taskKey: 'PROJ-513',
+        payload: { title: 'Should stay queued' },
+      },
+    ]);
+
+    const onApplied = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: 'Server unavailable' }),
+    });
+
+    const result = await flushOfflineMutations({ fetchImpl: fetchMock, onApplied });
+
+    expect(result).toEqual({ appliedCount: 0, error: 'Server unavailable', halted: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(deleteOfflineMutationMock).not.toHaveBeenCalled();
+    expect(onApplied).not.toHaveBeenCalled();
+  });
 });

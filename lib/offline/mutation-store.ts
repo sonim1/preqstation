@@ -49,6 +49,21 @@ export function buildOfflinePatchMutationId(taskKey: string) {
   return `patch:${taskKey}`;
 }
 
+function mergeDefinedFields<T extends Record<string, unknown>>(
+  previous: T,
+  next: Partial<T>,
+): T {
+  const merged = { ...previous };
+
+  for (const [key, value] of Object.entries(next)) {
+    if (value !== undefined) {
+      merged[key as keyof T] = value as T[keyof T];
+    }
+  }
+
+  return merged;
+}
+
 function buildOfflineKeyPart() {
   const randomDigits = Math.floor(Math.random() * 1_000_000_000)
     .toString()
@@ -186,7 +201,7 @@ export async function queueOfflineCreateMutation(params: {
       existingRecord?.kind === 'create' ? existingRecord.createdAt : new Date().toISOString(),
     payload:
       existingRecord?.kind === 'create'
-        ? { ...existingRecord.payload, ...params.payload }
+        ? mergeDefinedFields(existingRecord.payload, params.payload)
         : params.payload,
   };
 
@@ -204,10 +219,7 @@ export async function queueOfflinePatchMutation(params: {
   if (existingCreateRecord?.kind === 'create') {
     const nextCreateRecord: OfflineCreateMutationRecord = {
       ...existingCreateRecord,
-      payload: {
-        ...existingCreateRecord.payload,
-        ...params.payload,
-      },
+      payload: mergeDefinedFields(existingCreateRecord.payload, params.payload),
     };
 
     await db.put('mutations', nextCreateRecord);
@@ -225,7 +237,7 @@ export async function queueOfflinePatchMutation(params: {
         : new Date().toISOString(),
     payload:
       existingPatchRecord?.kind === 'patch'
-        ? { ...existingPatchRecord.payload, ...params.payload }
+        ? mergeDefinedFields(existingPatchRecord.payload, params.payload)
         : params.payload,
     taskKey: params.taskKey,
   };
@@ -263,7 +275,7 @@ export async function rekeyOfflinePatchMutation(params: {
         : previousRecord.createdAt,
     payload:
       nextRecord?.kind === 'patch'
-        ? { ...nextRecord.payload, ...previousRecord.payload }
+        ? mergeDefinedFields(nextRecord.payload, previousRecord.payload)
         : previousRecord.payload,
     taskKey: params.nextTaskKey,
   };

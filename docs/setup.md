@@ -132,8 +132,10 @@ Run this after any deploy that changes board shell code, `/sw.js`, or the offlin
 - Re-enable network and confirm the queued create/edit/move mutations replay automatically, the
   optimistic `OFFLINE-*` task key is replaced with the server task key, and the task remains in the
   expected lane.
-- If replay hits a validation/server error, confirm the queue stops in place and the user sees the
-  returned error message instead of silently dropping the remaining mutations.
+- If replay hits a permanent validation/not-found/conflict error (`400`, `404`, `409`, `410`,
+  `422`), confirm that mutation is dropped, later queued mutations continue syncing, and the user
+  still sees the returned error message. Transient failures should still halt replay with the
+  remaining queue left in place for retry.
 
 ## 8) Least-Privilege DB Access
 

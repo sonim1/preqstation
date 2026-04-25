@@ -51,9 +51,11 @@ export function useBoardOfflineSync() {
 export function BoardOfflineSyncProvider({
   children,
   editHrefBase,
+  activeProjectId = null,
 }: {
   children: ReactNode;
   editHrefBase: string;
+  activeProjectId?: string | null;
 }) {
   const { online } = useOfflineStatus();
   const focusedTask = useFocusedTask();
@@ -72,6 +74,10 @@ export function BoardOfflineSyncProvider({
     try {
       const result = await flushOfflineMutations({
         onApplied: async (mutation) => {
+          if (activeProjectId && mutation.boardTask.project?.id !== activeProjectId) {
+            return;
+          }
+
           if (mutation.kind === 'create') {
             removeTask(mutation.previousTaskKey);
             upsertSnapshots([mutation.boardTask]);
@@ -109,7 +115,7 @@ export function BoardOfflineSyncProvider({
     } finally {
       isFlushingRef.current = false;
     }
-  }, [editHrefBase, kanbanStore, online, removeTask, setFocusedTask, upsertSnapshots]);
+  }, [activeProjectId, editHrefBase, kanbanStore, online, removeTask, setFocusedTask, upsertSnapshots]);
 
   useEffect(() => {
     void flushPendingMutations();

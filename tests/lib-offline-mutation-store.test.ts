@@ -45,6 +45,33 @@ describe('lib/offline/mutation-store', () => {
     ]);
   });
 
+  it('preserves previously queued patch fields when a later payload leaves them undefined', async () => {
+    await queueOfflinePatchMutation({
+      taskKey: 'PROJ-401',
+      payload: { status: 'todo', sortOrder: 'a1' },
+    });
+    await queueOfflinePatchMutation({
+      taskKey: 'PROJ-401',
+      payload: { title: 'Renamed offline', sortOrder: undefined },
+    });
+
+    const queued = await listQueuedOfflineMutations();
+
+    expect(queued).toEqual([
+      {
+        id: buildOfflinePatchMutationId('PROJ-401'),
+        kind: 'patch',
+        createdAt: expect.any(String),
+        taskKey: 'PROJ-401',
+        payload: {
+          title: 'Renamed offline',
+          status: 'todo',
+          sortOrder: 'a1',
+        },
+      },
+    ]);
+  });
+
   it('merges offline edits into the queued create record for local tasks', async () => {
     await queueOfflineCreateMutation({
       taskKey: 'OFFLINE-123456789',
@@ -79,6 +106,55 @@ describe('lib/offline/mutation-store', () => {
         payload: {
           title: 'Draft task',
           note: 'Edited offline',
+          projectId: 'project-1',
+          labelIds: [],
+          taskPriority: 'none',
+          status: 'todo',
+          sortOrder: 'a1',
+        },
+      },
+    ]);
+  });
+
+  it('preserves queued create fields when later offline edits omit optional values', async () => {
+    await queueOfflineCreateMutation({
+      taskKey: 'OFFLINE-123456789',
+      payload: {
+        title: 'Draft task',
+        note: '',
+        projectId: 'project-1',
+        labelIds: [],
+        taskPriority: 'none',
+        status: 'inbox',
+        sortOrder: 'a0',
+      },
+    });
+    await queueOfflinePatchMutation({
+      taskKey: 'OFFLINE-123456789',
+      payload: {
+        status: 'todo',
+        sortOrder: 'a1',
+      },
+    });
+    await queueOfflinePatchMutation({
+      taskKey: 'OFFLINE-123456789',
+      payload: {
+        title: 'Draft task renamed',
+        sortOrder: undefined,
+      },
+    });
+
+    const queued = await listQueuedOfflineMutations();
+
+    expect(queued).toEqual([
+      {
+        id: buildOfflineCreateMutationId('OFFLINE-123456789'),
+        kind: 'create',
+        clientTaskKey: 'OFFLINE-123456789',
+        createdAt: expect.any(String),
+        payload: {
+          title: 'Draft task renamed',
+          note: '',
           projectId: 'project-1',
           labelIds: [],
           taskPriority: 'none',

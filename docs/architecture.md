@@ -214,8 +214,10 @@ workflow.
   once the connectivity check against `/api/ping` succeeds.
 - Offline mutation replay preserves queue order. Create replay posts to `/api/todos`, patch replay
   uses `PATCH /api/todos/:taskKey`, and any queued patch for an offline-created task is rekeyed to
-  the server-issued task key after the create succeeds. Replay stops on the first server-side error
-  so the remaining queue is left intact for the next retry.
+  the server-issued task key after the create succeeds. Permanent validation/not-found/conflict
+  failures (`400`, `404`, `409`, `410`, `422`) are dropped so later queued mutations can continue,
+  while transient failures still halt replay and leave the remaining queue intact for the next
+  retry.
 
 ### Task Lifecycle
 

@@ -127,7 +127,10 @@ export function BoardContent({
   return (
     <KanbanStoreProvider initialColumns={kanbanTasks} initialFocusedTask={editableTodo}>
       <OfflineBoardHydrator boardKey={selectedProject?.projectKey ?? 'ALL'} />
-      <BoardOfflineSyncProvider editHrefBase={editHrefBase}>
+      <BoardOfflineSyncProvider
+        editHrefBase={editHrefBase}
+        activeProjectId={selectedProject?.id ?? null}
+      >
         <Container className="dashboard-root is-board" fluid px={0} py={0}>
           <Stack gap="md" className="dashboard-stack is-board">
             <section className="kanban-stage">

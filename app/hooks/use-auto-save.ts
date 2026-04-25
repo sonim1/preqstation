@@ -106,10 +106,9 @@ export function useAutoSave(
     submittingRef.current = true;
     isDirtyRef.current = false;
     setIsDirty(false);
+    const previousSnapshot = lastSubmittedSnapshotRef.current;
     lastSubmittedSnapshotRef.current = nextSnapshot;
     setStatus('saving');
-
-    const previousSnapshot = lastSubmittedSnapshotRef.current;
 
     Promise.resolve(
       (options?.submit ?? ((activeForm: HTMLFormElement) => activeForm.requestSubmit()))(form),
