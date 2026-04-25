@@ -6,11 +6,13 @@ import {
   getProjectSelectHref,
   getWorkspaceProjectSubtitle,
   resolvePickerProject,
+  type WorkspaceProjectOption,
 } from '@/lib/workspace-project-picker';
 
-const projectOptions = [
-  { id: 'p1', name: 'Project One', projectKey: 'PROJ' },
-  { id: 'p2', name: 'App Two', projectKey: 'APP' },
+const projectOptions: WorkspaceProjectOption[] = [
+  { id: 'p1', name: 'Project One', projectKey: 'PROJ', status: 'active' },
+  { id: 'p2', name: 'App Two', projectKey: 'APP', status: 'paused' },
+  { id: 'p3', name: 'Done Three', projectKey: 'DONE', status: 'done' },
 ];
 
 describe('lib/workspace-project-picker', () => {
@@ -40,12 +42,23 @@ describe('lib/workspace-project-picker', () => {
   it('resolvePickerProject falls back to remembered project on global routes', () => {
     const resolved = resolvePickerProject({
       pathname: '/connections',
-      rememberedProjectKey: 'app',
+      rememberedProjectKey: 'done',
       projectOptions,
     });
 
     expect(resolved.source).toBe('memory');
-    expect(resolved.project?.projectKey).toBe('APP');
+    expect(resolved.project?.projectKey).toBe('DONE');
+  });
+
+  it('resolvePickerProject ignores remembered paused boards on global routes', () => {
+    const resolved = resolvePickerProject({
+      pathname: '/connections',
+      rememberedProjectKey: 'app',
+      projectOptions,
+    });
+
+    expect(resolved.source).toBe('none');
+    expect(resolved.project).toBeNull();
   });
 
   it('resolvePickerProject returns none when remembered key is invalid', () => {

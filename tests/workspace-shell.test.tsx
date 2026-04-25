@@ -82,6 +82,7 @@ vi.mock('@/app/components/task-notification-center', () => ({
 }));
 
 import { resolveWorkspaceKanbanHref, WorkspaceShell } from '@/app/components/workspace-shell';
+import { type WorkspaceProjectOption } from '@/lib/workspace-project-picker';
 
 const globalsCss = fs.readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
 const workspaceShellSource = fs.readFileSync(
@@ -94,22 +95,25 @@ type RenderWorkspaceShellArgs =
   | {
       desktopOpened: boolean;
       pathname?: string;
-      projectOptions?: Array<{ id: string; name: string; projectKey: string }>;
+      projectOptions?: WorkspaceProjectOption[];
       rememberedProjectKey?: string | null;
     };
 
 function renderWorkspaceShell(args: RenderWorkspaceShellArgs) {
+  const defaultProjectOptions: WorkspaceProjectOption[] = [
+    { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
+  ];
   const options =
     typeof args === 'boolean'
       ? {
           desktopOpened: args,
           pathname: '/dashboard',
-          projectOptions: [{ id: '1', name: 'Alpha', projectKey: 'ALPHA' }],
+          projectOptions: defaultProjectOptions,
           rememberedProjectKey: null,
         }
       : {
           pathname: '/dashboard',
-          projectOptions: [{ id: '1', name: 'Alpha', projectKey: 'ALPHA' }],
+          projectOptions: defaultProjectOptions,
           rememberedProjectKey: null,
           ...args,
         };
@@ -148,13 +152,20 @@ describe('app/components/workspace-shell', () => {
   it('prefers the remembered project board href when the project still exists', () => {
     expect(
       resolveWorkspaceKanbanHref('/board', 'ALPHA', [
-        { id: '1', name: 'Alpha', projectKey: 'ALPHA' },
+        { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
       ]),
     ).toBe('/board/ALPHA');
 
     expect(
       resolveWorkspaceKanbanHref('/board', 'MISSING', [
-        { id: '1', name: 'Alpha', projectKey: 'ALPHA' },
+        { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
+      ]),
+    ).toBe('/board');
+
+    expect(
+      resolveWorkspaceKanbanHref('/board', 'PAUSED', [
+        { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
+        { id: '2', name: 'Paused', projectKey: 'PAUSED', status: 'paused' },
       ]),
     ).toBe('/board');
   });
@@ -304,6 +315,25 @@ describe('app/components/workspace-shell', () => {
     expect(alphaIndex).toBeGreaterThan(boardIndex);
   });
 
+  it('keeps paused boards behind a secondary paused group instead of the always-visible board list', () => {
+    const html = renderWorkspaceShell({
+      desktopOpened: true,
+      pathname: '/board/ALPHA',
+      rememberedProjectKey: 'ALPHA',
+      projectOptions: [
+        { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
+        { id: '2', name: 'Beta', projectKey: 'BETA', status: 'paused' },
+        { id: '3', name: 'Gamma', projectKey: 'GAMMA', status: 'active' },
+      ],
+    });
+
+    expect(html).toContain('>Paused<');
+    expect(html).not.toContain('href="/board/BETA"');
+    expect(html).toMatch(
+      /href="\/board\/ALPHA"[\s\S]*workspace-board-subnav-link[\s\S]*href="\/board\/GAMMA"[\s\S]*workspace-board-subnav-link/,
+    );
+  });
+
   it('renders a connections nav link instead of api keys', () => {
     const html = renderWorkspaceShell({ desktopOpened: true });
 
@@ -364,8 +394,8 @@ describe('app/components/workspace-shell', () => {
       pathname: '/board/BETA',
       rememberedProjectKey: 'BETA',
       projectOptions: [
-        { id: '1', name: 'Alpha', projectKey: 'ALPHA' },
-        { id: '2', name: 'Beta', projectKey: 'BETA' },
+        { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
+        { id: '2', name: 'Beta', projectKey: 'BETA', status: 'active' },
       ],
     });
 
@@ -383,9 +413,9 @@ describe('app/components/workspace-shell', () => {
       pathname: '/board/BETA',
       rememberedProjectKey: 'BETA',
       projectOptions: [
-        { id: '1', name: 'Alpha', projectKey: 'ALPHA' },
-        { id: '2', name: 'Beta', projectKey: 'BETA' },
-        { id: '3', name: 'Gamma', projectKey: 'GAMMA' },
+        { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
+        { id: '2', name: 'Beta', projectKey: 'BETA', status: 'active' },
+        { id: '3', name: 'Gamma', projectKey: 'GAMMA', status: 'active' },
       ],
     });
 
@@ -401,14 +431,33 @@ describe('app/components/workspace-shell', () => {
       pathname: '/dashboard',
       rememberedProjectKey: 'ALPHA',
       projectOptions: [
-        { id: '1', name: 'Alpha', projectKey: 'ALPHA' },
-        { id: '2', name: 'Beta', projectKey: 'BETA' },
+        { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
+        { id: '2', name: 'Beta', projectKey: 'BETA', status: 'active' },
       ],
     });
 
     expect(html).toContain('data-current-board-index="-1"');
     expect(html).toContain('opacity:0');
     expect(html).not.toContain('data-current-board="true"');
+  });
+
+  it('opens the paused group when the current board is paused and keeps the active selection surface hidden', () => {
+    const html = renderWorkspaceShell({
+      desktopOpened: true,
+      pathname: '/board/BETA',
+      rememberedProjectKey: 'BETA',
+      projectOptions: [
+        { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
+        { id: '2', name: 'Beta', projectKey: 'BETA', status: 'paused' },
+      ],
+    });
+
+    expect(html).toContain('aria-expanded="true"');
+    expect(html).toMatch(
+      /href="\/board\/BETA"[\s\S]*workspace-board-subnav-link[\s\S]*aria-current="page"/,
+    );
+    expect(html).toContain('data-current-board-index="-1"');
+    expect(html).toContain('opacity:0');
   });
 
   it('matches the nested board row height to the larger selection surface by removing vertical padding', () => {
