@@ -182,4 +182,28 @@ describe('app/components/task-edit-form PREQ result warning', () => {
     expect(html).not.toContain('Historic blocked result.');
     expect(html).not.toContain('mantine-Alert-root');
   });
+
+  it('surfaces the latest PR link for ready tasks so the review URL is visible in Activity', () => {
+    const html = renderTaskEditForm({
+      status: 'ready',
+      workLogs: [
+        {
+          id: 'work-log-1',
+          title: 'PREQSTATION Result',
+          detail: [
+            '**PROJ-232** · Hold result warning',
+            '',
+            'Completed successfully.',
+            '',
+            '**PR:** [https://github.com/acme/app/pull/123](https://github.com/acme/app/pull/123)',
+          ].join('\n'),
+          workedAt: new Date('2026-03-13T10:00:00Z'),
+          createdAt: new Date('2026-03-13T10:00:00Z'),
+        },
+      ],
+    });
+
+    expect(html).toContain('href="https://github.com/acme/app/pull/123"');
+    expect(html).toContain('https://github.com/acme/app/pull/123');
+  });
 });

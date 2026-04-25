@@ -172,23 +172,47 @@ function belongsToProjectKey(task: Record<string, unknown>, projectKey: string) 
   return taskKey.startsWith(`${projectKey}-`);
 }
 
+function looksLikeJsonResponse(response: Response, trimmed: string) {
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.toLowerCase().includes('application/json')) {
+    return true;
+  }
+
+  return (
+    (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+    (trimmed.startsWith('[') && trimmed.endsWith(']'))
+  );
+}
+
 async function readJsonResponse(response: Response, path: string) {
   const text = await response.text();
   const trimmed = text.trim();
-  const contentType = response.headers.get('content-type') || '';
+  const looksLikeJson = looksLikeJsonResponse(response, trimmed);
 
   if (!response.ok) {
-    throw new Error(`PREQSTATION API request failed with status ${response.status}.`);
+    let detail = '';
+    if (trimmed && looksLikeJson) {
+      try {
+        const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+        const errorMessage =
+          typeof parsed.error === 'string'
+            ? parsed.error
+            : typeof parsed.message === 'string'
+              ? parsed.message
+              : '';
+        if (errorMessage) detail = `: ${errorMessage}`;
+      } catch {
+        // Fall back to the status-only message when the error body is not valid JSON.
+      }
+    }
+    throw new Error(
+      `PREQSTATION API request failed for ${path} with status ${response.status}${detail}.`,
+    );
   }
 
   if (!trimmed) {
     return {};
   }
-
-  const looksLikeJson =
-    contentType.toLowerCase().includes('application/json') ||
-    trimmed.startsWith('{') ||
-    trimmed.startsWith('[');
 
   if (!looksLikeJson) {
     throw new Error(

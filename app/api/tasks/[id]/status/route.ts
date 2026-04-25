@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull, like, or, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
@@ -15,6 +15,7 @@ import {
   writeOutboxEventStandalone,
 } from '@/lib/outbox';
 import { serializePreqTask } from '@/lib/preq-task';
+import { resolveDeployStrategyConfig } from '@/lib/project-settings';
 import { normalizeTaskIdentifier, taskWhereByIdentifier } from '@/lib/task-keys';
 import { extractTaskLabels } from '@/lib/task-labels';
 import { coerceTaskRunState, TASK_STATUSES } from '@/lib/task-meta';
@@ -28,6 +29,29 @@ const updateTaskStatusSchema = z
     engine: z.enum(ENGINE_KEYS).optional().or(z.literal('')),
   })
   .strict();
+
+function readStoredPrUrl(detail: string | null | undefined) {
+  if (!detail) return '';
+  const match = detail.match(/\*\*PR:\*\*\s+\[(https?:\/\/[^\]]+)\]\((https?:\/\/[^)]+)\)/);
+  return (match?.[2] || match?.[1] || '').trim();
+}
+
+function buildAutoPrCompletionError(params: {
+  defaultBranch: string;
+  missingBranch: boolean;
+  missingPrUrl: boolean;
+}) {
+  const missing: string[] = [];
+  if (params.missingBranch) missing.push('feature branch name');
+  if (params.missingPrUrl) missing.push('pull request URL');
+
+  return [
+    'This project cannot move to ready yet.',
+    'Deployment strategy requires a pushed feature branch and PR before review (feature_branch + auto_pr + commit_on_review).',
+    `Missing: ${missing.join(' and ')}.`,
+    `Push the branch, create a PR targeting ${params.defaultBranch} via GitHub MCP or \`gh pr create\`, then retry \`preq_complete_task\` with both \`branchName\` and \`prUrl\`.`,
+  ].join(' ');
+}
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -71,6 +95,40 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
       const now = new Date();
       const nextStatus = payload.status;
+      const deployStrategy = resolveDeployStrategyConfig(existing.project?.projectSettings);
+      const requiresPullRequestBeforeReady =
+        nextStatus === 'ready' &&
+        existing.status !== 'ready' &&
+        deployStrategy.strategy === 'feature_branch' &&
+        deployStrategy.auto_pr &&
+        deployStrategy.commit_on_review;
+
+      if (requiresPullRequestBeforeReady) {
+        const latestPreqResultLog = await client.query.workLogs.findFirst({
+          where: and(
+            eq(workLogs.ownerId, auth.ownerId),
+            eq(workLogs.taskId, existing.id),
+            like(workLogs.title, 'PREQSTATION Result%'),
+          ),
+          orderBy: [desc(workLogs.workedAt), desc(workLogs.createdAt)],
+          columns: { detail: true },
+        });
+        const resolvedBranchName = (existing.branch ?? '').trim();
+        const storedPrUrl = readStoredPrUrl(latestPreqResultLog?.detail);
+
+        if (!resolvedBranchName || !storedPrUrl) {
+          return NextResponse.json(
+            {
+              error: buildAutoPrCompletionError({
+                defaultBranch: deployStrategy.default_branch || 'main',
+                missingBranch: !resolvedBranchName,
+                missingPrUrl: !storedPrUrl,
+              }),
+            },
+            { status: 409 },
+          );
+        }
+      }
 
       const nextEngine: string | null | undefined =
         payload.engine !== undefined ? payload.engine || null : undefined;

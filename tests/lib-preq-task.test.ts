@@ -220,3 +220,22 @@ describe('extractLatestPreqResultMeta', () => {
     });
   });
 });
+
+describe('renderResultWorkLogDetail', () => {
+  it('renders PR URLs as explicit markdown links', () => {
+    const detail = preqTask.renderResultWorkLogDetail({
+      taskId: 'PROJ-337',
+      title: 'Investigate this issue',
+      result: {
+        summary: 'Done',
+        pr_url: 'https://github.com/acme/app/pull/123',
+      },
+      tokenName: 'PREQSTATION Token',
+      engine: 'codex',
+    });
+
+    expect(detail).toContain(
+      '**PR:** [https://github.com/acme/app/pull/123](https://github.com/acme/app/pull/123)',
+    );
+  });
+});

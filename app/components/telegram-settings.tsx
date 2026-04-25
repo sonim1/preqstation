@@ -11,7 +11,7 @@ import {
   TextInput,
   UnstyledButton,
 } from '@mantine/core';
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 
 import { SettingStatusMessage } from '@/app/components/setting-status-message';
 import controlClasses from '@/app/components/settings-controls.module.css';
@@ -191,6 +191,22 @@ export function TelegramSettings({
     CHANNEL_CONFIGS.find((channel) => channel.errorField === saveErrorField)?.key ?? null;
   const visibleChannel = activeErrorChannel ?? activeChannel;
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- local draft state also changes from user input and must resync when saved defaults change
+    setOpenClawChatId(defaultOpenClawChatId);
+    setOpenClawEnabled(defaultOpenClawEnabled);
+    setHermesChatId(defaultHermesChatId);
+    setHermesEnabled(defaultHermesEnabled);
+    setActiveChannel(
+      resolveInitialChannel({
+        openClawEnabled: defaultOpenClawEnabled,
+        openClawChatId: defaultOpenClawChatId,
+        hermesEnabled: defaultHermesEnabled,
+        hermesChatId: defaultHermesChatId,
+      }),
+    );
+  }, [defaultHermesChatId, defaultHermesEnabled, defaultOpenClawChatId, defaultOpenClawEnabled]);
+
   async function handleTestMessage(channel: TelegramChannel, message?: string) {
     const trimmedBotToken = botToken.trim();
     const chatId = channel === 'openclaw' ? openClawChatId : hermesChatId;
@@ -285,8 +301,11 @@ export function TelegramSettings({
         <div className={classes.channelShell}>
           <div className={classes.channelTabs} role="tablist" aria-label="Telegram channels">
             {CHANNEL_CONFIGS.map((channel) => {
-              const state = channelState[channel.key];
-              const status = resolveChannelStatus(state.enabled, state.chatId);
+              const channelStateForTab = channelState[channel.key];
+              const status = resolveChannelStatus(
+                channelStateForTab.enabled,
+                channelStateForTab.chatId,
+              );
               const selected = visibleChannel === channel.key;
 
               return (
@@ -318,11 +337,11 @@ export function TelegramSettings({
           </div>
 
           {CHANNEL_CONFIGS.map((channel) => {
-            const state = channelState[channel.key];
+            const channelStateForPanel = channelState[channel.key];
             const showDetails = shouldShowChannelDetails({
-              enabled: state.enabled,
-              chatId: state.chatId,
-              hasError: state.hasError,
+              enabled: channelStateForPanel.enabled,
+              chatId: channelStateForPanel.chatId,
+              hasError: channelStateForPanel.hasError,
             });
 
             return (
@@ -346,8 +365,10 @@ export function TelegramSettings({
                   <Checkbox
                     name={channel.enableName}
                     value="true"
-                    checked={state.enabled}
-                    onChange={(event) => state.onEnabledChange(event.currentTarget.checked)}
+                    checked={channelStateForPanel.enabled}
+                    onChange={(event) =>
+                      channelStateForPanel.onEnabledChange(event.currentTarget.checked)
+                    }
                     label={channel.enableLabel}
                     size="lg"
                     className={controlClasses.touchCheckbox}
@@ -360,9 +381,11 @@ export function TelegramSettings({
                       name={channel.chatIdName}
                       label={channel.chatIdLabel}
                       placeholder="123456789"
-                      value={state.chatId}
-                      onChange={(event) => state.onChatIdChange(event.currentTarget.value)}
-                      error={state.hasError ? fieldErrorMessage : undefined}
+                      value={channelStateForPanel.chatId}
+                      onChange={(event) =>
+                        channelStateForPanel.onChatIdChange(event.currentTarget.value)
+                      }
+                      error={channelStateForPanel.hasError ? fieldErrorMessage : undefined}
                       className={`${controlClasses.fieldWide} ${controlClasses.touchInput}`}
                     />
                     <Group gap="sm" wrap="wrap" className={controlClasses.buttonGroup}>
@@ -386,7 +409,11 @@ export function TelegramSettings({
                   </div>
                 ) : (
                   <>
-                    <input type="hidden" name={channel.chatIdName} value={state.chatId} />
+                    <input
+                      type="hidden"
+                      name={channel.chatIdName}
+                      value={channelStateForPanel.chatId}
+                    />
                     <div className={classes.channelHint}>
                       <Text size="sm" c="dimmed">
                         Enable this channel to add a chat ID and send a test message.

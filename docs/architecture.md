@@ -102,6 +102,8 @@ Coding agent checks task status via preq_get_task, then:
               → preq_review_task (→ done)
               → Stop.
 
+  If `feature_branch + auto_pr + commit_on_review` is enabled, `preq_complete_task`
+  cannot move the task to `ready` until the pushed branch name and PR URL are supplied.
   Telegram dispatch before agent pickup can mark the task as runState=queued.
   On any failure → preq_block_task (→ hold)
 ```
@@ -251,9 +253,9 @@ Behavior:
 
 - **`none`** — No git operations. Code changes + task update only.
 - **`direct_commit`** — Commit and push to `default_branch`. No PR. When `squash_merge=true`, squash all worktree commits into a single commit when merging to the default branch.
-- **`feature_branch`** — Commit and push to task branch. Create PR only when `auto_pr=true` (requires GitHub MCP on the coding agent).
+- **`feature_branch`** — Commit and push to task branch. Create PR only when `auto_pr=true` (requires GitHub access on the coding agent via `gh auth` or GitHub MCP).
 
-When `commit_on_review=true`, agents must verify the remote push before transitioning to `ready`. The setting name is retained for backward compatibility even though the workflow label is now `ready`.
+When `commit_on_review=true`, agents must finish the deploy handoff before transitioning to `ready`. For `feature_branch + auto_pr + commit_on_review`, `preq_complete_task` rejects the transition until both the pushed `branchName` and `prUrl` are provided. The setting name is retained for backward compatibility even though the workflow label is now `ready`.
 
 Projects can also store an `agent_instructions` setting. When present, task payloads returned by `preq_get_task` include that value as `agent_instructions` so coding agents can follow project-scoped response-language guidance.
 
@@ -338,7 +340,7 @@ Important naming note:
 - **Layered project-path resolution** — Project paths resolve from explicit paths, plugin config, the shared mapping file, or fallback `MEMORY.md`.
 - **Branch naming** — Must include project key. Format: `preqstation/<project_key>/<branch_slug>`.
 - **Worktree cleanup** — The coding agent cleans up its own worktree (`git worktree remove` + `prune`) as the final step before exiting, regardless of success or failure.
-- **PREQSTATION workflow in prompt** — The rendered prompt includes explicit instructions for the agent to use `preq_*` MCP tools (fetch task, check deploy strategy, update status, submit results). Each run follows exactly one lifecycle branch; execution starts from `todo`, uses `runState` to show `queued` / `running`, stops after `preq_complete_task` moves the task to `ready`, and only `ready` tasks should proceed to `preq_review_task`.
+- **PREQSTATION workflow in prompt** — The rendered prompt includes explicit instructions for the agent to use `preq_*` MCP tools (fetch task, check deploy strategy, update status, submit results). Each run follows exactly one lifecycle branch; execution starts from `todo`, uses `runState` to show `queued` / `running`, stops after `preq_complete_task` moves the task to `ready`, and only `ready` tasks should proceed to `preq_review_task`. For `feature_branch + auto_pr + commit_on_review`, the completion call must include the pushed `branchName` and `prUrl` first.
 
 ### Progress Modes
 
@@ -384,7 +386,7 @@ codex mcp add preqstation \
 | `preq_plan_task`            | Mutation | Upload plan markdown, move inbox → todo                               |
 | `preq_start_task`           | Mutation | Mark a todo task as actively running (`runState=running`)             |
 | `preq_update_task_status`   | Mutation | Status-only update                                                    |
-| `preq_complete_task`        | Mutation | Upload result, move → ready, clear execution state                    |
+| `preq_complete_task`        | Mutation | Upload result, move → ready, clear execution state; requires `branchName` + `prUrl` for `feature_branch + auto_pr + commit_on_review` |
 | `preq_review_task`          | Mutation | Verify a ready task and move → done (or → hold)                       |
 | `preq_block_task`           | Mutation | Move task → hold with a blocking reason                               |
 | `preq_delete_task`          | Mutation | Permanently delete task                                               |

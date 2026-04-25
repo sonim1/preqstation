@@ -251,7 +251,7 @@ export function renderResultWorkLogDetail(params: {
   }
 
   if (prUrl) {
-    sections.push('', `**PR:** ${prUrl}`);
+    sections.push('', `**PR:** [${prUrl}](${prUrl})`);
   }
 
   if (notes) {

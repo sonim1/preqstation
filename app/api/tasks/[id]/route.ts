@@ -33,6 +33,7 @@ import {
   toInternalTaskStatus,
   toPreqTaskStatus,
 } from '@/lib/preq-task';
+import { resolveDeployStrategyConfig } from '@/lib/project-settings';
 import {
   isTaskKeyUniqueConstraintError,
   normalizeTaskIdentifier,
@@ -76,6 +77,30 @@ const updateTaskSchema = z.object({
   engine: z.enum(ENGINE_KEYS).optional().or(z.literal('')),
   result: z.record(z.string(), z.unknown()).optional(),
 });
+
+function readRequestedPrUrl(result: Record<string, unknown> | undefined) {
+  if (!result || typeof result !== 'object') return '';
+  const snakeCase = typeof result.pr_url === 'string' ? result.pr_url : '';
+  const camelCase = typeof result.prUrl === 'string' ? result.prUrl : '';
+  return (snakeCase || camelCase).trim();
+}
+
+function buildAutoPrCompletionError(params: {
+  defaultBranch: string;
+  missingBranch: boolean;
+  missingPrUrl: boolean;
+}) {
+  const missing: string[] = [];
+  if (params.missingBranch) missing.push('feature branch name');
+  if (params.missingPrUrl) missing.push('pull request URL');
+
+  return [
+    'This project cannot move to ready yet.',
+    'Deployment strategy requires a pushed feature branch and PR before review (feature_branch + auto_pr + commit_on_review).',
+    `Missing: ${missing.join(' and ')}.`,
+    `Push the branch, create a PR targeting ${params.defaultBranch} via GitHub MCP or \`gh pr create\`, then retry \`preq_complete_task\` with both \`branchName\` and \`prUrl\`.`,
+  ].join(' ');
+}
 
 function resolveLifecycleTransition(
   action: PreqLifecycleAction | undefined,
@@ -336,6 +361,30 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const lifecycleTransition = resolveLifecycleTransition(lifecycleAction, existing.status);
       if (lifecycleTransition.error) {
         return NextResponse.json({ error: lifecycleTransition.error }, { status: 409 });
+      }
+      const requestedStatus = lifecycleAction
+        ? (lifecycleTransition.nextStatus ?? nextStatus)
+        : nextStatus;
+      const deployStrategy = resolveDeployStrategyConfig(existing.project?.projectSettings);
+      const resolvedBranchName = (payload.branch ?? existing.branch ?? '').trim();
+      const requestedPrUrl = readRequestedPrUrl(payload.result);
+      const requiresPullRequestBeforeReady =
+        requestedStatus === 'ready' &&
+        existing.status !== 'ready' &&
+        deployStrategy.strategy === 'feature_branch' &&
+        deployStrategy.auto_pr &&
+        deployStrategy.commit_on_review;
+      if (requiresPullRequestBeforeReady && (!resolvedBranchName || !requestedPrUrl)) {
+        return NextResponse.json(
+          {
+            error: buildAutoPrCompletionError({
+              defaultBranch: deployStrategy.default_branch || 'main',
+              missingBranch: !resolvedBranchName,
+              missingPrUrl: !requestedPrUrl,
+            }),
+          },
+          { status: 409 },
+        );
       }
       if (lifecycleAction === 'plan' && planMarkdown.length === 0) {
         return NextResponse.json(
