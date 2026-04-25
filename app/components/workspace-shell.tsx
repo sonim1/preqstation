@@ -87,6 +87,51 @@ const PROJECT_KEY_CHANGED_EVENT = 'pm:lastProjectKey:changed';
 const BOARD_SUBNAV_ROW_HEIGHT = 44;
 const BOARD_SUBNAV_ROW_GAP = 4;
 
+type BoardNavLinkProps = {
+  project: WorkspaceProjectOption;
+  isCurrentBoard: boolean;
+  onSelect: (projectKey: string) => void;
+};
+
+function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) {
+  return (
+    <NavLink
+      component={Link}
+      href={`/board/${project.projectKey}`}
+      prefetch={false}
+      label={
+        <span className="workspace-board-subnav-label">
+          <span className="workspace-board-subnav-name">{project.name}</span>
+        </span>
+      }
+      onClick={() => {
+        onSelect(project.projectKey);
+      }}
+      className="workspace-nav-link workspace-board-subnav-link"
+      data-current-board={isCurrentBoard ? 'true' : undefined}
+      aria-current={isCurrentBoard ? 'page' : undefined}
+    />
+  );
+}
+
+function partitionWorkspaceProjectOptions(projectOptions: WorkspaceProjectOption[]) {
+  const visibleProjectOptions: WorkspaceProjectOption[] = [];
+  const pausedProjectOptions: WorkspaceProjectOption[] = [];
+
+  for (const project of projectOptions) {
+    if (project.status === PAUSED_PROJECT_STATUS) {
+      pausedProjectOptions.push(project);
+      continue;
+    }
+
+    if (isVisibleWorkspaceProject(project)) {
+      visibleProjectOptions.push(project);
+    }
+  }
+
+  return { visibleProjectOptions, pausedProjectOptions };
+}
+
 function readRememberedProjectKey() {
   if (typeof window === 'undefined') return null;
   try {
@@ -157,12 +202,8 @@ export function WorkspaceShell({
     readRememberedProjectKey,
     () => null,
   );
-  const visibleProjectOptions = useMemo(
-    () => projectOptions.filter(isVisibleWorkspaceProject),
-    [projectOptions],
-  );
-  const pausedProjectOptions = useMemo(
-    () => projectOptions.filter((project) => project.status === PAUSED_PROJECT_STATUS),
+  const { visibleProjectOptions, pausedProjectOptions } = useMemo(
+    () => partitionWorkspaceProjectOptions(projectOptions),
     [projectOptions],
   );
 
@@ -215,6 +256,13 @@ export function WorkspaceShell({
     transform: `translateY(${Math.max(currentBoardIndex, 0) * (BOARD_SUBNAV_ROW_HEIGHT + BOARD_SUBNAV_ROW_GAP)}px)`,
     opacity: currentBoardIndex === -1 ? 0 : 1,
   };
+  const handleBoardSelect = useCallback(
+    (projectKey: string) => {
+      writeRememberedProjectKey(projectKey);
+      closeMobile();
+    },
+    [closeMobile],
+  );
   const requestCommandPalette = useCallback(() => {
     setCommandPaletteRequested(true);
   }, []);
@@ -478,29 +526,14 @@ export function WorkspaceShell({
                       aria-hidden="true"
                       style={boardSelectionSurfaceStyle}
                     />
-                    {visibleProjectOptions.map((project) => {
-                      const isCurrentBoard = currentVisibleBoardProject?.id === project.id;
-                      return (
-                        <NavLink
-                          key={project.id}
-                          component={Link}
-                          href={`/board/${project.projectKey}`}
-                          prefetch={false}
-                          label={
-                            <span className="workspace-board-subnav-label">
-                              <span className="workspace-board-subnav-name">{project.name}</span>
-                            </span>
-                          }
-                          onClick={() => {
-                            writeRememberedProjectKey(project.projectKey);
-                            closeMobile();
-                          }}
-                          className="workspace-nav-link workspace-board-subnav-link"
-                          data-current-board={isCurrentBoard ? 'true' : undefined}
-                          aria-current={isCurrentBoard ? 'page' : undefined}
-                        />
-                      );
-                    })}
+                    {visibleProjectOptions.map((project) => (
+                      <BoardNavLink
+                        key={project.id}
+                        project={project}
+                        isCurrentBoard={currentVisibleBoardProject?.id === project.id}
+                        onSelect={handleBoardSelect}
+                      />
+                    ))}
                   </Stack>
                 ) : null}
                 {pausedProjectOptions.length > 0 ? (
@@ -527,31 +560,14 @@ export function WorkspaceShell({
                         id="workspace-paused-board-group"
                         className="workspace-board-subnav-children"
                       >
-                        {pausedProjectOptions.map((project) => {
-                          const isCurrentBoard = currentPausedBoardProject?.id === project.id;
-                          return (
-                            <NavLink
-                              key={project.id}
-                              component={Link}
-                              href={`/board/${project.projectKey}`}
-                              prefetch={false}
-                              label={
-                                <span className="workspace-board-subnav-label">
-                                  <span className="workspace-board-subnav-name">
-                                    {project.name}
-                                  </span>
-                                </span>
-                              }
-                              onClick={() => {
-                                writeRememberedProjectKey(project.projectKey);
-                                closeMobile();
-                              }}
-                              className="workspace-nav-link workspace-board-subnav-link"
-                              data-current-board={isCurrentBoard ? 'true' : undefined}
-                              aria-current={isCurrentBoard ? 'page' : undefined}
-                            />
-                          );
-                        })}
+                        {pausedProjectOptions.map((project) => (
+                          <BoardNavLink
+                            key={project.id}
+                            project={project}
+                            isCurrentBoard={currentPausedBoardProject?.id === project.id}
+                            onSelect={handleBoardSelect}
+                          />
+                        ))}
                       </Stack>
                     ) : null}
                   </Stack>
