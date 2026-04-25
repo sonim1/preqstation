@@ -20,17 +20,19 @@ import {
   IconInfoCircle,
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
-import { type ReactNode, useActionState, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useActionState, useCallback, useEffect, useRef, useState } from 'react';
 
+import { useBoardOfflineSync } from '@/app/components/board-offline-sync-provider';
 import { type EditorMode, LiveMarkdownEditor } from '@/app/components/live-markdown-editor';
 import { MarkdownViewer } from '@/app/components/markdown-viewer';
+import { useOfflineStatus } from '@/app/components/offline-status-provider';
 import { StatusHistoryBreadcrumb } from '@/app/components/status-history-breadcrumb';
 import { TaskCopyActions } from '@/app/components/task-copy-actions';
 import { TaskPriorityIcon } from '@/app/components/task-priority-icon';
 import { WorkLogTimeline } from '@/app/components/work-log-timeline';
 import { shouldFlushAutoSaveOnBlur, useAutoSave } from '@/app/hooks/use-auto-save';
 import { useTaskOfflineDraft } from '@/app/hooks/use-task-offline-draft';
-import { type KanbanTask } from '@/lib/kanban-helpers';
+import { type KanbanStatus, type KanbanTask } from '@/lib/kanban-helpers';
 import type { EditableBoardTask } from '@/lib/kanban-store';
 import { showErrorNotification } from '@/lib/notifications';
 import { setTaskEditRefreshBlocked } from '@/lib/task-edit-refresh-guard';
@@ -371,6 +373,8 @@ export function useTaskEditFormController({
   const router = useRouter();
   const incomingRevision = buildTaskEditRevision(editableTodo);
   const incomingFieldRevisions = buildTaskEditFieldRevisions(editableTodo);
+  const boardOfflineSync = useBoardOfflineSync();
+  const { online } = useOfflineStatus();
   const [idCopied, setIdCopied] = useState(false);
   const [fieldRenderKey, setFieldRenderKey] = useState(incomingRevision);
   const [fieldRevisions, setFieldRevisions] = useState(incomingFieldRevisions);
@@ -392,6 +396,53 @@ export function useTaskEditFormController({
     labelIds: string[];
   } | null>(null);
   const [updateState, updateFormAction] = useActionState(updateTodoAction, null);
+  const labelById = new Map(
+    [...editableTodo.labels, ...todoLabels].map((label) => [label.id, label]),
+  );
+  const submitTaskUpdate = useCallback(
+    async (form: HTMLFormElement) => {
+      if (online || !boardOfflineSync) {
+        form.requestSubmit();
+        return;
+      }
+
+      const formData = new FormData(form);
+      const title = String(formData.get('title') || '').trim();
+      if (!title) {
+        showErrorNotification('Title is required.');
+        throw new Error('Title is required.');
+      }
+
+      const nextLabelIds = formData
+        .getAll('labelIds')
+        .map((value) => String(value))
+        .filter(Boolean);
+      const nextLabels = nextLabelIds
+        .map((labelId) => labelById.get(labelId) ?? null)
+        .filter((label): label is TaskEditLabelOption => label !== null);
+      const result = await boardOfflineSync.queueTaskPatch({
+        taskKey: editableTodo.taskKey,
+        title,
+        note: String(formData.get('noteMd') || ''),
+        labelIds: nextLabelIds,
+        labels: nextLabels,
+        taskPriority: parseTaskPriority(String(formData.get('taskPriority') || 'none')),
+        status: editableTodo.status as KanbanStatus,
+      });
+
+      onTaskUpdated?.(result);
+      await clearDraft();
+    },
+    [
+      boardOfflineSync,
+      clearDraft,
+      editableTodo.status,
+      editableTodo.taskKey,
+      labelById,
+      onTaskUpdated,
+      online,
+    ],
+  );
   const {
     markDirty,
     triggerSave,
@@ -400,7 +451,7 @@ export function useTaskEditFormController({
     status: saveStatus,
     isDirty,
     isDirtyRef,
-  } = useAutoSave(formRef);
+  } = useAutoSave(formRef, 800, { submit: submitTaskUpdate });
 
   useEffect(() => {
     setTaskEditRefreshBlocked(isDirty || saveStatus === 'saving');
@@ -500,9 +551,6 @@ export function useTaskEditFormController({
 
   const projectName = projectId ? (projects.find((p) => p.id === projectId)?.name ?? null) : null;
 
-  const labelById = new Map(
-    [...editableTodo.labels, ...todoLabels].map((label) => [label.id, label]),
-  );
   const selectedLabels = selectedLabelIds
     .map((labelId) => labelById.get(labelId) ?? null)
     .filter((label): label is TaskEditLabelOption => label !== null);

@@ -163,9 +163,6 @@ export function BoardTaskPanel({
     if (!focusedTask || focusedTaskDetailStatus !== 'ready') {
       return;
     }
-    if (!navigator.onLine) {
-      return;
-    }
 
     void putSnapshot({
       id: `task:${focusedTask.taskKey}`,

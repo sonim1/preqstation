@@ -196,6 +196,29 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 | `GET`    | `/api/work-logs/:id`      | Get work log entry              |
 | `DELETE` | `/api/work-logs/:id`      | Delete work log entry           |
 
+### Offline Board Path
+
+The board has a browser-local offline path layered on top of the normal internal `/api/todos`
+workflow.
+
+- `app/components/pwa-registration.tsx` registers `/sw.js` for browser sessions.
+- `public/sw.js` caches same-origin `/board` navigations plus static assets. It does not cache
+  `/api/*` responses, so queued writes still reconcile against the live backend.
+- IndexedDB database `preqstation-offline` contains `snapshots` for recent board/task payloads,
+  `drafts` for task-edit title/note drafts, and `mutations` for queued offline create/patch
+  records.
+- `OfflineBoardHydrator` writes the latest board snapshot per project key and rehydrates the Kanban
+  store from that snapshot when the browser is offline.
+- `BoardOfflineSyncProvider` owns optimistic offline board mutations. Offline creates get temporary
+  `OFFLINE-*` task keys, edits and moves merge into per-task queued records, and replay runs again
+  once the connectivity check against `/api/ping` succeeds.
+- Offline mutation replay preserves queue order. Create replay posts to `/api/todos`, patch replay
+  uses `PATCH /api/todos/:taskKey`, and any queued patch for an offline-created task is rekeyed to
+  the server-issued task key after the create succeeds. Permanent validation/not-found/conflict
+  failures (`400`, `404`, `409`, `410`, `422`) are dropped so later queued mutations can continue,
+  while transient failures still halt replay and leave the remaining queue intact for the next
+  retry.
+
 ### Task Lifecycle
 
 ```

@@ -2,50 +2,49 @@
 
 import { useEffect } from 'react';
 
-import { useHydrateKanbanStore } from '@/app/components/kanban-store-provider';
-import type { KanbanColumns } from '@/lib/kanban-helpers';
-import type { EditableBoardTask, KanbanHydrationSnapshot } from '@/lib/kanban-store';
+import {
+  useFocusedTask,
+  useHydrateKanbanStore,
+  useKanbanColumns,
+} from '@/app/components/kanban-store-provider';
+import type { KanbanHydrationSnapshot } from '@/lib/kanban-store';
 import { getSnapshot, putSnapshot } from '@/lib/offline/snapshot-store';
 
 type OfflineBoardHydratorProps = {
-  projectKey: string;
-  initialColumns: KanbanColumns;
-  initialFocusedTask: EditableBoardTask | null;
+  boardKey: string;
 };
 
-export function OfflineBoardHydrator({
-  projectKey,
-  initialColumns,
-  initialFocusedTask,
-}: OfflineBoardHydratorProps) {
+export function OfflineBoardHydrator({ boardKey }: OfflineBoardHydratorProps) {
+  const columns = useKanbanColumns();
+  const focusedTask = useFocusedTask();
   const hydrate = useHydrateKanbanStore();
 
   useEffect(() => {
     void putSnapshot({
-      id: `board:${projectKey}`,
+      id: `board:${boardKey}`,
       kind: 'board',
-      entityKey: projectKey,
+      entityKey: boardKey,
       payload: {
-        columns: initialColumns,
-        focusedTask: initialFocusedTask,
+        columns,
+        focusedTask,
       },
       updatedAt: new Date().toISOString(),
     });
-  }, [initialColumns, initialFocusedTask, projectKey]);
+  }, [boardKey, columns, focusedTask]);
 
   useEffect(() => {
     if (navigator.onLine) {
       return;
     }
 
-    void getSnapshot<KanbanHydrationSnapshot>(`board:${projectKey}`).then((snapshot) => {
+    void getSnapshot<KanbanHydrationSnapshot>(`board:${boardKey}`).then((snapshot) => {
       if (!snapshot?.payload) {
         return;
       }
 
       hydrate(snapshot.payload);
     });
-  }, [hydrate, projectKey]);
+  }, [boardKey, hydrate]);
 
   return null;
 }

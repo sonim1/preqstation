@@ -57,7 +57,15 @@ export function resolveAutoSaveContentChange({
   };
 }
 
-export function useAutoSave(formRef: React.RefObject<HTMLFormElement | null>, delay = 800) {
+type UseAutoSaveOptions = {
+  submit?: (form: HTMLFormElement) => void | Promise<void>;
+};
+
+export function useAutoSave(
+  formRef: React.RefObject<HTMLFormElement | null>,
+  delay = 800,
+  options?: UseAutoSaveOptions,
+) {
   const [status, setStatus] = useState<AutoSaveStatus>('idle');
   const [isDirty, setIsDirty] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -98,18 +106,27 @@ export function useAutoSave(formRef: React.RefObject<HTMLFormElement | null>, de
     submittingRef.current = true;
     isDirtyRef.current = false;
     setIsDirty(false);
+    const previousSnapshot = lastSubmittedSnapshotRef.current;
     lastSubmittedSnapshotRef.current = nextSnapshot;
     setStatus('saving');
 
-    form.requestSubmit();
-
-    setTimeout(() => {
-      submittingRef.current = false;
-      setStatus('saved');
-      if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-      savedTimerRef.current = setTimeout(() => setStatus('idle'), 2000);
-    }, 500);
-  }, [formRef, getSnapshot]);
+    Promise.resolve(
+      (options?.submit ?? ((activeForm: HTMLFormElement) => activeForm.requestSubmit()))(form),
+    )
+      .then(() => {
+        submittingRef.current = false;
+        setStatus('saved');
+        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = setTimeout(() => setStatus('idle'), 2000);
+      })
+      .catch(() => {
+        submittingRef.current = false;
+        lastSubmittedSnapshotRef.current = previousSnapshot;
+        isDirtyRef.current = true;
+        setIsDirty(true);
+        setStatus('idle');
+      });
+  }, [formRef, getSnapshot, options?.submit]);
 
   const triggerSave = useCallback(
     (immediateDelay?: number) => {

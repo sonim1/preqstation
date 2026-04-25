@@ -97,6 +97,14 @@ vi.mock('@/app/components/kanban-quick-add', () => ({
   KanbanQuickAdd: () => null,
 }));
 
+vi.mock('@/app/components/board-offline-sync-provider', () => ({
+  useBoardOfflineSync: () => null,
+}));
+
+vi.mock('@/app/components/offline-status-provider', () => ({
+  useOfflineStatus: () => ({ checkedAt: null, online: true }),
+}));
+
 vi.mock('@/app/components/board-search-context', () => ({
   useBoardSearchQuery: () => ({ query: '', setQuery: vi.fn() }),
 }));

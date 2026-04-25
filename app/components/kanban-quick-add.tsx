@@ -14,11 +14,13 @@ import {
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useMemo, useState } from 'react';
 
+import { useBoardOfflineSync } from '@/app/components/board-offline-sync-provider';
+import { useOfflineStatus } from '@/app/components/offline-status-provider';
 import { useTerminology } from '@/app/components/terminology-provider';
 import type { KanbanTask } from '@/lib/kanban-helpers';
 import { parseTaskPriority, taskPriorityOptionData } from '@/lib/task-meta';
 
-type ProjectOption = { id: string; name: string };
+type ProjectOption = { id: string; name: string; projectKey?: string | null };
 type LabelOption = { id: string; name: string; color: string };
 
 type KanbanQuickAddProps = {
@@ -40,6 +42,8 @@ export function KanbanQuickAdd({
   onClose,
   onTaskCreated,
 }: KanbanQuickAddProps) {
+  const boardOfflineSync = useBoardOfflineSync();
+  const { online } = useOfflineStatus();
   const router = useRouter();
   const terminology = useTerminology();
   const [title, setTitle] = useState('');
@@ -74,6 +78,35 @@ export function KanbanQuickAdd({
     setError(null);
 
     try {
+      const parsedTaskPriority = parseTaskPriority(taskPriority);
+      const selectedLabels = availableLabels.filter((label) => labelIds.includes(label.id));
+      const selectedProjectOption =
+        (selectedProject && selectedProject.id === pid
+          ? selectedProject
+          : projectOptions.find((project) => project.id === pid)) ?? null;
+
+      if (!online && boardOfflineSync) {
+        if (!selectedProjectOption) {
+          throw new Error('Project details are required for offline task creation.');
+        }
+
+        const optimisticTask = await boardOfflineSync.queueTaskCreate({
+          title: trimmed,
+          note: '',
+          project: selectedProjectOption,
+          labels: selectedLabels,
+          taskPriority: parsedTaskPriority,
+          status: 'inbox',
+        });
+
+        onTaskCreated?.(optimisticTask);
+        onClose();
+        router.push(
+          `${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(optimisticTask.taskKey)}`,
+        );
+        return;
+      }
+
       const response = await fetch('/api/todos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -83,7 +116,7 @@ export function KanbanQuickAdd({
           note: '',
           projectId: pid || '',
           labelIds,
-          taskPriority: parseTaskPriority(taskPriority),
+          taskPriority: parsedTaskPriority,
           priority: 1,
         }),
       });

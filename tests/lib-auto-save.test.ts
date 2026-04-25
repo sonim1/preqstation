@@ -29,7 +29,10 @@ import {
   useAutoSave,
 } from '@/app/hooks/use-auto-save';
 
-function createAutoSaveHarness(formRef: RefObject<HTMLFormElement | null>) {
+function createAutoSaveHarness(
+  formRef: RefObject<HTMLFormElement | null>,
+  options?: Parameters<typeof useAutoSave>[2],
+) {
   const refs: Array<{ current: unknown }> = [];
   const stateValues: unknown[] = [];
   let refIndex = 0;
@@ -63,7 +66,7 @@ function createAutoSaveHarness(formRef: RefObject<HTMLFormElement | null>) {
     useHook() {
       refIndex = 0;
       stateIndex = 0;
-      return useAutoSave(formRef);
+      return useAutoSave(formRef, 800, options);
     },
   };
 }
@@ -200,5 +203,85 @@ describe('app/hooks/use-auto-save helpers', () => {
     hook.syncSnapshot();
     hook = harness.useHook();
     expect(hook.isDirty).toBe(false);
+  });
+
+  it('uses a custom submit callback when autosave submits the form', () => {
+    const requestSubmit = vi.fn();
+    const customSubmit = vi.fn();
+    const formRef = {
+      current: {
+        requestSubmit,
+      },
+    } as unknown as RefObject<HTMLFormElement | null>;
+
+    const harness = createAutoSaveHarness(formRef, { submit: customSubmit });
+    const formData = new FormData();
+    formData.set('title', 'Task');
+    formData.set('noteMd', 'Body');
+    vi.stubGlobal(
+      'FormData',
+      class extends FormData {
+        constructor() {
+          super();
+          formData.forEach((value, key) => this.set(key, String(value)));
+        }
+      } as typeof FormData,
+    );
+
+    let hook = harness.useHook();
+    hook.markDirty();
+    hook = harness.useHook();
+    hook.flushSave();
+
+    expect(customSubmit).toHaveBeenCalledTimes(1);
+    expect(requestSubmit).not.toHaveBeenCalled();
+  });
+
+  it('retries the same snapshot after a failed autosave submit', async () => {
+    const formState = {
+      title: 'Task',
+      noteMd: 'Before',
+    };
+    const customSubmit = vi
+      .fn<() => Promise<void>>()
+      .mockRejectedValueOnce(new Error('offline queue failed'))
+      .mockResolvedValueOnce(undefined);
+    const formRef = {
+      current: {
+        requestSubmit: vi.fn(),
+      },
+    } as unknown as RefObject<HTMLFormElement | null>;
+
+    vi.stubGlobal(
+      'FormData',
+      class extends FormData {
+        constructor() {
+          super();
+          Object.entries(formState).forEach(([key, value]) => this.set(key, value));
+        }
+      } as typeof FormData,
+    );
+
+    const harness = createAutoSaveHarness(formRef, { submit: customSubmit });
+
+    let hook = harness.useHook();
+    hook.syncSnapshot();
+
+    formState.noteMd = 'After';
+
+    hook = harness.useHook();
+    hook.markDirty();
+    hook = harness.useHook();
+    hook.flushSave();
+
+    await Promise.resolve();
+    await Promise.resolve();
+
+    hook = harness.useHook();
+    expect(hook.isDirty).toBe(true);
+
+    hook.flushSave();
+
+    expect(customSubmit).toHaveBeenCalledTimes(2);
   });
 });

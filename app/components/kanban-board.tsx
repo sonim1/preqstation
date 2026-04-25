@@ -48,6 +48,7 @@ import { subscribeMediaQuery } from '@/lib/match-media';
 import { showErrorNotification } from '@/lib/notifications';
 import type { QaRunView } from '@/lib/qa-runs';
 
+import { useBoardOfflineSync } from './board-offline-sync-provider';
 import { KanbanArchiveDrawer } from './kanban-archive-drawer';
 import { KanbanBoardMobile } from './kanban-board-mobile';
 import { KanbanColumn } from './kanban-column';
@@ -58,6 +59,7 @@ import {
   useOpenFocusedTaskFromBoardTask,
   useSetKanbanReconciliationPaused,
 } from './kanban-store-provider';
+import { useOfflineStatus } from './offline-status-provider';
 import { ProjectInsightModal } from './project-insight-modal';
 import { ReadyQaActions } from './ready-qa-actions';
 import { useTerminology } from './terminology-provider';
@@ -106,6 +108,12 @@ type MoveIntentResponse = {
   ok?: boolean;
   boardTask?: MoveIntentTaskPatch;
   repairedTasks?: MoveIntentTaskPatch[];
+};
+
+type OfflineTaskMoveInput = {
+  taskKey: string;
+  status: KanbanStatus;
+  sortOrder: string;
 };
 
 type KanbanBoardProps = {
@@ -224,6 +232,29 @@ export async function requestMoveIntent(
       ? `Failed to persist task move (${response.status}): ${detail}`
       : `Failed to persist task move (${response.status})`,
   );
+}
+
+export async function persistMoveIntentWithOfflineFallback(params: {
+  boardOfflineSync: { queueTaskMove: (input: OfflineTaskMoveInput) => Promise<void> } | null;
+  fallbackTaskMove: OfflineTaskMoveInput;
+  moveRequest: MoveIntentRequest;
+  persistMoveIntent: (request: MoveIntentRequest) => Promise<void>;
+}) {
+  try {
+    await params.persistMoveIntent(params.moveRequest);
+  } catch (error) {
+    const normalizedError =
+      error instanceof Error ? error : new Error('Task move failed. Please try again.');
+    if (!params.boardOfflineSync) {
+      throw normalizedError;
+    }
+
+    try {
+      await params.boardOfflineSync.queueTaskMove(params.fallbackTaskMove);
+    } catch {
+      throw normalizedError;
+    }
+  }
 }
 
 function resolveHydratedFocusedTask(
@@ -370,6 +401,8 @@ export function KanbanBoard({
   readyQaConfig = null,
   onOpenTaskEditor,
 }: KanbanBoardProps) {
+  const boardOfflineSync = useBoardOfflineSync();
+  const { online } = useOfflineStatus();
   const terminology = useTerminology();
   const resolvedServerColumns = useMemo(
     () =>
@@ -745,21 +778,31 @@ export function KanbanBoard({
         taskKey: movedTask.taskKey,
         targetStatus,
       });
-      if (!moveRequest) return;
-
+      const fallbackTaskMove: OfflineTaskMoveInput = {
+        taskKey: movedTask.taskKey,
+        status: targetStatus,
+        sortOrder: movedTask.sortOrder,
+      };
       columnsRef.current = nextColumns;
       setSaveError(null);
+      if (!online && boardOfflineSync) {
+        void boardOfflineSync.queueTaskMove(fallbackTaskMove);
+        return;
+      }
+      if (!moveRequest) return;
+
       enqueuePersist({
         run: async () => {
-          try {
-            await persistMoveIntent(moveRequest);
-          } catch (error) {
-            throw error instanceof Error ? error : new Error('Task move failed. Please try again.');
-          }
+          await persistMoveIntentWithOfflineFallback({
+            boardOfflineSync,
+            fallbackTaskMove,
+            moveRequest,
+            persistMoveIntent,
+          });
         },
       });
     },
-    [enqueuePersist, kanbanStore, readColumnsFromStore],
+    [boardOfflineSync, enqueuePersist, kanbanStore, online, readColumnsFromStore],
   );
 
   const mobileQuickMove = useCallback(
@@ -832,19 +875,35 @@ export function KanbanBoard({
         taskKey: archivedTask.taskKey,
         targetStatus,
       });
+      const fallbackTaskMove: OfflineTaskMoveInput = {
+        taskKey: archivedTask.taskKey,
+        status: targetStatus,
+        sortOrder,
+      };
+      if (!online && boardOfflineSync) {
+        void boardOfflineSync.queueTaskMove(fallbackTaskMove);
+        return;
+      }
       if (!moveRequest) return;
 
       enqueuePersist({
         run: async () => {
-          await persistMoveIntent(moveRequest);
+          await persistMoveIntentWithOfflineFallback({
+            boardOfflineSync,
+            fallbackTaskMove,
+            moveRequest,
+            persistMoveIntent,
+          });
         },
       });
     },
     [
       archivedDrawerState.tasks,
+      boardOfflineSync,
       enqueuePersist,
       isMobile,
       kanbanStore,
+      online,
       onArchivedCountChange,
       quickMoveTask,
       readColumnsFromStore,
@@ -1076,19 +1135,28 @@ export function KanbanBoard({
       taskKey: movedTask.taskKey,
       targetStatus: destStatus,
     });
-    if (!moveRequest) return;
+    const fallbackTaskMove: OfflineTaskMoveInput = {
+      taskKey: movedTask.taskKey,
+      status: destStatus,
+      sortOrder: nextColumns[destStatus][destination.index]?.sortOrder ?? movedTask.sortOrder,
+    };
 
     columnsRef.current = nextColumns;
     setSaveError(null);
+    if (!online && boardOfflineSync) {
+      void boardOfflineSync.queueTaskMove(fallbackTaskMove);
+      return;
+    }
+    if (!moveRequest) return;
+
     enqueuePersist({
       run: async () => {
-        try {
-          await persistMoveIntent(moveRequest);
-        } catch (error) {
-          throw error instanceof Error
-            ? error
-            : new Error('Task order sync failed. Please try again.');
-        }
+        await persistMoveIntentWithOfflineFallback({
+          boardOfflineSync,
+          fallbackTaskMove,
+          moveRequest,
+          persistMoveIntent,
+        });
       },
     });
   }

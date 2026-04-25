@@ -1,17 +1,88 @@
-const SHELL_CACHE = 'preq-shell-v1';
-const STATIC_ASSETS = ['/', '/dashboard', '/manifest.webmanifest'];
+const BOARD_CACHE = 'preq-board-v2';
+const STATIC_CACHE = 'preq-static-v2';
+const MANAGED_CACHES = [BOARD_CACHE, STATIC_CACHE];
+const MANAGED_CACHE_PREFIXES = ['preq-board-', 'preq-static-'];
+const PRECACHED_ASSETS = ['/manifest.webmanifest'];
+
+function isSameOrigin(url) {
+  return url.origin === self.location.origin;
+}
+
+function isBoardNavigation(url) {
+  return url.pathname === '/board' || url.pathname.startsWith('/board/');
+}
+
+function isApiRequest(url) {
+  return url.pathname.startsWith('/api/');
+}
+
+function isStaticAsset(url) {
+  return (
+    url.pathname === '/manifest.webmanifest' ||
+    url.pathname.startsWith('/_next/static/') ||
+    /\.(?:css|gif|ico|jpg|jpeg|js|png|svg|webp|woff|woff2)$/i.test(url.pathname)
+  );
+}
+
+function buildBoardCacheKey(url) {
+  return `${url.origin}${url.pathname}`;
+}
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll(STATIC_ASSETS)));
+  event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHED_ASSETS)));
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then(async (cacheNames) => {
+      await Promise.all(
+        cacheNames
+          .filter(
+            (cacheName) =>
+              MANAGED_CACHE_PREFIXES.some((prefix) => cacheName.startsWith(prefix)) &&
+              !MANAGED_CACHES.includes(cacheName),
+          )
+          .map((cacheName) => caches.delete(cacheName)),
+      );
+      await self.clients.claim();
+    }),
+  );
 });
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') {
+    return;
+  }
+
+  const url = new URL(event.request.url);
+  if (!isSameOrigin(url) || isApiRequest(url)) {
+    return;
+  }
+
+  if (event.request.mode === 'navigate' && isBoardNavigation(url)) {
+    const cacheKey = buildBoardCacheKey(url);
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok && !response.redirected) {
+            const responseCopy = response.clone();
+            void caches.open(BOARD_CACHE).then((cache) => cache.put(cacheKey, responseCopy));
+          }
+          return response;
+        })
+        .catch(async () => {
+          const cachedResponse = await caches.match(cacheKey);
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          throw new TypeError('Board page is unavailable offline.');
+        }),
+    );
+    return;
+  }
+
+  if (!isStaticAsset(url)) {
     return;
   }
 
@@ -22,12 +93,12 @@ self.addEventListener('fetch', (event) => {
       }
 
       return fetch(event.request).then((response) => {
-        if (!response.ok) {
+        if (!response.ok || response.redirected) {
           return response;
         }
 
         const responseCopy = response.clone();
-        void caches.open(SHELL_CACHE).then((cache) => cache.put(event.request, responseCopy));
+        void caches.open(STATIC_CACHE).then((cache) => cache.put(event.request, responseCopy));
         return response;
       });
     }),

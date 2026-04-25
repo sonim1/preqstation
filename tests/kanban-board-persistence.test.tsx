@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { buildMoveIntentRequest, requestMoveIntent } from '@/app/components/kanban-board';
+import {
+  buildMoveIntentRequest,
+  persistMoveIntentWithOfflineFallback,
+  requestMoveIntent,
+} from '@/app/components/kanban-board';
 import type { KanbanColumns } from '@/lib/kanban-helpers';
 
 function buildColumns(): KanbanColumns {
@@ -105,5 +109,56 @@ describe('app/components/kanban-board persistence helpers', () => {
       '/api/todos/move',
       expect.objectContaining({ method: 'POST' }),
     );
+  });
+
+  it('queues the move offline when move-intent persistence fails while online', async () => {
+    const persistMoveIntent = vi.fn().mockRejectedValue(new Error('network timeout'));
+    const queueTaskMove = vi.fn().mockResolvedValue(undefined);
+
+    await expect(
+      persistMoveIntentWithOfflineFallback({
+        boardOfflineSync: { queueTaskMove },
+        fallbackTaskMove: {
+          taskKey: 'PROJ-7',
+          status: 'ready',
+          sortOrder: 'a1',
+        },
+        moveRequest: {
+          taskKey: 'PROJ-7',
+          targetStatus: 'ready',
+          afterTaskKey: 'PROJ-5',
+          beforeTaskKey: 'PROJ-9',
+        },
+        persistMoveIntent,
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(queueTaskMove).toHaveBeenCalledWith({
+      taskKey: 'PROJ-7',
+      status: 'ready',
+      sortOrder: 'a1',
+    });
+  });
+
+  it('rethrows the persistence error when offline fallback is unavailable', async () => {
+    const persistMoveIntent = vi.fn().mockRejectedValue(new Error('network timeout'));
+
+    await expect(
+      persistMoveIntentWithOfflineFallback({
+        boardOfflineSync: null,
+        fallbackTaskMove: {
+          taskKey: 'PROJ-7',
+          status: 'ready',
+          sortOrder: 'a1',
+        },
+        moveRequest: {
+          taskKey: 'PROJ-7',
+          targetStatus: 'ready',
+          afterTaskKey: 'PROJ-5',
+          beforeTaskKey: 'PROJ-9',
+        },
+        persistMoveIntent,
+      }),
+    ).rejects.toThrow('network timeout');
   });
 });
