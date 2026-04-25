@@ -43,11 +43,15 @@ describe('app/components/telegram-settings', () => {
     );
 
     expect(html).toContain('Save Telegram Settings');
-    expect(html).toContain('OpenClaw Channel');
-    expect(html).toContain('Hermes Channel');
+    expect(html).toContain('role="tablist"');
+    expect(html).toContain('OpenClaw');
+    expect(html).toContain('Hermes');
+    expect(html).toContain('Enabled');
+    expect(html).toContain('Saved');
     expect(html).toContain('Send OpenClaw Test');
     expect(html).toContain('Send OpenClaw /status');
-    expect(html).toContain('Send Hermes Test');
+    expect(html).toContain('id="telegram-openclaw-panel"');
+    expect(html).toMatch(/<section[^>]*id="telegram-hermes-panel"[^>]*hidden=""/);
   });
 
   it('renders a single shared feedback slot when idle', () => {
@@ -83,6 +87,26 @@ describe('app/components/telegram-settings', () => {
 
     expect(html).toContain('Already set');
     expect(html).toContain('reuse it');
+  });
+
+  it('opens the Hermes tab first when Hermes is the only configured channel', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <TelegramSettings
+          action={vi.fn(async () => null)}
+          defaultOpenClawChatId=""
+          defaultOpenClawEnabled={false}
+          defaultHermesChatId="5678"
+          defaultHermesEnabled
+          hasSavedBotToken
+        />
+      </MantineProvider>,
+    );
+
+    expect(html).toMatch(/<section[^>]*id="telegram-openclaw-panel"[^>]*hidden=""/);
+    expect(html).toContain('id="telegram-hermes-panel"');
+    expect(html).toContain('Enable Hermes Telegram messaging');
+    expect(html).toContain('Send Hermes Test');
   });
 
   it('allows blank test-token input when a saved token already exists', () => {
@@ -130,5 +154,34 @@ describe('app/components/telegram-settings', () => {
 
     expect(html).toMatch(/<input[^>]*aria-invalid="true"[^>]*name="telegram_openclaw_chat_id"/);
     expect(html).toContain('OpenClaw Chat ID is required to enable Telegram.');
+  });
+
+  it('shows the channel panel that has a save error', () => {
+    reactHooks.useActionState.mockReturnValue([
+      {
+        ok: false,
+        message: 'Hermes Chat ID is required to enable Telegram.',
+        field: 'hermesChatId',
+      },
+      vi.fn(),
+    ]);
+
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <TelegramSettings
+          action={vi.fn(async () => null)}
+          defaultOpenClawChatId="1234"
+          defaultOpenClawEnabled
+          defaultHermesChatId=""
+          defaultHermesEnabled={false}
+          hasSavedBotToken
+        />
+      </MantineProvider>,
+    );
+
+    expect(html).toMatch(/<section[^>]*id="telegram-openclaw-panel"[^>]*hidden=""/);
+    expect(html).toMatch(/<section[^>]*id="telegram-hermes-panel"(?![^>]*hidden="")/);
+    expect(html).toMatch(/<input[^>]*aria-invalid="true"[^>]*name="telegram_hermes_chat_id"/);
+    expect(html).toContain('Hermes Chat ID is required to enable Telegram.');
   });
 });
