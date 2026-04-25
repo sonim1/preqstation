@@ -145,4 +145,68 @@ describe('lib/offline/mutation-sync', () => {
       }),
     });
   });
+
+  it('drops permanently invalid mutations and continues replaying the queue', async () => {
+    listQueuedOfflineMutationsMock.mockResolvedValueOnce([
+      {
+        id: 'patch:PROJ-404',
+        kind: 'patch',
+        createdAt: '2026-04-25T12:00:00.000Z',
+        taskKey: 'PROJ-404',
+        payload: { title: 'Stale offline change' },
+      },
+      {
+        id: 'patch:PROJ-513',
+        kind: 'patch',
+        createdAt: '2026-04-25T12:01:00.000Z',
+        taskKey: 'PROJ-513',
+        payload: { title: 'Still valid' },
+      },
+    ]);
+
+    const onApplied = vi.fn();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        json: async () => ({ error: 'Not found' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          boardTask: {
+            id: 'task-513',
+            taskKey: 'PROJ-513',
+            title: 'Still valid',
+            note: null,
+            branch: null,
+            status: 'todo',
+            sortOrder: 'a1',
+            taskPriority: 'none',
+            dueAt: null,
+            engine: null,
+            runState: null,
+            runStateUpdatedAt: null,
+            project: { id: 'project-1', name: 'Alpha', projectKey: 'PROJ' },
+            updatedAt: '2026-04-25T12:02:00.000Z',
+            archivedAt: null,
+            labels: [],
+          },
+        }),
+      });
+
+    const result = await flushOfflineMutations({ fetchImpl: fetchMock, onApplied });
+
+    expect(result).toEqual({ appliedCount: 1, error: 'Not found', halted: false });
+    expect(deleteOfflineMutationMock).toHaveBeenNthCalledWith(1, 'patch:PROJ-404');
+    expect(deleteOfflineMutationMock).toHaveBeenNthCalledWith(2, 'patch:PROJ-513');
+    expect(onApplied).toHaveBeenCalledTimes(1);
+    expect(onApplied).toHaveBeenCalledWith({
+      kind: 'patch',
+      taskKey: 'PROJ-513',
+      boardTask: expect.objectContaining({ taskKey: 'PROJ-513' }),
+      focusedTask: null,
+    });
+  });
 });

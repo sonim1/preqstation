@@ -40,6 +40,10 @@ export type FlushOfflineMutationsResult = {
   halted: boolean;
 };
 
+function isPermanentOfflineMutationFailure(status: number) {
+  return status === 400 || status === 404 || status === 409 || status === 410 || status === 422;
+}
+
 async function readErrorMessage(response: Response) {
   try {
     const payload = (await response.json()) as { error?: unknown };
@@ -57,6 +61,7 @@ export async function flushOfflineMutations(
 ): Promise<FlushOfflineMutationsResult> {
   const fetchImpl = params.fetchImpl ?? fetch;
   let appliedCount = 0;
+  let skippedError: string | null = null;
   const queuedMutations = await listQueuedOfflineMutations();
 
   for (const mutation of queuedMutations) {
@@ -71,9 +76,16 @@ export async function flushOfflineMutations(
 
         if (!response.ok) {
           const message = await readErrorMessage(response);
+          const syncError = message ?? `Failed to sync offline task creation (${response.status}).`;
+          if (isPermanentOfflineMutationFailure(response.status)) {
+            await deleteOfflineMutation(mutation.id);
+            skippedError ??= syncError;
+            continue;
+          }
+
           return {
             appliedCount,
-            error: message ?? `Failed to sync offline task creation (${response.status}).`,
+            error: syncError,
             halted: true,
           };
         }
@@ -110,9 +122,16 @@ export async function flushOfflineMutations(
 
       if (!response.ok) {
         const message = await readErrorMessage(response);
+        const syncError = message ?? `Failed to sync offline task update (${response.status}).`;
+        if (isPermanentOfflineMutationFailure(response.status)) {
+          await deleteOfflineMutation(mutation.id);
+          skippedError ??= syncError;
+          continue;
+        }
+
         return {
           appliedCount,
-          error: message ?? `Failed to sync offline task update (${response.status}).`,
+          error: syncError,
           halted: true,
         };
       }
@@ -150,5 +169,5 @@ export async function flushOfflineMutations(
     }
   }
 
-  return { appliedCount, error: null, halted: false };
+  return { appliedCount, error: skippedError, halted: false };
 }
