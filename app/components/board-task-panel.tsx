@@ -58,7 +58,7 @@ export function BoardTaskPanel({
   taskPriorityOptions,
   updateTodoAction,
   telegramEnabled,
-  hermesTelegramEnabled = false,
+  hermesTelegramEnabled,
   onClose,
 }: BoardTaskPanelProps) {
   const focusedTask = useFocusedTask();

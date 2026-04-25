@@ -62,7 +62,7 @@ export function BoardContent({
   editHrefBase,
   boardHref,
   telegramEnabled,
-  hermesTelegramEnabled = false,
+  hermesTelegramEnabled,
   projects,
   todoLabels,
   projectLabelOptionsByProjectId = {},
