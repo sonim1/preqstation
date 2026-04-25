@@ -71,20 +71,34 @@ Important naming note:
 ```
 User creates task in Kanban UI
   → preqstation stores in PostgreSQL
-  → (optional) preqstation sends Telegram notification
+  → (optional) preqstation sends Telegram notification to the configured dispatch channel
 ```
 
-### 2. Agent Trigger via Telegram + OpenClaw
+### 2. Agent Trigger via Telegram
+
+Task sends use `/api/telegram/send`, which accepts an optional `dispatchTarget`:
+
+- `telegram` (default) routes through the OpenClaw Telegram channel
+- `hermes-telegram` routes through the Hermes Telegram channel
+
+Both targets share the same encrypted Telegram bot token, but each channel has its own chat ID and
+enabled flag in `user_settings`.
+
+The OpenClaw-targeted path looks like this:
 
 ```
-preqstation  →  Telegram message
-                        →  OpenClaw receives
-                           →  preqstation-dispatcher intercepts the dispatch
-                              →  Parses: engine, task ID, project key
-                              →  Resolves project path from explicit path, plugin config, shared mapping file, or MEMORY.md
-                              →  Creates git worktree (isolated env)
-                              →  Launches coding agent (claude/codex/gemini CLI)
+preqstation  →  /api/telegram/send (dispatchTarget=telegram)
+                        →  OpenClaw Telegram chat
+                           →  OpenClaw receives
+                              →  preqstation-dispatcher intercepts the dispatch
+                                 →  Parses: engine, task ID, project key
+                                 →  Resolves project path from explicit path, plugin config, shared mapping file, or MEMORY.md
+                                 →  Creates git worktree (isolated env)
+                                 →  Launches coding agent (claude/codex/gemini CLI)
 ```
+
+Hermes-targeted task sends use the same API route and task queueing path, but they route to the
+Hermes Telegram chat/bot command instead of the OpenClaw channel.
 
 ### 3. Agent Execution and Status Reporting
 
@@ -136,7 +150,7 @@ Coding agent checks task status via preq_get_task, then:
 | `events_outbox`    | Event sourcing (task/project/worklog CRUD events)                                                               |
 | `audit_logs`       | Immutable mutation log (all API actions)                                                                        |
 | `security_events`  | Login attempts, auth failures, IP/user-agent tracking                                                           |
-| `user_settings`    | Key-value config (Telegram bot token, chat ID, enabled flag, etc.)                                              |
+| `user_settings`    | Key-value config (Telegram bot token, OpenClaw/Hermes chat IDs + enabled flags, timezone, etc.)                  |
 
 ### Database Access Boundary
 
@@ -190,7 +204,7 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 | `DELETE` | `/api/task-labels/:id`    | Delete task label               |
 | `POST`   | `/api/events/cleanup`     | Clean up old outbox entries     |
 | `GET`    | `/api/settings`           | Get/update user settings        |
-| `POST`   | `/api/telegram/send`      | Send Telegram message           |
+| `POST`   | `/api/telegram/send`      | Send Telegram task message (`telegram` or `hermes-telegram`) |
 | `POST`   | `/api/telegram/test`      | Test Telegram connection        |
 | `POST`   | `/api/send-to-openclaw`   | Legacy OpenClaw message relay   |
 | `GET`    | `/api/work-logs/:id`      | Get work log entry              |
@@ -258,8 +272,14 @@ Projects can also store an `agent_instructions` setting. When present, task payl
 
 - Bot token encrypted with AES-GCM (Web Crypto API + HKDF from `AUTH_SECRET`)
 - Stored as `v1.{base64urlIV}.{base64urlCiphertext}` in `user_settings`
-- Messages sent via `/api/telegram/send` with audit logging
-- Used to notify users of task events and trigger OpenClaw workflows
+- One stored bot token is shared across both Telegram dispatch targets
+- OpenClaw uses `openclaw_telegram_chat_id` / `openclaw_telegram_enabled` and falls back to
+  legacy `telegram_chat_id` / `telegram_enabled` when the split OpenClaw values are blank
+- Hermes uses `hermes_telegram_chat_id` / `hermes_telegram_enabled`
+- `/api/telegram/send` defaults `dispatchTarget` to `telegram` (OpenClaw) and accepts
+  `hermes-telegram` for Hermes task sends
+- Successful task sends write audit logs and queue the task with the selected `dispatchTarget`
+- `/api/telegram/send/insight` and OpenClaw `/status` tests continue to use the OpenClaw channel
 
 ### Event System
 

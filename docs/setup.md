@@ -74,6 +74,7 @@ Recommended Vercel setup:
 - Production env: set `DATABASE_URL` to the production database
 - Preview env: set `DATABASE_URL` to the preview database
 - Preview env: set `MIGRATE_ON_PREVIEW=true` once that preview database is ready to receive migrations
+- Telegram bot token and chat routing are configured later in `/settings`, not as deployment env vars
 
 ## 5) Provision the Owner User
 
@@ -106,7 +107,26 @@ VALUES ('you@example.com', '$2b$10$replace_me', true);
 
 If you are migrating an existing instance, keep the existing owner row `id` so projects, tasks, API tokens, and work logs stay linked automatically.
 
-## 6) Post-Deploy Validation
+## 6) Configure Telegram Dispatch Channels
+
+Telegram task dispatch now uses one bot token with separate OpenClaw and Hermes channel settings.
+
+1. Sign in as the owner and open `/settings`.
+2. Save the Bot Token once. If a token is already stored, leave the field blank to keep using it.
+3. Set `OpenClaw Chat ID` and enable OpenClaw Telegram messaging for task sends, `/status`,
+   project insight sends, and QA dispatches that should go through the OpenClaw chat.
+4. Set `Hermes Chat ID` and enable Hermes Telegram messaging for task sends that should route from
+   the dispatch target picker to Hermes.
+5. Use `Send OpenClaw Test`, `Send OpenClaw /status`, and `Send Hermes Test` to verify the correct
+   chat receives each message.
+6. Any enabled Telegram channel requires the shared bot token and its own chat ID.
+
+Internal callers route task sends through `/api/telegram/send`:
+
+- omit `dispatchTarget` or use `telegram` to send to the OpenClaw channel
+- use `dispatchTarget=hermes-telegram` to send to the Hermes channel
+
+## 7) Post-Deploy Validation
 
 - `/api/health` returns `200`
 - Owner email + password login succeeds using the `users` table row
@@ -117,10 +137,10 @@ If you are migrating an existing instance, keep the existing owner row `id` so p
 - `/api/projects` and `/api/todos` are owner-only
 - Dashboard integration URL save, log creation, and status updates work
 - Board columns show `Hold` and `Ready`
-- Tasks dispatched to Telegram can surface `Requested` / `Running` execution badges
+- Tasks dispatched through either Telegram target can surface `Requested` / `Running` execution badges
 - `claude mcp add --transport http .../mcp` or `codex mcp add ... --url .../mcp` completes browser login successfully
 
-## 7) Offline Board Validation
+## 8) Offline Board Validation
 
 Run this after any deploy that changes board shell code, `/sw.js`, or the offline mutation flow.
 
@@ -137,12 +157,12 @@ Run this after any deploy that changes board shell code, `/sw.js`, or the offlin
   still sees the returned error message. Transient failures should still halt replay with the
   remaining queue left in place for retry.
 
-## 8) Least-Privilege DB Access
+## 9) Least-Privilege DB Access
 
 - Create a dedicated DB user for the app.
 - Grant only required schema/table privileges.
 
-## 9) PREQSTATION Agent Setup
+## 10) PREQSTATION Agent Setup
 
 Recommended MCP setup:
 
@@ -174,7 +194,7 @@ Install the skill package:
 npx skills add sonim1/preqstation-skill -g
 ```
 
-## 10) Operational Recommendations
+## 11) Operational Recommendations
 
 - Rotate `AUTH_SECRET` and the stored owner `password_hash` regularly.
 - Enable Vercel Access Logs and error alerting (e.g., Sentry).
