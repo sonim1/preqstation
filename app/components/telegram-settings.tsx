@@ -9,19 +9,27 @@ import { SubmitButton } from '@/app/components/submit-button';
 
 type SaveActionState =
   | { ok: true; message: string }
-  | { ok: false; field?: 'botToken' | 'chatId' | 'form'; message: string }
+  | {
+      ok: false;
+      field?: 'botToken' | 'openClawChatId' | 'hermesChatId' | 'form';
+      message: string;
+    }
   | null;
 
 type TelegramSettingsProps = {
   action: (prevState: unknown, formData: FormData) => Promise<SaveActionState>;
-  defaultChatId: string;
-  defaultEnabled: boolean;
+  defaultOpenClawChatId: string;
+  defaultOpenClawEnabled: boolean;
+  defaultHermesChatId: string;
+  defaultHermesEnabled: boolean;
   hasSavedBotToken: boolean;
 };
 
+type TelegramChannel = 'openclaw' | 'hermes';
+
 type TestState =
   | { status: 'idle' }
-  | { status: 'loading'; action: 'message' | 'status' }
+  | { status: 'loading'; channel: TelegramChannel; action: 'message' | 'status' }
   | { status: 'success'; message: string }
   | { status: 'error'; message: string };
 
@@ -45,26 +53,32 @@ export function getTelegramTestValidationError({
 
 export function TelegramSettings({
   action,
-  defaultChatId,
-  defaultEnabled,
+  defaultOpenClawChatId,
+  defaultOpenClawEnabled,
+  defaultHermesChatId,
+  defaultHermesEnabled,
   hasSavedBotToken,
 }: TelegramSettingsProps) {
   const [state, formAction] = useActionState(action, null);
   const [botToken, setBotToken] = useState('');
-  const [chatId, setChatId] = useState(defaultChatId);
-  const [enabled, setEnabled] = useState(defaultEnabled);
+  const [openClawChatId, setOpenClawChatId] = useState(defaultOpenClawChatId);
+  const [openClawEnabled, setOpenClawEnabled] = useState(defaultOpenClawEnabled);
+  const [hermesChatId, setHermesChatId] = useState(defaultHermesChatId);
+  const [hermesEnabled, setHermesEnabled] = useState(defaultHermesEnabled);
   const [testState, setTestState] = useState<TestState>({ status: 'idle' });
   const saveErrorField = state && !state.ok ? (state.field ?? 'form') : null;
   const botTokenError = saveErrorField === 'botToken';
-  const chatIdError = saveErrorField === 'chatId';
+  const openClawChatIdError = saveErrorField === 'openClawChatId';
+  const hermesChatIdError = saveErrorField === 'hermesChatId';
   const fieldErrorMessage = state && !state.ok ? state.message : undefined;
   const saveStatus: { tone: 'success' | 'error'; message: string } | null = state
     ? { tone: state.ok ? 'success' : 'error', message: state.message }
     : null;
   const showSaveStatus = saveStatus && (saveStatus.tone === 'success' || saveErrorField === 'form');
 
-  async function handleTestMessage(message?: string) {
+  async function handleTestMessage(channel: TelegramChannel, message?: string) {
     const trimmedBotToken = botToken.trim();
+    const chatId = channel === 'openclaw' ? openClawChatId : hermesChatId;
     const validationError = getTelegramTestValidationError({
       chatId,
       botToken: trimmedBotToken,
@@ -76,7 +90,7 @@ export function TelegramSettings({
     }
 
     const action = message === '/status' ? 'status' : 'message';
-    setTestState({ status: 'loading', action });
+    setTestState({ status: 'loading', channel, action });
 
     try {
       const response = await fetch('/api/telegram/test', {
@@ -96,9 +110,13 @@ export function TelegramSettings({
       } | null;
 
       if (response.ok && body?.ok) {
+        const channelLabel = channel === 'openclaw' ? 'OpenClaw' : 'Hermes';
         setTestState({
           status: 'success',
-          message: message === '/status' ? 'Telegram /status sent.' : 'Test message sent.',
+          message:
+            message === '/status'
+              ? `${channelLabel} /status sent.`
+              : `${channelLabel} test message sent.`,
         });
         return;
       }
@@ -130,43 +148,98 @@ export function TelegramSettings({
               ? 'Bot Token: Already set. Leave this blank to reuse it, or enter a new token to override it.'
               : 'Enter a Bot Token to test Telegram before saving.'}
           </Text>
-          <TextInput
-            name="telegram_chat_id"
-            label="Chat ID"
-            placeholder="123456789"
-            value={chatId}
-            onChange={(event) => setChatId(event.currentTarget.value)}
-            error={chatIdError ? fieldErrorMessage : undefined}
-            className={`${controlClasses.fieldWide} ${controlClasses.touchInput}`}
-          />
-          <Checkbox
-            name="telegram_enabled"
-            value="true"
-            checked={enabled}
-            onChange={(event) => setEnabled(event.currentTarget.checked)}
-            label="Enable Telegram messaging"
-            size="lg"
-            className={controlClasses.touchCheckbox}
-          />
+          <Stack gap="xs">
+            <Text fw={600}>OpenClaw Channel</Text>
+            <Text size="xs" c="dimmed">
+              Use this chat for OpenClaw task sends, `/status`, and QA dispatches.
+            </Text>
+            <TextInput
+              name="telegram_openclaw_chat_id"
+              label="OpenClaw Chat ID"
+              placeholder="123456789"
+              value={openClawChatId}
+              onChange={(event) => setOpenClawChatId(event.currentTarget.value)}
+              error={openClawChatIdError ? fieldErrorMessage : undefined}
+              className={`${controlClasses.fieldWide} ${controlClasses.touchInput}`}
+            />
+            <Checkbox
+              name="telegram_openclaw_enabled"
+              value="true"
+              checked={openClawEnabled}
+              onChange={(event) => setOpenClawEnabled(event.currentTarget.checked)}
+              label="Enable OpenClaw Telegram messaging"
+              size="lg"
+              className={controlClasses.touchCheckbox}
+            />
+            <Group gap="sm" wrap="wrap" className={controlClasses.buttonGroup}>
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => void handleTestMessage('openclaw')}
+                loading={
+                  testState.status === 'loading' &&
+                  testState.channel === 'openclaw' &&
+                  testState.action === 'message'
+                }
+                className={controlClasses.touchButton}
+              >
+                Send OpenClaw Test
+              </Button>
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => void handleTestMessage('openclaw', '/status')}
+                loading={
+                  testState.status === 'loading' &&
+                  testState.channel === 'openclaw' &&
+                  testState.action === 'status'
+                }
+                className={controlClasses.touchButton}
+              >
+                Send OpenClaw /status
+              </Button>
+            </Group>
+          </Stack>
+          <Stack gap="xs">
+            <Text fw={600}>Hermes Channel</Text>
+            <Text size="xs" c="dimmed">
+              Use this chat for Hermes task sends from the dispatch target picker.
+            </Text>
+            <TextInput
+              name="telegram_hermes_chat_id"
+              label="Hermes Chat ID"
+              placeholder="123456789"
+              value={hermesChatId}
+              onChange={(event) => setHermesChatId(event.currentTarget.value)}
+              error={hermesChatIdError ? fieldErrorMessage : undefined}
+              className={`${controlClasses.fieldWide} ${controlClasses.touchInput}`}
+            />
+            <Checkbox
+              name="telegram_hermes_enabled"
+              value="true"
+              checked={hermesEnabled}
+              onChange={(event) => setHermesEnabled(event.currentTarget.checked)}
+              label="Enable Hermes Telegram messaging"
+              size="lg"
+              className={controlClasses.touchCheckbox}
+            />
+            <Group gap="sm" wrap="wrap" className={controlClasses.buttonGroup}>
+              <Button
+                type="button"
+                variant="default"
+                onClick={() => void handleTestMessage('hermes')}
+                loading={
+                  testState.status === 'loading' &&
+                  testState.channel === 'hermes' &&
+                  testState.action === 'message'
+                }
+                className={controlClasses.touchButton}
+              >
+                Send Hermes Test
+              </Button>
+            </Group>
+          </Stack>
           <Group gap="sm" wrap="wrap" className={controlClasses.buttonGroup}>
-            <Button
-              type="button"
-              variant="default"
-              onClick={() => void handleTestMessage()}
-              loading={testState.status === 'loading' && testState.action === 'message'}
-              className={controlClasses.touchButton}
-            >
-              Send Test Message
-            </Button>
-            <Button
-              type="button"
-              variant="default"
-              onClick={() => void handleTestMessage('/status')}
-              loading={testState.status === 'loading' && testState.action === 'status'}
-              className={controlClasses.touchButton}
-            >
-              Send /status Test
-            </Button>
             <SubmitButton className={controlClasses.touchButton}>
               Save Telegram Settings
             </SubmitButton>

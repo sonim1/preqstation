@@ -9,6 +9,10 @@ export const SETTING_KEYS = {
   TELEGRAM_BOT_TOKEN: 'telegram_bot_token',
   TELEGRAM_CHAT_ID: 'telegram_chat_id',
   TELEGRAM_ENABLED: 'telegram_enabled',
+  OPENCLAW_TELEGRAM_CHAT_ID: 'openclaw_telegram_chat_id',
+  OPENCLAW_TELEGRAM_ENABLED: 'openclaw_telegram_enabled',
+  HERMES_TELEGRAM_CHAT_ID: 'hermes_telegram_chat_id',
+  HERMES_TELEGRAM_ENABLED: 'hermes_telegram_enabled',
   TIMEZONE: 'timezone',
 } as const;
 
@@ -17,6 +21,10 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   [SETTING_KEYS.TELEGRAM_BOT_TOKEN]: '',
   [SETTING_KEYS.TELEGRAM_CHAT_ID]: '',
   [SETTING_KEYS.TELEGRAM_ENABLED]: 'false',
+  [SETTING_KEYS.OPENCLAW_TELEGRAM_CHAT_ID]: '',
+  [SETTING_KEYS.OPENCLAW_TELEGRAM_ENABLED]: '',
+  [SETTING_KEYS.HERMES_TELEGRAM_CHAT_ID]: '',
+  [SETTING_KEYS.HERMES_TELEGRAM_ENABLED]: '',
   [SETTING_KEYS.TIMEZONE]: '',
 };
 

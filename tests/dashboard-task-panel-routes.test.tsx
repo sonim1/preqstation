@@ -525,9 +525,18 @@ vi.mock('@/lib/task-meta', async (importOriginal) => {
 });
 
 vi.mock('@/lib/user-settings', () => ({
-  SETTING_KEYS: { TELEGRAM_ENABLED: 'telegramEnabled', KITCHEN_MODE: 'kitchenMode' },
+  SETTING_KEYS: {
+    TELEGRAM_ENABLED: 'telegramEnabled',
+    HERMES_TELEGRAM_ENABLED: 'hermesTelegramEnabled',
+    KITCHEN_MODE: 'kitchenMode',
+    TIMEZONE: 'timezone',
+  },
   getUserSetting: vi.fn(async (_ownerId: string, key: string) =>
-    key === 'kitchenMode' ? mockedSettings.kitchenMode : mockedSettings.telegramEnabled,
+    key === 'kitchenMode'
+      ? mockedSettings.kitchenMode
+      : key === 'timezone'
+        ? 'America/Toronto'
+        : mockedSettings.telegramEnabled,
   ),
 }));
 

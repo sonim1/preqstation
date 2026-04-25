@@ -24,6 +24,7 @@ type BoardContentProps = {
   editHrefBase: string;
   boardHref: string;
   telegramEnabled: boolean;
+  hermesTelegramEnabled?: boolean;
   projects: { id: string; name: string }[];
   todoLabels: { id: string; name: string; color: string }[];
   projectLabelOptionsByProjectId?: Record<
@@ -61,6 +62,7 @@ export function BoardContent({
   editHrefBase,
   boardHref,
   telegramEnabled,
+  hermesTelegramEnabled,
   projects,
   todoLabels,
   projectLabelOptionsByProjectId = {},
@@ -175,6 +177,7 @@ export function BoardContent({
             taskPriorityOptions={taskPriorityOptions}
             updateTodoAction={updateTodoAction}
             telegramEnabled={telegramEnabled}
+            hermesTelegramEnabled={hermesTelegramEnabled}
             onClose={closeTaskEditor}
           />
         </Container>

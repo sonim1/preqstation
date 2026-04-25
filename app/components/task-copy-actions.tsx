@@ -62,6 +62,7 @@ type TaskCopyActionsProps = {
   engine?: string | null;
   noteMarkdown?: string | null;
   telegramEnabled?: boolean;
+  hermesTelegramEnabled?: boolean;
   onTaskQueued?: (taskKey: string, queuedAt: string) => void;
 };
 
@@ -134,14 +135,23 @@ function isTaskEditDispatchAction(
 function resolveTaskEditDispatchActions(
   engineKey: string | null,
   telegramEnabled: boolean,
+  hermesTelegramEnabled: boolean,
 ): TaskEditDispatchAction[] {
-  if (!telegramEnabled) {
-    return ['send-claude-code'];
+  const normalizedEngineKey = normalizeEngineKey(engineKey);
+  const actions: TaskEditDispatchAction[] = [];
+
+  if (normalizedEngineKey === 'claude-code' || (!telegramEnabled && !hermesTelegramEnabled)) {
+    actions.push('send-claude-code');
   }
 
-  return normalizeEngineKey(engineKey) === 'claude-code'
-    ? ['send-claude-code', 'send-telegram', 'send-hermes-telegram']
-    : ['send-telegram', 'send-hermes-telegram'];
+  if (telegramEnabled) {
+    actions.push('send-telegram');
+  }
+  if (hermesTelegramEnabled) {
+    actions.push('send-hermes-telegram');
+  }
+
+  return actions;
 }
 
 function resolveInitialAction(
@@ -215,6 +225,7 @@ export function TaskCopyActions({
   engine,
   noteMarkdown,
   telegramEnabled = false,
+  hermesTelegramEnabled = telegramEnabled,
   onTaskQueued,
 }: TaskCopyActionsProps) {
   const preferenceStatus = normalizeTaskDispatchPreferenceStatus(status);
@@ -227,7 +238,7 @@ export function TaskCopyActions({
   const [selectedEngine, setSelectedEngine] = useState<EngineConfig | null>(() => initialEngine);
   const [selectedAction, setSelectedAction] = useState<TaskEditDispatchAction>(() =>
     resolveInitialAction(
-      resolveTaskEditDispatchActions(initialEngine.key, telegramEnabled),
+      resolveTaskEditDispatchActions(initialEngine.key, telegramEnabled, hermesTelegramEnabled),
       storedPreference?.action,
     ),
   );
@@ -241,6 +252,7 @@ export function TaskCopyActions({
   const availableActions = resolveTaskEditDispatchActions(
     selectedEngine?.key ?? null,
     telegramEnabled,
+    hermesTelegramEnabled,
   );
   const effectiveObjective = availableModes.includes(selectedObjective)
     ? selectedObjective
@@ -302,7 +314,7 @@ export function TaskCopyActions({
 
   const selectEngine = (nextEngine: EngineConfig) => {
     const nextAction = resolveInitialAction(
-      resolveTaskEditDispatchActions(nextEngine.key, telegramEnabled),
+      resolveTaskEditDispatchActions(nextEngine.key, telegramEnabled, hermesTelegramEnabled),
       effectiveAction,
     );
     setSelectedEngine(nextEngine);

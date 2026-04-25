@@ -79,6 +79,7 @@ export default async function ProjectBoardPage({ params, searchParams }: Project
     todoLabels,
     editableTodo,
     telegramEnabledSetting,
+    hermesTelegramEnabledSetting,
     qaRuns,
     projectSettings,
   ] = await withOwnerDb(owner.id, async (client) =>
@@ -166,6 +167,7 @@ export default async function ProjectBoardPage({ params, searchParams }: Project
           })
         : Promise.resolve(undefined),
       getUserSetting(owner.id, SETTING_KEYS.TELEGRAM_ENABLED, client),
+      getUserSetting(owner.id, SETTING_KEYS.HERMES_TELEGRAM_ENABLED, client),
       withBoardAuxFallback(listProjectQaRuns(projectId, 10, client), [], 'project QA runs'),
       withBoardAuxFallback(
         getProjectSettings(projectId, client),
@@ -180,6 +182,7 @@ export default async function ProjectBoardPage({ params, searchParams }: Project
   const taskPriorityOptions = taskPriorityOptionData();
   const boardBgUrl = getProjectBoardBgUrl(resolved.bgImage ?? null);
   const telegramEnabled = telegramEnabledSetting === 'true';
+  const hermesTelegramEnabled = (hermesTelegramEnabledSetting || telegramEnabledSetting) === 'true';
   const editableTaskLabels = editableTodo ? extractTaskLabels(editableTodo) : [];
   const projectLabelOptions = todoLabels.map((label) => ({
     id: label.id,
@@ -198,6 +201,7 @@ export default async function ProjectBoardPage({ params, searchParams }: Project
       editHrefBase={`/board/${resolved.projectKey}?panel=task-edit`}
       boardHref={boardHref}
       telegramEnabled={telegramEnabled}
+      hermesTelegramEnabled={hermesTelegramEnabled}
       projects={allProjects}
       todoLabels={projectLabelOptions}
       projectLabelOptionsByProjectId={{ [projectId]: projectLabelOptions }}

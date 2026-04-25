@@ -19,7 +19,8 @@ import {
 import { assertSameOrigin } from '@/lib/request-security';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { decryptTelegramToken } from '@/lib/telegram-crypto';
-import { getUserSettings, SETTING_KEYS } from '@/lib/user-settings';
+import { resolveTelegramDispatchConfig } from '@/lib/telegram-dispatch-settings';
+import { getUserSettings } from '@/lib/user-settings';
 
 const triggerQaRunSchema = z
   .object({
@@ -67,10 +68,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
       const settings = await getUserSettings(owner.id, client);
       const qaEngine = payload.engine ?? DEFAULT_ENGINE_KEY;
-      const telegramEnabled = settings[SETTING_KEYS.TELEGRAM_ENABLED] === 'true';
-      const encryptedToken = settings[SETTING_KEYS.TELEGRAM_BOT_TOKEN] || '';
-      const chatId = settings[SETTING_KEYS.TELEGRAM_CHAT_ID] || '';
-      if (!telegramEnabled || !encryptedToken || !chatId) {
+      const { enabled, encryptedToken, chatId } = resolveTelegramDispatchConfig(
+        settings,
+        'openclaw',
+      );
+      if (!enabled || !encryptedToken || !chatId) {
         return NextResponse.json(
           { error: 'Telegram is not fully configured or disabled' },
           { status: 400 },

@@ -100,6 +100,10 @@ vi.mock('@/lib/user-settings', () => ({
     TELEGRAM_BOT_TOKEN: 'telegram_bot_token',
     TELEGRAM_CHAT_ID: 'telegram_chat_id',
     TELEGRAM_ENABLED: 'telegram_enabled',
+    OPENCLAW_TELEGRAM_CHAT_ID: 'openclaw_telegram_chat_id',
+    OPENCLAW_TELEGRAM_ENABLED: 'openclaw_telegram_enabled',
+    HERMES_TELEGRAM_CHAT_ID: 'hermes_telegram_chat_id',
+    HERMES_TELEGRAM_ENABLED: 'hermes_telegram_enabled',
     TIMEZONE: 'timezone',
   },
   getUserSettings: mocked.getUserSettings,
@@ -122,6 +126,10 @@ describe('app/(workspace)/(main)/settings/page', () => {
       telegram_bot_token: '',
       telegram_chat_id: '',
       telegram_enabled: 'false',
+      openclaw_telegram_chat_id: '',
+      openclaw_telegram_enabled: '',
+      hermes_telegram_chat_id: '',
+      hermes_telegram_enabled: '',
       timezone: 'America/Toronto',
     });
   });
