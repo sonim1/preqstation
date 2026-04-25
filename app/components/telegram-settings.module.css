@@ -1,0 +1,117 @@
+.root {
+  gap: 0.9rem;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.tokenSection {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.tokenHelp {
+  max-width: 40rem;
+}
+
+.channelShell {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.channelTabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.channelTab {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 12%);
+  background: color-mix(in srgb, var(--ui-surface-soft), transparent 12%);
+  text-align: left;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease,
+    transform 120ms ease;
+}
+
+.channelTab:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--ui-border), white 10%);
+}
+
+.channelTab[data-active='true'] {
+  border-color: color-mix(in srgb, var(--mantine-color-blue-6), transparent 45%);
+  background: color-mix(in srgb, var(--ui-surface-soft), var(--mantine-color-blue-9) 16%);
+}
+
+.channelTabRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.channelTabTitle,
+.channelPanelTitle {
+  color: var(--ui-text);
+}
+
+.channelTabMeta {
+  color: var(--ui-muted-text);
+}
+
+.channelPanel {
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 10%);
+  background: color-mix(in srgb, var(--ui-surface-soft), transparent 8%);
+}
+
+.channelPanel[hidden] {
+  display: none;
+}
+
+.channelPanelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.channelPanelCopy {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.channelDetails {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.channelHint {
+  padding: 0.8rem 0.9rem;
+  border-radius: 0.9rem;
+  border: 1px dashed color-mix(in srgb, var(--ui-border), transparent 15%);
+  background: color-mix(in srgb, var(--ui-surface), transparent 6%);
+}
+
+@media (max-width: 48rem) {
+  .channelTabs {
+    grid-template-columns: 1fr;
+  }
+
+  .channelPanelHeader {
+    align-items: stretch;
+  }
+}
