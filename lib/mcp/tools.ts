@@ -172,14 +172,22 @@ function belongsToProjectKey(task: Record<string, unknown>, projectKey: string) 
   return taskKey.startsWith(`${projectKey}-`);
 }
 
+function looksLikeJsonResponse(response: Response, trimmed: string) {
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.toLowerCase().includes('application/json')) {
+    return true;
+  }
+
+  return (
+    (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+    (trimmed.startsWith('[') && trimmed.endsWith(']'))
+  );
+}
+
 async function readJsonResponse(response: Response, path: string) {
   const text = await response.text();
   const trimmed = text.trim();
-  const contentType = response.headers.get('content-type') || '';
-  const looksLikeJson =
-    contentType.toLowerCase().includes('application/json') ||
-    trimmed.startsWith('{') ||
-    trimmed.startsWith('[');
+  const looksLikeJson = looksLikeJsonResponse(response, trimmed);
 
   if (!response.ok) {
     let detail = '';

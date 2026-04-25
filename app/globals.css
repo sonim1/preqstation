@@ -553,6 +553,22 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
     box-shadow 140ms ease;
 }
 
+.workspace-board-subnav-toggle .mantine-NavLink-body {
+  align-items: center;
+}
+
+.workspace-board-subnav-toggle-icon {
+  transition: transform 180ms ease;
+}
+
+.workspace-board-subnav-toggle[data-open='true'] .workspace-board-subnav-toggle-icon {
+  transform: rotate(90deg);
+}
+
+.workspace-board-subnav-children {
+  padding: 0 0 2px 10px;
+}
+
 .workspace-board-subnav-link:focus-visible {
   outline: none;
   background: var(--ui-accent-soft);

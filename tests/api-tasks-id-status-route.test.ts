@@ -15,6 +15,7 @@ const mocked = vi.hoisted(() => {
     db: {
       query: {
         tasks: { findFirst: vi.fn() },
+        workLogs: { findFirst: vi.fn() },
       },
       update: vi.fn().mockReturnValue({ set: setFn }),
       insert: vi.fn().mockReturnValue({ values: valuesFn }),
@@ -92,6 +93,7 @@ describe('app/api/tasks/[id]/status/route', () => {
     mocked.safeCreateTaskCompletionNotification.mockResolvedValue(null);
     // First call: existing lookup; Second call: re-fetch after update
     mocked.db.query.tasks.findFirst.mockResolvedValue(existingTask);
+    mocked.db.query.workLogs.findFirst.mockResolvedValue(null);
     mocked.returningFn.mockResolvedValue([{ id: 'log-1' }]);
     mocked.db.update.mockReturnValue({ set: mocked.setFn });
     mocked.setFn.mockReturnValue({ where: mocked.whereFn });
@@ -239,5 +241,103 @@ describe('app/api/tasks/[id]/status/route', () => {
 
     expect(response.status).toBe(404);
     expect(await response.json()).toEqual({ error: 'Not found' });
+  });
+
+  it('PATCH blocks ready transition when auto PR projects are missing branch or pr_url', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValueOnce({
+      ...existingTask,
+      status: 'todo',
+      taskKey: 'PROJ-401',
+      taskPrefix: 'PROJ',
+      taskNumber: 401,
+      title: 'Require PR before ready',
+      projectId: 'project-1',
+      project: {
+        repoUrl: 'https://github.com/acme/app',
+        projectSettings: [
+          { key: 'deploy_strategy', value: 'feature_branch' },
+          { key: 'deploy_default_branch', value: 'main' },
+          { key: 'deploy_auto_pr', value: 'true' },
+          { key: 'deploy_commit_on_review', value: 'true' },
+        ],
+      },
+    });
+    mocked.db.query.workLogs.findFirst.mockResolvedValueOnce(null);
+
+    const response = await PATCH(
+      patchRequest({
+        status: 'ready',
+      }),
+      { params: Promise.resolve({ id: 'PROJ-401' }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.error).toContain('feature_branch + auto_pr + commit_on_review');
+    expect(body.error).toContain('feature branch name');
+    expect(body.error).toContain('pull request URL');
+    expect(mocked.db.update).not.toHaveBeenCalled();
+  });
+
+  it('PATCH allows ready transition when auto PR projects already have branch and pr_url', async () => {
+    mocked.db.query.tasks.findFirst
+      .mockResolvedValueOnce({
+        ...existingTask,
+        status: 'hold',
+        taskKey: 'PROJ-402',
+        taskPrefix: 'PROJ',
+        taskNumber: 402,
+        title: 'Resume reviewed work',
+        branch: 'task/proj-402/resume-reviewed-work',
+        projectId: 'project-1',
+        project: {
+          repoUrl: 'https://github.com/acme/app',
+          projectSettings: [
+            { key: 'deploy_strategy', value: 'feature_branch' },
+            { key: 'deploy_default_branch', value: 'main' },
+            { key: 'deploy_auto_pr', value: 'true' },
+            { key: 'deploy_commit_on_review', value: 'true' },
+          ],
+        },
+      })
+      .mockResolvedValueOnce({
+        ...existingTask,
+        status: 'ready',
+        taskKey: 'PROJ-402',
+        taskPrefix: 'PROJ',
+        taskNumber: 402,
+        title: 'Resume reviewed work',
+        branch: 'task/proj-402/resume-reviewed-work',
+        projectId: 'project-1',
+        project: {
+          repoUrl: 'https://github.com/acme/app',
+          projectSettings: [
+            { key: 'deploy_strategy', value: 'feature_branch' },
+            { key: 'deploy_default_branch', value: 'main' },
+            { key: 'deploy_auto_pr', value: 'true' },
+            { key: 'deploy_commit_on_review', value: 'true' },
+          ],
+        },
+      });
+    mocked.db.query.workLogs.findFirst.mockResolvedValueOnce({
+      detail:
+        '**PROJ-402** · Resume reviewed work\n\n**PR:** [https://github.com/acme/app/pull/123](https://github.com/acme/app/pull/123)',
+    });
+
+    const response = await PATCH(
+      patchRequest({
+        status: 'ready',
+      }),
+      { params: Promise.resolve({ id: 'PROJ-402' }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mocked.setFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'ready',
+      }),
+    );
+    expect(body.task.status).toBe('ready');
   });
 });

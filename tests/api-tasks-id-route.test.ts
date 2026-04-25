@@ -919,6 +919,48 @@ describe('app/api/tasks/[id]/route', () => {
     expect(mocked.valuesFn).not.toHaveBeenCalled();
   });
 
+  it('PATCH status ready blocks direct ready transition when auto PR projects are missing branch or pr_url', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValueOnce({
+      id: 'todo-1',
+      taskKey: 'PROJ-401',
+      taskPrefix: 'PROJ',
+      taskNumber: 401,
+      title: 'Require PR before ready',
+      note: null,
+      status: 'todo',
+      taskPriority: 'none',
+      engine: 'codex',
+      branch: null,
+      runState: 'running',
+      runStateUpdatedAt: new Date('2026-04-08T14:00:00.000Z'),
+      projectId: 'project-1',
+      project: {
+        repoUrl: 'https://github.com/acme/app',
+        projectSettings: [
+          { key: 'deploy_strategy', value: 'feature_branch' },
+          { key: 'deploy_default_branch', value: 'main' },
+          { key: 'deploy_auto_pr', value: 'true' },
+          { key: 'deploy_commit_on_review', value: 'true' },
+        ],
+      },
+      label: null,
+    });
+
+    const response = await PATCH(
+      patchRequest({
+        status: 'ready',
+      }),
+      { params: Promise.resolve({ id: 'PROJ-401' }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.error).toContain('feature_branch + auto_pr + commit_on_review');
+    expect(body.error).toContain('feature branch name');
+    expect(body.error).toContain('pull request URL');
+    expect(mocked.setFn).not.toHaveBeenCalled();
+    expect(mocked.valuesFn).not.toHaveBeenCalled();
+  });
   it('PATCH lifecycle_action complete logs the underlying insert failure before returning 500', async () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 

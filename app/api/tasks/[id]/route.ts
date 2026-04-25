@@ -362,11 +362,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (lifecycleTransition.error) {
         return NextResponse.json({ error: lifecycleTransition.error }, { status: 409 });
       }
+      const requestedStatus = lifecycleAction
+        ? (lifecycleTransition.nextStatus ?? nextStatus)
+        : nextStatus;
       const deployStrategy = resolveDeployStrategyConfig(existing.project?.projectSettings);
       const resolvedBranchName = (payload.branch ?? existing.branch ?? '').trim();
       const requestedPrUrl = readRequestedPrUrl(payload.result);
       const requiresPullRequestBeforeReady =
-        lifecycleAction === 'complete' &&
+        requestedStatus === 'ready' &&
+        existing.status !== 'ready' &&
         deployStrategy.strategy === 'feature_branch' &&
         deployStrategy.auto_pr &&
         deployStrategy.commit_on_review;

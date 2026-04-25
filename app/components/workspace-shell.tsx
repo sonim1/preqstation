@@ -31,13 +31,17 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { outfit } from '@/app/fonts';
+import { PAUSED_PROJECT_STATUS } from '@/lib/project-meta';
 import {
   findProjectByKey,
+  findVisibleProjectByKey,
   getProjectSelectHref,
   getWorkspaceProjectSubtitle,
+  isVisibleWorkspaceProject,
   LAST_PROJECT_KEY_STORAGE,
   pushRecentProjectKey,
   resolvePickerProject,
+  type WorkspaceProjectOption,
 } from '@/lib/workspace-project-picker';
 
 import type { CommandPaletteProps } from './command-palette';
@@ -54,7 +58,7 @@ export type WorkspaceNavKey = 'dashboard' | 'projects' | 'kanban' | 'settings' |
 
 type WorkspaceShellProps = {
   email: string;
-  projectOptions: Array<{ id: string; name: string; projectKey: string }>;
+  projectOptions: WorkspaceProjectOption[];
   dashboardHref: string;
   projectsHref: string;
   kanbanHref: string;
@@ -67,10 +71,10 @@ type WorkspaceShellProps = {
 export function resolveWorkspaceKanbanHref(
   kanbanHref: string,
   rememberedProjectKey: string | null,
-  projectOptions: Array<{ id: string; name: string; projectKey: string }>,
+  projectOptions: WorkspaceProjectOption[],
 ) {
   if (!rememberedProjectKey) return kanbanHref;
-  const project = findProjectByKey(projectOptions, rememberedProjectKey);
+  const project = findVisibleProjectByKey(projectOptions, rememberedProjectKey);
   return project ? `/board/${project.projectKey}` : kanbanHref;
 }
 
@@ -82,6 +86,51 @@ function initialFromEmail(email: string) {
 const PROJECT_KEY_CHANGED_EVENT = 'pm:lastProjectKey:changed';
 const BOARD_SUBNAV_ROW_HEIGHT = 44;
 const BOARD_SUBNAV_ROW_GAP = 4;
+
+type BoardNavLinkProps = {
+  project: WorkspaceProjectOption;
+  isCurrentBoard: boolean;
+  onSelect: (projectKey: string) => void;
+};
+
+function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) {
+  return (
+    <NavLink
+      component={Link}
+      href={`/board/${project.projectKey}`}
+      prefetch={false}
+      label={
+        <span className="workspace-board-subnav-label">
+          <span className="workspace-board-subnav-name">{project.name}</span>
+        </span>
+      }
+      onClick={() => {
+        onSelect(project.projectKey);
+      }}
+      className="workspace-nav-link workspace-board-subnav-link"
+      data-current-board={isCurrentBoard ? 'true' : undefined}
+      aria-current={isCurrentBoard ? 'page' : undefined}
+    />
+  );
+}
+
+function partitionWorkspaceProjectOptions(projectOptions: WorkspaceProjectOption[]) {
+  const visibleProjectOptions: WorkspaceProjectOption[] = [];
+  const pausedProjectOptions: WorkspaceProjectOption[] = [];
+
+  for (const project of projectOptions) {
+    if (project.status === PAUSED_PROJECT_STATUS) {
+      pausedProjectOptions.push(project);
+      continue;
+    }
+
+    if (isVisibleWorkspaceProject(project)) {
+      visibleProjectOptions.push(project);
+    }
+  }
+
+  return { visibleProjectOptions, pausedProjectOptions };
+}
 
 function readRememberedProjectKey() {
   if (typeof window === 'undefined') return null;
@@ -147,10 +196,15 @@ export function WorkspaceShell({
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
   const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
   const [commandPaletteRequested, setCommandPaletteRequested] = useState(false);
+  const [pausedBoardsRequested, setPausedBoardsRequested] = useState(false);
   const rememberedProjectKey = useSyncExternalStore(
     subscribeRememberedProjectKey,
     readRememberedProjectKey,
     () => null,
+  );
+  const { visibleProjectOptions, pausedProjectOptions } = useMemo(
+    () => partitionWorkspaceProjectOptions(projectOptions),
+    [projectOptions],
   );
 
   const pickerState = useMemo(
@@ -178,10 +232,17 @@ export function WorkspaceShell({
           ? 'kanban'
           : 'dashboard';
   const currentBoardProject = active === 'kanban' ? selectedProject : null;
+  const currentVisibleBoardProject =
+    currentBoardProject && isVisibleWorkspaceProject(currentBoardProject)
+      ? currentBoardProject
+      : null;
+  const currentPausedBoardProject =
+    currentBoardProject?.status === PAUSED_PROJECT_STATUS ? currentBoardProject : null;
   const hasCurrentBoardProject = !!currentBoardProject;
-  const currentBoardIndex = currentBoardProject
-    ? projectOptions.findIndex((project) => project.id === currentBoardProject.id)
+  const currentBoardIndex = currentVisibleBoardProject
+    ? visibleProjectOptions.findIndex((project) => project.id === currentVisibleBoardProject.id)
     : -1;
+  const pausedBoardsOpened = pausedBoardsRequested || !!currentPausedBoardProject;
   const isBoardContext = active === 'kanban';
   const currentScopeLabel = isBoardContext
     ? currentBoardProject?.name || 'Boards'
@@ -195,6 +256,13 @@ export function WorkspaceShell({
     transform: `translateY(${Math.max(currentBoardIndex, 0) * (BOARD_SUBNAV_ROW_HEIGHT + BOARD_SUBNAV_ROW_GAP)}px)`,
     opacity: currentBoardIndex === -1 ? 0 : 1,
   };
+  const handleBoardSelect = useCallback(
+    (projectKey: string) => {
+      writeRememberedProjectKey(projectKey);
+      closeMobile();
+    },
+    [closeMobile],
+  );
   const requestCommandPalette = useCallback(() => {
     setCommandPaletteRequested(true);
   }, []);
@@ -235,9 +303,9 @@ export function WorkspaceShell({
   // Redirect /board → /board/{projectKey} when a remembered project exists
   useEffect(() => {
     if (pathname !== '/board') return;
-    if (!rememberedProjectKey) return;
-    if (!findProjectByKey(projectOptions, rememberedProjectKey)) return;
-    router.replace(`/board/${rememberedProjectKey}`);
+    const project = findVisibleProjectByKey(projectOptions, rememberedProjectKey);
+    if (!project) return;
+    router.replace(`/board/${project.projectKey}`);
   }, [pathname, rememberedProjectKey, projectOptions, router]);
 
   useEffect(() => {
@@ -446,39 +514,64 @@ export function WorkspaceShell({
               className="workspace-nav-link"
             />
             <Box visibleFrom="md">
-              <Stack
-                gap={BOARD_SUBNAV_ROW_GAP}
-                className="workspace-board-subnav"
-                data-current-board-index={currentBoardIndex}
-              >
-                <span
-                  className="workspace-board-subnav-surface"
-                  aria-hidden="true"
-                  style={boardSelectionSurfaceStyle}
-                />
-                {projectOptions.map((project) => {
-                  const isCurrentBoard = currentBoardProject?.id === project.id;
-                  return (
-                    <NavLink
-                      key={project.id}
-                      component={Link}
-                      href={`/board/${project.projectKey}`}
-                      prefetch={false}
-                      label={
-                        <span className="workspace-board-subnav-label">
-                          <span className="workspace-board-subnav-name">{project.name}</span>
-                        </span>
-                      }
-                      onClick={() => {
-                        writeRememberedProjectKey(project.projectKey);
-                        closeMobile();
-                      }}
-                      className="workspace-nav-link workspace-board-subnav-link"
-                      data-current-board={isCurrentBoard ? 'true' : undefined}
-                      aria-current={isCurrentBoard ? 'page' : undefined}
+              <Stack gap={6}>
+                {visibleProjectOptions.length > 0 ? (
+                  <Stack
+                    gap={BOARD_SUBNAV_ROW_GAP}
+                    className="workspace-board-subnav"
+                    data-current-board-index={currentBoardIndex}
+                  >
+                    <span
+                      className="workspace-board-subnav-surface"
+                      aria-hidden="true"
+                      style={boardSelectionSurfaceStyle}
                     />
-                  );
-                })}
+                    {visibleProjectOptions.map((project) => (
+                      <BoardNavLink
+                        key={project.id}
+                        project={project}
+                        isCurrentBoard={currentVisibleBoardProject?.id === project.id}
+                        onSelect={handleBoardSelect}
+                      />
+                    ))}
+                  </Stack>
+                ) : null}
+                {pausedProjectOptions.length > 0 ? (
+                  <Stack gap={BOARD_SUBNAV_ROW_GAP} className="workspace-board-subnav">
+                    <NavLink
+                      label="Paused"
+                      onClick={() => {
+                        setPausedBoardsRequested((opened) => !opened);
+                      }}
+                      className="workspace-nav-link workspace-board-subnav-link workspace-board-subnav-toggle"
+                      data-open={pausedBoardsOpened ? 'true' : undefined}
+                      aria-expanded={pausedBoardsOpened}
+                      aria-controls="workspace-paused-board-group"
+                      rightSection={
+                        <IconChevronRight
+                          size={14}
+                          className="workspace-board-subnav-toggle-icon"
+                        />
+                      }
+                    />
+                    {pausedBoardsOpened ? (
+                      <Stack
+                        gap={BOARD_SUBNAV_ROW_GAP}
+                        id="workspace-paused-board-group"
+                        className="workspace-board-subnav-children"
+                      >
+                        {pausedProjectOptions.map((project) => (
+                          <BoardNavLink
+                            key={project.id}
+                            project={project}
+                            isCurrentBoard={currentPausedBoardProject?.id === project.id}
+                            onSelect={handleBoardSelect}
+                          />
+                        ))}
+                      </Stack>
+                    ) : null}
+                  </Stack>
+                ) : null}
               </Stack>
             </Box>
           </Stack>

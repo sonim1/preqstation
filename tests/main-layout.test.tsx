@@ -56,6 +56,7 @@ vi.mock('@/lib/db/schema', async () => {
       id: 'id',
       name: 'name',
       projectKey: 'projectKey',
+      status: 'status',
       ownerId: 'ownerId',
       deletedAt: 'deletedAt',
     },
@@ -79,7 +80,9 @@ describe('app/(workspace)/(main)/layout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocked.getOwnerUserOrNull.mockResolvedValue({ id: 'owner-1', email: 'owner@example.com' });
-    mocked.orderBy.mockResolvedValue([{ id: 'project-1', name: 'Alpha', projectKey: 'ALPHA' }]);
+    mocked.orderBy.mockResolvedValue([
+      { id: 'project-1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
+    ]);
     mocked.getUserSetting.mockResolvedValue('60000');
   });
 
@@ -89,5 +92,10 @@ describe('app/(workspace)/(main)/layout', () => {
 
     expect(html).toContain('data-workspace-shell="owner@example.com"');
     expect(mocked.getUserSetting).not.toHaveBeenCalled();
+    expect(mocked.select).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'status',
+      }),
+    );
   });
 });
