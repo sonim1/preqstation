@@ -120,12 +120,27 @@ If you are migrating an existing instance, keep the existing owner row `id` so p
 - Tasks dispatched to Telegram can surface `Requested` / `Running` execution badges
 - `claude mcp add --transport http .../mcp` or `codex mcp add ... --url .../mcp` completes browser login successfully
 
-## 7) Least-Privilege DB Access
+## 7) Offline Board Validation
+
+Run this after any deploy that changes board shell code, `/sw.js`, or the offline mutation flow.
+
+- Visit `/board` online at least once so the browser registers `/sw.js` and warms the board cache.
+- Disable network in the browser/devtools, reload `/board`, and confirm the offline banner appears
+  and the most recent board snapshot renders.
+- While still offline, quick-add a task, edit its title/note, and move it to another lane. Reload
+  once to confirm the snapshot and task draft survive a refresh from IndexedDB.
+- Re-enable network and confirm the queued create/edit/move mutations replay automatically, the
+  optimistic `OFFLINE-*` task key is replaced with the server task key, and the task remains in the
+  expected lane.
+- If replay hits a validation/server error, confirm the queue stops in place and the user sees the
+  returned error message instead of silently dropping the remaining mutations.
+
+## 8) Least-Privilege DB Access
 
 - Create a dedicated DB user for the app.
 - Grant only required schema/table privileges.
 
-## 8) PREQSTATION Agent Setup
+## 9) PREQSTATION Agent Setup
 
 Recommended MCP setup:
 
@@ -157,9 +172,14 @@ Install the skill package:
 npx skills add sonim1/preqstation-skill -g
 ```
 
-## 9) Operational Recommendations
+## 10) Operational Recommendations
 
 - Rotate `AUTH_SECRET` and the stored owner `password_hash` regularly.
 - Enable Vercel Access Logs and error alerting (e.g., Sentry).
 - Enable Dependabot and patch dependencies at least monthly.
 - Separate Vercel env vars for Production and Preview environments.
+- Treat service worker changes as deploy-sensitive: load the updated `/board` online once before
+  relying on offline fallback for that browser profile.
+- Offline board support depends on browser service worker + IndexedDB availability. Private browsing
+  policies, cleared site storage, or corporate browser restrictions can disable the cached board
+  path even when the server is healthy.

@@ -26,6 +26,7 @@ If you are new to the system, start with the landing/guide surface first, then r
 
 - **Projects** — create and manage projects with GitHub/Vercel URL tracking
 - **Kanban board** — drag-and-drop task management across 6 workflow statuses (`inbox`, `todo`, `hold`, `ready`, `done`, `archived`)
+- **Offline board workflow** — cached `/board` navigation plus IndexedDB-backed board snapshots, task drafts, and queued create/edit/move sync when connectivity returns
 - **Execution overlay** — task cards can show `Requested` / `Running` independently from workflow position
 - **PREQSTATION Task API** — REST API at `/api/tasks` for AI agent integration with Bearer token auth
 - **Connections** — review and revoke OAuth/MCP clients from `/connections`
@@ -115,6 +116,23 @@ npm run db:push      # Push schema directly to the configured database
 npm run db:pull      # Pull schema state from the configured database
 npm run db:studio    # Open Drizzle Studio
 ```
+
+## Offline Board
+
+The board now includes an offline-first path for browser sessions. `/sw.js` caches same-origin
+`/board` navigations and static assets so the board can reopen after the user has already loaded it
+online at least once. API responses are not cached by the service worker.
+
+Browser storage in IndexedDB (`preqstation-offline`) keeps three kinds of local state:
+
+- recent board snapshots keyed by project so `/board` can hydrate while offline
+- task-edit title/note drafts
+- queued task create/edit/move mutations for replay
+
+While offline, quick-add, task edits, and board moves are applied optimistically in the UI and
+written to the local mutation queue. Once `/api/ping` reports the backend reachable again, the app
+replays those mutations against the normal internal board APIs and replaces temporary `OFFLINE-*`
+task keys with server-issued task keys after sync.
 
 ---
 
