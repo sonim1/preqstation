@@ -44,6 +44,7 @@ type BoardTaskPanelProps = {
     | null
   >;
   telegramEnabled: boolean;
+  hermesTelegramEnabled?: boolean;
   onClose: () => void;
 };
 
@@ -57,6 +58,7 @@ export function BoardTaskPanel({
   taskPriorityOptions,
   updateTodoAction,
   telegramEnabled,
+  hermesTelegramEnabled = false,
   onClose,
 }: BoardTaskPanelProps) {
   const focusedTask = useFocusedTask();
@@ -221,6 +223,7 @@ export function BoardTaskPanel({
       updateTodoAction={updateTodoAction}
       branchName={focusedTask.branch}
       telegramEnabled={telegramEnabled}
+      hermesTelegramEnabled={hermesTelegramEnabled}
       onTaskQueued={handleTaskQueued}
       onTaskUpdated={handleTaskUpdated}
     />

@@ -33,86 +33,95 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
     ),
   ] as const;
 
-  const [todos, archivedCountRows, allProjects, todoLabels, editableTodo, telegramEnabledSetting] =
-    await withOwnerDb(owner.id, async (client) =>
-      Promise.all([
-        client.query.tasks.findMany({
-          where: and(...boardTaskScope, ne(tasks.status, 'archived')),
-          orderBy: TASK_BOARD_ORDER,
-          with: {
-            project: { columns: { id: true, name: true, projectKey: true } },
-            label: { columns: { id: true, name: true, color: true } },
-            labelAssignments: {
-              columns: { position: true },
-              orderBy: [asc(taskLabelAssignments.position)],
-              with: {
-                label: { columns: { id: true, name: true, color: true } },
-              },
+  const [
+    todos,
+    archivedCountRows,
+    allProjects,
+    todoLabels,
+    editableTodo,
+    telegramEnabledSetting,
+    hermesTelegramEnabledSetting,
+  ] = await withOwnerDb(owner.id, async (client) =>
+    Promise.all([
+      client.query.tasks.findMany({
+        where: and(...boardTaskScope, ne(tasks.status, 'archived')),
+        orderBy: TASK_BOARD_ORDER,
+        with: {
+          project: { columns: { id: true, name: true, projectKey: true } },
+          label: { columns: { id: true, name: true, color: true } },
+          labelAssignments: {
+            columns: { position: true },
+            orderBy: [asc(taskLabelAssignments.position)],
+            with: {
+              label: { columns: { id: true, name: true, color: true } },
             },
           },
-        }),
-        client
-          .select({ count: sql<number>`count(*)::int` })
-          .from(tasks)
-          .where(and(...boardTaskScope, eq(tasks.status, 'archived'))),
-        client
-          .select({ id: projects.id, name: projects.name })
-          .from(projects)
-          .where(and(eq(projects.ownerId, owner.id), isNull(projects.deletedAt)))
-          .orderBy(asc(projects.name)),
-        client.query.taskLabels.findMany({
-          where: eq(taskLabels.ownerId, owner.id),
-          orderBy: [asc(taskLabels.name)],
-          columns: { id: true, projectId: true, name: true, color: true },
-        }),
-        activePanel === 'task-edit' && editingTodoIdentifier
-          ? client.query.tasks.findFirst({
-              where: taskWhereByIdentifier(owner.id, editingTodoIdentifier),
-              columns: {
-                id: true,
-                taskKey: true,
-                title: true,
-                branch: true,
-                note: true,
-                projectId: true,
-                taskPriority: true,
-                status: true,
-                engine: true,
-                runState: true,
-                runStateUpdatedAt: true,
-              },
-              with: {
-                labelAssignments: {
-                  columns: { position: true },
-                  orderBy: [asc(taskLabelAssignments.position)],
-                  with: {
-                    label: { columns: { id: true, name: true, color: true } },
-                  },
-                },
-                workLogs: {
-                  orderBy: [desc(workLogs.workedAt)],
-                  columns: {
-                    id: true,
-                    title: true,
-                    engine: true,
-                    workedAt: true,
-                    createdAt: true,
-                  },
-                  with: {
-                    task: { columns: { engine: true } },
-                  },
+        },
+      }),
+      client
+        .select({ count: sql<number>`count(*)::int` })
+        .from(tasks)
+        .where(and(...boardTaskScope, eq(tasks.status, 'archived'))),
+      client
+        .select({ id: projects.id, name: projects.name })
+        .from(projects)
+        .where(and(eq(projects.ownerId, owner.id), isNull(projects.deletedAt)))
+        .orderBy(asc(projects.name)),
+      client.query.taskLabels.findMany({
+        where: eq(taskLabels.ownerId, owner.id),
+        orderBy: [asc(taskLabels.name)],
+        columns: { id: true, projectId: true, name: true, color: true },
+      }),
+      activePanel === 'task-edit' && editingTodoIdentifier
+        ? client.query.tasks.findFirst({
+            where: taskWhereByIdentifier(owner.id, editingTodoIdentifier),
+            columns: {
+              id: true,
+              taskKey: true,
+              title: true,
+              branch: true,
+              note: true,
+              projectId: true,
+              taskPriority: true,
+              status: true,
+              engine: true,
+              runState: true,
+              runStateUpdatedAt: true,
+            },
+            with: {
+              labelAssignments: {
+                columns: { position: true },
+                orderBy: [asc(taskLabelAssignments.position)],
+                with: {
+                  label: { columns: { id: true, name: true, color: true } },
                 },
               },
-            })
-          : Promise.resolve(undefined),
-        getUserSetting(owner.id, SETTING_KEYS.TELEGRAM_ENABLED, client),
-      ]),
-    );
+              workLogs: {
+                orderBy: [desc(workLogs.workedAt)],
+                columns: {
+                  id: true,
+                  title: true,
+                  engine: true,
+                  workedAt: true,
+                  createdAt: true,
+                },
+                with: {
+                  task: { columns: { engine: true } },
+                },
+              },
+            },
+          })
+        : Promise.resolve(undefined),
+      getUserSetting(owner.id, SETTING_KEYS.TELEGRAM_ENABLED, client),
+      getUserSetting(owner.id, SETTING_KEYS.HERMES_TELEGRAM_ENABLED, client),
+    ]),
+  );
 
   const kanbanTasks = groupTasksByStatus(todos);
   const initialArchivedCount = archivedCountRows[0]?.count ?? 0;
   const taskPriorityOptions = taskPriorityOptionData();
   const telegramEnabled = telegramEnabledSetting === 'true';
+  const hermesTelegramEnabled = (hermesTelegramEnabledSetting || telegramEnabledSetting) === 'true';
   const editableTaskLabels = editableTodo ? extractTaskLabels(editableTodo) : [];
   const projectLabelOptionsByProjectId = Object.fromEntries(
     Object.entries(groupTaskLabelsByProjectId(todoLabels)).map(([projectId, labels]) => [
@@ -136,6 +145,7 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
       editHrefBase="/board?panel=task-edit"
       boardHref={boardHref}
       telegramEnabled={telegramEnabled}
+      hermesTelegramEnabled={hermesTelegramEnabled}
       projects={allProjects}
       todoLabels={[]}
       projectLabelOptionsByProjectId={projectLabelOptionsByProjectId}

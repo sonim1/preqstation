@@ -33,16 +33,21 @@ describe('app/components/telegram-settings', () => {
       <MantineProvider>
         <TelegramSettings
           action={vi.fn(async () => null)}
-          defaultChatId="1234"
-          defaultEnabled
+          defaultOpenClawChatId="1234"
+          defaultOpenClawEnabled
+          defaultHermesChatId="5678"
+          defaultHermesEnabled={false}
           hasSavedBotToken={false}
         />
       </MantineProvider>,
     );
 
     expect(html).toContain('Save Telegram Settings');
-    expect(html).toContain('Send Test Message');
-    expect(html).toContain('/status');
+    expect(html).toContain('OpenClaw Channel');
+    expect(html).toContain('Hermes Channel');
+    expect(html).toContain('Send OpenClaw Test');
+    expect(html).toContain('Send OpenClaw /status');
+    expect(html).toContain('Send Hermes Test');
   });
 
   it('renders a single shared feedback slot when idle', () => {
@@ -50,8 +55,10 @@ describe('app/components/telegram-settings', () => {
       <MantineProvider>
         <TelegramSettings
           action={vi.fn(async () => null)}
-          defaultChatId="1234"
-          defaultEnabled
+          defaultOpenClawChatId="1234"
+          defaultOpenClawEnabled
+          defaultHermesChatId="5678"
+          defaultHermesEnabled={false}
           hasSavedBotToken={false}
         />
       </MantineProvider>,
@@ -65,8 +72,10 @@ describe('app/components/telegram-settings', () => {
       <MantineProvider>
         <TelegramSettings
           action={vi.fn(async () => null)}
-          defaultChatId="1234"
-          defaultEnabled
+          defaultOpenClawChatId="1234"
+          defaultOpenClawEnabled
+          defaultHermesChatId="5678"
+          defaultHermesEnabled={false}
           hasSavedBotToken
         />
       </MantineProvider>,
@@ -98,7 +107,11 @@ describe('app/components/telegram-settings', () => {
 
   it('associates chat-id save errors with the chat-id input', () => {
     reactHooks.useActionState.mockReturnValue([
-      { ok: false, message: 'Chat ID is required to enable Telegram.', field: 'chatId' },
+      {
+        ok: false,
+        message: 'OpenClaw Chat ID is required to enable Telegram.',
+        field: 'openClawChatId',
+      },
       vi.fn(),
     ]);
 
@@ -106,14 +119,16 @@ describe('app/components/telegram-settings', () => {
       <MantineProvider>
         <TelegramSettings
           action={vi.fn(async () => null)}
-          defaultChatId=""
-          defaultEnabled
+          defaultOpenClawChatId=""
+          defaultOpenClawEnabled
+          defaultHermesChatId="5678"
+          defaultHermesEnabled={false}
           hasSavedBotToken
         />
       </MantineProvider>,
     );
 
-    expect(html).toMatch(/<input[^>]*aria-invalid="true"[^>]*name="telegram_chat_id"/);
-    expect(html).toContain('Chat ID is required to enable Telegram.');
+    expect(html).toMatch(/<input[^>]*aria-invalid="true"[^>]*name="telegram_openclaw_chat_id"/);
+    expect(html).toContain('OpenClaw Chat ID is required to enable Telegram.');
   });
 });

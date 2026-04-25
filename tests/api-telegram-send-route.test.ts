@@ -38,6 +38,10 @@ vi.mock('@/lib/user-settings', () => ({
     TELEGRAM_BOT_TOKEN: 'telegram_bot_token',
     TELEGRAM_CHAT_ID: 'telegram_chat_id',
     TELEGRAM_ENABLED: 'telegram_enabled',
+    OPENCLAW_TELEGRAM_CHAT_ID: 'openclaw_telegram_chat_id',
+    OPENCLAW_TELEGRAM_ENABLED: 'openclaw_telegram_enabled',
+    HERMES_TELEGRAM_CHAT_ID: 'hermes_telegram_chat_id',
+    HERMES_TELEGRAM_ENABLED: 'hermes_telegram_enabled',
   },
   getUserSettings: mocked.getUserSettings,
 }));
@@ -71,6 +75,10 @@ describe('app/api/telegram/send/route', () => {
       telegram_enabled: 'true',
       telegram_bot_token: 'encrypted-token',
       telegram_chat_id: '1234567',
+      openclaw_telegram_enabled: '',
+      openclaw_telegram_chat_id: '',
+      hermes_telegram_enabled: '',
+      hermes_telegram_chat_id: '',
     });
     mocked.decryptTelegramToken.mockResolvedValue('123:bot-token');
     mocked.writeAuditLog.mockResolvedValue(undefined);
@@ -178,6 +186,16 @@ describe('app/api/telegram/send/route', () => {
   });
 
   it('sends Hermes dispatch messages without OpenClaw bang normalization', async () => {
+    mocked.getUserSettings.mockResolvedValueOnce({
+      telegram_enabled: 'true',
+      telegram_bot_token: 'encrypted-token',
+      telegram_chat_id: '1234567',
+      openclaw_telegram_enabled: 'true',
+      openclaw_telegram_chat_id: '1234567',
+      hermes_telegram_enabled: 'true',
+      hermes_telegram_chat_id: '7654321',
+    });
+
     const response = await POST(
       postRequest({
         taskKey: 'PROJ-1',
@@ -191,7 +209,7 @@ describe('app/api/telegram/send/route', () => {
 
     const [, options] = mocked.fetch.mock.calls[0] as [string, RequestInit];
     expect(JSON.parse(String(options.body))).toEqual({
-      chat_id: '1234567',
+      chat_id: '7654321',
       text: '/preq_dispatch@PreqHermesBot\nproject_key=PROJ\ntask_key=PROJ-1\nobjective=implement\nengine=codex',
     });
 
@@ -200,6 +218,32 @@ describe('app/api/telegram/send/route', () => {
       taskKey: 'PROJ-1',
       dispatchTarget: 'hermes-telegram',
     });
+  });
+
+  it('returns 400 when Hermes is selected but the Hermes channel is disabled', async () => {
+    mocked.getUserSettings.mockResolvedValueOnce({
+      telegram_enabled: 'true',
+      telegram_bot_token: 'encrypted-token',
+      telegram_chat_id: '1234567',
+      openclaw_telegram_enabled: 'true',
+      openclaw_telegram_chat_id: '1234567',
+      hermes_telegram_enabled: 'false',
+      hermes_telegram_chat_id: '7654321',
+    });
+
+    const response = await POST(
+      postRequest({
+        taskKey: 'PROJ-1',
+        message: '/preq_dispatch@PreqHermesBot',
+        dispatchTarget: 'hermes-telegram',
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: 'Telegram is not fully configured or disabled',
+    });
+    expect(mocked.fetch).not.toHaveBeenCalled();
   });
 
   it('maps telegram upstream failure description', async () => {

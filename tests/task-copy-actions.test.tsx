@@ -223,6 +223,33 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('!/skill preqstation-dispatch');
   });
 
+  it('can hide Hermes while keeping the OpenClaw Telegram target available', () => {
+    const html = renderTaskCopyActions({
+      engine: 'codex',
+      telegramEnabled: true,
+      hermesTelegramEnabled: false,
+    });
+
+    expect(html).toContain('🦞 Telegram');
+    expect(html).not.toContain('H Telegram');
+    expect(html).toMatch(
+      /task-dispatch-target-segments"[^>]*data-option-count="1"[^>]*data-selected-index="0"/,
+    );
+  });
+
+  it('can show Hermes alone when only the Hermes channel is enabled', () => {
+    const html = renderTaskCopyActions({
+      engine: 'codex',
+      telegramEnabled: false,
+      hermesTelegramEnabled: true,
+    });
+
+    expect(html).not.toContain('🦞 Telegram');
+    expect(html).toContain('H Telegram');
+    expect(html).not.toContain('Channels');
+    expect(html).toContain('/preq_dispatch@PreqHermesBot');
+  });
+
   it('falls back to Telegram when the stored target is invalid for the selected engine', () => {
     localStorage.setItem(
       TASK_DISPATCH_PREFERENCES_STORAGE,

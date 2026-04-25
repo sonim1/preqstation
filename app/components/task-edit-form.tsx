@@ -88,6 +88,7 @@ export type TaskEditFormProps = {
   updateTodoAction: (prevState: unknown, formData: FormData) => Promise<ActionState>;
   branchName?: string | null;
   telegramEnabled?: boolean;
+  hermesTelegramEnabled?: boolean;
   onTaskQueued?: (taskKey: string, queuedAt: string) => void;
   onDispatchQueued?: () => void;
   onTaskUpdated?: (result: {
@@ -651,6 +652,7 @@ function TaskEditFormContent({
   updateTodoAction: _updateTodoAction,
   branchName,
   telegramEnabled,
+  hermesTelegramEnabled,
   onTaskQueued,
   onDispatchQueued,
   onTaskUpdated: _onTaskUpdated,
@@ -849,6 +851,7 @@ function TaskEditFormContent({
                   engine={engine}
                   noteMarkdown={noteMarkdown}
                   telegramEnabled={telegramEnabled ?? false}
+                  hermesTelegramEnabled={hermesTelegramEnabled}
                   onTaskQueued={handleDispatchQueued}
                 />
               </section>

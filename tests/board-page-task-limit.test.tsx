@@ -96,7 +96,10 @@ vi.mock('@/lib/owner', () => ({
 }));
 
 vi.mock('@/lib/user-settings', () => ({
-  SETTING_KEYS: { TELEGRAM_ENABLED: 'telegram_enabled' },
+  SETTING_KEYS: {
+    TELEGRAM_ENABLED: 'telegram_enabled',
+    HERMES_TELEGRAM_ENABLED: 'hermes_telegram_enabled',
+  },
   getUserSetting: mocked.getUserSetting,
 }));
 

@@ -26,6 +26,7 @@ import { withOwnerDb } from '@/lib/db/rls';
 import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
 import { TASK_PRIORITIES, TASK_PRIORITY_LABEL } from '@/lib/task-meta';
 import { encryptTelegramToken } from '@/lib/telegram-crypto';
+import { resolveTelegramDispatchConfig } from '@/lib/telegram-dispatch-settings';
 import { resolveTerminology } from '@/lib/terminology';
 import { getUserSettings, SETTING_KEYS, setUserSetting } from '@/lib/user-settings';
 
@@ -35,14 +36,18 @@ export default async function SettingsPage() {
 
   const settings = await withOwnerDb(owner.id, async (client) => getUserSettings(owner.id, client));
   const terminology = resolveTerminology(settings.kitchen_mode === 'true');
+  const openClawTelegramSettings = resolveTelegramDispatchConfig(settings, 'openclaw');
+  const hermesTelegramSettings = resolveTelegramDispatchConfig(settings, 'hermes');
 
   async function updateTelegramSettings(_prevState: unknown, formData: FormData) {
     'use server';
     const ownerUser = await requireOwnerUser();
 
     const botTokenInput = String(formData.get('telegram_bot_token') || '').trim();
-    const chatId = String(formData.get('telegram_chat_id') || '').trim();
-    const telegramEnabled = String(formData.get('telegram_enabled') || '') === 'true';
+    const openClawChatId = String(formData.get('telegram_openclaw_chat_id') || '').trim();
+    const openClawEnabled = String(formData.get('telegram_openclaw_enabled') || '') === 'true';
+    const hermesChatId = String(formData.get('telegram_hermes_chat_id') || '').trim();
+    const hermesEnabled = String(formData.get('telegram_hermes_enabled') || '') === 'true';
 
     const result = await withOwnerDb(ownerUser.id, async (client) => {
       const currentSettings = await getUserSettings(ownerUser.id, client);
@@ -51,15 +56,23 @@ export default async function SettingsPage() {
         encryptedToken = await encryptTelegramToken(botTokenInput);
       }
 
-      if (telegramEnabled && !chatId) {
+      if (openClawEnabled && !openClawChatId) {
         return {
           ok: false as const,
-          field: 'chatId' as const,
-          message: 'Chat ID is required to enable Telegram.',
+          field: 'openClawChatId' as const,
+          message: 'OpenClaw Chat ID is required to enable Telegram.',
         };
       }
 
-      if (telegramEnabled && !encryptedToken) {
+      if (hermesEnabled && !hermesChatId) {
+        return {
+          ok: false as const,
+          field: 'hermesChatId' as const,
+          message: 'Hermes Chat ID is required to enable Telegram.',
+        };
+      }
+
+      if ((openClawEnabled || hermesEnabled) && !encryptedToken) {
         return {
           ok: false as const,
           field: 'botToken' as const,
@@ -69,11 +82,30 @@ export default async function SettingsPage() {
 
       await Promise.all([
         setUserSetting(ownerUser.id, SETTING_KEYS.TELEGRAM_BOT_TOKEN, encryptedToken, client),
-        setUserSetting(ownerUser.id, SETTING_KEYS.TELEGRAM_CHAT_ID, chatId, client),
+        setUserSetting(ownerUser.id, SETTING_KEYS.TELEGRAM_CHAT_ID, openClawChatId, client),
         setUserSetting(
           ownerUser.id,
           SETTING_KEYS.TELEGRAM_ENABLED,
-          telegramEnabled ? 'true' : 'false',
+          openClawEnabled ? 'true' : 'false',
+          client,
+        ),
+        setUserSetting(
+          ownerUser.id,
+          SETTING_KEYS.OPENCLAW_TELEGRAM_CHAT_ID,
+          openClawChatId,
+          client,
+        ),
+        setUserSetting(
+          ownerUser.id,
+          SETTING_KEYS.OPENCLAW_TELEGRAM_ENABLED,
+          openClawEnabled ? 'true' : 'false',
+          client,
+        ),
+        setUserSetting(ownerUser.id, SETTING_KEYS.HERMES_TELEGRAM_CHAT_ID, hermesChatId, client),
+        setUserSetting(
+          ownerUser.id,
+          SETTING_KEYS.HERMES_TELEGRAM_ENABLED,
+          hermesEnabled ? 'true' : 'false',
           client,
         ),
       ]);
@@ -84,8 +116,10 @@ export default async function SettingsPage() {
           action: 'telegram.settings_updated',
           targetType: 'setting',
           meta: {
-            telegramEnabled,
-            chatId,
+            openClawEnabled,
+            openClawChatId,
+            hermesEnabled,
+            hermesChatId,
             tokenUpdated: Boolean(botTokenInput),
           },
         },
@@ -210,15 +244,17 @@ export default async function SettingsPage() {
                 Telegram
               </Title>
               <Text className={classes.sectionDescription} size="sm">
-                {`Save your Telegram bot configuration and test connectivity before enabling ${terminology.task.singularLower} message sends.`}
+                {`Save one Telegram bot token, then configure separate OpenClaw and Hermes channels before enabling ${terminology.task.singularLower} message sends.`}
               </Text>
             </div>
           </div>
           <div className={classes.sectionBody}>
             <TelegramSettings
               action={updateTelegramSettings}
-              defaultChatId={settings.telegram_chat_id}
-              defaultEnabled={settings.telegram_enabled === 'true'}
+              defaultOpenClawChatId={openClawTelegramSettings.chatId}
+              defaultOpenClawEnabled={openClawTelegramSettings.enabled}
+              defaultHermesChatId={hermesTelegramSettings.chatId}
+              defaultHermesEnabled={hermesTelegramSettings.enabled}
               hasSavedBotToken={Boolean(settings.telegram_bot_token)}
             />
           </div>

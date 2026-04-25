@@ -83,6 +83,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     allProjectLabels,
     editableTodo,
     telegramEnabledSetting,
+    hermesTelegramEnabledSetting,
     kitchenMode,
   ] = await withOwnerDb(owner.id, async (client) => {
     const timeZonePromise = getUserSetting(owner.id, SETTING_KEYS.TIMEZONE, client);
@@ -137,10 +138,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
           })
         : Promise.resolve(null),
       getUserSetting(owner.id, SETTING_KEYS.TELEGRAM_ENABLED, client),
+      getUserSetting(owner.id, SETTING_KEYS.HERMES_TELEGRAM_ENABLED, client),
       getUserSetting(owner.id, SETTING_KEYS.KITCHEN_MODE, client),
     ]);
   });
   const telegramEnabled = telegramEnabledSetting === 'true';
+  const hermesTelegramEnabled = (hermesTelegramEnabledSetting || telegramEnabledSetting) === 'true';
   const terminology = resolveTerminology(kitchenMode === 'true');
   const selectedProject = selectedProjectId
     ? projects.find((project) => project.id === selectedProjectId)
@@ -251,6 +254,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
             updateTodoAction={updateTodo}
             branchName={editableTodo.branch}
             telegramEnabled={telegramEnabled}
+            hermesTelegramEnabled={hermesTelegramEnabled}
           />
         ) : (
           <EmptyTaskEditPanel closeHref={currentDashboardHref} size="80rem" />
