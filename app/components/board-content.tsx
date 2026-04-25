@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { BoardEventSync } from '@/app/components/board-event-sync';
+import { BoardOfflineSyncProvider } from '@/app/components/board-offline-sync-provider';
 import { BoardTaskPanel } from '@/app/components/board-task-panel';
 import { buildArchivedTasksRequestPath, KanbanBoard } from '@/app/components/kanban-board';
 import { KanbanStoreProvider } from '@/app/components/kanban-store-provider';
@@ -125,60 +126,56 @@ export function BoardContent({
 
   return (
     <KanbanStoreProvider initialColumns={kanbanTasks} initialFocusedTask={editableTodo}>
-      {selectedProject ? (
-        <OfflineBoardHydrator
-          projectKey={selectedProject.projectKey}
-          initialColumns={kanbanTasks}
-          initialFocusedTask={editableTodo}
-        />
-      ) : null}
-      <Container className="dashboard-root is-board" fluid px={0} py={0}>
-        <Stack gap="md" className="dashboard-stack is-board">
-          <section className="kanban-stage">
-            <div className="kanban-stage-content">
-              <BoardEventSync
-                projectId={selectedProject?.id ?? null}
-                onArchivedCountRefresh={refreshArchivedCount}
-              />
-              <KanbanBoard
-                serverColumns={kanbanTasks}
-                archivedCount={archivedCount}
-                archiveProjectId={archiveProjectId}
-                onArchivedCountChange={setArchivedCount}
-                editHrefBase={editHrefBase}
-                telegramEnabled={telegramEnabled}
-                projectOptions={projects.map((project) => ({
-                  id: project.id,
-                  name: project.name,
-                }))}
-                labelOptions={todoLabels.map((label) => ({
-                  id: label.id,
-                  name: label.name,
-                  color: label.color,
-                }))}
-                projectLabelOptionsByProjectId={projectLabelOptionsByProjectId}
-                selectedProject={selectedProject}
-                enginePresets={enginePresets ?? null}
-                readyQaConfig={readyQaConfig}
-                onOpenTaskEditor={openTaskEditor}
-              />
-            </div>
-          </section>
-        </Stack>
+      <OfflineBoardHydrator boardKey={selectedProject?.projectKey ?? 'ALL'} />
+      <BoardOfflineSyncProvider editHrefBase={editHrefBase}>
+        <Container className="dashboard-root is-board" fluid px={0} py={0}>
+          <Stack gap="md" className="dashboard-stack is-board">
+            <section className="kanban-stage">
+              <div className="kanban-stage-content">
+                <BoardEventSync
+                  projectId={selectedProject?.id ?? null}
+                  onArchivedCountRefresh={refreshArchivedCount}
+                />
+                <KanbanBoard
+                  serverColumns={kanbanTasks}
+                  archivedCount={archivedCount}
+                  archiveProjectId={archiveProjectId}
+                  onArchivedCountChange={setArchivedCount}
+                  editHrefBase={editHrefBase}
+                  telegramEnabled={telegramEnabled}
+                  projectOptions={projects.map((project) => ({
+                    id: project.id,
+                    name: project.name,
+                  }))}
+                  labelOptions={todoLabels.map((label) => ({
+                    id: label.id,
+                    name: label.name,
+                    color: label.color,
+                  }))}
+                  projectLabelOptionsByProjectId={projectLabelOptionsByProjectId}
+                  selectedProject={selectedProject}
+                  enginePresets={enginePresets ?? null}
+                  readyQaConfig={readyQaConfig}
+                  onOpenTaskEditor={openTaskEditor}
+                />
+              </div>
+            </section>
+          </Stack>
 
-        <BoardTaskPanel
-          activePanel={clientPanelLocation.activePanel}
-          activeTaskKey={clientPanelLocation.taskKey}
-          boardHref={boardHref}
-          serverFocusedTask={editableTodo}
-          projects={projects}
-          projectLabelOptionsByProjectId={projectLabelOptionsByProjectId}
-          taskPriorityOptions={taskPriorityOptions}
-          updateTodoAction={updateTodoAction}
-          telegramEnabled={telegramEnabled}
-          onClose={closeTaskEditor}
-        />
-      </Container>
+          <BoardTaskPanel
+            activePanel={clientPanelLocation.activePanel}
+            activeTaskKey={clientPanelLocation.taskKey}
+            boardHref={boardHref}
+            serverFocusedTask={editableTodo}
+            projects={projects}
+            projectLabelOptionsByProjectId={projectLabelOptionsByProjectId}
+            taskPriorityOptions={taskPriorityOptions}
+            updateTodoAction={updateTodoAction}
+            telegramEnabled={telegramEnabled}
+            onClose={closeTaskEditor}
+          />
+        </Container>
+      </BoardOfflineSyncProvider>
     </KanbanStoreProvider>
   );
 }

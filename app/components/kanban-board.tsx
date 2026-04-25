@@ -48,6 +48,7 @@ import { subscribeMediaQuery } from '@/lib/match-media';
 import { showErrorNotification } from '@/lib/notifications';
 import type { QaRunView } from '@/lib/qa-runs';
 
+import { useBoardOfflineSync } from './board-offline-sync-provider';
 import { KanbanArchiveDrawer } from './kanban-archive-drawer';
 import { KanbanBoardMobile } from './kanban-board-mobile';
 import { KanbanColumn } from './kanban-column';
@@ -58,6 +59,7 @@ import {
   useOpenFocusedTaskFromBoardTask,
   useSetKanbanReconciliationPaused,
 } from './kanban-store-provider';
+import { useOfflineStatus } from './offline-status-provider';
 import { ProjectInsightModal } from './project-insight-modal';
 import { ReadyQaActions } from './ready-qa-actions';
 import { useTerminology } from './terminology-provider';
@@ -370,6 +372,8 @@ export function KanbanBoard({
   readyQaConfig = null,
   onOpenTaskEditor,
 }: KanbanBoardProps) {
+  const boardOfflineSync = useBoardOfflineSync();
+  const { online } = useOfflineStatus();
   const terminology = useTerminology();
   const resolvedServerColumns = useMemo(
     () =>
@@ -745,10 +749,18 @@ export function KanbanBoard({
         taskKey: movedTask.taskKey,
         targetStatus,
       });
-      if (!moveRequest) return;
-
       columnsRef.current = nextColumns;
       setSaveError(null);
+      if (!online && boardOfflineSync) {
+        void boardOfflineSync.queueTaskMove({
+          taskKey: movedTask.taskKey,
+          status: targetStatus,
+          sortOrder: movedTask.sortOrder,
+        });
+        return;
+      }
+      if (!moveRequest) return;
+
       enqueuePersist({
         run: async () => {
           try {
@@ -759,7 +771,7 @@ export function KanbanBoard({
         },
       });
     },
-    [enqueuePersist, kanbanStore, readColumnsFromStore],
+    [boardOfflineSync, enqueuePersist, kanbanStore, online, readColumnsFromStore],
   );
 
   const mobileQuickMove = useCallback(
@@ -832,6 +844,14 @@ export function KanbanBoard({
         taskKey: archivedTask.taskKey,
         targetStatus,
       });
+      if (!online && boardOfflineSync) {
+        void boardOfflineSync.queueTaskMove({
+          taskKey: archivedTask.taskKey,
+          status: targetStatus,
+          sortOrder,
+        });
+        return;
+      }
       if (!moveRequest) return;
 
       enqueuePersist({
@@ -842,9 +862,11 @@ export function KanbanBoard({
     },
     [
       archivedDrawerState.tasks,
+      boardOfflineSync,
       enqueuePersist,
       isMobile,
       kanbanStore,
+      online,
       onArchivedCountChange,
       quickMoveTask,
       readColumnsFromStore,
@@ -1076,10 +1098,19 @@ export function KanbanBoard({
       taskKey: movedTask.taskKey,
       targetStatus: destStatus,
     });
-    if (!moveRequest) return;
 
     columnsRef.current = nextColumns;
     setSaveError(null);
+    if (!online && boardOfflineSync) {
+      void boardOfflineSync.queueTaskMove({
+        taskKey: movedTask.taskKey,
+        status: destStatus,
+        sortOrder: nextColumns[destStatus][destination.index]?.sortOrder ?? movedTask.sortOrder,
+      });
+      return;
+    }
+    if (!moveRequest) return;
+
     enqueuePersist({
       run: async () => {
         try {

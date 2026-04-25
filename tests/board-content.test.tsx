@@ -200,7 +200,7 @@ describe('BoardContent background image handling', () => {
     expect(html).not.toContain('data-testid="dashboard-panel-drawer"');
     expect(offlineBoardHydratorPropsMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        projectKey: 'PROJ',
+        boardKey: 'PROJ',
       }),
     );
   });

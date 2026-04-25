@@ -6,9 +6,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const hydrateMock = vi.hoisted(() => vi.fn());
 const getSnapshotMock = vi.hoisted(() => vi.fn());
 const putSnapshotMock = vi.hoisted(() => vi.fn());
+const useFocusedTaskMock = vi.hoisted(() => vi.fn());
+const useKanbanColumnsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@/app/components/kanban-store-provider', () => ({
+  useFocusedTask: () => useFocusedTaskMock(),
   useHydrateKanbanStore: () => hydrateMock,
+  useKanbanColumns: () => useKanbanColumnsMock(),
 }));
 
 vi.mock('@/lib/offline/snapshot-store', () => ({
@@ -23,19 +27,24 @@ describe('app/components/offline-board-hydrator', () => {
     hydrateMock.mockReset();
     getSnapshotMock.mockReset();
     putSnapshotMock.mockReset();
+    useFocusedTaskMock.mockReset();
+    useKanbanColumnsMock.mockReset();
     getSnapshotMock.mockResolvedValue(null);
     putSnapshotMock.mockResolvedValue(undefined);
+    useFocusedTaskMock.mockReturnValue(null);
+    useKanbanColumnsMock.mockReturnValue({
+      inbox: [],
+      todo: [],
+      hold: [],
+      ready: [],
+      done: [],
+      archived: [],
+    });
     vi.stubGlobal('navigator', { onLine: true } as Navigator);
   });
 
   it('stores the latest board snapshot for the current project', async () => {
-    render(
-      <OfflineBoardHydrator
-        projectKey="PROJ"
-        initialColumns={{ inbox: [], todo: [], hold: [], ready: [], done: [], archived: [] }}
-        initialFocusedTask={null}
-      />,
-    );
+    render(<OfflineBoardHydrator boardKey="PROJ" />);
 
     await waitFor(() => {
       expect(putSnapshotMock).toHaveBeenCalledWith(
@@ -87,13 +96,7 @@ describe('app/components/offline-board-hydrator', () => {
       updatedAt: '2026-04-21T00:00:00.000Z',
     });
 
-    render(
-      <OfflineBoardHydrator
-        projectKey="PROJ"
-        initialColumns={{ inbox: [], todo: [], hold: [], ready: [], done: [], archived: [] }}
-        initialFocusedTask={null}
-      />,
-    );
+    render(<OfflineBoardHydrator boardKey="PROJ" />);
 
     await waitFor(() => {
       expect(hydrateMock).toHaveBeenCalledWith(
