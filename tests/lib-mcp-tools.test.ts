@@ -245,6 +245,48 @@ describe('registerPreqTools preq_complete_task', () => {
   });
 });
 
+describe('registerPreqTools preq_get_task', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocked.createInternalApiToken.mockResolvedValue('preq_test_token');
+  });
+
+  it('treats partial JSON-looking success bodies as non-JSON responses', async () => {
+    const handlers = new Map<
+      string,
+      (
+        input: Record<string, unknown>,
+      ) => Promise<{ content: Array<{ type: string; text: string }> }>
+    >();
+    const server = {
+      registerTool: vi.fn((name, _config, handler) => {
+        handlers.set(name, handler);
+      }),
+    };
+    mocked.getTaskRoute.mockResolvedValueOnce(
+      new Response('{"task"', {
+        status: 200,
+        headers: {
+          'content-type': 'text/plain',
+        },
+      }),
+    );
+
+    registerPreqTools(server as never, {
+      userId: 'owner-1',
+      userEmail: 'owner@example.com',
+      connectionId: 'conn-1',
+      getDetectedClientEngine: () => null,
+    });
+
+    await expect(
+      handlers.get('preq_get_task')!({
+        taskId: 'PROJ-337',
+      }),
+    ).rejects.toThrow(/returned non-JSON success response/);
+  });
+});
+
 describe('registerPreqTools preq_update_task_note', () => {
   beforeEach(() => {
     vi.clearAllMocks();

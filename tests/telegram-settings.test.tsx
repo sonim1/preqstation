@@ -1,7 +1,10 @@
+// @vitest-environment jsdom
+
 import { MantineProvider } from '@mantine/core';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import controlClasses from '@/app/components/settings-controls.module.css';
 const reactHooks = vi.hoisted(() => ({
@@ -23,7 +26,24 @@ import {
 } from '@/app/components/telegram-settings';
 
 describe('app/components/telegram-settings', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
     reactHooks.useActionState.mockReset();
     reactHooks.useActionState.mockReturnValue([null, vi.fn()]);
   });
@@ -130,5 +150,53 @@ describe('app/components/telegram-settings', () => {
 
     expect(html).toMatch(/<input[^>]*aria-invalid="true"[^>]*name="telegram_openclaw_chat_id"/);
     expect(html).toContain('OpenClaw Chat ID is required to enable Telegram.');
+  });
+
+  it('syncs chat ids and enable toggles when server defaults change', async () => {
+    const { rerender } = render(
+      <MantineProvider>
+        <TelegramSettings
+          action={vi.fn(async () => null)}
+          defaultOpenClawChatId="1234"
+          defaultOpenClawEnabled={false}
+          defaultHermesChatId="5678"
+          defaultHermesEnabled
+          hasSavedBotToken={false}
+        />
+      </MantineProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText('OpenClaw Chat ID'), {
+      target: { value: 'draft-openclaw' },
+    });
+    fireEvent.change(screen.getByLabelText('Hermes Chat ID'), {
+      target: { value: 'draft-hermes' },
+    });
+    fireEvent.click(screen.getByLabelText('Enable OpenClaw Telegram messaging'));
+    fireEvent.click(screen.getByLabelText('Enable Hermes Telegram messaging'));
+
+    rerender(
+      <MantineProvider>
+        <TelegramSettings
+          action={vi.fn(async () => null)}
+          defaultOpenClawChatId="9999"
+          defaultOpenClawEnabled={false}
+          defaultHermesChatId="8888"
+          defaultHermesEnabled
+          hasSavedBotToken={false}
+        />
+      </MantineProvider>,
+    );
+
+    await waitFor(() => {
+      expect((screen.getByLabelText('OpenClaw Chat ID') as HTMLInputElement).value).toBe('9999');
+      expect((screen.getByLabelText('Hermes Chat ID') as HTMLInputElement).value).toBe('8888');
+      expect(
+        (screen.getByLabelText('Enable OpenClaw Telegram messaging') as HTMLInputElement).checked,
+      ).toBe(false);
+      expect(
+        (screen.getByLabelText('Enable Hermes Telegram messaging') as HTMLInputElement).checked,
+      ).toBe(true);
+    });
   });
 });

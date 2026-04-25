@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Checkbox, Group, PasswordInput, Stack, Text, TextInput } from '@mantine/core';
-import { useActionState, useState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 
 import { SettingStatusMessage } from '@/app/components/setting-status-message';
 import controlClasses from '@/app/components/settings-controls.module.css';
@@ -75,6 +75,13 @@ export function TelegramSettings({
     ? { tone: state.ok ? 'success' : 'error', message: state.message }
     : null;
   const showSaveStatus = saveStatus && (saveStatus.tone === 'success' || saveErrorField === 'form');
+
+  useEffect(() => {
+    setOpenClawChatId(defaultOpenClawChatId);
+    setOpenClawEnabled(defaultOpenClawEnabled);
+    setHermesChatId(defaultHermesChatId);
+    setHermesEnabled(defaultHermesEnabled);
+  }, [defaultHermesChatId, defaultHermesEnabled, defaultOpenClawChatId, defaultOpenClawEnabled]);
 
   async function handleTestMessage(channel: TelegramChannel, message?: string) {
     const trimmedBotToken = botToken.trim();
