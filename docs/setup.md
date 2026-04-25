@@ -106,7 +106,32 @@ VALUES ('you@example.com', '$2b$10$replace_me', true);
 
 If you are migrating an existing instance, keep the existing owner row `id` so projects, tasks, API tokens, and work logs stay linked automatically.
 
-## 6) Post-Deploy Validation
+## 6) Configure Telegram Channels
+
+Open **Settings → Telegram** after the owner account is provisioned. Telegram configuration is now
+split by dispatch target:
+
+- **Bot Token**: one shared bot token for all Telegram sends
+- **OpenClaw Chat ID** + **Enable OpenClaw Telegram messaging**: used for default task sends,
+  OpenClaw `/status`, QA dispatches, and project insight sends
+- **Hermes Chat ID** + **Enable Hermes Telegram messaging**: used only for Hermes task sends from
+  the task dispatch target picker
+
+Operational notes:
+
+- If you save only the OpenClaw channel, all non-Hermes Telegram sends continue to work.
+- If you enable Hermes, task sends that target `hermes-telegram` use the Hermes chat instead of the
+  OpenClaw chat.
+- Older installs can still fall back to the legacy single-channel settings
+  (`telegram_chat_id` / `telegram_enabled`) until the split channel settings are saved.
+
+Recommended validation from the settings screen:
+
+- Send an **OpenClaw Test**
+- Send **OpenClaw /status**
+- Send a **Hermes Test** if Hermes messaging is enabled
+
+## 7) Post-Deploy Validation
 
 - `/api/health` returns `200`
 - Owner email + password login succeeds using the `users` table row
@@ -117,10 +142,12 @@ If you are migrating an existing instance, keep the existing owner row `id` so p
 - `/api/projects` and `/api/todos` are owner-only
 - Dashboard integration URL save, log creation, and status updates work
 - Board columns show `Hold` and `Ready`
+- OpenClaw Telegram test, OpenClaw `/status`, and Hermes Telegram test succeed for the channels you enabled
 - Tasks dispatched to Telegram can surface `Requested` / `Running` execution badges
+- Hermes-targeted task sends land in the Hermes chat, while QA and project insight sends still land in the OpenClaw chat
 - `claude mcp add --transport http .../mcp` or `codex mcp add ... --url .../mcp` completes browser login successfully
 
-## 7) Offline Board Validation
+## 8) Offline Board Validation
 
 Run this after any deploy that changes board shell code, `/sw.js`, or the offline mutation flow.
 
@@ -137,12 +164,12 @@ Run this after any deploy that changes board shell code, `/sw.js`, or the offlin
   still sees the returned error message. Transient failures should still halt replay with the
   remaining queue left in place for retry.
 
-## 8) Least-Privilege DB Access
+## 9) Least-Privilege DB Access
 
 - Create a dedicated DB user for the app.
 - Grant only required schema/table privileges.
 
-## 9) PREQSTATION Agent Setup
+## 10) PREQSTATION Agent Setup
 
 Recommended MCP setup:
 
@@ -174,7 +201,7 @@ Install the skill package:
 npx skills add sonim1/preqstation-skill -g
 ```
 
-## 10) Operational Recommendations
+## 11) Operational Recommendations
 
 - Rotate `AUTH_SECRET` and the stored owner `password_hash` regularly.
 - Enable Vercel Access Logs and error alerting (e.g., Sentry).

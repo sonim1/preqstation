@@ -72,15 +72,17 @@ Important naming note:
 User creates task in Kanban UI
   → preqstation stores in PostgreSQL
   → (optional) preqstation sends Telegram notification
+     → default/OpenClaw task sends go to the OpenClaw chat
+     → Hermes-targeted task sends go to the Hermes chat
 ```
 
-### 2. Agent Trigger via Telegram + OpenClaw
+### 2. Agent Trigger via Telegram Dispatch Channels
 
 ```
 preqstation  →  Telegram message
-                        →  OpenClaw receives
-                           →  preqstation-dispatcher intercepts the dispatch
-                              →  Parses: engine, task ID, project key
+                        →  OpenClaw chat receives default task sends, /status, QA, and insight
+                        →  Hermes chat receives Hermes-targeted task sends
+                           →  receiving bot/runtime parses: engine, task ID, project key
                               →  Resolves project path from explicit path, plugin config, shared mapping file, or MEMORY.md
                               →  Creates git worktree (isolated env)
                               →  Launches coding agent (claude/codex/gemini CLI)
@@ -136,7 +138,7 @@ Coding agent checks task status via preq_get_task, then:
 | `events_outbox`    | Event sourcing (task/project/worklog CRUD events)                                                               |
 | `audit_logs`       | Immutable mutation log (all API actions)                                                                        |
 | `security_events`  | Login attempts, auth failures, IP/user-agent tracking                                                           |
-| `user_settings`    | Key-value config (Telegram bot token, chat ID, enabled flag, etc.)                                              |
+| `user_settings`    | Key-value config (Telegram bot token, split OpenClaw/Hermes chat IDs and enabled flags, timezone, etc.)         |
 
 ### Database Access Boundary
 
@@ -190,7 +192,8 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 | `DELETE` | `/api/task-labels/:id`    | Delete task label               |
 | `POST`   | `/api/events/cleanup`     | Clean up old outbox entries     |
 | `GET`    | `/api/settings`           | Get/update user settings        |
-| `POST`   | `/api/telegram/send`      | Send Telegram message           |
+| `POST`   | `/api/telegram/send`      | Send task Telegram message to OpenClaw or Hermes |
+| `POST`   | `/api/telegram/send/insight` | Send project insight to the OpenClaw Telegram channel |
 | `POST`   | `/api/telegram/test`      | Test Telegram connection        |
 | `POST`   | `/api/send-to-openclaw`   | Legacy OpenClaw message relay   |
 | `GET`    | `/api/work-logs/:id`      | Get work log entry              |
@@ -258,8 +261,18 @@ Projects can also store an `agent_instructions` setting. When present, task payl
 
 - Bot token encrypted with AES-GCM (Web Crypto API + HKDF from `AUTH_SECRET`)
 - Stored as `v1.{base64urlIV}.{base64urlCiphertext}` in `user_settings`
-- Messages sent via `/api/telegram/send` with audit logging
-- Used to notify users of task events and trigger OpenClaw workflows
+- Telegram settings are split between OpenClaw and Hermes channels:
+  `openclaw_telegram_chat_id` / `openclaw_telegram_enabled` and
+  `hermes_telegram_chat_id` / `hermes_telegram_enabled`
+- Legacy single-channel settings (`telegram_chat_id` / `telegram_enabled`) remain fallback values
+  for older installs until the split settings are saved
+- `/api/telegram/send` defaults to the OpenClaw channel and can target the Hermes channel when
+  `dispatchTarget=hermes-telegram`
+- OpenClaw task, QA, and insight sends use the `!/skill preqstation-dispatch ...` command format
+- Hermes task sends use the `/preq_dispatch@PreqHermesBot` command format
+- `/api/telegram/send/insight` always uses the OpenClaw channel
+- QA dispatches and OpenClaw `/status` checks stay on the OpenClaw channel
+- Messages are audit logged and used to notify users of task events and trigger downstream runtime workflows
 
 ### Event System
 
