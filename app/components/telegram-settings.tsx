@@ -192,6 +192,7 @@ export function TelegramSettings({
   const visibleChannel = activeErrorChannel ?? activeChannel;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- local draft state also changes from user input and must resync when saved defaults change
     setOpenClawChatId(defaultOpenClawChatId);
     setOpenClawEnabled(defaultOpenClawEnabled);
     setHermesChatId(defaultHermesChatId);
