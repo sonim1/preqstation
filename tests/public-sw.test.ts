@@ -36,6 +36,7 @@ describe('public/sw.js', () => {
       skipWaiting: vi.fn(),
     });
 
+    // @ts-expect-error public/sw.js is a side-effect-only service worker script.
     await import('../public/sw.js');
 
     const activateHandler = handlers.get('activate');
