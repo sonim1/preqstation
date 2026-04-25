@@ -189,12 +189,9 @@ export function TelegramSettings({
   const showSaveStatus = saveStatus && (saveStatus.tone === 'success' || saveErrorField === 'form');
 
   useEffect(() => {
-    if (saveErrorField === 'openClawChatId') {
-      setActiveChannel('openclaw');
-      return;
-    }
-    if (saveErrorField === 'hermesChatId') {
-      setActiveChannel('hermes');
+    const config = CHANNEL_CONFIGS.find((channel) => channel.errorField === saveErrorField);
+    if (config) {
+      setActiveChannel(config.key);
     }
   }, [saveErrorField]);
 
@@ -270,7 +267,7 @@ export function TelegramSettings({
   } as const;
 
   return (
-    <Stack gap="sm" className={classes.root}>
+    <Stack className={classes.root}>
       <form action={formAction} className={classes.form}>
         <div className={classes.tokenSection}>
           <PasswordInput
