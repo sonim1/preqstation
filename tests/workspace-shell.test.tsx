@@ -466,6 +466,12 @@ describe('app/components/workspace-shell', () => {
     );
   });
 
+  it('keeps Mantine root hover and current backgrounds transparent for nested board rows', () => {
+    expect(globalsCss).toMatch(
+      /\.workspace-board-subnav-link:hover,\s*\.workspace-board-subnav-link\[data-active\],\s*\.workspace-board-subnav-link\[data-active\]:hover,\s*\.workspace-board-subnav-link\[aria-current='page'\],\s*\.workspace-board-subnav-link\[aria-current='page'\]:hover\s*\{[\s\S]*background:\s*transparent;[\s\S]*background-color:\s*transparent;/,
+    );
+  });
+
   it('defines an in-bounds focus treatment for nested board links', () => {
     const nestedBoardFocusRule =
       globalsCss.match(/\.workspace-board-subnav-link:focus-visible\s*\{([\s\S]*?)\}/)?.[1] ?? '';
