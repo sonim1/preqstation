@@ -389,6 +389,11 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).not.toContain('Radar Matrix');
     expect(html).not.toContain('Open All Boards');
     expect(html).not.toContain('Details');
+    expect(html).toContain('<span>Live projects</span>');
+    expect(html).toContain('<span>Ready next</span>');
+    expect(html).toContain('<span>Drifting</span>');
+    expect(html).toContain('<span>Touched in 7d</span>');
+    expect(html).not.toContain('<span>Paused</span>');
     expect(html).toContain('New Project');
     expect(html).toContain('guide');
     expect(html).toContain('data-portfolio-featured="true"');

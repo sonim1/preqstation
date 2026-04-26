@@ -98,7 +98,7 @@ function buildAutoPrCompletionError(params: {
     'This project cannot move to ready yet.',
     'Deployment strategy requires a pushed feature branch and PR before review (feature_branch + auto_pr + commit_on_review).',
     `Missing: ${missing.join(' and ')}.`,
-    `Push the branch, create a PR targeting ${params.defaultBranch} via GitHub MCP or \`gh pr create\`, then retry \`preq_complete_task\` with both \`branchName\` and \`prUrl\`.`,
+    `Push the branch, create a PR targeting ${params.defaultBranch} via GitHub MCP or \`gh pr create\`, then retry \`preq_complete_task\` with \`branchName\` and a PR URL so the result payload includes the PR URL.`,
   ].join(' ');
 }
 
