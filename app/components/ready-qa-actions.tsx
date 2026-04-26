@@ -13,7 +13,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
-import { IconCopy, IconFlask, IconInfoCircle } from '@tabler/icons-react';
+import { IconCheck, IconCopy, IconFlask, IconInfoCircle } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { type CSSProperties, useState } from 'react';
@@ -473,7 +473,7 @@ export function ReadyQaActions({
                                       aria-label={`Copy QA report for ${run.id}`}
                                       onClick={copy}
                                     >
-                                      {copied ? <IconCopy size={14} /> : <IconCopy size={14} />}
+                                      {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
                                     </ActionIcon>
                                   </Tooltip>
                                 )}

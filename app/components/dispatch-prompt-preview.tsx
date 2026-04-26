@@ -1,7 +1,7 @@
 'use client';
 
 import { ActionIcon, Tooltip } from '@mantine/core';
-import { IconCopy } from '@tabler/icons-react';
+import { IconCheck, IconCopy } from '@tabler/icons-react';
 import { type HTMLAttributes, useRef, useState } from 'react';
 
 type PromptPreviewDivProps = HTMLAttributes<HTMLDivElement> & Record<string, unknown>;
@@ -72,7 +72,7 @@ export function DispatchPromptPreview({
           className="task-dispatch-copy"
           onClick={copyPrompt}
         >
-          <IconCopy size={15} />
+          {copied ? <IconCheck size={15} /> : <IconCopy size={15} />}
         </ActionIcon>
       </Tooltip>
     </div>
