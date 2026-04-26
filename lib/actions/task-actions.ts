@@ -34,6 +34,10 @@ import {
   parseTaskPriority,
   taskRunStateLabel,
 } from '@/lib/task-meta';
+import {
+  buildTaskNoteFingerprint,
+  normalizeTaskNoteForComparison,
+} from '@/lib/task-note-fingerprint';
 import { createTaskCompletionNotification } from '@/lib/task-notifications';
 import { buildTaskRunStateUpdate } from '@/lib/task-run-state';
 import { resolveAppendSortOrder } from '@/lib/task-sort-order';
@@ -47,10 +51,6 @@ import {
   rebuildWorkLogFromChanges,
   taskPriorityLabel,
 } from '@/lib/task-worklog';
-import {
-  buildTaskNoteFingerprint,
-  normalizeTaskNoteForComparison,
-} from '@/lib/task-note-fingerprint';
 import { resolveTerminology } from '@/lib/terminology';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 
