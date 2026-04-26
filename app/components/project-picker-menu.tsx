@@ -8,14 +8,12 @@ import { isVisibleWorkspaceProject, type WorkspaceProjectOption } from '@/lib/wo
 
 export interface ProjectPickerMenuItemsProps {
   projectOptions: WorkspaceProjectOption[];
-  hasSelectedProject: boolean;
   selectedProjectId: string | null;
   onSelect: (projectKey: string | null) => void;
 }
 
 export function ProjectPickerMenuItems({
   projectOptions,
-  hasSelectedProject,
   selectedProjectId,
   onSelect,
 }: ProjectPickerMenuItemsProps) {
@@ -30,11 +28,11 @@ export function ProjectPickerMenuItems({
       <Menu.Item
         onClick={() => onSelect(null)}
         className="workspace-project-picker-item workspace-board-picker-item"
-        data-current-board={!hasSelectedProject ? 'true' : undefined}
-        aria-current={!hasSelectedProject ? 'page' : undefined}
+        data-current-board={selectedProjectId === null ? 'true' : undefined}
+        aria-current={selectedProjectId === null ? 'page' : undefined}
         leftSection={
           <span className="workspace-board-current-indicator" aria-hidden="true">
-            {!hasSelectedProject ? <IconPointFilled size={10} /> : null}
+            {selectedProjectId === null ? <IconPointFilled size={10} /> : null}
           </span>
         }
       >
