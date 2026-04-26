@@ -1,4 +1,7 @@
+// @vitest-environment jsdom
+
 import { MantineProvider } from '@mantine/core';
+import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -115,6 +118,27 @@ function renderTaskEditForm(
 
 describe('app/components/task-edit-form', () => {
   beforeEach(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+    class ResizeObserverMock {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    }
+
+    vi.stubGlobal('ResizeObserver', ResizeObserverMock);
+
     formAction.mockReset();
     refreshMock.mockReset();
     taskCopyActionsPropsMock.mockReset();
@@ -136,10 +160,14 @@ describe('app/components/task-edit-form', () => {
       isDirtyRef: { current: false },
     });
     useTaskOfflineDraftMock.mockReturnValue({
+      canRestoreDraft: false,
       clearDraft: vi.fn(),
+      draftBaseNoteFingerprint: 'task-note:v1:0:abc123',
       draftNote: 'Move the actions into the form meta header.',
       draftRevision: 0,
       draftTitle: 'OpenClaw 기능 UI수정',
+      hasNoteConflict: false,
+      restoreDraft: vi.fn(),
       updateNoteDraft: vi.fn(),
       updateTitleDraft: vi.fn(),
     });
@@ -169,6 +197,89 @@ describe('app/components/task-edit-form', () => {
     expect(html).toContain('Notes');
     expect(html).toContain('aria-label="Notes mode"');
     expect(html).not.toContain('Ticket content (Markdown)');
+  });
+
+  it('includes the note base fingerprint, stale note warning, and restore action when a stale draft is available', () => {
+    useTaskOfflineDraftMock.mockReturnValueOnce({
+      canRestoreDraft: true,
+      clearDraft: vi.fn(),
+      draftBaseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      draftNote: 'Move the actions into the form meta header.',
+      draftRevision: 1,
+      draftTitle: 'OpenClaw 기능 UI수정',
+      hasNoteConflict: true,
+      restoreDraft: vi.fn(),
+      updateNoteDraft: vi.fn(),
+      updateTitleDraft: vi.fn(),
+    });
+
+    const html = renderTaskEditForm();
+
+    expect(html).toContain('name="baseNoteFingerprint"');
+    expect(html).toContain('value="task-note:v1:42:deadbeef"');
+    expect(html).toContain('Server notes changed while this draft was open.');
+    expect(html).toContain('Restore draft');
+  });
+
+  it('wires the restore draft action to the draft hook and marks the form dirty', () => {
+    const markDirty = vi.fn();
+    const restoreDraft = vi.fn();
+    useAutoSaveMock.mockReturnValueOnce({
+      markDirty,
+      triggerSave: vi.fn(),
+      flushSave: vi.fn(),
+      syncSnapshot: vi.fn(),
+      status: 'idle',
+      isDirty: false,
+      isDirtyRef: { current: false },
+    });
+    useTaskOfflineDraftMock.mockReturnValueOnce({
+      canRestoreDraft: true,
+      clearDraft: vi.fn(),
+      draftBaseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      draftNote: 'Move the actions into the form meta header.',
+      draftRevision: 1,
+      draftTitle: 'OpenClaw 기능 UI수정',
+      hasNoteConflict: true,
+      restoreDraft,
+      updateNoteDraft: vi.fn(),
+      updateTitleDraft: vi.fn(),
+    });
+
+    render(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'OpenClaw 기능 UI수정',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: [],
+              labels: [],
+              taskPriority: 'none',
+              status: 'todo',
+              engine: 'codex',
+              runState: null,
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
+            updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
+            branchName="task/proj-187/openclaw-gineung-uisujeong"
+            telegramEnabled
+          />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Restore draft' }));
+
+    expect(restoreDraft).toHaveBeenCalledTimes(1);
+    expect(markDirty).toHaveBeenCalledTimes(1);
   });
 
   it('wires the notes editor save shortcut to immediate autosave only for task notes', () => {

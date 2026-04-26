@@ -7,6 +7,7 @@ export type OfflineDraftRecord = {
   scope: 'task-edit';
   entityKey: string;
   fields: {
+    baseNoteFingerprint?: string;
     note?: string;
     title?: string;
   };

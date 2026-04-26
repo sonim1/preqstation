@@ -915,6 +915,8 @@ describe('app/api/tasks/[id]/route', () => {
     expect(body.error).toContain('feature_branch + auto_pr + commit_on_review');
     expect(body.error).toContain('feature branch name');
     expect(body.error).toContain('pull request URL');
+    expect(body.error).toContain('result payload includes the PR URL');
+    expect(body.error).not.toContain('`prUrl`');
     expect(mocked.setFn).not.toHaveBeenCalled();
     expect(mocked.valuesFn).not.toHaveBeenCalled();
   });
@@ -958,6 +960,8 @@ describe('app/api/tasks/[id]/route', () => {
     expect(body.error).toContain('feature_branch + auto_pr + commit_on_review');
     expect(body.error).toContain('feature branch name');
     expect(body.error).toContain('pull request URL');
+    expect(body.error).toContain('result payload includes the PR URL');
+    expect(body.error).not.toContain('`prUrl`');
     expect(mocked.setFn).not.toHaveBeenCalled();
     expect(mocked.valuesFn).not.toHaveBeenCalled();
   });

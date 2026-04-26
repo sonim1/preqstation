@@ -3,6 +3,7 @@
 import {
   ActionIcon,
   Alert,
+  Button,
   Group,
   Loader,
   Menu,
@@ -20,7 +21,15 @@ import {
   IconInfoCircle,
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
-import { type ReactNode, useActionState, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type ReactNode,
+  useActionState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { useBoardOfflineSync } from '@/app/components/board-offline-sync-provider';
 import { type EditorMode, LiveMarkdownEditor } from '@/app/components/live-markdown-editor';
@@ -370,7 +379,7 @@ export function useTaskEditFormController({
   updateTodoAction,
   onTaskUpdated,
 }: TaskEditFormProps) {
-  const { status, projectId, labelIds } = editableTodo;
+  const { projectId, labelIds } = editableTodo;
   const router = useRouter();
   const incomingRevision = buildTaskEditRevision(editableTodo);
   const incomingFieldRevisions = buildTaskEditFieldRevisions(editableTodo);
@@ -380,8 +389,18 @@ export function useTaskEditFormController({
   const [fieldRenderKey, setFieldRenderKey] = useState(incomingRevision);
   const [fieldRevisions, setFieldRevisions] = useState(incomingFieldRevisions);
   const [selectedLabelIds, setSelectedLabelIds] = useState(labelIds);
-  const { clearDraft, draftNote, draftRevision, draftTitle, updateNoteDraft, updateTitleDraft } =
-    useTaskOfflineDraft(editableTodo.taskKey, editableTodo.title, editableTodo.note);
+  const {
+    canRestoreDraft,
+    clearDraft,
+    draftBaseNoteFingerprint,
+    draftNote,
+    draftRevision,
+    draftTitle,
+    hasNoteConflict,
+    restoreDraft,
+    updateNoteDraft,
+    updateTitleDraft,
+  } = useTaskOfflineDraft(editableTodo.taskKey, editableTodo.title, editableTodo.note, online);
   const formId = `task-edit-form-${editableTodo.id}`;
 
   const copyTaskId = async () => {
@@ -397,8 +416,9 @@ export function useTaskEditFormController({
     labelIds: string[];
   } | null>(null);
   const [updateState, updateFormAction] = useActionState(updateTodoAction, null);
-  const labelById = new Map(
-    [...editableTodo.labels, ...todoLabels].map((label) => [label.id, label]),
+  const labelById = useMemo(
+    () => new Map([...editableTodo.labels, ...todoLabels].map((label) => [label.id, label])),
+    [editableTodo.labels, todoLabels],
   );
   const submitTaskUpdate = useCallback(
     async (form: HTMLFormElement) => {
@@ -567,7 +587,9 @@ export function useTaskEditFormController({
   };
 
   return {
+    canRestoreNoteDraft: canRestoreDraft,
     clearOfflineDraft: clearDraft,
+    draftBaseNoteFingerprint,
     draftNote,
     draftRevision,
     draftTitle,
@@ -584,6 +606,8 @@ export function useTaskEditFormController({
     latestPreqResultLog,
     markDirty,
     noteRenderKey: fieldRevisions.note,
+    noteConflict: hasNoteConflict,
+    restoreNoteDraft: restoreDraft,
     projectName,
     priorityRenderKey: fieldRevisions.taskPriority,
     saveStatus,
@@ -672,7 +696,9 @@ function TaskEditFormContent({
   const terminology = useTerminology();
   const { status, projectId, taskKey, taskPriority, engine, runState } = editableTodo;
   const {
+    canRestoreNoteDraft,
     clearOfflineDraft: _clearOfflineDraft,
+    draftBaseNoteFingerprint,
     draftNote,
     draftRevision,
     draftTitle: _draftTitle,
@@ -687,7 +713,10 @@ function TaskEditFormContent({
     idCopied,
     labelOptions,
     latestPreqResultLog,
+    markDirty,
     noteRenderKey,
+    noteConflict,
+    restoreNoteDraft,
     projectName,
     priorityRenderKey,
     saveStatus,
@@ -717,6 +746,10 @@ function TaskEditFormContent({
   const handleDispatchQueued = (taskKey: string, queuedAt: string) => {
     onTaskQueued?.(taskKey, queuedAt);
     onDispatchQueued?.();
+  };
+  const handleRestoreDraft = () => {
+    restoreNoteDraft();
+    markDirty();
   };
   const showLatestPreqResult = shouldSurfaceLatestPreqResult(status, latestPreqResultLog?.detail);
   useEffect(() => {
@@ -750,6 +783,7 @@ function TaskEditFormContent({
         <input type="hidden" name="id" value={taskKey} />
         <input type="hidden" name="projectId" value={projectId ?? ''} />
         <input type="hidden" name="runState" value={runState ?? ''} />
+        <input type="hidden" name="baseNoteFingerprint" value={draftBaseNoteFingerprint} />
         {selectedLabelIds.map((selectedLabelId) => (
           <input key={selectedLabelId} type="hidden" name="labelIds" value={selectedLabelId} />
         ))}
@@ -785,6 +819,26 @@ function TaskEditFormContent({
                 />
 
                 <div className={classes.notesEditor}>
+                  {noteConflict || canRestoreNoteDraft ? (
+                    <Alert
+                      color={noteConflict ? 'yellow' : 'blue'}
+                      variant="light"
+                      icon={noteConflict ? <IconAlertCircle size={16} /> : <IconInfoCircle size={16} />}
+                    >
+                      <Group justify="space-between" align="center" gap="sm" wrap="wrap">
+                        <Text size="sm">
+                          {noteConflict
+                            ? 'Server notes changed while this draft was open. Review the latest task notes before restoring so PREQ updates do not get overwritten.'
+                            : 'A saved local draft is available. Restore it if you want to continue from your browser draft instead of the latest server notes.'}
+                        </Text>
+                        {canRestoreNoteDraft ? (
+                          <Button size="xs" variant="light" onClick={handleRestoreDraft}>
+                            Restore draft
+                          </Button>
+                        ) : null}
+                      </Group>
+                    </Alert>
+                  ) : null}
                   <LiveMarkdownEditor
                     key={`note:${activeNotesRevision}`}
                     name="noteMd"
