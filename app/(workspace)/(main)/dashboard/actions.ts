@@ -188,6 +188,7 @@ export async function updateTodo(_prevState: unknown, formData: FormData): Promi
     const result = await runUpdateTodoAction({
       ownerId: ownerUser.id,
       identifier: String(formData.get('id') || ''),
+      baseNoteFingerprint: String(formData.get('baseNoteFingerprint') || ''),
       title: String(formData.get('title') || ''),
       noteMd: String(formData.get('noteMd') || ''),
       labelIds: getTaskLabelIdsFromFormData(formData),

@@ -137,9 +137,11 @@ describe('app/components/task-edit-form', () => {
     });
     useTaskOfflineDraftMock.mockReturnValue({
       clearDraft: vi.fn(),
+      draftBaseNoteFingerprint: 'task-note:v1:0:abc123',
       draftNote: 'Move the actions into the form meta header.',
       draftRevision: 0,
       draftTitle: 'OpenClaw 기능 UI수정',
+      hasNoteConflict: false,
       updateNoteDraft: vi.fn(),
       updateTitleDraft: vi.fn(),
     });
@@ -169,6 +171,25 @@ describe('app/components/task-edit-form', () => {
     expect(html).toContain('Notes');
     expect(html).toContain('aria-label="Notes mode"');
     expect(html).not.toContain('Ticket content (Markdown)');
+  });
+
+  it('includes the note base fingerprint and conflict alert when a stale draft is open', () => {
+    useTaskOfflineDraftMock.mockReturnValueOnce({
+      clearDraft: vi.fn(),
+      draftBaseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      draftNote: 'Move the actions into the form meta header.',
+      draftRevision: 1,
+      draftTitle: 'OpenClaw 기능 UI수정',
+      hasNoteConflict: true,
+      updateNoteDraft: vi.fn(),
+      updateTitleDraft: vi.fn(),
+    });
+
+    const html = renderTaskEditForm();
+
+    expect(html).toContain('name="baseNoteFingerprint"');
+    expect(html).toContain('value="task-note:v1:42:deadbeef"');
+    expect(html).toContain('Server notes changed while this draft was open.');
   });
 
   it('wires the notes editor save shortcut to immediate autosave only for task notes', () => {
