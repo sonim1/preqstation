@@ -17,6 +17,24 @@ export function buildTaskRunStateUpdate(
   };
 }
 
+export async function findTaskDispatchContextByTaskKey(
+  params: {
+    ownerId: string;
+    taskKey: string;
+  },
+  client: DbClientOrTx = db,
+) {
+  const task = await client.query.tasks.findFirst({
+    where: and(eq(tasks.ownerId, params.ownerId), eq(tasks.taskKey, params.taskKey)),
+    columns: {
+      taskKey: true,
+      projectId: true,
+    },
+  });
+
+  return task ?? null;
+}
+
 export async function queueTaskExecutionByTaskKey(
   params: {
     ownerId: string;
