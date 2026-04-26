@@ -111,6 +111,24 @@ describe('app/api/dispatch/claude-code/route', () => {
     );
   });
 
+  it('returns 404 without downstream side effects when the task key does not resolve', async () => {
+    mocked.queueTaskExecutionByTaskKey.mockResolvedValueOnce(null);
+
+    const response = await POST(
+      postRequest({
+        taskKey: 'PROJ-404',
+        engine: 'codex',
+        objective: 'ask',
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: 'Not found' });
+    expect(mocked.createDispatchRequest).not.toHaveBeenCalled();
+    expect(mocked.writeOutboxEventStandalone).not.toHaveBeenCalled();
+    expect(mocked.writeAuditLog).not.toHaveBeenCalled();
+  });
+
   it('creates an explicit ask request for Claude dispatch parity', async () => {
     const response = await POST(
       postRequest({

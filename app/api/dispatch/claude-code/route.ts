@@ -36,6 +36,10 @@ export async function POST(req: Request) {
       branch: payload.branchName || null,
     });
 
+    if (!queuedTask) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
     if (payload.objective && payload.objective !== 'default') {
       await createDispatchRequest({
         ownerId: owner.id,
@@ -57,7 +61,7 @@ export async function POST(req: Request) {
 
     await writeOutboxEventStandalone({
       ownerId: owner.id,
-      projectId: queuedTask?.projectId ?? null,
+      projectId: queuedTask.projectId,
       eventType: TASK_UPDATED,
       entityType: ENTITY_TASK,
       entityId: payload.taskKey,
