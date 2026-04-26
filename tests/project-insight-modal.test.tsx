@@ -62,7 +62,7 @@ describe('app/components/project-insight-modal', () => {
       telegramEnabled: true,
     });
 
-    expect(resolveInitialInsightAction(actionOptions, null)).toBe('send-claude-code');
+    expect(resolveInitialInsightAction(actionOptions, null)).toBe('send-telegram');
     expect(
       isInsightExecuteDisabled({
         opened: true,
@@ -89,18 +89,18 @@ describe('app/components/project-insight-modal', () => {
     expect(html).toContain('0/1200');
   });
 
-  it('shows the Claude Code transport action when Claude Code is selected', () => {
+  it('shows only Telegram transport actions when Claude Code is selected', () => {
     const html = renderInsightModal({ defaultEngine: 'claude-code' });
 
     expect(html).toContain('aria-label="Insight action"');
-    expect(html).toContain('Send to Claude Code');
     expect(html).toContain('Send to Telegram');
     expect(html).toContain('Copy Telegram');
+    expect(html).not.toContain('Send to Claude Code');
   });
 
   it('shows the resolved primary action label on first render for Claude Code', () => {
     const html = renderInsightModal({ defaultEngine: 'claude-code', telegramEnabled: true });
 
-    expect(html).toContain('Queue Insight');
+    expect(html).toContain('Send');
   });
 });

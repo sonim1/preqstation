@@ -1,8 +1,4 @@
-export const TASK_DISPATCH_TARGETS = [
-  'telegram',
-  'hermes-telegram',
-  'claude-code-channel',
-] as const;
+export const TASK_DISPATCH_TARGETS = ['telegram', 'hermes-telegram'] as const;
 export type TaskDispatchTarget = (typeof TASK_DISPATCH_TARGETS)[number];
 
 export function normalizeTaskDispatchTarget(

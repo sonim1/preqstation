@@ -80,6 +80,7 @@ class MemoryStorage implements Storage {
 }
 
 const originalWindow = globalThis.window;
+const legacyClaudeDispatchAction = ['send', 'claude-code'].join('-');
 
 function renderTaskCopyActions(props: Partial<React.ComponentProps<typeof TaskCopyActions>> = {}) {
   return renderToStaticMarkup(
@@ -122,7 +123,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('task-dispatch-target-segments');
     expect(html).toContain('task-dispatch-mode-segments');
     expect(html).toMatch(
-      /task-dispatch-target-segments"[^>]*data-option-count="3"[^>]*data-selected-index="0"/,
+      /task-dispatch-target-segments"[^>]*data-option-count="2"[^>]*data-selected-index="0"/,
     );
     expect(html).toMatch(
       /task-dispatch-engine-segments"[^>]*data-option-count="3"[^>]*data-selected-index="1"/,
@@ -156,11 +157,11 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('Cmd+Enter');
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');
-    expect(html).toContain('Channels');
     expect(html).toContain('🦞 Telegram');
     expect(html).toContain('H Telegram');
     expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
-    expect(html).toContain('aria-label="Select target: Channels"');
+    expect(html).not.toContain('Channels');
+    expect(html).not.toContain('aria-label="Select target: Channels"');
     expect(html).toContain(
       '!/skill preqstation-dispatch implement PROJ-224 using codex branch_name=&quot;task/proj-224/move-status-test-button&quot;',
     );
@@ -178,7 +179,7 @@ describe('app/components/task-copy-actions', () => {
       JSON.stringify({
         todo: {
           engine: 'gemini-cli',
-          action: 'send-claude-code',
+          action: 'send-telegram',
           objective: 'review',
         },
       }),
@@ -188,25 +189,25 @@ describe('app/components/task-copy-actions', () => {
 
     expect(html).toContain('aria-label="Selected engine: Gemini"');
     expect(html).toContain('aria-label="Selected mode: Implement"');
+    expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
     expect(html).not.toContain('aria-label="Select mode: Review"');
     expect(html).toContain(
       '!/skill preqstation-dispatch implement PROJ-224 using gemini-cli branch_name=&quot;task/proj-224/move-status-test-button&quot;',
     );
   });
 
-  it('shows Channels, 🦞 Telegram, and H Telegram for Claude task-edit dispatch', () => {
+  it('shows only Telegram targets for Claude task-edit dispatch', () => {
     const html = renderTaskCopyActions({ engine: 'claude-code' });
 
-    expect(html).toContain('Channels');
     expect(html).toContain('🦞 Telegram');
     expect(html).toContain('H Telegram');
     expect(html).toMatch(
-      /task-dispatch-target-segments"[^>]*data-option-count="3"[^>]*data-selected-index="0"/,
+      /task-dispatch-target-segments"[^>]*data-option-count="2"[^>]*data-selected-index="0"/,
     );
-    expect(html).toContain('aria-label="Selected target: Channels"');
-    expect(html).toContain('aria-label="Select target: 🦞 Telegram"');
+    expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
     expect(html).toContain('aria-label="Select target: H Telegram"');
     expect(html).toContain('data-engine-icon="claude-code"');
+    expect(html).not.toContain('Channels');
   });
 
   it('shows the Hermes Telegram dispatch payload when H Telegram is selected', () => {
@@ -237,43 +238,43 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('!/skill preqstation-dispatch');
   });
 
-  it('keeps Channels available while hiding Hermes', () => {
+  it('shows only OpenClaw Telegram while hiding Hermes', () => {
     const html = renderTaskCopyActions({
       engine: 'codex',
       telegramEnabled: true,
       hermesTelegramEnabled: false,
     });
 
-    expect(html).toContain('Channels');
     expect(html).toContain('🦞 Telegram');
     expect(html).not.toContain('H Telegram');
     expect(html).toMatch(
-      /task-dispatch-target-segments"[^>]*data-option-count="2"[^>]*data-selected-index="0"/,
+      /task-dispatch-target-segments"[^>]*data-option-count="1"[^>]*data-selected-index="0"/,
     );
     expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
+    expect(html).not.toContain('Channels');
   });
 
-  it('keeps Channels available when Hermes is the only Telegram target', () => {
+  it('shows Hermes when Hermes is the only Telegram target', () => {
     const html = renderTaskCopyActions({
       engine: 'codex',
       telegramEnabled: false,
       hermesTelegramEnabled: true,
     });
 
-    expect(html).toContain('Channels');
     expect(html).not.toContain('🦞 Telegram');
     expect(html).toContain('H Telegram');
     expect(html).toContain('aria-label="Selected target: H Telegram"');
     expect(html).toContain('/preq_dispatch@PreqHermesBot');
+    expect(html).not.toContain('Channels');
   });
 
-  it('keeps Channels selected when the stored target is valid for a non-Claude engine', () => {
+  it('falls back to OpenClaw Telegram when the stored target is a legacy Claude action', () => {
     localStorage.setItem(
       TASK_DISPATCH_PREFERENCES_STORAGE,
       JSON.stringify({
         todo: {
           engine: 'gemini-cli',
-          action: 'send-claude-code',
+          action: legacyClaudeDispatchAction,
           objective: 'implement',
         },
       }),
@@ -281,11 +282,11 @@ describe('app/components/task-copy-actions', () => {
 
     const html = renderTaskCopyActions({ engine: 'codex' });
 
-    expect(html).toContain('aria-label="Selected engine: Gemini"');
-    expect(html).toContain('aria-label="Selected target: Channels"');
+    expect(html).toContain('aria-label="Selected engine: Codex"');
+    expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
   });
 
-  it('falls back to Channels when Telegram is unavailable, including legacy copy-telegram preferences', () => {
+  it('falls back to Hermes when OpenClaw Telegram is unavailable, including legacy preferences', () => {
     localStorage.setItem(
       TASK_DISPATCH_PREFERENCES_STORAGE,
       JSON.stringify({
@@ -297,10 +298,15 @@ describe('app/components/task-copy-actions', () => {
       }),
     );
 
-    const html = renderTaskCopyActions({ telegramEnabled: false, engine: 'claude-code' });
+    const html = renderTaskCopyActions({
+      telegramEnabled: false,
+      hermesTelegramEnabled: true,
+      engine: 'claude-code',
+    });
 
-    expect(html).toContain('aria-label="Selected target: Channels"');
+    expect(html).toContain('aria-label="Selected target: H Telegram"');
     expect(html).not.toContain('🦞 Telegram');
+    expect(html).not.toContain('Channels');
   });
 
   it('shows plan and ask only for inbox tasks', () => {
@@ -356,7 +362,7 @@ describe('app/components/task-copy-actions', () => {
       JSON.stringify({
         todo: {
           engine: 'claude-code',
-          action: 'send-claude-code',
+          action: 'send-telegram',
           objective: 'ask',
         },
       }),
@@ -369,6 +375,7 @@ describe('app/components/task-copy-actions', () => {
 
     expect(html).toContain('aria-label="Selected engine: Claude"');
     expect(html).toContain('aria-label="Selected mode: Ask"');
+    expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
     expect(html).toContain(
       '!/skill preqstation-dispatch ask PROJ-224 using claude-code branch_name=&quot;task/proj-224/move-status-test-button&quot; ask_hint=&quot;Acceptance criteria 중심으로 정리해줘&quot;',
     );

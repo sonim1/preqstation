@@ -12,26 +12,14 @@ import {
 import { PATCH as patchTaskStatusRoute } from '@/app/api/tasks/[id]/status/route';
 import { GET as listTasksRoute, POST as createTaskRoute } from '@/app/api/tasks/route';
 import { createInternalApiToken } from '@/lib/api-tokens';
-import {
-  DISPATCH_REQUEST_OBJECTIVES,
-  DISPATCH_REQUEST_SCOPES,
-  DISPATCH_REQUEST_STATES,
-  DISPATCH_REQUEST_TARGETS,
-  listDispatchRequests,
-  updateDispatchRequestState,
-} from '@/lib/dispatch-request-store';
 import type { McpAuthContext } from '@/lib/mcp/context';
 
 const PREQ_TASK_STATUSES = ['inbox', 'todo', 'hold', 'ready', 'done', 'archived'] as const;
 const PREQ_TASK_RUN_STATES = ['queued', 'working'] as const;
-const PREQ_TASK_DISPATCH_TARGETS = ['telegram', 'hermes-telegram', 'claude-code-channel'] as const;
+const PREQ_TASK_DISPATCH_TARGETS = ['telegram', 'hermes-telegram'] as const;
 const PREQ_TASK_LIST_DETAILS = ['simple', 'full'] as const;
 const TASK_STATUS_ONLY_STATUSES = PREQ_TASK_STATUSES;
 const PREQ_ENGINES = ['claude-code', 'codex', 'gemini-cli'] as const;
-const PREQ_DISPATCH_REQUEST_SCOPES = DISPATCH_REQUEST_SCOPES;
-const PREQ_DISPATCH_REQUEST_OBJECTIVES = DISPATCH_REQUEST_OBJECTIVES;
-const PREQ_DISPATCH_REQUEST_STATES = DISPATCH_REQUEST_STATES;
-const PREQ_DISPATCH_REQUEST_TARGETS = DISPATCH_REQUEST_TARGETS;
 const PREQ_ENGINE_SET = new Set(PREQ_ENGINES);
 const PREQ_DEFAULT_ENGINE: (typeof PREQ_ENGINES)[number] = 'codex';
 const INTERNAL_BASE_URL = 'https://internal.preqstation.local';
@@ -61,16 +49,6 @@ function normalizeDispatchTargetValue(input: string | null | undefined) {
   if (!value) return null;
   return PREQ_TASK_DISPATCH_TARGETS.includes(value as (typeof PREQ_TASK_DISPATCH_TARGETS)[number])
     ? (value as (typeof PREQ_TASK_DISPATCH_TARGETS)[number])
-    : null;
-}
-
-function normalizeDispatchRequestStateValue(input: string | null | undefined) {
-  const value = typeof input === 'string' ? input.trim().toLowerCase() : '';
-  if (!value) return null;
-  return PREQ_DISPATCH_REQUEST_STATES.includes(
-    value as (typeof PREQ_DISPATCH_REQUEST_STATES)[number],
-  )
-    ? (value as (typeof PREQ_DISPATCH_REQUEST_STATES)[number])
     : null;
 }
 
@@ -126,26 +104,6 @@ export function summarizeProject(project: Record<string, unknown> | null | undef
     key: project?.projectKey ?? null,
     name: project?.name ?? null,
     repoUrl: project?.repoUrl ?? null,
-  };
-}
-
-export function summarizeDispatchRequest(request: Record<string, unknown> | null | undefined) {
-  return {
-    id: request?.id ?? null,
-    scope: request?.scope ?? null,
-    objective: request?.objective ?? null,
-    state: request?.state ?? null,
-    project_key: request?.projectKey ?? request?.project_key ?? null,
-    task_key: request?.taskKey ?? request?.task_key ?? null,
-    engine: request?.engine ?? null,
-    branch_name: request?.branchName ?? request?.branch_name ?? null,
-    dispatch_target: request?.dispatchTarget ?? request?.dispatch_target ?? null,
-    prompt_metadata: request?.promptMetadata ?? request?.prompt_metadata ?? null,
-    error_message: request?.errorMessage ?? request?.error_message ?? null,
-    created_at: request?.createdAt ?? request?.created_at ?? null,
-    updated_at: request?.updatedAt ?? request?.updated_at ?? null,
-    dispatched_at: request?.dispatchedAt ?? request?.dispatched_at ?? null,
-    failed_at: request?.failedAt ?? request?.failed_at ?? null,
   };
 }
 
@@ -356,63 +314,6 @@ async function callPatchQaRun(
 }
 
 export function registerPreqTools(server: McpServer, context: McpToolContext) {
-  server.registerTool(
-    'preq_list_dispatch_requests',
-    {
-      title: 'List PREQSTATION dispatch requests',
-      description:
-        'List explicit dispatch requests for non-legacy Claude/OpenClaw flows such as ask parity and project-level insight.',
-      inputSchema: {
-        state: z.enum(PREQ_DISPATCH_REQUEST_STATES).optional(),
-        objective: z.enum(PREQ_DISPATCH_REQUEST_OBJECTIVES).optional(),
-        scope: z.enum(PREQ_DISPATCH_REQUEST_SCOPES).optional(),
-        dispatchTarget: z.enum(PREQ_DISPATCH_REQUEST_TARGETS).optional(),
-        limit: z.number().int().min(1).max(200).optional(),
-      },
-    },
-    async ({ state, objective, scope, dispatchTarget, limit }) => {
-      const requests = await listDispatchRequests({
-        ownerId: context.userId,
-        state: normalizeDispatchRequestStateValue(state),
-        objective: objective ?? null,
-        dispatchTarget: dispatchTarget ?? null,
-        limit: typeof limit === 'number' ? limit : 200,
-      });
-
-      const scoped = scope ? requests.filter((request) => request.scope === scope) : requests;
-
-      return contentText({
-        count: scoped.length,
-        requests: scoped.map((request) => summarizeDispatchRequest(request)),
-      });
-    },
-  );
-
-  server.registerTool(
-    'preq_update_dispatch_request',
-    {
-      title: 'Update PREQSTATION dispatch request state',
-      description:
-        'Mark an explicit dispatch request as dispatched or failed after the external launcher handles it.',
-      inputSchema: {
-        requestId: z.string().trim().min(1),
-        state: z.enum(PREQ_DISPATCH_REQUEST_STATES),
-        errorMessage: z.string().trim().max(4000).optional(),
-      },
-    },
-    async ({ requestId, state, errorMessage }) =>
-      contentText({
-        request: summarizeDispatchRequest(
-          await updateDispatchRequestState({
-            ownerId: context.userId,
-            requestId,
-            state,
-            errorMessage: errorMessage || null,
-          }),
-        ),
-      }),
-  );
-
   server.registerTool(
     'preq_list_projects',
     {

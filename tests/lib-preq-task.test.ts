@@ -134,7 +134,7 @@ describe('serializePreqTask', () => {
         branch: 'task/proj-300/dispatch-routing',
         engine: 'codex',
         runState: 'queued',
-        dispatchTarget: 'claude-code-channel',
+        dispatchTarget: 'hermes-telegram',
         createdAt: new Date('2026-03-10T00:00:00.000Z'),
         updatedAt: new Date('2026-03-10T01:00:00.000Z'),
         project: null,
@@ -143,7 +143,7 @@ describe('serializePreqTask', () => {
       'owner@example.com',
     );
 
-    expect(serialized.dispatch_target).toBe('claude-code-channel');
+    expect(serialized.dispatch_target).toBe('hermes-telegram');
   });
 
   it('preserves all labels in order', () => {

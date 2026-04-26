@@ -11,8 +11,6 @@ const mocked = vi.hoisted(() => ({
   patchTaskStatusRoute: vi.fn(),
   getProjectSettingsRoute: vi.fn(),
   patchQaRunRoute: vi.fn(),
-  listDispatchRequests: vi.fn(),
-  updateDispatchRequestState: vi.fn(),
 }));
 
 vi.mock('@/lib/api-tokens', () => ({
@@ -46,19 +44,10 @@ vi.mock('@/app/api/qa-runs/[id]/route', () => ({
   PATCH: mocked.patchQaRunRoute,
 }));
 
-vi.mock('@/lib/dispatch-request-store', () => ({
-  DISPATCH_REQUEST_OBJECTIVES: ['ask', 'insight'],
-  DISPATCH_REQUEST_SCOPES: ['task', 'project'],
-  DISPATCH_REQUEST_STATES: ['queued', 'dispatched', 'failed'],
-  DISPATCH_REQUEST_TARGETS: ['claude-code-channel'],
-  listDispatchRequests: mocked.listDispatchRequests,
-  updateDispatchRequestState: mocked.updateDispatchRequestState,
-}));
-
-import { registerPreqTools, summarizeDispatchRequest, summarizeTask } from '@/lib/mcp/tools';
+import { registerPreqTools, summarizeTask } from '@/lib/mcp/tools';
 
 describe('summarizeTask', () => {
-  it('preserves dispatch fields needed by Claude dispatch polling', () => {
+  it('preserves dispatch fields needed by task polling', () => {
     expect(
       summarizeTask({
         id: 'task-uuid',
@@ -68,7 +57,7 @@ describe('summarizeTask', () => {
         run_state: 'queued',
         engine: 'claude-code',
         branch: 'task/proj-123/ship-dispatch',
-        dispatch_target: 'claude-code-channel',
+        dispatch_target: 'telegram',
       }),
     ).toMatchObject({
       id: 'task-uuid',
@@ -77,35 +66,7 @@ describe('summarizeTask', () => {
       run_state: 'queued',
       engine: 'claude-code',
       branch_name: 'task/proj-123/ship-dispatch',
-      dispatch_target: 'claude-code-channel',
-    });
-  });
-});
-
-describe('summarizeDispatchRequest', () => {
-  it('normalizes dispatch request fields for MCP consumers', () => {
-    expect(
-      summarizeDispatchRequest({
-        id: 'req-1',
-        scope: 'task',
-        objective: 'ask',
-        state: 'queued',
-        taskKey: 'PROJ-328',
-        projectKey: 'PROJ',
-        branchName: 'task/proj-328/rewrite-note',
-        dispatchTarget: 'claude-code-channel',
-        promptMetadata: { askHint: '더 명확하게 정리해줘' },
-      }),
-    ).toMatchObject({
-      id: 'req-1',
-      scope: 'task',
-      objective: 'ask',
-      state: 'queued',
-      task_key: 'PROJ-328',
-      project_key: 'PROJ',
-      branch_name: 'task/proj-328/rewrite-note',
-      dispatch_target: 'claude-code-channel',
-      prompt_metadata: { askHint: '더 명확하게 정리해줘' },
+      dispatch_target: 'telegram',
     });
   });
 });
@@ -372,130 +333,5 @@ describe('registerPreqTools preq_update_task_note', () => {
     });
     expect(requestBody.lifecycle_action).toBeUndefined();
     expect(requestBody.status).toBeUndefined();
-  });
-});
-
-describe('registerPreqTools dispatch request tools', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mocked.listDispatchRequests.mockResolvedValue([
-      {
-        id: 'req-1',
-        scope: 'task',
-        objective: 'ask',
-        state: 'queued',
-        taskKey: 'PROJ-328',
-        projectKey: 'PROJ',
-        dispatchTarget: 'claude-code-channel',
-      },
-      {
-        id: 'req-2',
-        scope: 'project',
-        objective: 'insight',
-        state: 'queued',
-        projectKey: 'PROJ',
-        dispatchTarget: 'claude-code-channel',
-      },
-    ]);
-    mocked.updateDispatchRequestState.mockResolvedValue({
-      id: 'req-2',
-      scope: 'project',
-      objective: 'insight',
-      state: 'dispatched',
-      projectKey: 'PROJ',
-      dispatchTarget: 'claude-code-channel',
-    });
-  });
-
-  it('lists normalized dispatch requests and applies scope filtering after the store query', async () => {
-    const handlers = new Map<
-      string,
-      (
-        input: Record<string, unknown>,
-      ) => Promise<{ content: Array<{ type: string; text: string }> }>
-    >();
-    const server = {
-      registerTool: vi.fn((name, _config, handler) => {
-        handlers.set(name, handler);
-      }),
-    };
-
-    registerPreqTools(server as never, {
-      userId: 'owner-1',
-      userEmail: 'owner@example.com',
-      connectionId: 'conn-1',
-      getDetectedClientEngine: () => null,
-    });
-
-    const result = await handlers.get('preq_list_dispatch_requests')!({
-      state: 'queued',
-      objective: 'insight',
-      scope: 'project',
-      dispatchTarget: 'claude-code-channel',
-      limit: 10,
-    });
-    const payload = JSON.parse(result.content[0].text);
-
-    expect(mocked.listDispatchRequests).toHaveBeenCalledWith({
-      ownerId: 'owner-1',
-      state: 'queued',
-      objective: 'insight',
-      dispatchTarget: 'claude-code-channel',
-      limit: 10,
-    });
-    expect(payload).toEqual({
-      count: 1,
-      requests: [
-        expect.objectContaining({
-          id: 'req-2',
-          scope: 'project',
-          objective: 'insight',
-          state: 'queued',
-          project_key: 'PROJ',
-        }),
-      ],
-    });
-  });
-
-  it('updates dispatch request state through the dedicated MCP tool', async () => {
-    const handlers = new Map<
-      string,
-      (
-        input: Record<string, unknown>,
-      ) => Promise<{ content: Array<{ type: string; text: string }> }>
-    >();
-    const server = {
-      registerTool: vi.fn((name, _config, handler) => {
-        handlers.set(name, handler);
-      }),
-    };
-
-    registerPreqTools(server as never, {
-      userId: 'owner-1',
-      userEmail: 'owner@example.com',
-      connectionId: 'conn-1',
-      getDetectedClientEngine: () => null,
-    });
-
-    const result = await handlers.get('preq_update_dispatch_request')!({
-      requestId: 'req-2',
-      state: 'dispatched',
-      errorMessage: '',
-    });
-    const payload = JSON.parse(result.content[0].text);
-
-    expect(mocked.updateDispatchRequestState).toHaveBeenCalledWith({
-      ownerId: 'owner-1',
-      requestId: 'req-2',
-      state: 'dispatched',
-      errorMessage: null,
-    });
-    expect(payload.request).toMatchObject({
-      id: 'req-2',
-      scope: 'project',
-      objective: 'insight',
-      state: 'dispatched',
-      project_key: 'PROJ',
-    });
   });
 });

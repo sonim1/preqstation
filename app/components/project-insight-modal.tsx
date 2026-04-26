@@ -6,8 +6,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { INSIGHT_PROMPT_MAX_LENGTH } from '@/lib/content-limits';
 import { ENGINE_CONFIGS, getEngineConfig, normalizeEngineKey } from '@/lib/engine-icons';
 import { showErrorNotification, showSuccessNotification } from '@/lib/notifications';
-import { encodeDispatchPromptMetadata } from '@/lib/openclaw-command';
-import { queueClaudeCodeInsightDispatch } from '@/lib/task-dispatch-client';
 import {
   buildProjectInsightTelegramMessage,
   sendProjectInsightTelegramMessage,
@@ -19,7 +17,7 @@ type SelectedProject = {
   projectKey: string;
 };
 
-type ProjectInsightAction = 'send-telegram' | 'copy-telegram' | 'send-claude-code';
+type ProjectInsightAction = 'send-telegram' | 'copy-telegram';
 type ProjectInsightActionOption = { value: ProjectInsightAction; label: string };
 
 type ProjectInsightModalProps = {
@@ -41,10 +39,6 @@ export function resolveInsightActions({
   telegramEnabled: boolean;
 }) {
   const actions: ProjectInsightActionOption[] = [];
-
-  if (engineKey === 'claude-code') {
-    actions.push({ value: 'send-claude-code', label: 'Send to Claude Code' });
-  }
   if (telegramEnabled) {
     actions.push({ value: 'send-telegram', label: 'Send to Telegram' });
   }
@@ -159,29 +153,6 @@ export function ProjectInsightModal({
     setIsSubmitting(true);
 
     try {
-      const insightPromptB64 = encodeDispatchPromptMetadata(trimmedPrompt);
-      if (!insightPromptB64) {
-        showErrorNotification('Insight prompt is required.');
-        return;
-      }
-
-      if (selectedAction === 'send-claude-code') {
-        const result = await queueClaudeCodeInsightDispatch({
-          projectKey: selectedProject.projectKey,
-          engine: resolvedEngine.key,
-          insightPromptB64,
-        });
-
-        if (!result.ok) {
-          showErrorNotification(result.error);
-          return;
-        }
-
-        showSuccessNotification(`Insight queued for ${selectedProject.projectKey}.`);
-        onClose();
-        return;
-      }
-
       const message = buildProjectInsightTelegramMessage({
         projectKey: selectedProject.projectKey,
         engine: resolvedEngine.key,
@@ -274,11 +245,7 @@ export function ProjectInsightModal({
             Cancel
           </Button>
           <Button onClick={executeInsight} loading={isSubmitting} disabled={executeDisabled}>
-            {selectedAction === 'copy-telegram'
-              ? 'Copy'
-              : selectedAction === 'send-claude-code'
-                ? 'Queue Insight'
-                : 'Send'}
+            {selectedAction === 'copy-telegram' ? 'Copy' : 'Send'}
           </Button>
         </Group>
       </Stack>

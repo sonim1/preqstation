@@ -408,50 +408,6 @@ export const tasks = pgTable(
   ],
 ).enableRLS();
 
-// ─── Dispatch Requests ──────────────────────────────────────────────
-export const dispatchRequests = pgTable(
-  'dispatch_requests',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    ownerId: uuid('owner_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    scope: text('scope').notNull(),
-    objective: text('objective').notNull(),
-    projectKey: text('project_key').notNull(),
-    taskKey: text('task_key'),
-    engine: text('engine'),
-    dispatchTarget: text('dispatch_target').notNull().default('claude-code-channel'),
-    branchName: text('branch_name'),
-    promptMetadata: jsonb('prompt_metadata'),
-    state: text('state').notNull().default('queued'),
-    errorMessage: text('error_message'),
-    dispatchedAt: timestamp('dispatched_at', { withTimezone: true, precision: 6 }),
-    failedAt: timestamp('failed_at', { withTimezone: true, precision: 6 }),
-    createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
-    updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 })
-      .notNull()
-      .defaultNow()
-      .$onUpdate(() => new Date()),
-  },
-  (table) => [
-    pgPolicy('dispatch_requests_owner_all', {
-      for: 'all',
-      using: appUserMatches(table.ownerId),
-      withCheck: appUserMatches(table.ownerId),
-    }),
-    index('dispatch_requests_owner_id_state_dispatch_target_idx').on(
-      table.ownerId,
-      table.state,
-      table.dispatchTarget,
-      table.createdAt,
-    ),
-    index('dispatch_requests_owner_id_objective_idx').on(table.ownerId, table.objective),
-    index('dispatch_requests_owner_id_project_key_idx').on(table.ownerId, table.projectKey),
-    index('dispatch_requests_owner_id_task_key_idx').on(table.ownerId, table.taskKey),
-  ],
-).enableRLS();
-
 // ─── Work Logs ───────────────────────────────────────────────────────
 export const workLogs = pgTable(
   'work_logs',

@@ -134,6 +134,13 @@
       "when": 1775865600000,
       "tag": "0018_project_owned_task_labels",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1777228800000,
+      "tag": "0019_remove_claude_dispatch_channel",
+      "breakpoints": true
     }
   ]
 }

@@ -11,8 +11,6 @@ const mocked = vi.hoisted(() => ({
   patchTaskStatusRoute: vi.fn(),
   getProjectSettingsRoute: vi.fn(),
   patchQaRunRoute: vi.fn(),
-  listDispatchRequests: vi.fn(),
-  updateDispatchRequestState: vi.fn(),
 }));
 
 vi.mock('@/lib/api-tokens', () => ({
@@ -44,15 +42,6 @@ vi.mock('@/app/api/projects/[id]/settings/route', () => ({
 
 vi.mock('@/app/api/qa-runs/[id]/route', () => ({
   PATCH: mocked.patchQaRunRoute,
-}));
-
-vi.mock('@/lib/dispatch-request-store', () => ({
-  DISPATCH_REQUEST_OBJECTIVES: ['ask', 'insight'],
-  DISPATCH_REQUEST_SCOPES: ['task', 'project'],
-  DISPATCH_REQUEST_STATES: ['queued', 'dispatched', 'failed'],
-  DISPATCH_REQUEST_TARGETS: ['claude-code-channel'],
-  listDispatchRequests: mocked.listDispatchRequests,
-  updateDispatchRequestState: mocked.updateDispatchRequestState,
 }));
 
 import { registerPreqTools } from '@/lib/mcp/tools';
@@ -146,11 +135,11 @@ describe('registerPreqTools preq_list_projects', () => {
             {
               id: 'task-1',
               task_key: 'PROJ-1',
-              title: 'Dispatch Claude task',
+              title: 'Dispatch Telegram task',
               status: 'ready',
               run_state: 'queued',
               engine: 'claude-code',
-              dispatch_target: 'claude-code-channel',
+              dispatch_target: 'telegram',
             },
             {
               id: 'task-2',
@@ -159,7 +148,7 @@ describe('registerPreqTools preq_list_projects', () => {
               status: 'ready',
               run_state: 'queued',
               engine: 'codex',
-              dispatch_target: 'claude-code-channel',
+              dispatch_target: 'telegram',
             },
             {
               id: 'task-3',
@@ -168,7 +157,7 @@ describe('registerPreqTools preq_list_projects', () => {
               status: 'ready',
               run_state: 'working',
               engine: 'claude-code',
-              dispatch_target: 'claude-code-channel',
+              dispatch_target: 'telegram',
             },
             {
               id: 'task-4',
@@ -177,7 +166,7 @@ describe('registerPreqTools preq_list_projects', () => {
               status: 'ready',
               run_state: 'queued',
               engine: 'claude-code',
-              dispatch_target: 'telegram',
+              dispatch_target: 'hermes-telegram',
             },
           ],
         }),
@@ -212,7 +201,7 @@ describe('registerPreqTools preq_list_projects', () => {
     const result = await handlers.get('preq_list_tasks')!({
       engine: 'claude-code',
       runState: 'queued',
-      dispatchTarget: 'claude-code-channel',
+      dispatchTarget: 'telegram',
       projectKey: 'PROJ',
       limit: 5,
     });
@@ -222,7 +211,7 @@ describe('registerPreqTools preq_list_projects', () => {
       {
         id: 'task-1',
         task_key: 'PROJ-1',
-        title: 'Dispatch Claude task',
+        title: 'Dispatch Telegram task',
         status: 'ready',
         run_state: 'queued',
         run_state_updated_at: null,
@@ -230,7 +219,7 @@ describe('registerPreqTools preq_list_projects', () => {
         repo: null,
         engine: 'claude-code',
         branch_name: null,
-        dispatch_target: 'claude-code-channel',
+        dispatch_target: 'telegram',
         labels: [],
         updated_at: null,
       },
@@ -241,7 +230,7 @@ describe('registerPreqTools preq_list_projects', () => {
     expect(url.searchParams.get('compact')).toBe('1');
     expect(url.searchParams.get('engine')).toBe('claude-code');
     expect(url.searchParams.get('run_state')).toBe('queued');
-    expect(url.searchParams.get('dispatch_target')).toBe('claude-code-channel');
+    expect(url.searchParams.get('dispatch_target')).toBe('telegram');
     expect(url.searchParams.get('project_key')).toBe('PROJ');
     expect(url.searchParams.get('limit')).toBe('5');
   });
