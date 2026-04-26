@@ -148,6 +148,7 @@ export function BoardContent({
                   onArchivedCountChange={setArchivedCount}
                   editHrefBase={editHrefBase}
                   telegramEnabled={telegramEnabled}
+                  hermesTelegramEnabled={hermesTelegramEnabled}
                   projectOptions={projects.map((project) => ({
                     id: project.id,
                     name: project.name,

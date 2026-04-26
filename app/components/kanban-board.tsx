@@ -130,6 +130,7 @@ type KanbanBoardProps = {
   optimisticQueuedTask?: { taskKey: string; queuedAt: string } | null;
   editHrefBase: string;
   telegramEnabled?: boolean;
+  hermesTelegramEnabled?: boolean;
   projectOptions: ProjectOption[];
   labelOptions: LabelOption[];
   projectLabelOptionsByProjectId?: Record<string, LabelOption[]>;
@@ -393,6 +394,7 @@ export function KanbanBoard({
   optimisticQueuedTask: _optimisticQueuedTask = null,
   editHrefBase,
   telegramEnabled = false,
+  hermesTelegramEnabled = false,
   projectOptions,
   labelOptions,
   projectLabelOptionsByProjectId = {},
@@ -805,7 +807,14 @@ export function KanbanBoard({
         },
       });
     },
-    [boardOfflineSync, enqueuePersist, kanbanStore, online, persistMoveIntent, readColumnsFromStore],
+    [
+      boardOfflineSync,
+      enqueuePersist,
+      kanbanStore,
+      online,
+      persistMoveIntent,
+      readColumnsFromStore,
+    ],
   );
 
   const mobileQuickMove = useCallback(
@@ -1295,6 +1304,7 @@ export function KanbanBoard({
                 branchName={readyQaConfig.branchName}
                 readyCount={columns.ready.length}
                 telegramEnabled={telegramEnabled}
+                hermesTelegramEnabled={hermesTelegramEnabled}
                 initialRuns={readyQaConfig.runs}
                 defaultEngine={enginePresets?.defaultEngine}
                 size={actionIslandControlSize}
@@ -1382,6 +1392,7 @@ export function KanbanBoard({
         onClose={() => setInsightOpened(false)}
         selectedProject={selectedProject}
         telegramEnabled={telegramEnabled}
+        hermesTelegramEnabled={hermesTelegramEnabled}
         defaultEngine={enginePresets?.defaultEngine ?? 'codex'}
       />
 

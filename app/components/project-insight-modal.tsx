@@ -1,15 +1,24 @@
 'use client';
 
-import { Button, Group, Modal, NativeSelect, Stack, Text, Textarea } from '@mantine/core';
+import { Button, type CSSProperties, Group, Modal, Stack, Text, Textarea } from '@mantine/core';
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 
+import { DispatchPromptPreview } from '@/app/components/dispatch-prompt-preview';
+import { DispatchSegmentedControl } from '@/app/components/dispatch-segmented-control';
 import { INSIGHT_PROMPT_MAX_LENGTH } from '@/lib/content-limits';
-import { ENGINE_CONFIGS, getEngineConfig, normalizeEngineKey } from '@/lib/engine-icons';
+import {
+  ENGINE_CONFIGS,
+  getEngineConfig,
+  getEngineShortLabel,
+  normalizeEngineKey,
+} from '@/lib/engine-icons';
 import { showErrorNotification, showSuccessNotification } from '@/lib/notifications';
 import { encodeDispatchPromptMetadata } from '@/lib/openclaw-command';
+import type { TaskDispatchTarget } from '@/lib/task-dispatch';
 import { queueClaudeCodeInsightDispatch } from '@/lib/task-dispatch-client';
 import {
-  buildProjectInsightTelegramMessage,
+  buildProjectInsightDispatchMessage,
   sendProjectInsightTelegramMessage,
 } from '@/lib/task-telegram-client';
 
@@ -19,73 +28,99 @@ type SelectedProject = {
   projectKey: string;
 };
 
-type ProjectInsightAction = 'send-telegram' | 'copy-telegram' | 'send-claude-code';
-type ProjectInsightActionOption = { value: ProjectInsightAction; label: string };
+type ProjectInsightTarget = TaskDispatchTarget;
+type ProjectInsightTargetOption = { value: ProjectInsightTarget; label: string };
 
 type ProjectInsightModalProps = {
   opened: boolean;
   onClose: () => void;
   selectedProject: SelectedProject | null;
   telegramEnabled?: boolean;
+  hermesTelegramEnabled?: boolean;
   defaultEngine?: string | null;
 };
 
 const insightPlaceholder =
   '예: Connections 페이지 개편 작업을 나눠줘\n브라우저 알림 추가를 위한 다음 작업들을 정리해줘';
+const claudeTargetConfig = ENGINE_CONFIGS['claude-code'];
+const claudeTargetIconStyles = {
+  '--engine-color': claudeTargetConfig.iconColor,
+  '--engine-icon': `url(${claudeTargetConfig.icon})`,
+} as CSSProperties;
 
-export function resolveInsightActions({
+function getProjectDispatchTargetLabel(target: ProjectInsightTarget) {
+  switch (target) {
+    case 'claude-code-channel':
+      return 'Channels';
+    case 'hermes-telegram':
+      return 'H Telegram';
+    case 'telegram':
+    default:
+      return '🦞 Telegram';
+  }
+}
+
+export function resolveInsightTargets({
   engineKey,
   telegramEnabled,
+  hermesTelegramEnabled,
 }: {
   engineKey: string | null;
   telegramEnabled: boolean;
+  hermesTelegramEnabled: boolean;
 }) {
-  const actions: ProjectInsightActionOption[] = [];
+  const targets: ProjectInsightTargetOption[] = [];
+  const normalizedEngineKey = normalizeEngineKey(engineKey);
 
-  if (engineKey === 'claude-code') {
-    actions.push({ value: 'send-claude-code', label: 'Send to Claude Code' });
+  if (normalizedEngineKey === 'claude-code') {
+    targets.push({ value: 'claude-code-channel', label: 'Channels' });
   }
   if (telegramEnabled) {
-    actions.push({ value: 'send-telegram', label: 'Send to Telegram' });
+    targets.push({ value: 'telegram', label: '🦞 Telegram' });
   }
-  actions.push({ value: 'copy-telegram', label: 'Copy Telegram' });
+  if (hermesTelegramEnabled) {
+    targets.push({ value: 'hermes-telegram', label: 'H Telegram' });
+  }
+  if (normalizedEngineKey !== 'claude-code') {
+    targets.push({ value: 'claude-code-channel', label: 'Channels' });
+  }
 
-  return actions;
+  return targets;
 }
 
-export function resolveInitialInsightAction(
-  actionOptions: ProjectInsightActionOption[],
-  action: ProjectInsightAction | null,
+export function resolveInitialInsightTarget(
+  targetOptions: ProjectInsightTargetOption[],
+  target: ProjectInsightTarget | null,
 ) {
-  if (actionOptions.some((option) => option.value === action)) {
-    return action;
+  if (targetOptions.some((option) => option.value === target)) {
+    return target;
   }
 
-  return actionOptions[0]?.value ?? null;
+  return targetOptions[0]?.value ?? null;
 }
 
 export function isInsightExecuteDisabled({
   opened,
   selectedProject,
-  action,
-  actionOptions,
+  target,
+  targetOptions,
   prompt,
   isSubmitting,
 }: {
   opened: boolean;
   selectedProject: SelectedProject | null;
-  action: ProjectInsightAction | null;
-  actionOptions: ProjectInsightActionOption[];
+  target: ProjectInsightTarget | null;
+  targetOptions: ProjectInsightTargetOption[];
   prompt: string;
   isSubmitting: boolean;
 }) {
   const trimmedPrompt = prompt.trim();
-  const selectedAction = resolveInitialInsightAction(actionOptions, action);
+  const selectedTarget = resolveInitialInsightTarget(targetOptions, target);
 
   return (
     !opened ||
     !selectedProject ||
-    !selectedAction ||
+    !selectedTarget ||
     !trimmedPrompt ||
     trimmedPrompt.length > INSIGHT_PROMPT_MAX_LENGTH ||
     isSubmitting
@@ -97,13 +132,18 @@ export function ProjectInsightModal({
   onClose,
   selectedProject,
   telegramEnabled = false,
+  hermesTelegramEnabled = false,
   defaultEngine = null,
 }: ProjectInsightModalProps) {
   const initialEngineKey = normalizeEngineKey(defaultEngine) ?? 'codex';
   const [engineKey, setEngineKey] = useState<string>(() => initialEngineKey);
-  const [action, setAction] = useState<ProjectInsightAction | null>(() =>
-    resolveInitialInsightAction(
-      resolveInsightActions({ engineKey: initialEngineKey, telegramEnabled }),
+  const [target, setTarget] = useState<ProjectInsightTarget | null>(() =>
+    resolveInitialInsightTarget(
+      resolveInsightTargets({
+        engineKey: initialEngineKey,
+        telegramEnabled,
+        hermesTelegramEnabled,
+      }),
       null,
     ),
   );
@@ -111,16 +151,21 @@ export function ProjectInsightModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const resolvedEngine = getEngineConfig(engineKey) ?? ENGINE_CONFIGS.codex;
-  const actionOptions = useMemo(
-    () => resolveInsightActions({ engineKey: resolvedEngine.key, telegramEnabled }),
-    [resolvedEngine.key, telegramEnabled],
+  const targetOptions = useMemo(
+    () =>
+      resolveInsightTargets({
+        engineKey: resolvedEngine.key,
+        telegramEnabled,
+        hermesTelegramEnabled,
+      }),
+    [resolvedEngine.key, telegramEnabled, hermesTelegramEnabled],
   );
-  const selectedAction = resolveInitialInsightAction(actionOptions, action);
+  const selectedTarget = resolveInitialInsightTarget(targetOptions, target);
   const executeDisabled = isInsightExecuteDisabled({
     opened,
     selectedProject,
-    action,
-    actionOptions,
+    target,
+    targetOptions,
     prompt,
     isSubmitting,
   });
@@ -128,31 +173,42 @@ export function ProjectInsightModal({
   useEffect(() => {
     if (opened) return;
     const nextEngineKey = normalizeEngineKey(defaultEngine) ?? 'codex';
-    const nextActionOptions = resolveInsightActions({
+    const nextTargetOptions = resolveInsightTargets({
       engineKey: nextEngineKey,
       telegramEnabled,
+      hermesTelegramEnabled,
     });
 
     setPrompt('');
     setEngineKey(nextEngineKey);
-    setAction(resolveInitialInsightAction(nextActionOptions, null));
+    setTarget(resolveInitialInsightTarget(nextTargetOptions, null));
     setIsSubmitting(false);
-  }, [defaultEngine, opened, telegramEnabled]);
+  }, [defaultEngine, hermesTelegramEnabled, opened, telegramEnabled]);
 
   const trimmedPrompt = prompt.trim();
+  const dispatchPrompt =
+    selectedProject && selectedTarget
+      ? buildProjectInsightDispatchMessage({
+          projectKey: selectedProject.projectKey,
+          engine: resolvedEngine.key,
+          insightPrompt: trimmedPrompt || null,
+          dispatchTarget: selectedTarget,
+        })
+      : '';
 
   const handleEngineChange = (nextEngineKey: string) => {
-    const nextActionOptions = resolveInsightActions({
+    const nextTargetOptions = resolveInsightTargets({
       engineKey: nextEngineKey,
       telegramEnabled,
+      hermesTelegramEnabled,
     });
 
     setEngineKey(nextEngineKey);
-    setAction(resolveInitialInsightAction(nextActionOptions, selectedAction));
+    setTarget(resolveInitialInsightTarget(nextTargetOptions, selectedTarget));
   };
 
   const executeInsight = async () => {
-    if (!selectedProject || !selectedAction || executeDisabled) {
+    if (!selectedProject || !selectedTarget || executeDisabled) {
       return;
     }
 
@@ -165,7 +221,7 @@ export function ProjectInsightModal({
         return;
       }
 
-      if (selectedAction === 'send-claude-code') {
+      if (selectedTarget === 'claude-code-channel') {
         const result = await queueClaudeCodeInsightDispatch({
           projectKey: selectedProject.projectKey,
           engine: resolvedEngine.key,
@@ -182,20 +238,11 @@ export function ProjectInsightModal({
         return;
       }
 
-      const message = buildProjectInsightTelegramMessage({
-        projectKey: selectedProject.projectKey,
-        engine: resolvedEngine.key,
-        insightPrompt: trimmedPrompt,
-      });
-
-      if (selectedAction === 'copy-telegram') {
-        await navigator.clipboard.writeText(message);
-        showSuccessNotification('Telegram message copied.');
-        onClose();
-        return;
-      }
-
-      const result = await sendProjectInsightTelegramMessage(selectedProject.projectKey, message);
+      const result = await sendProjectInsightTelegramMessage(
+        selectedProject.projectKey,
+        dispatchPrompt,
+        selectedTarget,
+      );
       if (!result.ok) {
         showErrorNotification(result.error);
         return;
@@ -228,23 +275,85 @@ export function ProjectInsightModal({
           현재 프로젝트와 입력한 내용을 바탕으로 다음 작업 인사이트를 정리하고 Inbox에 추가합니다.
         </Text>
 
-        <NativeSelect
+        <DispatchSegmentedControl
           label="Engine"
-          aria-label="Insight engine"
-          value={resolvedEngine.key}
-          onChange={(event) => handleEngineChange(event.currentTarget.value)}
-          data={Object.values(ENGINE_CONFIGS).map((engine) => ({
-            value: engine.key,
-            label: engine.label,
-          }))}
+          groupLabel="Engine"
+          groupClassName="task-dispatch-engine-segments"
+          onSelect={handleEngineChange}
+          options={Object.values(ENGINE_CONFIGS).map((engine) => {
+            const selected = resolvedEngine.key === engine.key;
+            const label = getEngineShortLabel(engine);
+
+            return {
+              value: engine.key,
+              selected,
+              ariaLabel: selected ? `Selected engine: ${label}` : `Select engine: ${label}`,
+              content: (
+                <>
+                  <span
+                    className="task-dispatch-engine-icon"
+                    aria-hidden="true"
+                    data-engine-icon={engine.key}
+                    style={
+                      {
+                        '--engine-color': engine.iconColor,
+                        '--engine-icon': `url(${engine.icon})`,
+                      } as CSSProperties
+                    }
+                  />
+                  <span>{label}</span>
+                </>
+              ),
+            };
+          })}
         />
 
-        <NativeSelect
-          label="Action"
-          aria-label="Insight action"
-          value={selectedAction ?? ''}
-          onChange={(event) => setAction(event.currentTarget.value as ProjectInsightAction)}
-          data={actionOptions}
+        <DispatchSegmentedControl
+          label="Target"
+          groupLabel="Target"
+          groupClassName="task-dispatch-target-segments"
+          onSelect={(value) => setTarget(value)}
+          options={targetOptions.map((option) => {
+            const selected = selectedTarget === option.value;
+            const label = getProjectDispatchTargetLabel(option.value);
+
+            return {
+              value: option.value,
+              selected,
+              ariaLabel: selected ? `Selected target: ${label}` : `Select target: ${label}`,
+              content:
+                option.value === 'claude-code-channel' ? (
+                  <>
+                    <span
+                      className="task-dispatch-engine-icon task-dispatch-target-icon"
+                      aria-hidden="true"
+                      data-engine-icon="claude-code"
+                      style={claudeTargetIconStyles}
+                    />
+                    <span>{option.label}</span>
+                  </>
+                ) : option.value === 'telegram' ? (
+                  <span className="task-dispatch-target-option">
+                    <span className="task-dispatch-target-emoji" aria-hidden="true">
+                      🦞
+                    </span>
+                    <span>Telegram</span>
+                  </span>
+                ) : (
+                  <span className="task-dispatch-target-option">
+                    <Image
+                      className="task-dispatch-target-logo"
+                      src="/icons/hermes-agent.png"
+                      alt=""
+                      width={16}
+                      height={16}
+                      aria-hidden="true"
+                    />
+                    <span>Telegram</span>
+                  </span>
+                ),
+            };
+          })}
         />
 
         <Textarea
@@ -269,16 +378,17 @@ export function ProjectInsightModal({
           </Text>
         </Group>
 
+        <DispatchPromptPreview
+          prompt={dispatchPrompt}
+          onCopy={() => showSuccessNotification('Dispatch prompt copied.')}
+        />
+
         <Group justify="flex-end">
           <Button variant="default" onClick={onClose}>
             Cancel
           </Button>
           <Button onClick={executeInsight} loading={isSubmitting} disabled={executeDisabled}>
-            {selectedAction === 'copy-telegram'
-              ? 'Copy'
-              : selectedAction === 'send-claude-code'
-                ? 'Queue Insight'
-                : 'Send'}
+            {selectedTarget === 'claude-code-channel' ? 'Queue Insight' : 'Send Insight'}
           </Button>
         </Group>
       </Stack>
