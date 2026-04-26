@@ -97,6 +97,25 @@ describe('app/components/telegram-settings', () => {
     expect((html.match(/Status: Setup needed/g) ?? []).length).toBe(2);
   });
 
+  it('does not show dispatch enabled when a channel is enabled without a saved chat id', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <TelegramSettings
+          action={vi.fn(async () => null)}
+          defaultOpenClawChatId=""
+          defaultOpenClawEnabled
+          defaultHermesChatId="5678"
+          defaultHermesEnabled={false}
+          hasSavedBotToken={false}
+        />
+      </MantineProvider>,
+    );
+
+    expect(html).toContain('Status: Setup needed');
+    expect(html).toContain('Status: Chat ID saved');
+    expect(html).not.toContain('Status: Dispatch enabled');
+  });
+
   it('renders a single shared feedback slot when idle', () => {
     const html = renderToStaticMarkup(
       <MantineProvider>

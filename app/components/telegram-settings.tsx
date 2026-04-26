@@ -115,10 +115,12 @@ export function getTelegramTestValidationError({
 }
 
 function resolveChannelStatus(enabled: boolean, chatId: string): ChannelStatus {
-  if (enabled) {
+  const hasChatId = chatId.trim().length > 0;
+
+  if (enabled && hasChatId) {
     return { label: 'Dispatch enabled', tone: 'positive' };
   }
-  if (chatId.trim()) {
+  if (hasChatId) {
     return { label: 'Chat ID saved', tone: 'neutral' };
   }
   return { label: 'Setup needed', tone: 'neutral' };
