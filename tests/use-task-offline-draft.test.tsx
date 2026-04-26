@@ -83,6 +83,23 @@ describe('app/hooks/use-task-offline-draft', () => {
     expect(result.current.hasNoteConflict).toBe(true);
   });
 
+  it('preserves legacy local note drafts without a base fingerprint as conflicts instead of discarding them', async () => {
+    mocked.getDraft.mockResolvedValue({
+      fields: {
+        note: '## Legacy local rewrite',
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note'),
+    );
+
+    await waitFor(() => {
+      expect(result.current.draftNote).toBe('## Legacy local rewrite');
+    });
+    expect(result.current.hasNoteConflict).toBe(true);
+  });
+
   it('persists title and note edits under the deterministic task draft key', async () => {
     const { result } = renderHook(() =>
       useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note'),

@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { deleteDraft, getDraft, putDraft } from '@/lib/offline/draft-store';
 import { buildTaskNoteFingerprint } from '@/lib/task-note-fingerprint';
 
+const LEGACY_NOTE_CONFLICT_BASE_FINGERPRINT_PREFIX = 'task-note:legacy-conflict:';
+
 type TaskOfflineDraftState = {
   baseNoteFingerprint: string;
   note: string;
@@ -66,24 +68,32 @@ export function useTaskOfflineDraft(
       const storedNote = record.fields.note ?? serverDraft.note;
       const storedNoteFingerprint = buildTaskNoteFingerprint(storedNote);
       const storedBaseNoteFingerprint = record.fields.baseNoteFingerprint?.trim() || null;
+      const legacyConflictBaseNoteFingerprint = `${LEGACY_NOTE_CONFLICT_BASE_FINGERPRINT_PREFIX}${storedNoteFingerprint}`;
       const hasStaleBase =
         !!storedBaseNoteFingerprint && storedBaseNoteFingerprint !== serverDraft.baseNoteFingerprint;
       const hasLocalNoteEdits =
         !!storedBaseNoteFingerprint && storedNoteFingerprint !== storedBaseNoteFingerprint;
+      const hasLegacyConflict =
+        !storedBaseNoteFingerprint && storedNoteFingerprint !== serverDraft.baseNoteFingerprint;
       const shouldApplyStoredNote =
         storedBaseNoteFingerprint === serverDraft.baseNoteFingerprint ||
         (!storedBaseNoteFingerprint && storedNoteFingerprint === serverDraft.baseNoteFingerprint) ||
-        (hasStaleBase && hasLocalNoteEdits);
+        (hasStaleBase && hasLocalNoteEdits) ||
+        hasLegacyConflict;
 
-      setHasNoteConflict(hasStaleBase && hasLocalNoteEdits);
+      setHasNoteConflict((hasStaleBase && hasLocalNoteEdits) || hasLegacyConflict);
 
       applyDraft({
         title: record.fields.title ?? serverDraft.title,
         note: shouldApplyStoredNote ? storedNote : serverDraft.note,
         baseNoteFingerprint:
-          shouldApplyStoredNote && storedBaseNoteFingerprint
-            ? storedBaseNoteFingerprint
-            : serverDraft.baseNoteFingerprint,
+          !shouldApplyStoredNote
+            ? serverDraft.baseNoteFingerprint
+            : storedBaseNoteFingerprint
+              ? storedBaseNoteFingerprint
+              : hasLegacyConflict
+                ? legacyConflictBaseNoteFingerprint
+                : serverDraft.baseNoteFingerprint,
       });
     });
 
