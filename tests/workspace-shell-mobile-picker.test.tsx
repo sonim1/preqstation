@@ -51,7 +51,7 @@ vi.mock('@mantine/core', async (importOriginal) => {
 
   return {
     ...actual,
-    Menu: MockMenu as typeof actual.Menu,
+    Menu: MockMenu as unknown as typeof actual.Menu,
   };
 });
 
