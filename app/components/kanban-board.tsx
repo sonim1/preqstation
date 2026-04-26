@@ -633,23 +633,26 @@ export function KanbanBoard({
     }
   }
 
-  async function persistMoveIntent(request: MoveIntentRequest) {
-    const response = await requestMoveIntent(fetch, request);
-    if (persistQueueRef.current.length > 1) {
-      return;
-    }
+  const persistMoveIntent = useCallback(
+    async (request: MoveIntentRequest) => {
+      const response = await requestMoveIntent(fetch, request);
+      if (persistQueueRef.current.length > 1) {
+        return;
+      }
 
-    const snapshots = buildMoveIntentServerSnapshots({
-      columns: readColumnsFromStore(),
-      response,
-    });
-    if (snapshots.length === 0) {
-      return;
-    }
+      const snapshots = buildMoveIntentServerSnapshots({
+        columns: readColumnsFromStore(),
+        response,
+      });
+      if (snapshots.length === 0) {
+        return;
+      }
 
-    kanbanStore.getState().upsertSnapshots(snapshots);
-    columnsRef.current = readColumnsFromStore();
-  }
+      kanbanStore.getState().upsertSnapshots(snapshots);
+      columnsRef.current = readColumnsFromStore();
+    },
+    [kanbanStore, readColumnsFromStore],
+  );
 
   const flushPersistQueue = useCallback(
     function flushPersistQueue() {
@@ -802,7 +805,7 @@ export function KanbanBoard({
         },
       });
     },
-    [boardOfflineSync, enqueuePersist, kanbanStore, online, readColumnsFromStore],
+    [boardOfflineSync, enqueuePersist, kanbanStore, online, persistMoveIntent, readColumnsFromStore],
   );
 
   const mobileQuickMove = useCallback(
@@ -905,6 +908,7 @@ export function KanbanBoard({
       kanbanStore,
       online,
       onArchivedCountChange,
+      persistMoveIntent,
       quickMoveTask,
       readColumnsFromStore,
     ],

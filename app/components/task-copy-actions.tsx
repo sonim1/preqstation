@@ -2,6 +2,7 @@
 
 import { ActionIcon, Kbd, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { IconCopy, IconInfoCircle } from '@tabler/icons-react';
+import Image from 'next/image';
 import { type CSSProperties, useEffect, useRef, useState } from 'react';
 
 import {
@@ -446,7 +447,7 @@ export function TaskCopyActions({
 
   useEffect(() => {
     sendDispatchRef.current = sendDispatch;
-  }, [sendDispatch]);
+  });
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -577,10 +578,12 @@ export function TaskCopyActions({
                     </span>
                   ) : (
                     <span className="task-dispatch-target-option">
-                      <img
+                      <Image
                         className="task-dispatch-target-logo"
                         src="/icons/hermes-agent.png"
                         alt=""
+                        width={16}
+                        height={16}
                         aria-hidden="true"
                       />
                       <span>Telegram</span>
@@ -657,7 +660,9 @@ export function TaskCopyActions({
           className="task-dispatch-send"
           data-state={dispatchState === 'idle' ? undefined : dispatchState}
           disabled={isSending}
-          onClick={sendDispatch}
+          onClick={() => {
+            void sendDispatchRef.current?.();
+          }}
         >
           <span>{getSendLabel(dispatchState)}</span>
           <Kbd size="xs" className="task-dispatch-send-shortcut">
