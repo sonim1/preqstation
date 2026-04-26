@@ -6,39 +6,33 @@ import {
   Badge,
   Code,
   CopyButton,
-  Divider,
   Group,
-  Image,
-  Menu,
   Modal,
-  Paper,
   Stack,
   Text,
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
-import {
-  IconCheck,
-  IconChevronDown,
-  IconCopy,
-  IconFlask,
-  IconInfoCircle,
-  IconLoader2,
-  IconPlayerPlay,
-} from '@tabler/icons-react';
+import { IconCopy, IconFlask, IconInfoCircle } from '@tabler/icons-react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { type CSSProperties, useState } from 'react';
 
+import { DispatchPromptPreview } from '@/app/components/dispatch-prompt-preview';
+import { DispatchSegmentedControl } from '@/app/components/dispatch-segmented-control';
 import { formatDateTimeForDisplay } from '@/lib/date-time';
 import { readQaDispatchPreference, writeQaDispatchPreference } from '@/lib/dispatch-preferences';
 import {
   DEFAULT_ENGINE_KEY,
   ENGINE_CONFIGS,
   getEngineConfig,
+  getEngineShortLabel,
   normalizeEngineKey,
 } from '@/lib/engine-icons';
 import { showErrorNotification, showSuccessNotification } from '@/lib/notifications';
 import type { QaRunView } from '@/lib/qa-runs';
+import type { TaskDispatchTarget } from '@/lib/task-dispatch';
+import { buildProjectQaDispatchMessage } from '@/lib/task-telegram-client';
 import { DEFAULT_TERMINOLOGY, type Terminology } from '@/lib/terminology';
 
 import { InfiniteScrollTrigger } from './infinite-scroll-trigger';
@@ -53,15 +47,24 @@ type ReadyQaActionsProps = {
   branchName: string;
   readyCount: number;
   telegramEnabled: boolean;
+  hermesTelegramEnabled?: boolean;
   initialRuns: QaRunView[];
   defaultEngine?: string | null;
   size?: number | string;
   iconSize?: number;
 };
 
+type QaDispatchTarget = TaskDispatchTarget;
+type QaDispatchTargetOption = { value: QaDispatchTarget; label: string };
+
 export const INITIAL_VISIBLE_QA_RUNS = 5;
 const QA_ENGINE_OPTIONS = Object.values(ENGINE_CONFIGS);
 const qaFlowHelp = 'Choose engine, then press play to queue QA.';
+const claudeTargetConfig = ENGINE_CONFIGS['claude-code'];
+const claudeTargetIconStyles = {
+  '--engine-color': claudeTargetConfig.iconColor,
+  '--engine-icon': `url(${claudeTargetConfig.icon})`,
+} as CSSProperties;
 
 function statusColor(status: QaRunView['status']) {
   switch (status) {
@@ -82,6 +85,49 @@ function formatSummary(summary: QaRunView['summary']) {
 
 function formatTimestamp(value: string, timeZone: string) {
   return formatDateTimeForDisplay(value, timeZone);
+}
+
+function getQaTargetLabel(target: QaDispatchTarget) {
+  switch (target) {
+    case 'claude-code-channel':
+      return 'Channels';
+    case 'hermes-telegram':
+      return 'H Telegram';
+    case 'telegram':
+    default:
+      return '🦞 Telegram';
+  }
+}
+
+function resolveQaTargets({
+  telegramEnabled,
+  hermesTelegramEnabled,
+}: {
+  telegramEnabled: boolean;
+  hermesTelegramEnabled: boolean;
+}) {
+  const targets: QaDispatchTargetOption[] = [];
+
+  if (telegramEnabled) {
+    targets.push({ value: 'telegram', label: '🦞 Telegram' });
+  }
+  if (hermesTelegramEnabled) {
+    targets.push({ value: 'hermes-telegram', label: 'H Telegram' });
+  }
+  targets.push({ value: 'claude-code-channel', label: 'Channels' });
+
+  return targets;
+}
+
+function resolveInitialQaTarget(
+  targetOptions: QaDispatchTargetOption[],
+  target: QaDispatchTarget | null,
+) {
+  if (targetOptions.some((option) => option.value === target)) {
+    return target;
+  }
+
+  return targetOptions[0]?.value ?? 'claude-code-channel';
 }
 
 export function getVisibleQaRuns(runs: QaRunView[], visibleCount: number) {
@@ -125,6 +171,7 @@ export function ReadyQaActions({
   branchName,
   readyCount,
   telegramEnabled,
+  hermesTelegramEnabled = false,
   initialRuns,
   defaultEngine = DEFAULT_ENGINE_KEY,
   size = 'lg',
@@ -139,9 +186,22 @@ export function ReadyQaActions({
   const [selectedEngine, setSelectedEngine] = useState<string>(
     () => readQaDispatchPreference() ?? normalizeEngineKey(defaultEngine) ?? DEFAULT_ENGINE_KEY,
   );
+  const [selectedTarget, setSelectedTarget] = useState<QaDispatchTarget | null>(() =>
+    resolveInitialQaTarget(resolveQaTargets({ telegramEnabled, hermesTelegramEnabled }), null),
+  );
   const selectedEngineConfig =
     getEngineConfig(selectedEngine) ?? ENGINE_CONFIGS[DEFAULT_ENGINE_KEY];
   const visibleRuns = getVisibleQaRuns(runs, visibleRunCount);
+  const availableTargets = resolveQaTargets({ telegramEnabled, hermesTelegramEnabled });
+  const effectiveTarget = resolveInitialQaTarget(availableTargets, selectedTarget);
+  const qaPreview = buildProjectQaDispatchMessage({
+    projectKey,
+    engine: selectedEngineConfig.key,
+    branchName,
+    dispatchTarget: effectiveTarget,
+    qaRunId: '<generated-on-queue>',
+    qaTaskKeys: ['<current-ready-tasks>'],
+  });
 
   function openRunsModal() {
     setOpened(true);
@@ -167,7 +227,10 @@ export function ReadyQaActions({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify({ engine: selectedEngine }),
+          body: JSON.stringify({
+            engine: selectedEngineConfig.key,
+            dispatchTarget: effectiveTarget,
+          }),
         },
       );
       const payload = (await response.json().catch(() => null)) as {
@@ -182,7 +245,7 @@ export function ReadyQaActions({
       }
 
       setRuns((current) => [payload.run!, ...current.filter((run) => run.id !== payload.run!.id)]);
-      const engineKey = normalizeEngineKey(selectedEngine);
+      const engineKey = normalizeEngineKey(selectedEngineConfig.key);
       if (engineKey) {
         writeQaDispatchPreference(engineKey);
       }
@@ -224,8 +287,9 @@ export function ReadyQaActions({
           <Text size="sm" c="dimmed">
             {formatReadyQaIntro(projectName, projectKey, branchName, readyCount, terminology)}
           </Text>
-          <Group gap="xs" wrap="wrap" className="openclaw-actions">
-            <Group gap={4} wrap="nowrap" className="openclaw-dispatch-label">
+
+          <div className="task-dispatch-actions">
+            <div className="openclaw-dispatch-label">
               <Text size="xs" fw={700} c="dimmed" tt="uppercase" className="openclaw-actions-label">
                 QA
               </Text>
@@ -241,87 +305,110 @@ export function ReadyQaActions({
                   <IconInfoCircle size={14} />
                 </ActionIcon>
               </Tooltip>
-            </Group>
+            </div>
 
-            <Paper withBorder radius="xl" px={6} py={2} className="openclaw-action-bar">
-              <Group gap={4} wrap="nowrap" className="openclaw-action-bar-inner">
-                <Menu position="bottom-end" shadow="md" withinPortal>
-                  <Menu.Target>
-                    <UnstyledButton
-                      type="button"
-                      className="openclaw-engine-trigger"
-                      aria-label={`Selected engine: ${selectedEngineConfig.label}`}
-                      disabled={isSubmitting}
-                    >
-                      <Group gap={6} wrap="nowrap">
-                        <Image
-                          src={selectedEngineConfig.icon}
-                          alt={selectedEngineConfig.label}
-                          w={14}
-                          h={14}
+            <div className="task-dispatch-panel">
+              <DispatchSegmentedControl
+                label="Engine"
+                groupLabel="Engine"
+                groupClassName="task-dispatch-engine-segments"
+                disabled={isSubmitting}
+                onSelect={(value) => setSelectedEngine(value)}
+                options={QA_ENGINE_OPTIONS.map((engine) => {
+                  const selected = selectedEngineConfig.key === engine.key;
+                  const label = getEngineShortLabel(engine);
+
+                  return {
+                    value: engine.key,
+                    selected,
+                    ariaLabel: selected ? `Selected engine: ${label}` : `Select engine: ${label}`,
+                    content: (
+                      <>
+                        <span
+                          className="task-dispatch-engine-icon"
+                          aria-hidden="true"
+                          data-engine-icon={engine.key}
+                          style={
+                            {
+                              '--engine-color': engine.iconColor,
+                              '--engine-icon': `url(${engine.icon})`,
+                            } as CSSProperties
+                          }
                         />
-                        <Text size="xs" fw={600} className="openclaw-engine-label">
-                          {selectedEngineConfig.label}
-                        </Text>
-                        <IconChevronDown size={10} />
-                      </Group>
-                    </UnstyledButton>
-                  </Menu.Target>
-                  <Menu.Dropdown>
-                    {QA_ENGINE_OPTIONS.map((engine) => (
-                      <Menu.Item
-                        key={engine.key}
-                        onClick={() => setSelectedEngine(engine.key)}
-                        leftSection={<Image src={engine.icon} alt={engine.label} w={16} h={16} />}
-                        rightSection={
-                          selectedEngineConfig.key === engine.key ? <IconCheck size={14} /> : null
-                        }
-                        disabled={isSubmitting}
-                      >
-                        {engine.label}
-                      </Menu.Item>
-                    ))}
-                  </Menu.Dropdown>
-                </Menu>
+                        <span>{label}</span>
+                      </>
+                    ),
+                  };
+                })}
+              />
 
-                <Divider orientation="vertical" />
+              <DispatchSegmentedControl
+                label="Target"
+                groupLabel="Target"
+                groupClassName="task-dispatch-target-segments"
+                disabled={isSubmitting}
+                onSelect={(value) => setSelectedTarget(value)}
+                options={availableTargets.map((option) => {
+                  const selected = effectiveTarget === option.value;
+                  const label = getQaTargetLabel(option.value);
 
-                <UnstyledButton
-                  type="button"
-                  className="openclaw-action-trigger"
-                  aria-label="Selected action: Run QA"
-                  disabled
-                >
-                  <Group gap={6} wrap="nowrap">
-                    <Text size="xs" fw={600} className="openclaw-action-label">
-                      Run QA
-                    </Text>
-                  </Group>
-                </UnstyledButton>
+                  return {
+                    value: option.value,
+                    selected,
+                    ariaLabel: selected ? `Selected target: ${label}` : `Select target: ${label}`,
+                    content:
+                      option.value === 'claude-code-channel' ? (
+                        <>
+                          <span
+                            className="task-dispatch-engine-icon task-dispatch-target-icon"
+                            aria-hidden="true"
+                            data-engine-icon="claude-code"
+                            style={claudeTargetIconStyles}
+                          />
+                          <span>{option.label}</span>
+                        </>
+                      ) : option.value === 'telegram' ? (
+                        <span className="task-dispatch-target-option">
+                          <span className="task-dispatch-target-emoji" aria-hidden="true">
+                            🦞
+                          </span>
+                          <span>Telegram</span>
+                        </span>
+                      ) : (
+                        <span className="task-dispatch-target-option">
+                          <Image
+                            className="task-dispatch-target-logo"
+                            src="/icons/hermes-agent.png"
+                            alt=""
+                            width={16}
+                            height={16}
+                            aria-hidden="true"
+                          />
+                          <span>Telegram</span>
+                        </span>
+                      ),
+                  };
+                })}
+              />
 
-                <Divider orientation="vertical" />
+              <DispatchPromptPreview
+                prompt={qaPreview}
+                onCopy={() => showSuccessNotification('Dispatch prompt copied.')}
+              />
 
-                <Tooltip label="Run QA" withArrow>
-                  <ActionIcon
-                    variant="subtle"
-                    size="sm"
-                    aria-label="Execute QA action"
-                    color="gray"
-                    disabled={!telegramEnabled || readyCount === 0 || isSubmitting}
-                    onClick={runQa}
-                    className="openclaw-execute-trigger"
-                  >
-                    {isSubmitting ? <IconLoader2 size={14} /> : <IconPlayerPlay size={14} />}
-                  </ActionIcon>
-                </Tooltip>
-              </Group>
-            </Paper>
-          </Group>
-          {!telegramEnabled ? (
-            <Text size="sm" c="red">
-              Telegram must be configured before QA runs can be queued.
-            </Text>
-          ) : null}
+              <UnstyledButton
+                type="button"
+                className="task-dispatch-send"
+                disabled={readyCount === 0 || isSubmitting}
+                onClick={() => {
+                  void runQa();
+                }}
+              >
+                <span>{isSubmitting ? 'Queueing' : 'Queue QA'}</span>
+              </UnstyledButton>
+            </div>
+          </div>
+
           {runs.length === 0 ? (
             <Text size="sm" c="dimmed">
               No QA runs yet.
@@ -386,7 +473,7 @@ export function ReadyQaActions({
                                       aria-label={`Copy QA report for ${run.id}`}
                                       onClick={copy}
                                     >
-                                      {copied ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                                      {copied ? <IconCopy size={14} /> : <IconCopy size={14} />}
                                     </ActionIcon>
                                   </Tooltip>
                                 )}

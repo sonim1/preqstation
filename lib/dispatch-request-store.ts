@@ -27,6 +27,8 @@ export type DispatchRequestTarget = (typeof DISPATCH_REQUEST_TARGETS)[number];
 export type DispatchRequestPromptMetadata = {
   askHint?: string | null;
   insightPromptB64?: string | null;
+  qaRunId?: string | null;
+  qaTaskKeys?: string[] | null;
 };
 
 function normalizeProjectKey(projectKey: string) {
@@ -45,13 +47,19 @@ function normalizePromptMetadata(metadata: DispatchRequestPromptMetadata | null 
 
   const askHint = metadata.askHint?.trim() ?? '';
   const insightPromptB64 = metadata.insightPromptB64?.trim() ?? '';
-  if (!askHint && !insightPromptB64) {
+  const qaRunId = metadata.qaRunId?.trim() ?? '';
+  const qaTaskKeys = Array.isArray(metadata.qaTaskKeys)
+    ? metadata.qaTaskKeys.map((taskKey) => taskKey.trim()).filter(Boolean)
+    : [];
+  if (!askHint && !insightPromptB64 && !qaRunId && qaTaskKeys.length === 0) {
     return null;
   }
 
   return {
     ...(askHint ? { askHint } : {}),
     ...(insightPromptB64 ? { insightPromptB64 } : {}),
+    ...(qaRunId ? { qaRunId } : {}),
+    ...(qaTaskKeys.length > 0 ? { qaTaskKeys } : {}),
   };
 }
 
