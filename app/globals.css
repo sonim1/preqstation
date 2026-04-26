@@ -553,6 +553,15 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
     box-shadow 140ms ease;
 }
 
+.workspace-board-subnav-link:hover,
+.workspace-board-subnav-link[data-active],
+.workspace-board-subnav-link[data-active]:hover,
+.workspace-board-subnav-link[aria-current='page'],
+.workspace-board-subnav-link[aria-current='page']:hover {
+  background: transparent;
+  background-color: transparent;
+}
+
 .workspace-board-subnav-toggle .mantine-NavLink-body {
   align-items: center;
 }
