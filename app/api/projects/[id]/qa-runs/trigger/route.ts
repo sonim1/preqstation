@@ -120,6 +120,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       let dispatchRequestId: string | null = null;
 
       if (dispatchTarget === 'claude-code-channel') {
+        // The external dispatcher must forward qaRunId and qaTaskKeys when it renders
+        // the project-scope QA worker prompt from this explicit request.
         const request = await createDispatchRequest(
           {
             ownerId: owner.id,

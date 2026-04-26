@@ -239,7 +239,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
     expect(mocked.createDispatchRequest).not.toHaveBeenCalled();
   });
 
-  it('creates a project-scope Channels dispatch request when QA targets Channels', async () => {
+  it('creates a project-scope Channels dispatch request with qaRunId and qaTaskKeys metadata', async () => {
     const response = await POST(
       postRequest({ engine: 'codex', dispatchTarget: 'claude-code-channel' }),
       {
