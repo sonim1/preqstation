@@ -5,7 +5,10 @@ import { writeAuditLog } from '@/lib/audit';
 import { ENTITY_TASK, TASK_UPDATED, writeOutboxEventStandalone } from '@/lib/outbox';
 import { requireOwnerUser } from '@/lib/owner';
 import { assertSameOrigin } from '@/lib/request-security';
-import { queueTaskExecutionByTaskKey } from '@/lib/task-run-state';
+import {
+  findTaskDispatchContextByTaskKey,
+  queueTaskExecutionByTaskKey,
+} from '@/lib/task-run-state';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { decryptTelegramToken } from '@/lib/telegram-crypto';
 import { resolveTelegramDispatchConfig } from '@/lib/telegram-dispatch-settings';
@@ -26,6 +29,15 @@ export async function POST(req: Request) {
 
     const owner = await requireOwnerUser();
     const payload = sendSchema.parse(await req.json());
+    const task = await findTaskDispatchContextByTaskKey({
+      ownerId: owner.id,
+      taskKey: payload.taskKey,
+    });
+
+    if (!task) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    }
+
     const settings = await getUserSettings(owner.id);
 
     const target = payload.dispatchTarget === 'hermes-telegram' ? 'hermes' : 'openclaw';

@@ -8,6 +8,7 @@ const mocked = vi.hoisted(() => {
     assertSameOrigin: vi.fn(),
     writeAuditLog: vi.fn(),
     writeOutboxEventStandalone: vi.fn(),
+    findTaskDispatchContextByTaskKey: vi.fn(),
     getUserSettings: vi.fn(),
     decryptTelegramToken: vi.fn(),
     queueTaskExecutionByTaskKey: vi.fn(),
@@ -51,6 +52,7 @@ vi.mock('@/lib/telegram-crypto', () => ({
 }));
 
 vi.mock('@/lib/task-run-state', () => ({
+  findTaskDispatchContextByTaskKey: mocked.findTaskDispatchContextByTaskKey,
   queueTaskExecutionByTaskKey: mocked.queueTaskExecutionByTaskKey,
 }));
 
@@ -71,6 +73,10 @@ describe('app/api/telegram/send/route', () => {
   beforeEach(() => {
     mocked.assertSameOrigin.mockResolvedValue(null);
     mocked.requireOwnerUser.mockResolvedValue({ id: 'owner-1' });
+    mocked.findTaskDispatchContextByTaskKey.mockResolvedValue({
+      taskKey: 'PROJ-1',
+      projectId: 'project-1',
+    });
     mocked.getUserSettings.mockResolvedValue({
       telegram_enabled: 'true',
       telegram_bot_token: 'encrypted-token',
@@ -135,6 +141,26 @@ describe('app/api/telegram/send/route', () => {
       error: 'Telegram is not fully configured or disabled',
     });
     expect(mocked.fetch).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 before telegram side effects when the task key does not resolve', async () => {
+    mocked.findTaskDispatchContextByTaskKey.mockResolvedValueOnce(null);
+
+    const response = await POST(
+      postRequest({
+        taskKey: 'PROJ-404',
+        message: '/skill preqstation-dispatch implement PROJ-404 using codex',
+      }),
+    );
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: 'Not found' });
+    expect(mocked.getUserSettings).not.toHaveBeenCalled();
+    expect(mocked.decryptTelegramToken).not.toHaveBeenCalled();
+    expect(mocked.fetch).not.toHaveBeenCalled();
+    expect(mocked.queueTaskExecutionByTaskKey).not.toHaveBeenCalled();
+    expect(mocked.writeOutboxEventStandalone).not.toHaveBeenCalled();
+    expect(mocked.writeAuditLog).not.toHaveBeenCalled();
   });
 
   it('decrypts token, calls telegram api, and writes audit log on success', async () => {

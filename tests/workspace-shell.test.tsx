@@ -143,6 +143,8 @@ function renderWorkspaceShell(args: RenderWorkspaceShellArgs) {
 }
 
 describe('app/components/workspace-shell', () => {
+  const legacyAllProjectsLabel = ['All', 'Projects'].join(' ');
+
   it('pins the shared search slot to a symmetric center column in the header grid', () => {
     expect(globalsCss).toContain('grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);');
     expect(globalsCss).toContain('justify-self: start;');
@@ -354,16 +356,27 @@ describe('app/components/workspace-shell', () => {
     expect(html).not.toContain('mantine-Badge-root');
   });
 
-  it('keeps the mobile picker scoped to all projects while dashboard is active', () => {
+  it('defaults the mobile picker to the remembered project on dashboard routes', () => {
     const html = renderWorkspaceShell({
       desktopOpened: true,
       pathname: '/dashboard',
       rememberedProjectKey: 'ALPHA',
     });
 
-    expect(html).toContain('aria-label="Project picker. Current: All Projects"');
-    expect(html).toContain('>All Projects<');
-    expect(html).not.toContain('data-current-board="true"');
+    expect(html).toContain('aria-label="Project picker. Current: Alpha"');
+    expect(html).toContain('>Alpha<');
+    expect(html).not.toContain(`>${legacyAllProjectsLabel}<`);
+  });
+
+  it('falls back to a neutral boards label when no project is remembered', () => {
+    const html = renderWorkspaceShell({
+      desktopOpened: true,
+      pathname: '/dashboard',
+      rememberedProjectKey: null,
+    });
+
+    expect(html).toContain('aria-label="Project picker. Current: Boards"');
+    expect(html).toContain('>Boards<');
   });
 
   it('surfaces the current project name in the mobile picker on project routes', () => {
