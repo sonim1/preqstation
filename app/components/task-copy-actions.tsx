@@ -3,7 +3,7 @@
 import { ActionIcon, Kbd, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { IconCopy, IconInfoCircle } from '@tabler/icons-react';
 import Image from 'next/image';
-import { type CSSProperties, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import {
   readTaskDispatchPreference,
@@ -445,7 +445,7 @@ export function TaskCopyActions({
     }, 1500);
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     sendDispatchRef.current = sendDispatch;
   });
 
@@ -661,7 +661,7 @@ export function TaskCopyActions({
           data-state={dispatchState === 'idle' ? undefined : dispatchState}
           disabled={isSending}
           onClick={() => {
-            void sendDispatchRef.current?.();
+            void sendDispatch();
           }}
         >
           <span>{getSendLabel(dispatchState)}</span>
