@@ -20,7 +20,15 @@ import {
   IconInfoCircle,
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
-import { type ReactNode, useActionState, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type ReactNode,
+  useActionState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { useBoardOfflineSync } from '@/app/components/board-offline-sync-provider';
 import { type EditorMode, LiveMarkdownEditor } from '@/app/components/live-markdown-editor';
@@ -370,7 +378,7 @@ export function useTaskEditFormController({
   updateTodoAction,
   onTaskUpdated,
 }: TaskEditFormProps) {
-  const { status, projectId, labelIds } = editableTodo;
+  const { projectId, labelIds } = editableTodo;
   const router = useRouter();
   const incomingRevision = buildTaskEditRevision(editableTodo);
   const incomingFieldRevisions = buildTaskEditFieldRevisions(editableTodo);
@@ -405,8 +413,9 @@ export function useTaskEditFormController({
     labelIds: string[];
   } | null>(null);
   const [updateState, updateFormAction] = useActionState(updateTodoAction, null);
-  const labelById = new Map(
-    [...editableTodo.labels, ...todoLabels].map((label) => [label.id, label]),
+  const labelById = useMemo(
+    () => new Map([...editableTodo.labels, ...todoLabels].map((label) => [label.id, label])),
+    [editableTodo.labels, todoLabels],
   );
   const submitTaskUpdate = useCallback(
     async (form: HTMLFormElement) => {

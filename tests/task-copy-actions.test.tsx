@@ -25,6 +25,18 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+vi.mock('next/image', () => ({
+  default: ({
+    className,
+    src,
+    ...props
+  }: {
+    className?: string;
+    src: string;
+    [key: string]: unknown;
+  }) => <span className={className} data-next-image={src} {...props} />,
+}));
+
 vi.mock('@mantine/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@mantine/core')>();
 
@@ -214,7 +226,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('aria-label="Selected target: H Telegram"');
     expect(html).toContain('Telegram');
     expect(html).toContain('class="task-dispatch-target-logo"');
-    expect(html).toContain('src="/icons/hermes-agent.png"');
+    expect(html).toContain('data-next-image="/icons/hermes-agent.png"');
     expect(html).not.toContain('>H<');
     expect(html).toContain('/preq_dispatch@PreqHermesBot');
     expect(html).toContain('project_key=PROJ');
