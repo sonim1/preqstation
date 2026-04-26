@@ -6,9 +6,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { ProjectPickerMenuItems } from '@/app/components/project-picker-menu';
 
 describe('app/components/project-picker-menu', () => {
-  const legacyAllProjectsLabel = ['All', 'Projects'].join(' ');
+  const allProjectsLabel = ['All', 'Projects'].join(' ');
 
-  it('lists visible and paused boards without rendering a synthetic all-projects option', () => {
+  it('renders an unscoped all-projects option ahead of visible and paused boards', () => {
     const html = renderToStaticMarkup(
       <MantineProvider>
         <Menu opened withinPortal={false}>
@@ -27,7 +27,8 @@ describe('app/components/project-picker-menu', () => {
       </MantineProvider>,
     );
 
-    expect(html).not.toContain(`>${legacyAllProjectsLabel}<`);
+    expect(html).toContain(`>${allProjectsLabel}<`);
+    expect(html.indexOf(`>${allProjectsLabel}<`)).toBeLessThan(html.indexOf('>Alpha<'));
     expect(html).toContain('>Alpha<');
     expect(html).toContain('>Beta<');
     expect(html.indexOf('>Alpha<')).toBeLessThan(html.indexOf('>Paused<'));

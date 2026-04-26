@@ -9,7 +9,7 @@ import { isVisibleWorkspaceProject, type WorkspaceProjectOption } from '@/lib/wo
 export interface ProjectPickerMenuItemsProps {
   projectOptions: WorkspaceProjectOption[];
   selectedProjectId: string | null;
-  onSelect: (projectKey: string) => void;
+  onSelect: (projectKey: string | null) => void;
 }
 
 export function ProjectPickerMenuItems({
@@ -25,6 +25,20 @@ export function ProjectPickerMenuItems({
   return (
     <>
       <Menu.Label>Boards</Menu.Label>
+      <Menu.Item
+        onClick={() => onSelect(null)}
+        className="workspace-project-picker-item workspace-board-picker-item"
+        data-current-board={selectedProjectId === null ? 'true' : undefined}
+        aria-current={selectedProjectId === null ? 'page' : undefined}
+        leftSection={
+          <span className="workspace-board-current-indicator" aria-hidden="true">
+            {selectedProjectId === null ? <IconPointFilled size={10} /> : null}
+          </span>
+        }
+      >
+        All Projects
+      </Menu.Item>
+      {projectOptions.length > 0 ? <Menu.Divider /> : null}
       {visibleProjectOptions.map((project) => {
         const isCurrentBoard = selectedProjectId === project.id;
         return (

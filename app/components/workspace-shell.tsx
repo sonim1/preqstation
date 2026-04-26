@@ -263,8 +263,14 @@ export function WorkspaceShell({
     setCommandPaletteRequested(true);
   }, []);
 
-  function handleProjectSelect(projectKey: string) {
+  function handleProjectSelect(projectKey: string | null) {
     closeMobile();
+    if (!projectKey) {
+      writeRememberedProjectKey(null);
+      router.push(getProjectSelectHref(pathname, null));
+      return;
+    }
+
     const project = findProjectByKey(projectOptions, projectKey);
     if (!project) return;
 
