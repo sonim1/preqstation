@@ -40,11 +40,14 @@ vi.mock('@mantine/core', async (importOriginal) => {
 
   return {
     ...actual,
-    Modal: (({ children, opened }: { children?: React.ReactNode; opened?: boolean }) =>
-      opened ? <div data-modal="true">{children}</div> : null) as unknown as typeof actual.Modal,
-    Tooltip: (({ children }: { children?: React.ReactNode }) => (
-      <>{children}</>
-    )) as unknown as typeof actual.Tooltip,
+    Modal: (({
+      children,
+      opened,
+    }: {
+      children?: React.ReactNode;
+      opened?: boolean;
+    }) => (opened ? <div data-modal="true">{children}</div> : null)) as unknown as typeof actual.Modal,
+    Tooltip: (({ children }: { children?: React.ReactNode }) => <>{children}</>) as unknown as typeof actual.Tooltip,
   };
 });
 

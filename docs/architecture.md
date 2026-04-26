@@ -186,27 +186,27 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 
 #### Internal APIs (Session cookie)
 
-| Method   | Endpoint                            | Purpose                                                           |
-| -------- | ----------------------------------- | ----------------------------------------------------------------- |
-| `GET`    | `/api/todos`                        | List todos (internal dashboard)                                   |
-| `POST`   | `/api/todos`                        | Create todo                                                       |
-| `PATCH`  | `/api/todos/:id`                    | Update todo                                                       |
-| `DELETE` | `/api/todos/:id`                    | Delete todo                                                       |
-| `POST`   | `/api/todos/rebalance`              | Rebalance sort order                                              |
-| `POST`   | `/api/todos/archive-done`           | Archive completed todos                                           |
-| `GET`    | `/api/task-labels`                  | List task labels                                                  |
-| `POST`   | `/api/task-labels`                  | Create task label                                                 |
-| `PATCH`  | `/api/task-labels/:id`              | Update task label                                                 |
-| `DELETE` | `/api/task-labels/:id`              | Delete task label                                                 |
-| `POST`   | `/api/events/cleanup`               | Clean up old outbox entries                                       |
-| `GET`    | `/api/settings`                     | Get/update user settings                                          |
+| Method   | Endpoint                  | Purpose                         |
+| -------- | ------------------------- | ------------------------------- |
+| `GET`    | `/api/todos`              | List todos (internal dashboard) |
+| `POST`   | `/api/todos`              | Create todo                     |
+| `PATCH`  | `/api/todos/:id`          | Update todo                     |
+| `DELETE` | `/api/todos/:id`          | Delete todo                     |
+| `POST`   | `/api/todos/rebalance`    | Rebalance sort order            |
+| `POST`   | `/api/todos/archive-done` | Archive completed todos         |
+| `GET`    | `/api/task-labels`        | List task labels                |
+| `POST`   | `/api/task-labels`        | Create task label               |
+| `PATCH`  | `/api/task-labels/:id`    | Update task label               |
+| `DELETE` | `/api/task-labels/:id`    | Delete task label               |
+| `POST`   | `/api/events/cleanup`     | Clean up old outbox entries     |
+| `GET`    | `/api/settings`           | Get/update user settings        |
 | `POST`   | `/api/projects/:id/qa-runs/trigger` | Queue a QA run to OpenClaw Telegram, Hermes Telegram, or Channels |
-| `POST`   | `/api/telegram/send`                | Send task Telegram message to OpenClaw or Hermes                  |
-| `POST`   | `/api/telegram/send/insight`        | Send project insight to the OpenClaw or Hermes Telegram channel   |
-| `POST`   | `/api/telegram/test`                | Test Telegram connection                                          |
-| `POST`   | `/api/send-to-openclaw`             | Legacy OpenClaw message relay                                     |
-| `GET`    | `/api/work-logs/:id`                | Get work log entry                                                |
-| `DELETE` | `/api/work-logs/:id`                | Delete work log entry                                             |
+| `POST`   | `/api/telegram/send`      | Send task Telegram message to OpenClaw or Hermes |
+| `POST`   | `/api/telegram/send/insight` | Send project insight to the OpenClaw or Hermes Telegram channel |
+| `POST`   | `/api/telegram/test`      | Test Telegram connection        |
+| `POST`   | `/api/send-to-openclaw`   | Legacy OpenClaw message relay   |
+| `GET`    | `/api/work-logs/:id`      | Get work log entry              |
+| `DELETE` | `/api/work-logs/:id`      | Delete work log entry           |
 
 ### Offline Board Path
 
@@ -392,20 +392,20 @@ codex mcp add preqstation \
 
 ### MCP Tools
 
-| Tool                        | Type     | Purpose                                                                                                                               |
-| --------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `preq_list_projects`        | Read     | List projects for setup flows such as local repository mapping                                                                        |
-| `preq_list_tasks`           | Read     | List tasks by status, label, engine, projectKey                                                                                       |
-| `preq_get_task`             | Read     | Fetch task details by ticket number or UUID                                                                                           |
-| `preq_get_project_settings` | Read     | Fetch project settings such as deploy strategy and agent instructions                                                                 |
-| `preq_create_task`          | Mutation | Create new task (→ inbox)                                                                                                             |
-| `preq_plan_task`            | Mutation | Upload plan markdown, move inbox → todo                                                                                               |
-| `preq_start_task`           | Mutation | Mark a todo task as actively running (`runState=running`)                                                                             |
-| `preq_update_task_status`   | Mutation | Status-only update                                                                                                                    |
+| Tool                        | Type     | Purpose                                                               |
+| --------------------------- | -------- | --------------------------------------------------------------------- |
+| `preq_list_projects`        | Read     | List projects for setup flows such as local repository mapping        |
+| `preq_list_tasks`           | Read     | List tasks by status, label, engine, projectKey                       |
+| `preq_get_task`             | Read     | Fetch task details by ticket number or UUID                           |
+| `preq_get_project_settings` | Read     | Fetch project settings such as deploy strategy and agent instructions |
+| `preq_create_task`          | Mutation | Create new task (→ inbox)                                             |
+| `preq_plan_task`            | Mutation | Upload plan markdown, move inbox → todo                               |
+| `preq_start_task`           | Mutation | Mark a todo task as actively running (`runState=running`)             |
+| `preq_update_task_status`   | Mutation | Status-only update                                                    |
 | `preq_complete_task`        | Mutation | Upload result, move → ready, clear execution state; requires `branchName` + `prUrl` for `feature_branch + auto_pr + commit_on_review` |
-| `preq_review_task`          | Mutation | Verify a ready task and move → done (or → hold)                                                                                       |
-| `preq_block_task`           | Mutation | Move task → hold with a blocking reason                                                                                               |
-| `preq_delete_task`          | Mutation | Permanently delete task                                                                                                               |
+| `preq_review_task`          | Mutation | Verify a ready task and move → done (or → hold)                       |
+| `preq_block_task`           | Mutation | Move task → hold with a blocking reason                               |
+| `preq_delete_task`          | Mutation | Permanently delete task                                               |
 
 ### Engine Resolution Priority
 

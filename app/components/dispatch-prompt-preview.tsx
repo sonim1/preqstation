@@ -26,11 +26,7 @@ export function DispatchPromptPreview({
   const promptRef = useRef<HTMLDivElement | null>(null);
   const [copied, setCopied] = useState(false);
   const { className: promptClassName, ...restPromptProps } = promptProps ?? {};
-  const copyLabel = copyDisabled
-    ? (copyTooltipLabel ?? 'Copy unavailable')
-    : copied
-      ? 'Copied'
-      : 'Copy';
+  const copyLabel = copyDisabled ? copyTooltipLabel ?? 'Copy unavailable' : copied ? 'Copied' : 'Copy';
 
   const copyPromptFallback = () => {
     const selection = window.getSelection?.();
