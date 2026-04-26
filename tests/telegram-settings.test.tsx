@@ -66,13 +66,35 @@ describe('app/components/telegram-settings', () => {
     expect(html).toContain('role="tablist"');
     expect(html).toContain('OpenClaw Channel');
     expect(html).toContain('Hermes Channel');
-    expect(html).toContain('Enabled');
-    expect(html).toContain('Saved');
+    expect(html).toContain(
+      'Choose a channel tab. Status describes setup, not which tab is selected.',
+    );
+    expect(html).toContain('Status: Dispatch enabled');
+    expect(html).toContain('Status: Chat ID saved');
+    expect(html).not.toContain('>Enabled<');
+    expect(html).not.toContain('>Saved<');
     expect(html).toContain('Send OpenClaw Test');
     expect(html).toContain('Send OpenClaw /status');
     expect(html).toContain('Send Hermes Test');
     expect(html).toContain('id="telegram-openclaw-panel"');
     expect(html).toMatch(/<section[^>]*id="telegram-hermes-panel"[^>]*hidden=""/);
+  });
+
+  it('shows setup-needed status when a channel has no saved configuration yet', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <TelegramSettings
+          action={vi.fn(async () => null)}
+          defaultOpenClawChatId=""
+          defaultOpenClawEnabled={false}
+          defaultHermesChatId=""
+          defaultHermesEnabled={false}
+          hasSavedBotToken={false}
+        />
+      </MantineProvider>,
+    );
+
+    expect((html.match(/Status: Setup needed/g) ?? []).length).toBe(2);
   });
 
   it('renders a single shared feedback slot when idle', () => {

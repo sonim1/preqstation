@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  Badge,
   Button,
   Checkbox,
   Group,
@@ -46,8 +45,8 @@ type TestState =
   | { status: 'error'; message: string };
 
 type ChannelStatus = {
-  label: 'Enabled' | 'Saved' | 'Off';
-  color: 'green' | 'gray';
+  label: 'Dispatch enabled' | 'Chat ID saved' | 'Setup needed';
+  tone: 'positive' | 'neutral';
 };
 
 type ChannelConfig = {
@@ -117,12 +116,12 @@ export function getTelegramTestValidationError({
 
 function resolveChannelStatus(enabled: boolean, chatId: string): ChannelStatus {
   if (enabled) {
-    return { label: 'Enabled', color: 'green' };
+    return { label: 'Dispatch enabled', tone: 'positive' };
   }
   if (chatId.trim()) {
-    return { label: 'Saved', color: 'gray' };
+    return { label: 'Chat ID saved', tone: 'neutral' };
   }
-  return { label: 'Off', color: 'gray' };
+  return { label: 'Setup needed', tone: 'neutral' };
 }
 
 function resolveInitialChannel({
@@ -298,6 +297,9 @@ export function TelegramSettings({
         </div>
 
         <div className={classes.channelShell}>
+          <Text size="sm" c="dimmed">
+            Choose a channel tab. Status describes setup, not which tab is selected.
+          </Text>
           <div className={classes.channelTabs} role="tablist" aria-label="Telegram channels">
             {CHANNEL_CONFIGS.map((channel) => {
               const channelStateForTab = channelState[channel.key];
@@ -323,12 +325,12 @@ export function TelegramSettings({
                     <Text fw={700} className={classes.channelTabTitle}>
                       {channel.title}
                     </Text>
-                    <Badge color={status.color} variant={selected ? 'filled' : 'light'} size="sm">
-                      {status.label}
-                    </Badge>
                   </div>
                   <Text size="sm" className={classes.channelTabMeta}>
                     {channel.summary}
+                  </Text>
+                  <Text size="xs" fw={600} c={status.tone === 'positive' ? 'green.6' : 'dimmed'}>
+                    Status: {status.label}
                   </Text>
                 </UnstyledButton>
               );
