@@ -123,8 +123,8 @@ Operational notes:
   project insight actions continue to work.
 - If you enable Hermes, task sends plus QA and project insight actions that target
   `hermes-telegram` use the Hermes chat instead of the OpenClaw chat.
-- `Channels` is not a Telegram channel setting. It is the Claude Code in-app dispatch target used
-  by the QA modal and project insight modal to queue project-scope work without sending Telegram.
+- QA runs and project insight actions dispatch only through the enabled Telegram targets shown in
+  their modals; there is no in-app `Channels` fallback for those flows.
 - Older installs can still fall back to the legacy single-channel settings
   (`telegram_chat_id` / `telegram_enabled`) until the split channel settings are saved.
 
@@ -134,10 +134,10 @@ Validation rules:
   without a Hermes Chat ID, or either channel is enabled without a Bot Token.
 - The test buttons require the selected channel Chat ID plus either a newly entered Bot Token or a
   previously saved Bot Token.
-- The project insight modal can expose `Channels`, `🦞 Telegram`, and `H Telegram` targets,
-  depending on the selected engine and which Telegram channels are enabled.
-- The QA modal can expose `🦞 Telegram`, `H Telegram`, and `Channels`; `Channels` always remains
-  available even if Telegram is disabled.
+- The project insight modal can expose `🦞 Telegram` and/or `H Telegram`, depending on which
+  Telegram channels are enabled. If neither channel is enabled, dispatch stays unavailable.
+- The QA modal can expose `🦞 Telegram` and/or `H Telegram`, depending on which Telegram channels
+  are enabled. If neither channel is enabled, QA dispatch stays unavailable.
 
 Recommended validation from the settings screen:
 
@@ -147,8 +147,7 @@ Recommended validation from the settings screen:
 - Send a **Hermes Test** if Hermes messaging is enabled
 - Open **Create Inbox Tasks from Insight** and confirm the expected target chips appear for your
   enabled channels
-- Open **QA Runs** and confirm it can queue through `🦞 Telegram`, `H Telegram`, and/or
-  `Channels` as expected
+- Open **QA Runs** and confirm it can queue through `🦞 Telegram` and/or `H Telegram` as expected
 
 ## 7) Post-Deploy Validation
 
@@ -164,8 +163,8 @@ Recommended validation from the settings screen:
 - OpenClaw Telegram test, OpenClaw `/status`, and Hermes Telegram test succeed for the channels you enabled
 - Tasks dispatched to Telegram can surface `Requested` / `Running` execution badges
 - Hermes-targeted task sends plus Hermes-targeted project insight sends land in the Hermes chat
-- QA runs can queue through `🦞 Telegram`, `H Telegram`, or `Channels`, and project insight can
-  dispatch through the target chips shown in the modal
+- QA runs can queue through `🦞 Telegram` and/or `H Telegram`, and project insight dispatch uses
+  the enabled Telegram target chips shown in the modal
 - `claude mcp add --transport http .../mcp` or `codex mcp add ... --url .../mcp` completes browser login successfully
 
 ## 8) Offline Board Validation

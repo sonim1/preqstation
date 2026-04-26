@@ -76,7 +76,7 @@ User creates task in Kanban UI
      → Hermes-targeted task sends go to the Hermes chat
 ```
 
-### 2. Agent Trigger via Telegram Dispatch Channels
+### 2. Agent Trigger via Telegram Dispatch Targets
 
 ```
 preqstation  →  dispatch target selected
@@ -89,9 +89,6 @@ preqstation  →  dispatch target selected
                               →  Resolves project path from explicit path, plugin config, shared mapping file, or MEMORY.md
                               →  Creates git worktree (isolated env)
                               →  Launches coding agent (claude/codex/gemini CLI)
-             →  Channels dispatch request
-                        →  preqstation stores an explicit project-scope dispatch request
-                           →  Claude Code dispatcher picks it up without sending Telegram
 ```
 
 ### 3. Agent Execution and Status Reporting
@@ -200,7 +197,7 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 | `DELETE` | `/api/task-labels/:id`    | Delete task label               |
 | `POST`   | `/api/events/cleanup`     | Clean up old outbox entries     |
 | `GET`    | `/api/settings`           | Get/update user settings        |
-| `POST`   | `/api/projects/:id/qa-runs/trigger` | Queue a QA run to OpenClaw Telegram, Hermes Telegram, or Channels |
+| `POST`   | `/api/projects/:id/qa-runs/trigger` | Queue a QA run to OpenClaw Telegram or Hermes Telegram |
 | `POST`   | `/api/telegram/send`      | Send task Telegram message to OpenClaw or Hermes |
 | `POST`   | `/api/telegram/send/insight` | Send project insight to the OpenClaw or Hermes Telegram channel |
 | `POST`   | `/api/telegram/test`      | Test Telegram connection        |
@@ -283,12 +280,11 @@ Projects can also store an `agent_instructions` setting. When present, task payl
   format
 - `/api/telegram/send/insight` defaults to the OpenClaw channel and can target Hermes when
   `dispatchTarget=hermes-telegram`
-- `POST /api/projects/:id/qa-runs/trigger` accepts `telegram`, `hermes-telegram`, and
-  `claude-code-channel`; Telegram targets send a bot message, while `claude-code-channel` stores an
-  explicit dispatch request with `qaRunId` and `qaTaskKeys`
-- Project insight dispatch follows the same target vocabulary. Telegram targets send through
-  `/api/telegram/send/insight`, while the `Channels` target queues `/api/dispatch/claude-code/insight`
-  inside preqstation instead of sending Telegram
+- `POST /api/projects/:id/qa-runs/trigger` accepts `telegram` and `hermes-telegram`, creates the
+  queued QA run record, and sends the selected Telegram dispatch message
+- Project insight dispatch follows the same target vocabulary and always sends through
+  `/api/telegram/send/insight`
+- There is no in-app `Channels` / `claude-code-channel` fallback for QA or project insight dispatch
 - OpenClaw `/status` checks remain OpenClaw-only
 - Messages are audit logged and used to notify users of task events and trigger downstream runtime workflows
 
