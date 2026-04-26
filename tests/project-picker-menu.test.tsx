@@ -6,7 +6,9 @@ import { describe, expect, it, vi } from 'vitest';
 import { ProjectPickerMenuItems } from '@/app/components/project-picker-menu';
 
 describe('app/components/project-picker-menu', () => {
-  it('groups paused boards under their own section and preserves aria-current on the current board', () => {
+  const legacyAllProjectsLabel = ['All', 'Projects'].join(' ');
+
+  it('lists visible and paused boards without rendering a synthetic all-projects option', () => {
     const html = renderToStaticMarkup(
       <MantineProvider>
         <Menu opened withinPortal={false}>
@@ -18,14 +20,14 @@ describe('app/components/project-picker-menu', () => {
               { id: 'project-1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
               { id: 'project-2', name: 'Beta', projectKey: 'BETA', status: 'paused' },
             ]}
-            hasSelectedProject={true}
-            selectedProjectId="project-2"
+            selectedProjectId="project-1"
             onSelect={vi.fn()}
           />
         </Menu>
       </MantineProvider>,
     );
 
+    expect(html).not.toContain(`>${legacyAllProjectsLabel}<`);
     expect(html).toContain('>Alpha<');
     expect(html).toContain('>Beta<');
     expect(html.indexOf('>Alpha<')).toBeLessThan(html.indexOf('>Paused<'));

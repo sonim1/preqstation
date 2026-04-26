@@ -232,23 +232,19 @@ export function WorkspaceShell({
           ? 'kanban'
           : 'dashboard';
   const currentBoardProject = active === 'kanban' ? selectedProject : null;
+  const mobilePickerProject = selectedProject;
   const currentVisibleBoardProject =
     currentBoardProject && isVisibleWorkspaceProject(currentBoardProject)
       ? currentBoardProject
       : null;
   const currentPausedBoardProject =
     currentBoardProject?.status === PAUSED_PROJECT_STATUS ? currentBoardProject : null;
-  const hasCurrentBoardProject = !!currentBoardProject;
   const currentBoardIndex = currentVisibleBoardProject
     ? visibleProjectOptions.findIndex((project) => project.id === currentVisibleBoardProject.id)
     : -1;
   const pausedBoardsOpened = pausedBoardsRequested || !!currentPausedBoardProject;
   const isBoardContext = active === 'kanban';
-  const currentScopeLabel = isBoardContext
-    ? currentBoardProject?.name || 'Boards'
-    : pickerState.source === 'path' && selectedProject
-      ? selectedProject.name
-      : 'All Projects';
+  const currentScopeLabel = mobilePickerProject?.name || 'Boards';
   const workspaceSubtitle = getWorkspaceProjectSubtitle(currentBoardProject);
   const projectFilterAriaLabel = `${isBoardContext ? 'Board picker' : 'Project picker'}. Current: ${currentScopeLabel}`;
   const boardSelectionSurfaceStyle = {
@@ -267,20 +263,13 @@ export function WorkspaceShell({
     setCommandPaletteRequested(true);
   }, []);
 
-  function handleProjectSelect(projectKey: string | null) {
+  function handleProjectSelect(projectKey: string) {
     closeMobile();
-    const href = getProjectSelectHref(pathname, projectKey);
-    if (!projectKey) {
-      writeRememberedProjectKey(null);
-      router.push(href);
-      return;
-    }
-
     const project = findProjectByKey(projectOptions, projectKey);
     if (!project) return;
 
     writeRememberedProjectKey(project.projectKey);
-    router.push(href);
+    router.push(getProjectSelectHref(pathname, project.projectKey));
   }
 
   useEffect(() => {
@@ -346,8 +335,7 @@ export function WorkspaceShell({
       <Menu.Dropdown>
         <ProjectPickerMenuItems
           projectOptions={projectOptions}
-          hasSelectedProject={hasCurrentBoardProject}
-          selectedProjectId={currentBoardProject?.id ?? null}
+          selectedProjectId={mobilePickerProject?.id ?? null}
           onSelect={handleProjectSelect}
         />
       </Menu.Dropdown>
