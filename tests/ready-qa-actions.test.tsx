@@ -8,38 +8,23 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+vi.mock('next/image', () => ({
+  default: ({
+    className,
+    src,
+    ...props
+  }: {
+    className?: string;
+    src: string;
+    [key: string]: unknown;
+  }) => <span className={className} data-next-image={src} {...props} />,
+}));
+
 vi.mock('@mantine/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@mantine/core')>();
 
-  function MockMenu({ children }: { children: React.ReactNode }) {
-    return <div data-menu>{children}</div>;
-  }
-
-  MockMenu.Target = function MockMenuTarget({ children }: { children: React.ReactNode }) {
-    return <>{children}</>;
-  };
-  MockMenu.Dropdown = function MockMenuDropdown({ children }: { children: React.ReactNode }) {
-    return <div data-menu-dropdown>{children}</div>;
-  };
-  MockMenu.Item = function MockMenuItem({
-    children,
-    leftSection: _leftSection,
-    rightSection: _rightSection,
-    ...props
-  }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-    leftSection?: React.ReactNode;
-    rightSection?: React.ReactNode;
-  }) {
-    return (
-      <button type="button" {...props}>
-        {children}
-      </button>
-    );
-  };
-
   return {
     ...actual,
-    Menu: MockMenu as typeof actual.Menu,
     Modal: (({ children, title }: { children?: React.ReactNode; title?: React.ReactNode }) => (
       <div data-modal-title={title}>{children}</div>
     )) as unknown as typeof actual.Modal,
@@ -147,6 +132,7 @@ describe('app/components/ready-qa-actions', () => {
     branchName: string;
     readyCount: number;
     telegramEnabled: boolean;
+    hermesTelegramEnabled?: boolean;
     defaultEngine?: string | null;
     initialRuns: Array<{
       id: string;
@@ -264,24 +250,51 @@ describe('app/components/ready-qa-actions', () => {
 
     expect(html).toContain('aria-label="Open QA runs"');
     expect(html).toContain('data-tooltip-label="QA"');
-    expect(html).toContain('Run QA');
+    expect(html).toContain('Queue QA');
     expect(html).toContain('QA Runs');
     expect(html).toContain('current Ready tasks');
     expect(html).toContain('Project One');
     expect(html).toContain('ALPHA');
     expect(html).toContain('release/mobile');
     expect(html).toContain('data-tooltip-label="Choose engine, then press play to queue QA."');
-    expect(html).toContain('openclaw-action-bar');
-    expect(html).toContain('openclaw-engine-trigger');
-    expect(html).toContain('openclaw-action-trigger');
-    expect(html).toContain('Selected engine: Claude Code');
-    expect(html).toContain('Selected action: Run QA');
-    expect(html).toContain('Execute QA action');
+    expect(html).toContain('task-dispatch-engine-segments');
+    expect(html).toContain('task-dispatch-target-segments');
+    expect(html).toContain('task-dispatch-prompt-shell');
+    expect(html).toContain('Selected engine: Claude');
+    expect(html).toContain('Selected target: 🦞 Telegram');
+    expect(html).toContain('Queue QA');
+    expect(html).toContain('aria-label="Copy dispatch prompt"');
+    expect(html).toContain(
+      'Queue QA to generate an executable dispatch prompt for the current ready tasks.',
+    );
     expect(html).not.toContain('QA Engine');
+    expect(html).not.toContain('data-menu');
+    expect(html).not.toContain('openclaw-action-trigger');
     expect(html).toContain('2026-03-18 10:00');
     expect(html).toContain('aria-label="Copy QA report for run-123"');
     expect(html).toContain('data-tooltip-label="Copy report"');
     expect(formatReadyQaScopeLabel(2, KITCHEN_TERMINOLOGY)).toBe('2 ready tickets');
+  });
+
+  it('shows only Telegram QA targets when both transports are available', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <ReadyQaActionsAny
+          projectId="project-1"
+          projectKey="ALPHA"
+          projectName="Project One"
+          branchName="release/mobile"
+          readyCount={2}
+          telegramEnabled
+          hermesTelegramEnabled
+          initialRuns={[]}
+        />
+      </MantineProvider>,
+    );
+
+    expect(html).toContain('H Telegram');
+    expect(html).toContain('🦞 Telegram');
+    expect(html).not.toContain('Channels');
   });
 
   it('prefers the stored QA engine over the incoming default engine', () => {
@@ -301,7 +314,7 @@ describe('app/components/ready-qa-actions', () => {
       </MantineProvider>,
     );
 
-    expect(html).toContain('Selected engine: Gemini CLI');
+    expect(html).toContain('Selected engine: Gemini');
   });
 
   it('omits the copy control when the QA run has no uploaded report', () => {

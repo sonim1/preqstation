@@ -6,7 +6,6 @@ import { writeAuditLog } from '@/lib/audit';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, tasks } from '@/lib/db/schema';
 import { DEFAULT_ENGINE_KEY, ENGINE_KEYS } from '@/lib/engine-icons';
-import { buildOpenClawQaCommand } from '@/lib/openclaw-command';
 import { requireOwnerUser } from '@/lib/owner';
 import { getProjectSettings, PROJECT_SETTING_KEYS } from '@/lib/project-settings';
 import {
@@ -17,6 +16,7 @@ import {
   qaRunsStorageAvailable,
 } from '@/lib/qa-runs';
 import { assertSameOrigin } from '@/lib/request-security';
+import { buildProjectQaDispatchMessage } from '@/lib/task-telegram-client';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { decryptTelegramToken } from '@/lib/telegram-crypto';
 import { resolveTelegramDispatchConfig } from '@/lib/telegram-dispatch-settings';
@@ -25,6 +25,7 @@ import { getUserSettings } from '@/lib/user-settings';
 const triggerQaRunSchema = z
   .object({
     engine: z.enum(ENGINE_KEYS).optional(),
+    dispatchTarget: z.enum(['telegram', 'hermes-telegram']).optional().default('telegram'),
   })
   .strict();
 
@@ -65,13 +66,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
       const projectSettings = await getProjectSettings(project.id, client);
       const branchName = projectSettings[PROJECT_SETTING_KEYS.DEPLOY_DEFAULT_BRANCH] || 'main';
-
-      const settings = await getUserSettings(owner.id, client);
       const qaEngine = payload.engine ?? DEFAULT_ENGINE_KEY;
-      const { enabled, encryptedToken, chatId } = resolveTelegramDispatchConfig(
-        settings,
-        'openclaw',
-      );
+      const dispatchTarget = payload.dispatchTarget ?? 'telegram';
+      const settings = await getUserSettings(owner.id, client);
+      const target = dispatchTarget === 'hermes-telegram' ? 'hermes' : 'openclaw';
+      const { enabled, encryptedToken, chatId } = resolveTelegramDispatchConfig(settings, target);
       if (!enabled || !encryptedToken || !chatId) {
         return NextResponse.json(
           { error: 'Telegram is not fully configured or disabled' },
@@ -104,15 +103,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         client,
       );
 
-      const message = buildOpenClawQaCommand({
+      const message = buildProjectQaDispatchMessage({
         projectKey: project.projectKey,
-        engineKey: qaEngine,
+        engine: qaEngine,
         branchName,
+        dispatchTarget,
         qaRunId: run.id,
         qaTaskKeys: run.taskKeys,
       });
 
-      const sendResult = await sendTelegramMessage(botToken, chatId, message);
+      const sendResult = await sendTelegramMessage(botToken, chatId, message, {
+        normalizeCommand: dispatchTarget !== 'hermes-telegram',
+      });
       if (!sendResult.ok) {
         await deleteQaRun(run.id, owner.id, client);
         return NextResponse.json(
@@ -132,6 +134,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             qaRunId: run.id,
             branchName,
             taskKeys: run.taskKeys,
+            dispatchTarget,
           },
         },
         client,

@@ -1,10 +1,12 @@
 'use client';
 
 import { ActionIcon, Kbd, Text, Tooltip, UnstyledButton } from '@mantine/core';
-import { IconCopy, IconInfoCircle } from '@tabler/icons-react';
+import { IconInfoCircle } from '@tabler/icons-react';
 import Image from 'next/image';
 import { type CSSProperties, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
+import { DispatchPromptPreview } from '@/app/components/dispatch-prompt-preview';
+import { DispatchSegmentedControl } from '@/app/components/dispatch-segmented-control';
 import {
   readTaskDispatchPreference,
   type TaskDispatchPreferenceAction,
@@ -15,6 +17,7 @@ import {
   ENGINE_CONFIGS,
   type EngineConfig,
   getEngineConfig,
+  getEngineShortLabel,
   normalizeEngineKey,
 } from '@/lib/engine-icons';
 import { showErrorNotification } from '@/lib/notifications';
@@ -148,19 +151,6 @@ function resolveInitialAction(
   return availableActions[0] ?? 'send-telegram';
 }
 
-function toEngineShortLabel(engineConfig: EngineConfig | null) {
-  switch (engineConfig?.key) {
-    case 'claude-code':
-      return 'Claude';
-    case 'codex':
-      return 'Codex';
-    case 'gemini-cli':
-      return 'Gemini';
-    default:
-      return 'Engine';
-  }
-}
-
 function getTaskEditDispatchActionLabel(action: TaskEditDispatchAction) {
   switch (action) {
     case 'send-telegram':
@@ -227,7 +217,6 @@ export function TaskCopyActions({
     resolveInitialMode(availableModes, storedPreference?.objective),
   );
   const sendDispatchRef = useRef<(() => Promise<void>) | null>(null);
-  const [promptCopied, setPromptCopied] = useState(false);
   const [dispatchState, setDispatchState] = useState<DispatchState>('idle');
   const isSending = dispatchState === 'loading';
   const availableActions = resolveTaskEditDispatchActions(
@@ -242,18 +231,6 @@ export function TaskCopyActions({
     : resolveInitialAction(availableActions, selectedAction);
   const visibleModeOptions = dispatchModeOptions.filter((mode) =>
     availableModes.includes(mode.key),
-  );
-  const selectedEngineIndex = Math.max(
-    0,
-    engineOptions.findIndex((engineOption) => selectedEngine?.key === engineOption.key),
-  );
-  const selectedActionIndex = Math.max(
-    0,
-    availableActions.findIndex((action) => effectiveAction === action),
-  );
-  const selectedModeIndex = Math.max(
-    0,
-    visibleModeOptions.findIndex((mode) => effectiveObjective === mode.key),
   );
   const { askHint } = extractTaskAskPrompt(noteMarkdown);
   const dispatchPrompt =
@@ -313,33 +290,6 @@ export function TaskCopyActions({
     setSelectedObjective(nextObjective);
     setDispatchState('idle');
     persistDispatchPreference(selectedEngine, nextObjective, effectiveAction);
-  };
-
-  const copyPromptFallback = () => {
-    const prompt = document.querySelector<HTMLElement>('[data-task-dispatch-prompt]');
-    const selection = window.getSelection?.();
-
-    if (!prompt || !selection) {
-      return;
-    }
-
-    const range = document.createRange();
-    range.selectNodeContents(prompt);
-    selection.removeAllRanges();
-    selection.addRange(range);
-    document.execCommand('copy');
-    selection.removeAllRanges();
-  };
-
-  const copyDispatchPrompt = async () => {
-    try {
-      await navigator.clipboard.writeText(dispatchPrompt);
-    } catch {
-      copyPromptFallback();
-    }
-    persistDispatchPreference();
-    setPromptCopied(true);
-    setTimeout(() => setPromptCopied(false), 1500);
   };
 
   const sendDispatch = async () => {
@@ -437,31 +387,27 @@ export function TaskCopyActions({
       </div>
 
       <div className="task-dispatch-panel">
-        <div className="task-dispatch-field">
-          <Text size="xs" fw={700} className="task-dispatch-field-label">
-            Engine
-          </Text>
-          <div
-            className="task-dispatch-segmented-control task-dispatch-engine-segments"
-            role="group"
-            aria-label="Engine"
-            data-option-count={engineOptions.length}
-            data-selected-index={selectedEngineIndex}
-          >
-            {engineOptions.map((engineOption) => {
-              const selected = selectedEngine?.key === engineOption.key;
-              const label = toEngineShortLabel(engineOption);
-              return (
-                <UnstyledButton
-                  key={engineOption.key}
-                  type="button"
-                  className="task-dispatch-segment"
-                  data-selected={selected ? 'true' : undefined}
-                  aria-pressed={selected}
-                  aria-label={selected ? `Selected engine: ${label}` : `Select engine: ${label}`}
-                  disabled={isSending}
-                  onClick={() => selectEngine(engineOption)}
-                >
+        <DispatchSegmentedControl
+          label="Engine"
+          groupLabel="Engine"
+          groupClassName="task-dispatch-engine-segments"
+          disabled={isSending}
+          onSelect={(value) => {
+            const nextEngine = getEngineConfig(value);
+            if (nextEngine) {
+              selectEngine(nextEngine);
+            }
+          }}
+          options={engineOptions.map((engineOption) => {
+            const selected = selectedEngine?.key === engineOption.key;
+            const label = getEngineShortLabel(engineOption);
+
+            return {
+              value: engineOption.key,
+              selected,
+              ariaLabel: selected ? `Selected engine: ${label}` : `Select engine: ${label}`,
+              content: (
+                <>
                   <span
                     className="task-dispatch-engine-icon"
                     aria-hidden="true"
@@ -474,122 +420,74 @@ export function TaskCopyActions({
                     }
                   />
                   <span>{label}</span>
-                </UnstyledButton>
-              );
-            })}
-          </div>
-        </div>
+                </>
+              ),
+            };
+          })}
+        />
 
-        <div className="task-dispatch-field">
-          <Text size="xs" fw={700} className="task-dispatch-field-label">
-            Target
-          </Text>
-          <div
-            className="task-dispatch-segmented-control task-dispatch-target-segments"
-            role="group"
-            aria-label="Target"
-            data-option-count={availableActions.length}
-            data-selected-index={selectedActionIndex}
-          >
-            {availableActions.map((action) => {
-              const selected = effectiveAction === action;
-              const label = getTaskEditDispatchActionLabel(action);
+        <DispatchSegmentedControl
+          label="Target"
+          groupLabel="Target"
+          groupClassName="task-dispatch-target-segments"
+          disabled={isSending}
+          onSelect={(value) => selectAction(value)}
+          options={availableActions.map((action) => {
+            const selected = effectiveAction === action;
+            const label = getTaskEditDispatchActionLabel(action);
 
-              return (
-                <UnstyledButton
-                  key={action}
-                  type="button"
-                  className="task-dispatch-segment"
-                  data-selected={selected ? 'true' : undefined}
-                  aria-pressed={selected}
-                  aria-label={selected ? `Selected target: ${label}` : `Select target: ${label}`}
-                  disabled={isSending}
-                  onClick={() => selectAction(action)}
-                >
-                  {action === 'send-telegram' ? (
-                    <span className="task-dispatch-target-option">
-                      <span className="task-dispatch-target-emoji" aria-hidden="true">
-                        🦞
-                      </span>
-                      <span>Telegram</span>
+            return {
+              value: action,
+              selected,
+              ariaLabel: selected ? `Selected target: ${label}` : `Select target: ${label}`,
+              content:
+                action === 'send-telegram' ? (
+                  <span className="task-dispatch-target-option">
+                    <span className="task-dispatch-target-emoji" aria-hidden="true">
+                      🦞
                     </span>
-                  ) : (
-                    <span className="task-dispatch-target-option">
-                      <Image
-                        className="task-dispatch-target-logo"
-                        src="/icons/hermes-agent.png"
-                        alt=""
-                        width={16}
-                        height={16}
-                        aria-hidden="true"
-                      />
-                      <span>Telegram</span>
-                    </span>
-                  )}
-                </UnstyledButton>
-              );
-            })}
-          </div>
-        </div>
+                    <span>Telegram</span>
+                  </span>
+                ) : (
+                  <span className="task-dispatch-target-option">
+                    <Image
+                      className="task-dispatch-target-logo"
+                      src="/icons/hermes-agent.png"
+                      alt=""
+                      width={16}
+                      height={16}
+                      aria-hidden="true"
+                    />
+                    <span>Telegram</span>
+                  </span>
+                ),
+            };
+          })}
+        />
 
-        <div className="task-dispatch-field">
-          <Text size="xs" fw={700} className="task-dispatch-field-label">
-            Mode
-          </Text>
-          <div
-            className="task-dispatch-segmented-control task-dispatch-mode-segments"
-            role="group"
-            aria-label="Mode"
-            data-option-count={visibleModeOptions.length}
-            data-selected-index={selectedModeIndex}
-          >
-            {visibleModeOptions.map((mode) => {
-              const selected = effectiveObjective === mode.key;
-              return (
-                <UnstyledButton
-                  key={mode.key}
-                  type="button"
-                  className="task-dispatch-segment"
-                  data-selected={selected ? 'true' : undefined}
-                  aria-pressed={selected}
-                  aria-label={
-                    selected ? `Selected mode: ${mode.label}` : `Select mode: ${mode.label}`
-                  }
-                  disabled={isSending}
-                  onClick={() => selectMode(mode.key)}
-                >
-                  <span>{mode.label}</span>
-                </UnstyledButton>
-              );
-            })}
-          </div>
-        </div>
+        <DispatchSegmentedControl
+          label="Mode"
+          groupLabel="Mode"
+          groupClassName="task-dispatch-mode-segments"
+          disabled={isSending}
+          onSelect={(value) => selectMode(value)}
+          options={visibleModeOptions.map((mode) => {
+            const selected = effectiveObjective === mode.key;
 
-        <div className="task-dispatch-prompt-shell">
-          <div
-            className="task-dispatch-prompt"
-            aria-label="Dispatch prompt"
-            role="textbox"
-            aria-readonly="true"
-            tabIndex={0}
-            data-task-dispatch-prompt
-          >
-            {dispatchPrompt}
-          </div>
-          <Tooltip label={promptCopied ? 'Copied' : 'Copy'} withArrow>
-            <ActionIcon
-              variant="subtle"
-              color={promptCopied ? 'green' : 'gray'}
-              size="sm"
-              radius="sm"
-              aria-label="Copy dispatch prompt"
-              className="task-dispatch-copy"
-              onClick={copyDispatchPrompt}
-            >
-              <IconCopy size={15} />
-            </ActionIcon>
-          </Tooltip>
-        </div>
+            return {
+              value: mode.key,
+              selected,
+              ariaLabel: selected ? `Selected mode: ${mode.label}` : `Select mode: ${mode.label}`,
+              content: <span>{mode.label}</span>,
+            };
+          })}
+        />
+
+        <DispatchPromptPreview
+          prompt={dispatchPrompt}
+          promptProps={{ 'data-task-dispatch-prompt': true }}
+          onCopy={() => persistDispatchPreference()}
+        />
 
         <UnstyledButton
           type="button"

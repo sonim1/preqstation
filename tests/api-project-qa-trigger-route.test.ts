@@ -163,6 +163,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
       'bot-token',
       '123456',
       '!/skill preqstation-dispatch qa PROJ using claude-code branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
+      { normalizeCommand: true },
     );
     expect(mocked.writeAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -195,6 +196,39 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
       'bot-token',
       '123456',
       '!/skill preqstation-dispatch qa PROJ using gemini-cli branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
+      { normalizeCommand: true },
+    );
+  });
+
+  it('sends Hermes QA commands through the Hermes Telegram channel when requested', async () => {
+    mocked.getUserSettings.mockResolvedValueOnce({
+      engine_default: 'codex',
+      telegram_enabled: 'true',
+      telegram_bot_token: 'encrypted-token',
+      telegram_chat_id: '123456',
+      openclaw_telegram_enabled: 'true',
+      openclaw_telegram_chat_id: '123456',
+      hermes_telegram_enabled: 'true',
+      hermes_telegram_chat_id: '7654321',
+    });
+
+    await POST(postRequest({ engine: 'codex', dispatchTarget: 'hermes-telegram' }), {
+      params: Promise.resolve({ id: 'project-1' }),
+    });
+
+    expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
+      'bot-token',
+      '7654321',
+      [
+        '/preq_dispatch@PreqHermesBot',
+        'project_key=PROJ',
+        'objective=qa',
+        'engine=codex',
+        'branch_name=main',
+        'qa_run_id=run-123',
+        'qa_task_keys=PROJ-1,PROJ-2',
+      ].join('\n'),
+      { normalizeCommand: false },
     );
   });
 
@@ -218,6 +252,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
       'bot-token',
       '123456',
       '!/skill preqstation-dispatch qa PROJ using claude-code branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
+      { normalizeCommand: true },
     );
   });
 

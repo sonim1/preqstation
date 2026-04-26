@@ -79,13 +79,19 @@ User creates task in Kanban UI
 ### 2. Agent Trigger via Telegram Dispatch Channels
 
 ```
-preqstation  →  Telegram message
-                        →  OpenClaw chat receives default task sends, /status, QA, and insight
-                        →  Hermes chat receives Hermes-targeted task sends
+preqstation  →  dispatch target selected
+             →  Telegram message
+                        →  OpenClaw chat receives default task sends, /status, and QA/insight sends
+                           that target `telegram`
+                        →  Hermes chat receives task, QA, and project insight sends that target
+                           `hermes-telegram`
                            →  receiving bot/runtime parses: engine, task ID, project key
                               →  Resolves project path from explicit path, plugin config, shared mapping file, or MEMORY.md
                               →  Creates git worktree (isolated env)
                               →  Launches coding agent (claude/codex/gemini CLI)
+             →  Channels dispatch request
+                        →  preqstation stores an explicit project-scope dispatch request
+                           →  Claude Code dispatcher picks it up without sending Telegram
 ```
 
 ### 3. Agent Execution and Status Reporting
@@ -180,26 +186,27 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 
 #### Internal APIs (Session cookie)
 
-| Method   | Endpoint                  | Purpose                         |
-| -------- | ------------------------- | ------------------------------- |
-| `GET`    | `/api/todos`              | List todos (internal dashboard) |
-| `POST`   | `/api/todos`              | Create todo                     |
-| `PATCH`  | `/api/todos/:id`          | Update todo                     |
-| `DELETE` | `/api/todos/:id`          | Delete todo                     |
-| `POST`   | `/api/todos/rebalance`    | Rebalance sort order            |
-| `POST`   | `/api/todos/archive-done` | Archive completed todos         |
-| `GET`    | `/api/task-labels`        | List task labels                |
-| `POST`   | `/api/task-labels`        | Create task label               |
-| `PATCH`  | `/api/task-labels/:id`    | Update task label               |
-| `DELETE` | `/api/task-labels/:id`    | Delete task label               |
-| `POST`   | `/api/events/cleanup`     | Clean up old outbox entries     |
-| `GET`    | `/api/settings`           | Get/update user settings        |
-| `POST`   | `/api/telegram/send`      | Send task Telegram message to OpenClaw or Hermes |
-| `POST`   | `/api/telegram/send/insight` | Send project insight to the OpenClaw Telegram channel |
-| `POST`   | `/api/telegram/test`      | Test Telegram connection        |
-| `POST`   | `/api/send-to-openclaw`   | Legacy OpenClaw message relay   |
-| `GET`    | `/api/work-logs/:id`      | Get work log entry              |
-| `DELETE` | `/api/work-logs/:id`      | Delete work log entry           |
+| Method   | Endpoint                            | Purpose                                                           |
+| -------- | ----------------------------------- | ----------------------------------------------------------------- |
+| `GET`    | `/api/todos`                        | List todos (internal dashboard)                                   |
+| `POST`   | `/api/todos`                        | Create todo                                                       |
+| `PATCH`  | `/api/todos/:id`                    | Update todo                                                       |
+| `DELETE` | `/api/todos/:id`                    | Delete todo                                                       |
+| `POST`   | `/api/todos/rebalance`              | Rebalance sort order                                              |
+| `POST`   | `/api/todos/archive-done`           | Archive completed todos                                           |
+| `GET`    | `/api/task-labels`                  | List task labels                                                  |
+| `POST`   | `/api/task-labels`                  | Create task label                                                 |
+| `PATCH`  | `/api/task-labels/:id`              | Update task label                                                 |
+| `DELETE` | `/api/task-labels/:id`              | Delete task label                                                 |
+| `POST`   | `/api/events/cleanup`               | Clean up old outbox entries                                       |
+| `GET`    | `/api/settings`                     | Get/update user settings                                          |
+| `POST`   | `/api/projects/:id/qa-runs/trigger` | Queue a QA run to OpenClaw Telegram, Hermes Telegram, or Channels |
+| `POST`   | `/api/telegram/send`                | Send task Telegram message to OpenClaw or Hermes                  |
+| `POST`   | `/api/telegram/send/insight`        | Send project insight to the OpenClaw or Hermes Telegram channel   |
+| `POST`   | `/api/telegram/test`                | Test Telegram connection                                          |
+| `POST`   | `/api/send-to-openclaw`             | Legacy OpenClaw message relay                                     |
+| `GET`    | `/api/work-logs/:id`                | Get work log entry                                                |
+| `DELETE` | `/api/work-logs/:id`                | Delete work log entry                                             |
 
 ### Offline Board Path
 
@@ -270,10 +277,19 @@ Projects can also store an `agent_instructions` setting. When present, task payl
   for older installs until the split settings are saved
 - `/api/telegram/send` defaults to the OpenClaw channel and can target the Hermes channel when
   `dispatchTarget=hermes-telegram`
-- OpenClaw task, QA, and insight sends use the `!/skill preqstation-dispatch ...` command format
-- Hermes task sends use the `/preq_dispatch@PreqHermesBot` command format
-- `/api/telegram/send/insight` always uses the OpenClaw channel
-- QA dispatches and OpenClaw `/status` checks stay on the OpenClaw channel
+- OpenClaw-targeted task, QA, and insight sends use the `!/skill preqstation-dispatch ...`
+  command format
+- Hermes-targeted task, QA, and insight sends use the `/preq_dispatch@PreqHermesBot` command
+  format
+- `/api/telegram/send/insight` defaults to the OpenClaw channel and can target Hermes when
+  `dispatchTarget=hermes-telegram`
+- `POST /api/projects/:id/qa-runs/trigger` accepts `telegram`, `hermes-telegram`, and
+  `claude-code-channel`; Telegram targets send a bot message, while `claude-code-channel` stores an
+  explicit dispatch request with `qaRunId` and `qaTaskKeys`
+- Project insight dispatch follows the same target vocabulary. Telegram targets send through
+  `/api/telegram/send/insight`, while the `Channels` target queues `/api/dispatch/claude-code/insight`
+  inside preqstation instead of sending Telegram
+- OpenClaw `/status` checks remain OpenClaw-only
 - Messages are audit logged and used to notify users of task events and trigger downstream runtime workflows
 
 ### Event System
@@ -376,20 +392,20 @@ codex mcp add preqstation \
 
 ### MCP Tools
 
-| Tool                        | Type     | Purpose                                                               |
-| --------------------------- | -------- | --------------------------------------------------------------------- |
-| `preq_list_projects`        | Read     | List projects for setup flows such as local repository mapping        |
-| `preq_list_tasks`           | Read     | List tasks by status, label, engine, projectKey                       |
-| `preq_get_task`             | Read     | Fetch task details by ticket number or UUID                           |
-| `preq_get_project_settings` | Read     | Fetch project settings such as deploy strategy and agent instructions |
-| `preq_create_task`          | Mutation | Create new task (→ inbox)                                             |
-| `preq_plan_task`            | Mutation | Upload plan markdown, move inbox → todo                               |
-| `preq_start_task`           | Mutation | Mark a todo task as actively running (`runState=running`)             |
-| `preq_update_task_status`   | Mutation | Status-only update                                                    |
+| Tool                        | Type     | Purpose                                                                                                                               |
+| --------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `preq_list_projects`        | Read     | List projects for setup flows such as local repository mapping                                                                        |
+| `preq_list_tasks`           | Read     | List tasks by status, label, engine, projectKey                                                                                       |
+| `preq_get_task`             | Read     | Fetch task details by ticket number or UUID                                                                                           |
+| `preq_get_project_settings` | Read     | Fetch project settings such as deploy strategy and agent instructions                                                                 |
+| `preq_create_task`          | Mutation | Create new task (→ inbox)                                                                                                             |
+| `preq_plan_task`            | Mutation | Upload plan markdown, move inbox → todo                                                                                               |
+| `preq_start_task`           | Mutation | Mark a todo task as actively running (`runState=running`)                                                                             |
+| `preq_update_task_status`   | Mutation | Status-only update                                                                                                                    |
 | `preq_complete_task`        | Mutation | Upload result, move → ready, clear execution state; requires `branchName` + `prUrl` for `feature_branch + auto_pr + commit_on_review` |
-| `preq_review_task`          | Mutation | Verify a ready task and move → done (or → hold)                       |
-| `preq_block_task`           | Mutation | Move task → hold with a blocking reason                               |
-| `preq_delete_task`          | Mutation | Permanently delete task                                               |
+| `preq_review_task`          | Mutation | Verify a ready task and move → done (or → hold)                                                                                       |
+| `preq_block_task`           | Mutation | Move task → hold with a blocking reason                                                                                               |
+| `preq_delete_task`          | Mutation | Permanently delete task                                                                                                               |
 
 ### Engine Resolution Priority
 
