@@ -31,11 +31,12 @@ function getRuleBody(selector: string) {
   return match?.[1] ?? '';
 }
 
-function getMediaBlockBody(query: string) {
-  const afterMedia = operatorDeskCss.split(`@media ${query} {`)[1];
+function getMediaBlockBody(query: string, cssSource = operatorDeskCss) {
+  const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = cssSource.match(new RegExp(`@media\\s+${escapedQuery}\\s*\\{([\\s\\S]*?)^\\}`, 'm'));
 
-  expect(afterMedia).toBeTruthy();
-  return afterMedia ?? '';
+  expect(match?.[1]).toBeTruthy();
+  return match?.[1] ?? '';
 }
 
 describe('portfolio overview visual refinement', () => {
@@ -131,11 +132,27 @@ describe('portfolio overview visual refinement', () => {
     expect(dashboardServicePaceSparklineSource).toContain('tooltipValueFormatter=');
   });
 
+  it('isolates the requested media block before checking mobile-only rules', () => {
+    const css = [
+      '@media (max-width: 48rem) {',
+      '  .portfolioOverview {',
+      '    padding-inline: var(--mantine-spacing-md);',
+      '  }',
+      '}',
+      '',
+      '.portfolioOverview {',
+      '  padding-inline: 0;',
+      '}',
+    ].join('\n');
+
+    expect(getMediaBlockBody('(max-width: 48rem)', css)).not.toContain('padding-inline: 0;');
+  });
+
   it('keeps portfolio sections on the same mobile inset as the rest of the dashboard', () => {
     const mobileCss = getMediaBlockBody('(max-width: 48rem)');
 
     expect(mobileCss).toMatch(
-      /\.portfolioOverview\s*\{[\s\S]*padding-inline:\s*var\(--mantine-spacing-md\);/,
+      /\.portfolioOverview\s*\{[^}]*padding-inline:\s*var\(--mantine-spacing-md\);/,
     );
   });
 });
