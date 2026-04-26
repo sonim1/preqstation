@@ -34,6 +34,10 @@ import {
   parseTaskPriority,
   taskRunStateLabel,
 } from '@/lib/task-meta';
+import {
+  buildTaskNoteFingerprint,
+  normalizeTaskNoteForComparison,
+} from '@/lib/task-note-fingerprint';
 import { createTaskCompletionNotification } from '@/lib/task-notifications';
 import { buildTaskRunStateUpdate } from '@/lib/task-run-state';
 import { resolveAppendSortOrder } from '@/lib/task-sort-order';
@@ -102,6 +106,7 @@ export type UpdateTaskStatusData = {
 export type UpdateTaskParams = {
   ownerId: string;
   identifier: string;
+  baseNoteFingerprint?: string | null;
   title: string;
   noteMd?: string | null;
   labelIds?: string[] | null;
@@ -469,7 +474,7 @@ export async function updateTask(
       const nextLabelIds = resolvedLabels.map((label) => label.id);
       const labelId = nextLabelIds[0] ?? null;
 
-      const noteMd = normalizeText(stripPreqChoiceBlocks(params.noteMd));
+      const noteMd = normalizeTaskNoteForComparison(params.noteMd);
       const taskPriority = parseTaskPriority(params.taskPriority);
       const runState =
         params.runState === undefined ? undefined : coerceTaskRunState(params.runState);
@@ -495,21 +500,36 @@ export async function updateTask(
           taskRunStateLabel(runState),
         );
       }
-      const existingNote = normalizeText(existing.note);
+      const existingNote = normalizeTaskNoteForComparison(existing.note);
+      const existingNoteFingerprint = buildTaskNoteFingerprint(existing.note);
+      const submittedNoteFingerprint = buildTaskNoteFingerprint(params.noteMd);
+      const baseNoteFingerprint = normalizeText(params.baseNoteFingerprint);
+      let effectiveNoteMd = noteMd;
+
+      if (baseNoteFingerprint && baseNoteFingerprint !== existingNoteFingerprint) {
+        if (submittedNoteFingerprint === baseNoteFingerprint) {
+          effectiveNoteMd = existingNote;
+        } else {
+          return fail(
+            'CONFLICT',
+            'Task notes changed in another session. Reload the latest notes and try again.',
+          );
+        }
+      }
       const noteChangeDetail =
-        existingNote !== noteMd
+        existingNote !== effectiveNoteMd
           ? buildTaskNoteChangeDetail({
               taskKey: existing.taskKey,
               taskTitle: title,
               previousNote: existingNote,
-              updatedNote: noteMd,
+              updatedNote: effectiveNoteMd,
             })
           : null;
-      if (existingNote !== noteMd) {
+      if (existingNote !== effectiveNoteMd) {
         changes.push({
           field: 'Note',
           from: existingNote ? 'set' : 'empty',
-          to: noteMd ? 'set' : 'empty',
+          to: effectiveNoteMd ? 'set' : 'empty',
         });
       }
 
@@ -539,7 +559,7 @@ export async function updateTask(
         .update(tasks)
         .set({
           title,
-          note: noteMd || null,
+          note: effectiveNoteMd || null,
           labelId: requestedLabelIds === undefined ? existing.labelId : labelId,
           taskPriority,
           ...(params.runState !== undefined ? buildTaskRunStateUpdate(runState ?? null) : {}),

@@ -113,6 +113,7 @@ export async function boardUpdateTask(
     const result = await runUpdateTaskAction({
       ownerId: ownerUser.id,
       identifier: String(formData.get('id') || ''),
+      baseNoteFingerprint: String(formData.get('baseNoteFingerprint') || ''),
       title: String(formData.get('title') || ''),
       noteMd: String(formData.get('noteMd') || ''),
       labelIds: getTaskLabelIdsFromFormData(formData),

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { taskLabelAssignments } from '@/lib/db/schema';
+import { buildTaskNoteFingerprint } from '@/lib/task-note-fingerprint';
 
 const mocked = vi.hoisted(() => {
   const returningFn = vi.fn().mockResolvedValue([]);
@@ -601,6 +602,72 @@ describe('lib/actions/task-actions', () => {
         payload: expect.objectContaining({
           changedFields: ['Note'],
         }),
+      }),
+    );
+  });
+
+  it('updateTask rejects stale note edits when the server note changed in another session', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValue({
+      id: 'task-1',
+      taskKey: 'PROJ-8',
+      title: 'Same title',
+      note: 'latest server note',
+      projectId: PROJECT_ID,
+      labelId: null,
+      taskPriority: 'none',
+      label: null,
+    });
+
+    const result = await updateTask({
+      ownerId: OWNER_ID,
+      identifier: 'PROJ-8',
+      title: 'Same title',
+      noteMd: 'local stale rewrite',
+      baseNoteFingerprint: buildTaskNoteFingerprint('older note'),
+      taskPriority: 'none',
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      code: 'CONFLICT',
+      message: 'Task notes changed in another session. Reload the latest notes and try again.',
+    });
+    expect(mocked.tx.update).not.toHaveBeenCalled();
+  });
+
+  it('updateTask preserves the latest server note when only non-note fields changed from a stale form', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValue({
+      id: 'task-1',
+      taskKey: 'PROJ-8',
+      title: 'Before',
+      note: 'latest server note',
+      projectId: PROJECT_ID,
+      labelId: null,
+      taskPriority: 'none',
+      label: null,
+    });
+
+    const result = await updateTask({
+      ownerId: OWNER_ID,
+      identifier: 'PROJ-8',
+      title: 'After',
+      noteMd: 'older note',
+      baseNoteFingerprint: buildTaskNoteFingerprint('older note'),
+      taskPriority: 'none',
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        taskKey: 'PROJ-8',
+        changed: true,
+        changedFields: ['Title'],
+      }),
+    });
+    expect(mocked.txSetFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'After',
+        note: 'latest server note',
       }),
     );
   });

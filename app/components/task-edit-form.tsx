@@ -380,8 +380,16 @@ export function useTaskEditFormController({
   const [fieldRenderKey, setFieldRenderKey] = useState(incomingRevision);
   const [fieldRevisions, setFieldRevisions] = useState(incomingFieldRevisions);
   const [selectedLabelIds, setSelectedLabelIds] = useState(labelIds);
-  const { clearDraft, draftNote, draftRevision, draftTitle, updateNoteDraft, updateTitleDraft } =
-    useTaskOfflineDraft(editableTodo.taskKey, editableTodo.title, editableTodo.note);
+  const {
+    clearDraft,
+    draftBaseNoteFingerprint,
+    draftNote,
+    draftRevision,
+    draftTitle,
+    hasNoteConflict,
+    updateNoteDraft,
+    updateTitleDraft,
+  } = useTaskOfflineDraft(editableTodo.taskKey, editableTodo.title, editableTodo.note);
   const formId = `task-edit-form-${editableTodo.id}`;
 
   const copyTaskId = async () => {
@@ -568,6 +576,7 @@ export function useTaskEditFormController({
 
   return {
     clearOfflineDraft: clearDraft,
+    draftBaseNoteFingerprint,
     draftNote,
     draftRevision,
     draftTitle,
@@ -584,6 +593,7 @@ export function useTaskEditFormController({
     latestPreqResultLog,
     markDirty,
     noteRenderKey: fieldRevisions.note,
+    noteConflict: hasNoteConflict,
     projectName,
     priorityRenderKey: fieldRevisions.taskPriority,
     saveStatus,
@@ -673,6 +683,7 @@ function TaskEditFormContent({
   const { status, projectId, taskKey, taskPriority, engine, runState } = editableTodo;
   const {
     clearOfflineDraft: _clearOfflineDraft,
+    draftBaseNoteFingerprint,
     draftNote,
     draftRevision,
     draftTitle: _draftTitle,
@@ -688,6 +699,7 @@ function TaskEditFormContent({
     labelOptions,
     latestPreqResultLog,
     noteRenderKey,
+    noteConflict,
     projectName,
     priorityRenderKey,
     saveStatus,
@@ -750,6 +762,7 @@ function TaskEditFormContent({
         <input type="hidden" name="id" value={taskKey} />
         <input type="hidden" name="projectId" value={projectId ?? ''} />
         <input type="hidden" name="runState" value={runState ?? ''} />
+        <input type="hidden" name="baseNoteFingerprint" value={draftBaseNoteFingerprint} />
         {selectedLabelIds.map((selectedLabelId) => (
           <input key={selectedLabelId} type="hidden" name="labelIds" value={selectedLabelId} />
         ))}
@@ -785,6 +798,12 @@ function TaskEditFormContent({
                 />
 
                 <div className={classes.notesEditor}>
+                  {noteConflict ? (
+                    <Alert color="yellow" variant="light" icon={<IconAlertCircle size={16} />}>
+                      Server notes changed while this draft was open. Review the latest task notes
+                      before saving so PREQ updates do not get overwritten.
+                    </Alert>
+                  ) : null}
                   <LiveMarkdownEditor
                     key={`note:${activeNotesRevision}`}
                     name="noteMd"

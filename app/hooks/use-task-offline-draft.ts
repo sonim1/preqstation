@@ -3,8 +3,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { deleteDraft, getDraft, putDraft } from '@/lib/offline/draft-store';
+import { buildTaskNoteFingerprint } from '@/lib/task-note-fingerprint';
+
+const LEGACY_NOTE_CONFLICT_BASE_FINGERPRINT_PREFIX = 'task-note:legacy-conflict:';
 
 type TaskOfflineDraftState = {
+  baseNoteFingerprint: string;
   note: string;
   title: string;
 };
@@ -18,10 +22,14 @@ export function useTaskOfflineDraft(
   serverTitle: string,
   serverNote: string | null,
 ) {
+  const serverBaseNoteFingerprint = buildTaskNoteFingerprint(serverNote);
   const [draftTitle, setDraftTitle] = useState(serverTitle);
   const [draftNote, setDraftNote] = useState(serverNote ?? '');
+  const [draftBaseNoteFingerprint, setDraftBaseNoteFingerprint] = useState(serverBaseNoteFingerprint);
   const [draftRevision, setDraftRevision] = useState(0);
+  const [hasNoteConflict, setHasNoteConflict] = useState(false);
   const draftRef = useRef<TaskOfflineDraftState>({
+    baseNoteFingerprint: serverBaseNoteFingerprint,
     title: serverTitle,
     note: serverNote ?? '',
   });
@@ -32,11 +40,13 @@ export function useTaskOfflineDraft(
     const loadToken = loadTokenRef.current + 1;
     loadTokenRef.current = loadToken;
     const serverDraft = {
+      baseNoteFingerprint: serverBaseNoteFingerprint,
       title: serverTitle,
       note: serverNote ?? '',
     };
     const applyDraft = (nextDraft: TaskOfflineDraftState) => {
       draftRef.current = nextDraft;
+      setDraftBaseNoteFingerprint(nextDraft.baseNoteFingerprint);
       setDraftTitle(nextDraft.title);
       setDraftNote(nextDraft.note);
       setDraftRevision((currentRevision) => currentRevision + 1);
@@ -48,22 +58,49 @@ export function useTaskOfflineDraft(
       }
 
       applyDraft(serverDraft);
+      setHasNoteConflict(false);
 
       const record = await getDraft(buildTaskOfflineDraftId(taskKey));
       if (!active || loadTokenRef.current !== loadToken || !record) {
         return;
       }
 
+      const storedNote = record.fields.note ?? serverDraft.note;
+      const storedNoteFingerprint = buildTaskNoteFingerprint(storedNote);
+      const storedBaseNoteFingerprint = record.fields.baseNoteFingerprint?.trim() || null;
+      const legacyConflictBaseNoteFingerprint = `${LEGACY_NOTE_CONFLICT_BASE_FINGERPRINT_PREFIX}${storedNoteFingerprint}`;
+      const hasStaleBase =
+        !!storedBaseNoteFingerprint && storedBaseNoteFingerprint !== serverDraft.baseNoteFingerprint;
+      const hasLocalNoteEdits =
+        !!storedBaseNoteFingerprint && storedNoteFingerprint !== storedBaseNoteFingerprint;
+      const hasLegacyConflict =
+        !storedBaseNoteFingerprint && storedNoteFingerprint !== serverDraft.baseNoteFingerprint;
+      const shouldApplyStoredNote =
+        storedBaseNoteFingerprint === serverDraft.baseNoteFingerprint ||
+        (!storedBaseNoteFingerprint && storedNoteFingerprint === serverDraft.baseNoteFingerprint) ||
+        (hasStaleBase && hasLocalNoteEdits) ||
+        hasLegacyConflict;
+
+      setHasNoteConflict((hasStaleBase && hasLocalNoteEdits) || hasLegacyConflict);
+
       applyDraft({
         title: record.fields.title ?? serverDraft.title,
-        note: record.fields.note ?? serverDraft.note,
+        note: shouldApplyStoredNote ? storedNote : serverDraft.note,
+        baseNoteFingerprint:
+          !shouldApplyStoredNote
+            ? serverDraft.baseNoteFingerprint
+            : storedBaseNoteFingerprint
+              ? storedBaseNoteFingerprint
+              : hasLegacyConflict
+                ? legacyConflictBaseNoteFingerprint
+                : serverDraft.baseNoteFingerprint,
       });
     });
 
     return () => {
       active = false;
     };
-  }, [serverNote, serverTitle, taskKey]);
+  }, [serverBaseNoteFingerprint, serverNote, serverTitle, taskKey]);
 
   const writeDraft = useCallback(
     async (partialDraft: Partial<TaskOfflineDraftState>) => {
@@ -81,7 +118,11 @@ export function useTaskOfflineDraft(
         id: buildTaskOfflineDraftId(taskKey),
         scope: 'task-edit',
         entityKey: taskKey,
-        fields: nextDraft,
+        fields: {
+          title: nextDraft.title,
+          note: nextDraft.note,
+          baseNoteFingerprint: nextDraft.baseNoteFingerprint,
+        },
         updatedAt: new Date().toISOString(),
       });
     },
@@ -108,9 +149,11 @@ export function useTaskOfflineDraft(
 
   return {
     clearDraft,
+    draftBaseNoteFingerprint,
     draftNote,
     draftRevision,
     draftTitle,
+    hasNoteConflict,
     updateNoteDraft,
     updateTitleDraft,
   };
