@@ -27,7 +27,7 @@ describe('app/hooks/use-task-offline-draft', () => {
     mocked.getDraft.mockResolvedValue(null);
   });
 
-  it('hydrates the saved title and note draft on load', async () => {
+  it('hydrates the saved title and note draft on load while offline', async () => {
     mocked.getDraft.mockResolvedValue({
       fields: {
         baseNoteFingerprint: buildTaskNoteFingerprint('## Server note'),
@@ -37,13 +37,14 @@ describe('app/hooks/use-task-offline-draft', () => {
     });
 
     const { result } = renderHook(() =>
-      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note'),
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note', false),
     );
 
     await waitFor(() => {
       expect(result.current.draftTitle).toBe('복구된 제목');
     });
     expect(result.current.draftNote).toBe('## Offline');
+    expect(result.current.canRestoreDraft).toBe(false);
   });
 
   it('keeps the latest server note when the saved draft only mirrors an older base note', async () => {
@@ -56,16 +57,49 @@ describe('app/hooks/use-task-offline-draft', () => {
     });
 
     const { result } = renderHook(() =>
-      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note'),
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note', true),
     );
 
     await waitFor(() => {
       expect(result.current.draftNote).toBe('## Server note');
     });
     expect(result.current.hasNoteConflict).toBe(false);
+    expect(result.current.canRestoreDraft).toBe(false);
   });
 
-  it('keeps an unsaved local note draft and surfaces a conflict when the server note changed', async () => {
+  it('keeps the server note active online and exposes a restorable stale local draft', async () => {
+    mocked.getDraft.mockResolvedValue({
+      fields: {
+        title: '로컬 초안 제목',
+        note: '## Local rewrite',
+        baseNoteFingerprint: buildTaskNoteFingerprint('## Old plan'),
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note', true),
+    );
+
+    await waitFor(() => {
+      expect(result.current.canRestoreDraft).toBe(true);
+    });
+    expect(result.current.draftTitle).toBe('원본 제목');
+    expect(result.current.draftNote).toBe('## Server note');
+    expect(result.current.hasNoteConflict).toBe(true);
+
+    act(() => {
+      result.current.restoreDraft();
+    });
+
+    await waitFor(() => {
+      expect(result.current.draftTitle).toBe('로컬 초안 제목');
+    });
+    expect(result.current.draftNote).toBe('## Local rewrite');
+    expect(result.current.hasNoteConflict).toBe(false);
+    expect(result.current.canRestoreDraft).toBe(false);
+  });
+
+  it('keeps an unsaved local note draft and surfaces a conflict while offline when the server note changed', async () => {
     mocked.getDraft.mockResolvedValue({
       fields: {
         note: '## Local rewrite',
@@ -74,7 +108,7 @@ describe('app/hooks/use-task-offline-draft', () => {
     });
 
     const { result } = renderHook(() =>
-      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note'),
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note', false),
     );
 
     await waitFor(() => {
@@ -91,7 +125,7 @@ describe('app/hooks/use-task-offline-draft', () => {
     });
 
     const { result } = renderHook(() =>
-      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note'),
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note', false),
     );
 
     await waitFor(() => {
@@ -102,7 +136,7 @@ describe('app/hooks/use-task-offline-draft', () => {
 
   it('persists title and note edits under the deterministic task draft key', async () => {
     const { result } = renderHook(() =>
-      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note'),
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note', true),
     );
 
     await act(async () => {
@@ -125,7 +159,7 @@ describe('app/hooks/use-task-offline-draft', () => {
 
   it('clears the persisted draft for the active task key', async () => {
     const { result } = renderHook(() =>
-      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note'),
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note', true),
     );
 
     await act(async () => {

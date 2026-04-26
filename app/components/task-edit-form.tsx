@@ -3,6 +3,7 @@
 import {
   ActionIcon,
   Alert,
+  Button,
   Group,
   Loader,
   Menu,
@@ -389,15 +390,17 @@ export function useTaskEditFormController({
   const [fieldRevisions, setFieldRevisions] = useState(incomingFieldRevisions);
   const [selectedLabelIds, setSelectedLabelIds] = useState(labelIds);
   const {
+    canRestoreDraft,
     clearDraft,
     draftBaseNoteFingerprint,
     draftNote,
     draftRevision,
     draftTitle,
     hasNoteConflict,
+    restoreDraft,
     updateNoteDraft,
     updateTitleDraft,
-  } = useTaskOfflineDraft(editableTodo.taskKey, editableTodo.title, editableTodo.note);
+  } = useTaskOfflineDraft(editableTodo.taskKey, editableTodo.title, editableTodo.note, online);
   const formId = `task-edit-form-${editableTodo.id}`;
 
   const copyTaskId = async () => {
@@ -584,6 +587,7 @@ export function useTaskEditFormController({
   };
 
   return {
+    canRestoreNoteDraft: canRestoreDraft,
     clearOfflineDraft: clearDraft,
     draftBaseNoteFingerprint,
     draftNote,
@@ -603,6 +607,7 @@ export function useTaskEditFormController({
     markDirty,
     noteRenderKey: fieldRevisions.note,
     noteConflict: hasNoteConflict,
+    restoreNoteDraft: restoreDraft,
     projectName,
     priorityRenderKey: fieldRevisions.taskPriority,
     saveStatus,
@@ -691,6 +696,7 @@ function TaskEditFormContent({
   const terminology = useTerminology();
   const { status, projectId, taskKey, taskPriority, engine, runState } = editableTodo;
   const {
+    canRestoreNoteDraft,
     clearOfflineDraft: _clearOfflineDraft,
     draftBaseNoteFingerprint,
     draftNote,
@@ -707,8 +713,10 @@ function TaskEditFormContent({
     idCopied,
     labelOptions,
     latestPreqResultLog,
+    markDirty,
     noteRenderKey,
     noteConflict,
+    restoreNoteDraft,
     projectName,
     priorityRenderKey,
     saveStatus,
@@ -738,6 +746,10 @@ function TaskEditFormContent({
   const handleDispatchQueued = (taskKey: string, queuedAt: string) => {
     onTaskQueued?.(taskKey, queuedAt);
     onDispatchQueued?.();
+  };
+  const handleRestoreDraft = () => {
+    restoreNoteDraft();
+    markDirty();
   };
   const showLatestPreqResult = shouldSurfaceLatestPreqResult(status, latestPreqResultLog?.detail);
   useEffect(() => {
@@ -807,10 +819,24 @@ function TaskEditFormContent({
                 />
 
                 <div className={classes.notesEditor}>
-                  {noteConflict ? (
-                    <Alert color="yellow" variant="light" icon={<IconAlertCircle size={16} />}>
-                      Server notes changed while this draft was open. Review the latest task notes
-                      before saving so PREQ updates do not get overwritten.
+                  {noteConflict || canRestoreNoteDraft ? (
+                    <Alert
+                      color={noteConflict ? 'yellow' : 'blue'}
+                      variant="light"
+                      icon={noteConflict ? <IconAlertCircle size={16} /> : <IconInfoCircle size={16} />}
+                    >
+                      <Group justify="space-between" align="center" gap="sm" wrap="wrap">
+                        <Text size="sm">
+                          {noteConflict
+                            ? 'Server notes changed while this draft was open. Review the latest task notes before restoring so PREQ updates do not get overwritten.'
+                            : 'A saved local draft is available. Restore it if you want to continue from your browser draft instead of the latest server notes.'}
+                        </Text>
+                        {canRestoreNoteDraft ? (
+                          <Button size="xs" variant="light" onClick={handleRestoreDraft}>
+                            Restore draft
+                          </Button>
+                        ) : null}
+                      </Group>
                     </Alert>
                   ) : null}
                   <LiveMarkdownEditor
