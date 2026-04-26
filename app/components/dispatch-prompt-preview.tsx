@@ -11,6 +11,8 @@ type DispatchPromptPreviewProps = {
   promptAriaLabel?: string;
   promptProps?: PromptPreviewDivProps;
   onCopy?: () => void;
+  copyDisabled?: boolean;
+  copyTooltipLabel?: string;
 };
 
 export function DispatchPromptPreview({
@@ -18,10 +20,13 @@ export function DispatchPromptPreview({
   promptAriaLabel = 'Dispatch prompt',
   promptProps,
   onCopy,
+  copyDisabled = false,
+  copyTooltipLabel,
 }: DispatchPromptPreviewProps) {
   const promptRef = useRef<HTMLDivElement | null>(null);
   const [copied, setCopied] = useState(false);
   const { className: promptClassName, ...restPromptProps } = promptProps ?? {};
+  const copyLabel = copyDisabled ? copyTooltipLabel ?? 'Copy unavailable' : copied ? 'Copied' : 'Copy';
 
   const copyPromptFallback = () => {
     const selection = window.getSelection?.();
@@ -38,6 +43,10 @@ export function DispatchPromptPreview({
   };
 
   const copyPrompt = async () => {
+    if (copyDisabled) {
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(prompt);
     } catch {
@@ -62,12 +71,13 @@ export function DispatchPromptPreview({
       >
         {prompt}
       </div>
-      <Tooltip label={copied ? 'Copied' : 'Copy'} withArrow>
+      <Tooltip label={copyLabel} withArrow>
         <ActionIcon
           variant="subtle"
           color={copied ? 'green' : 'gray'}
           size="sm"
           radius="sm"
+          disabled={copyDisabled}
           aria-label="Copy dispatch prompt"
           className="task-dispatch-copy"
           onClick={copyPrompt}

@@ -264,7 +264,9 @@ describe('app/components/ready-qa-actions', () => {
     expect(html).toContain('Selected target: 🦞 Telegram');
     expect(html).toContain('Queue QA');
     expect(html).toContain('aria-label="Copy dispatch prompt"');
-    expect(html).toContain('!/skill preqstation-dispatch qa ALPHA using claude-code');
+    expect(html).toContain(
+      'Queue QA to generate an executable dispatch prompt for the current ready tasks.',
+    );
     expect(html).not.toContain('QA Engine');
     expect(html).not.toContain('data-menu');
     expect(html).not.toContain('openclaw-action-trigger');

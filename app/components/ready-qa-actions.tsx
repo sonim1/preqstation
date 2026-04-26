@@ -164,6 +164,9 @@ export function buildQaRunCopyText(run: QaRunView) {
   return run.reportMarkdown ?? '';
 }
 
+const QUEUED_QA_PROMPT_HELP =
+  'Queue QA to generate an executable dispatch prompt for the current ready tasks.';
+
 export function ReadyQaActions({
   projectId,
   projectKey,
@@ -189,19 +192,13 @@ export function ReadyQaActions({
   const [selectedTarget, setSelectedTarget] = useState<QaDispatchTarget | null>(() =>
     resolveInitialQaTarget(resolveQaTargets({ telegramEnabled, hermesTelegramEnabled }), null),
   );
+  const [queuedQaPrompt, setQueuedQaPrompt] = useState<string | null>(null);
   const selectedEngineConfig =
     getEngineConfig(selectedEngine) ?? ENGINE_CONFIGS[DEFAULT_ENGINE_KEY];
   const visibleRuns = getVisibleQaRuns(runs, visibleRunCount);
   const availableTargets = resolveQaTargets({ telegramEnabled, hermesTelegramEnabled });
   const effectiveTarget = resolveInitialQaTarget(availableTargets, selectedTarget);
-  const qaPreview = buildProjectQaDispatchMessage({
-    projectKey,
-    engine: selectedEngineConfig.key,
-    branchName,
-    dispatchTarget: effectiveTarget,
-    qaRunId: '<generated-on-queue>',
-    qaTaskKeys: ['<current-ready-tasks>'],
-  });
+  const qaPreview = queuedQaPrompt ?? QUEUED_QA_PROMPT_HELP;
 
   function openRunsModal() {
     setOpened(true);
@@ -244,7 +241,18 @@ export function ReadyQaActions({
         return;
       }
 
-      setRuns((current) => [payload.run!, ...current.filter((run) => run.id !== payload.run!.id)]);
+      const queuedRun = payload.run;
+      setQueuedQaPrompt(
+        buildProjectQaDispatchMessage({
+          projectKey,
+          engine: selectedEngineConfig.key,
+          branchName,
+          dispatchTarget: effectiveTarget,
+          qaRunId: queuedRun.id,
+          qaTaskKeys: queuedRun.taskKeys,
+        }),
+      );
+      setRuns((current) => [queuedRun, ...current.filter((run) => run.id !== queuedRun.id)]);
       const engineKey = normalizeEngineKey(selectedEngineConfig.key);
       if (engineKey) {
         writeQaDispatchPreference(engineKey);
@@ -313,7 +321,10 @@ export function ReadyQaActions({
                 groupLabel="Engine"
                 groupClassName="task-dispatch-engine-segments"
                 disabled={isSubmitting}
-                onSelect={(value) => setSelectedEngine(value)}
+                onSelect={(value) => {
+                  setSelectedEngine(value);
+                  setQueuedQaPrompt(null);
+                }}
                 options={QA_ENGINE_OPTIONS.map((engine) => {
                   const selected = selectedEngineConfig.key === engine.key;
                   const label = getEngineShortLabel(engine);
@@ -347,7 +358,10 @@ export function ReadyQaActions({
                 groupLabel="Target"
                 groupClassName="task-dispatch-target-segments"
                 disabled={isSubmitting}
-                onSelect={(value) => setSelectedTarget(value)}
+                onSelect={(value) => {
+                  setSelectedTarget(value);
+                  setQueuedQaPrompt(null);
+                }}
                 options={availableTargets.map((option) => {
                   const selected = effectiveTarget === option.value;
                   const label = getQaTargetLabel(option.value);
@@ -393,6 +407,8 @@ export function ReadyQaActions({
 
               <DispatchPromptPreview
                 prompt={qaPreview}
+                copyDisabled={!queuedQaPrompt}
+                copyTooltipLabel={QUEUED_QA_PROMPT_HELP}
                 onCopy={() => showSuccessNotification('Dispatch prompt copied.')}
               />
 

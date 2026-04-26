@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
 
 import { MantineProvider } from '@mantine/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const showErrorNotificationMock = vi.hoisted(() => vi.fn());
+const showSuccessNotificationMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@tabler/icons-react', () => {
   const icon = (name: string) => {
@@ -56,10 +59,17 @@ vi.mock('@/app/components/markdown-viewer', () => ({
   MarkdownViewer: ({ markdown }: { markdown?: string | null }) => <div>{markdown}</div>,
 }));
 
+vi.mock('@/lib/notifications', () => ({
+  showErrorNotification: showErrorNotificationMock,
+  showSuccessNotification: showSuccessNotificationMock,
+}));
+
 import { DispatchPromptPreview } from '@/app/components/dispatch-prompt-preview';
 import { ReadyQaActions } from '@/app/components/ready-qa-actions';
+import { buildProjectQaDispatchMessage } from '@/lib/task-telegram-client';
 
 const clipboardWriteTextMock = vi.fn<(value: string) => Promise<void>>();
+const fetchMock = vi.fn<typeof fetch>();
 
 function renderWithMantine(element: React.ReactElement) {
   return render(<MantineProvider>{element}</MantineProvider>);
@@ -86,6 +96,9 @@ describe('copy feedback icons', () => {
   beforeEach(() => {
     clipboardWriteTextMock.mockReset();
     clipboardWriteTextMock.mockResolvedValue(undefined);
+    fetchMock.mockReset();
+    showErrorNotificationMock.mockReset();
+    showSuccessNotificationMock.mockReset();
     window.localStorage.clear();
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
@@ -104,6 +117,7 @@ describe('copy feedback icons', () => {
       configurable: true,
       value: { writeText: clipboardWriteTextMock },
     });
+    vi.stubGlobal('fetch', fetchMock);
 
     class ResizeObserverMock {
       observe() {}
@@ -136,7 +150,7 @@ describe('copy feedback icons', () => {
   });
 
   it('shows a checkmark after copying a QA report', async () => {
-    renderWithMantine(
+    const view = renderWithMantine(
       <ReadyQaActions
         projectId="project-1"
         projectKey="ALPHA"
@@ -148,7 +162,8 @@ describe('copy feedback icons', () => {
       />,
     );
 
-    fireEvent.click(screen.getByLabelText('Open QA runs'));
+    const openButtons = screen.getAllByLabelText('Open QA runs');
+    fireEvent.click(openButtons[openButtons.length - 1]!);
 
     const copyButton = await screen.findByLabelText('Copy QA report for run-123');
 
@@ -161,6 +176,66 @@ describe('copy feedback icons', () => {
     });
     await waitFor(() => {
       expect(copyButton.querySelector('[data-icon="check"]')).not.toBeNull();
+    });
+  });
+
+  it('copies a queued QA dispatch prompt with the returned run metadata', async () => {
+    const queuedRun = {
+      ...createRun(),
+      id: 'run-456',
+      engine: 'claude-code' as const,
+      status: 'queued' as const,
+      taskKeys: ['QA-7', 'QA-8'],
+      reportMarkdown: null,
+      startedAt: null,
+      finishedAt: null,
+    };
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ ok: true, run: queuedRun }),
+    } as unknown as Response);
+
+    const view = renderWithMantine(
+      <ReadyQaActions
+        projectId="project-1"
+        projectKey="ALPHA"
+        projectName="Project One"
+        branchName="release/mobile"
+        readyCount={2}
+        telegramEnabled
+        initialRuns={[]}
+      />,
+    );
+
+    const scope = within(view.container);
+    fireEvent.click(scope.getByLabelText('Open QA runs'));
+
+    const copyButton = await scope.findByLabelText('Copy dispatch prompt');
+    expect((copyButton as HTMLButtonElement).disabled).toBe(true);
+
+    fireEvent.click(scope.getByText('Queue QA'));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect((copyButton as HTMLButtonElement).disabled).toBe(false);
+    });
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(clipboardWriteTextMock).toHaveBeenCalledWith(
+        buildProjectQaDispatchMessage({
+          projectKey: 'ALPHA',
+          engine: 'claude-code',
+          branchName: 'release/mobile',
+          dispatchTarget: 'telegram',
+          qaRunId: 'run-456',
+          qaTaskKeys: ['QA-7', 'QA-8'],
+        }),
+      );
     });
   });
 });
