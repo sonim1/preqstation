@@ -31,6 +31,13 @@ function getRuleBody(selector: string) {
   return match?.[1] ?? '';
 }
 
+function getMediaBlockBody(query: string) {
+  const afterMedia = operatorDeskCss.split(`@media ${query} {`)[1];
+
+  expect(afterMedia).toBeTruthy();
+  return afterMedia ?? '';
+}
+
 describe('portfolio overview visual refinement', () => {
   it('uses section dividers instead of a boxed wrapper shell', () => {
     const portfolioOverviewRule = getRuleBody('.portfolioOverview');
@@ -122,5 +129,13 @@ describe('portfolio overview visual refinement', () => {
     expect(dashboardServicePaceSparklineSource).toContain("'use client'");
     expect(dashboardServicePaceSparklineSource).toContain('tooltipLabelFormatter=');
     expect(dashboardServicePaceSparklineSource).toContain('tooltipValueFormatter=');
+  });
+
+  it('keeps portfolio sections on the same mobile inset as the rest of the dashboard', () => {
+    const mobileCss = getMediaBlockBody('(max-width: 48rem)');
+
+    expect(mobileCss).toMatch(
+      /\.portfolioOverview\s*\{[\s\S]*padding-inline:\s*var\(--mantine-spacing-md\);/,
+    );
   });
 });
