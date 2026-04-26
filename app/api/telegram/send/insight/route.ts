@@ -14,6 +14,7 @@ export const dynamic = 'force-dynamic';
 const sendSchema = z.object({
   projectKey: z.string().trim().min(1).max(20),
   message: z.string().trim().min(1),
+  dispatchTarget: z.enum(['telegram', 'hermes-telegram']).optional().default('telegram'),
 });
 
 export async function POST(req: Request) {
@@ -25,7 +26,8 @@ export async function POST(req: Request) {
     const payload = sendSchema.parse(await req.json());
     const settings = await getUserSettings(owner.id);
 
-    const { enabled, encryptedToken, chatId } = resolveTelegramDispatchConfig(settings, 'openclaw');
+    const target = payload.dispatchTarget === 'hermes-telegram' ? 'hermes' : 'openclaw';
+    const { enabled, encryptedToken, chatId } = resolveTelegramDispatchConfig(settings, target);
     if (!enabled || !encryptedToken || !chatId) {
       return NextResponse.json(
         { error: 'Telegram is not fully configured or disabled' },
@@ -44,7 +46,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = await sendTelegramMessage(botToken, chatId, payload.message);
+    const result = await sendTelegramMessage(botToken, chatId, payload.message, {
+      normalizeCommand: payload.dispatchTarget !== 'hermes-telegram',
+    });
     if (!result.ok) {
       console.error('[api/telegram/send/insight] Telegram send failed:', {
         projectKey: payload.projectKey,

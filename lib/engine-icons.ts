@@ -50,3 +50,21 @@ export function getEngineConfig(engine: string | null | undefined): EngineConfig
   if (!normalized) return null;
   return ENGINE_CONFIGS[normalized] ?? null;
 }
+
+export function getEngineShortLabel(engine: EngineConfig | EngineKey | string | null | undefined) {
+  const engineConfig =
+    typeof engine === 'object' && engine
+      ? (engine as EngineConfig)
+      : getEngineConfig(typeof engine === 'string' ? engine : null);
+
+  switch (engineConfig?.key) {
+    case 'claude-code':
+      return 'Claude';
+    case 'codex':
+      return 'Codex';
+    case 'gemini-cli':
+      return 'Gemini';
+    default:
+      return 'Engine';
+  }
+}
