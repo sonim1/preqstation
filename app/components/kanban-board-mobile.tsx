@@ -10,9 +10,12 @@ import {
   IconRefresh,
 } from '@tabler/icons-react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import { type ComponentType, type CSSProperties, useEffect, useRef, useState } from 'react';
+import { type ComponentType, type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 
-import { useMobilePullToRefresh } from '@/app/hooks/use-mobile-pull-to-refresh';
+import {
+  type MobilePullToRefreshTrigger,
+  useMobilePullToRefresh,
+} from '@/app/hooks/use-mobile-pull-to-refresh';
 import { useMobileTabSwipe } from '@/app/hooks/use-mobile-tab-swipe';
 import {
   boardStatusLabel,
@@ -49,6 +52,7 @@ type RefreshFeedbackState = {
 };
 
 const REFRESH_SUCCESS_HIDE_DELAY_MS = 900;
+const NOOP_REFRESH = () => {};
 
 type KanbanBoardMobileProps = {
   columns: KanbanColumns;
@@ -79,7 +83,7 @@ export function KanbanBoardMobile({
   editHrefJoiner,
   telegramEnabled = false,
   router,
-  onRefresh = () => {},
+  onRefresh = NOOP_REFRESH,
   onTaskQueued,
   onOpenTaskEditor,
   onQuickMoveTask,
@@ -94,7 +98,6 @@ export function KanbanBoardMobile({
   const swipeHandlers = useMobileTabSwipe(mobileStatuses, activeTab, onTabChange);
   const pullRefreshRequestedRef = useRef(false);
   const pullRefreshPendingRef = useRef(false);
-  const showSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hideSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [refreshFeedback, setRefreshFeedback] = useState<RefreshFeedbackState>({
     phase: 'idle',
@@ -115,42 +118,28 @@ export function KanbanBoardMobile({
     pullRefreshRequestedRef.current = false;
     pullRefreshPendingRef.current = false;
 
-    if (showSuccessTimeoutRef.current !== null) {
-      clearTimeout(showSuccessTimeoutRef.current);
-    }
     if (hideSuccessTimeoutRef.current !== null) {
       clearTimeout(hideSuccessTimeoutRef.current);
     }
 
-    showSuccessTimeoutRef.current = setTimeout(() => {
-      setRefreshFeedback((current) => ({ ...current, phase: 'success' }));
-      showSuccessTimeoutRef.current = null;
-      hideSuccessTimeoutRef.current = setTimeout(() => {
-        setRefreshFeedback({ phase: 'idle', pullDistance: 0, pullProgress: 0 });
-        hideSuccessTimeoutRef.current = null;
-      }, REFRESH_SUCCESS_HIDE_DELAY_MS);
-    }, 0);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- success feedback must sync to the completed refresh cycle without an extra delay
+    setRefreshFeedback((current) => ({ ...current, phase: 'success' }));
+    hideSuccessTimeoutRef.current = setTimeout(() => {
+      setRefreshFeedback({ phase: 'idle', pullDistance: 0, pullProgress: 0 });
+      hideSuccessTimeoutRef.current = null;
+    }, REFRESH_SUCCESS_HIDE_DELAY_MS);
   }, [isPending]);
 
   useEffect(() => {
     return () => {
-      if (showSuccessTimeoutRef.current !== null) {
-        clearTimeout(showSuccessTimeoutRef.current);
-      }
       if (hideSuccessTimeoutRef.current !== null) {
         clearTimeout(hideSuccessTimeoutRef.current);
       }
     };
   }, []);
 
-  const pullToRefresh = useMobilePullToRefresh({
-    activeTab,
-    disabled: isPending,
-    onRefresh: ({ pullDistance, pullProgress }) => {
-      if (showSuccessTimeoutRef.current !== null) {
-        clearTimeout(showSuccessTimeoutRef.current);
-        showSuccessTimeoutRef.current = null;
-      }
+  const handleRefresh = useCallback(
+    ({ pullDistance, pullProgress }: MobilePullToRefreshTrigger) => {
       if (hideSuccessTimeoutRef.current !== null) {
         clearTimeout(hideSuccessTimeoutRef.current);
         hideSuccessTimeoutRef.current = null;
@@ -165,6 +154,13 @@ export function KanbanBoardMobile({
       });
       onRefresh();
     },
+    [onRefresh],
+  );
+
+  const pullToRefresh = useMobilePullToRefresh({
+    activeTab,
+    disabled: isPending,
+    onRefresh: handleRefresh,
   });
   const indicatorPullDistance =
     refreshFeedback.phase === 'idle' ? pullToRefresh.pullDistance : refreshFeedback.pullDistance;

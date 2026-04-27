@@ -110,7 +110,10 @@ export function useMobilePullToRefresh({
   );
 
   const onTouchEnd = useCallback(() => {
-    if ((gestureTab === null || gestureTab === activeTab) && isArmedRef.current) {
+    if (
+      (gestureTabRef.current === null || gestureTabRef.current === activeTab) &&
+      isArmedRef.current
+    ) {
       onRefresh({
         pullDistance: pullDistanceRef.current,
         pullProgress: pullProgressRef.current,
@@ -118,7 +121,7 @@ export function useMobilePullToRefresh({
     }
 
     reset();
-  }, [activeTab, gestureTab, onRefresh, reset]);
+  }, [activeTab, onRefresh, reset]);
 
   const isGestureActive = gestureTab === null || gestureTab === activeTab;
   const visiblePullDistance = isGestureActive ? pullDistance : 0;

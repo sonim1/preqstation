@@ -3,6 +3,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const useCallbackMock = vi.hoisted(() => vi.fn());
 const useEffectMock = vi.hoisted(() => vi.fn());
 const useRefMock = vi.hoisted(() => vi.fn());
 const useStateMock = vi.hoisted(() => vi.fn());
@@ -15,6 +16,7 @@ vi.mock('react', async () => {
   const actual = await vi.importActual<typeof import('react')>('react');
   return {
     ...actual,
+    useCallback: useCallbackMock,
     useEffect: useEffectMock,
     useRef: useRefMock,
     useState: useStateMock,
@@ -54,6 +56,13 @@ vi.mock('@tabler/icons-react', () => ({
 
 import { KanbanBoardMobile } from '@/app/components/kanban-board-mobile';
 
+function areDepsEqual(previous: readonly unknown[], next: readonly unknown[]) {
+  return (
+    previous.length === next.length &&
+    previous.every((dependency, index) => Object.is(dependency, next[index]))
+  );
+}
+
 function buildPullToRefreshState(overrides: Partial<ReturnType<typeof vi.fn>> = {}) {
   return {
     bindScrollContainer: vi.fn(),
@@ -69,16 +78,29 @@ function buildPullToRefreshState(overrides: Partial<ReturnType<typeof vi.fn>> = 
 }
 
 function createRenderHarness() {
+  const callbacks: Array<{ deps: readonly unknown[]; value: unknown }> = [];
   const refs: Array<{ current: unknown }> = [];
   const stateValues: unknown[] = [];
 
   return function renderBoard(
     overrides: Partial<React.ComponentProps<typeof KanbanBoardMobile>> = {},
   ) {
+    let callbackIndex = 0;
     let refIndex = 0;
     let stateIndex = 0;
     const effects: Array<() => void | (() => void)> = [];
 
+    useCallbackMock.mockImplementation(<T,>(callback: T, deps: readonly unknown[]) => {
+      const index = callbackIndex++;
+      const previous = callbacks[index];
+
+      if (previous && areDepsEqual(previous.deps, deps)) {
+        return previous.value as T;
+      }
+
+      callbacks[index] = { deps, value: callback };
+      return callback;
+    });
     useRefMock.mockImplementation((initialValue: unknown) => {
       const index = refIndex++;
       refs[index] ??= { current: initialValue };
@@ -132,12 +154,14 @@ function createRenderHarness() {
 
 describe('KanbanBoardMobile refresh wiring', () => {
   beforeEach(() => {
+    useCallbackMock.mockReset();
     useEffectMock.mockReset();
     useRefMock.mockReset();
     useStateMock.mockReset();
     useMobilePullToRefreshMock.mockReset();
     notifications.showSuccessNotification.mockReset();
 
+    useCallbackMock.mockImplementation(<T,>(callback: T) => callback);
     useEffectMock.mockImplementation(() => undefined);
     useRefMock.mockImplementation((initialValue: unknown) => ({ current: initialValue }));
     useStateMock.mockImplementation((initialValue: unknown) => [initialValue, vi.fn()]);
@@ -190,7 +214,19 @@ describe('KanbanBoardMobile refresh wiring', () => {
     expect(html).toContain('data-size="22"');
   });
 
-  it('keeps the indicator visible through refresh settle, swaps to success, then dismisses it', () => {
+  it('passes a stable refresh callback to the pull-to-refresh hook across rerenders', () => {
+    const onRefresh = vi.fn();
+    const renderBoard = createRenderHarness();
+
+    renderBoard({ onRefresh });
+    renderBoard({ onRefresh });
+
+    const firstHookOptions = useMobilePullToRefreshMock.mock.calls[0]?.[0];
+    const secondHookOptions = useMobilePullToRefreshMock.mock.calls[1]?.[0];
+    expect(firstHookOptions?.onRefresh).toBe(secondHookOptions?.onRefresh);
+  });
+
+  it('keeps the indicator visible through refresh settle, swaps to success immediately, then dismisses it', () => {
     vi.useFakeTimers();
 
     const onRefresh = vi.fn();
@@ -219,7 +255,6 @@ describe('KanbanBoardMobile refresh wiring', () => {
     renderResult.effects.forEach((effect) => {
       effect();
     });
-    vi.advanceTimersByTime(0);
     renderResult = renderBoard({ isPending: false, onRefresh });
     expect(renderResult.html).toContain('data-state="success"');
     expect(notifications.showSuccessNotification).not.toHaveBeenCalled();
