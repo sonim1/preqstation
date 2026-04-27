@@ -315,6 +315,30 @@ describe('project detail page', () => {
     expect(html).toContain('data-integration-href=""');
   });
 
+  it('groups the page into anchored overview, configuration, and activity sections', async () => {
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('aria-label="Project sections"');
+    expect(html).toContain('data-project-section-nav="true"');
+    expect(html).toContain('href="#project-overview"');
+    expect(html).toContain('href="#project-configuration"');
+    expect(html).toContain('href="#project-activity"');
+    expect(html).toContain('id="project-overview"');
+    expect(html).toContain('id="project-configuration"');
+    expect(html).toContain('id="project-activity"');
+    expect(html).toContain('>Configuration<');
+    expect(html).toContain('>Activity<');
+    expect(html).toContain('Edit Details');
+    expect(html).toContain('href="/project/PROJ?panel=project-edit"');
+    expect(html).toContain('href="/board/PROJ"');
+    expect(html).toContain('href="/dashboard?panel=task&amp;projectId=project-1"');
+    expect(html).toContain('href="/dashboard?panel=worklog&amp;projectId=project-1"');
+  });
+
   it('renders project editing inside the shared modal shell on the detail route', async () => {
     const html = renderToStaticMarkup(
       await ProjectDetailPage({
