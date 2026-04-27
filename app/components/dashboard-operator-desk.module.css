@@ -690,6 +690,10 @@
 }
 
 @media (max-width: 48rem) {
+  .portfolioOverview {
+    padding-inline: var(--mantine-spacing-md);
+  }
+
   .portfolioLead,
   .portfolioMatrixCard,
   .portfolioActivityCard {
