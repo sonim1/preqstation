@@ -6,6 +6,29 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('@mantine/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@mantine/core')>();
+  const ActualMenuItem = actual.Menu.Item;
+  type MockMenuItemProps = React.ComponentProps<typeof actual.Menu.Item> & {
+    closeMenuOnClick?: boolean;
+  };
+  const MenuItem = ({
+    closeMenuOnClick,
+    ...props
+  }: MockMenuItemProps) => (
+    <ActualMenuItem
+      {...props}
+      closeMenuOnClick={closeMenuOnClick}
+      data-menu-close-on-click={closeMenuOnClick === undefined ? '' : String(closeMenuOnClick)}
+    />
+  );
+
+  return {
+    ...actual,
+    Menu: Object.assign(actual.Menu, { Item: MenuItem }),
+  };
+});
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     refresh: vi.fn(),
@@ -574,14 +597,13 @@ describe('app/components/kanban-card', () => {
       isMobile: false,
       editHref: '/board?panel=task-edit&taskId=PROJ-211',
       telegramEnabled: true,
-      telegramDispatchSummary: (
+      telegramDispatchDetail: (
         <>
-          <span>Codex CLI</span>
-          <span> | Mode: Implement</span>
-          <span> | Current target</span>
+          <span>Codex CLI | </span>
+          {renderTelegramDispatchTarget('telegram')}
+          <span> | Implement</span>
         </>
       ),
-      telegramDispatchTooltip: 'OpenClaw Telegram',
       isSendingTelegram: false,
       onQuickMoveTask: vi.fn(),
       onDeleteTask: vi.fn(),
@@ -604,14 +626,8 @@ describe('app/components/kanban-card', () => {
     expect(html).toContain('Copy Telegram Message');
     expect(html).toContain('Send Telegram Message');
     expect(html).not.toContain('data-kanban-dispatch-detail="true"');
-    expect(html).toContain('data-kanban-dispatch-summary="desktop"');
-    expect(html).toContain('data-kanban-dispatch-summary-item="true"');
-    expect(html).toContain('data-kanban-dispatch-tooltip="OpenClaw Telegram"');
-    expect(html).toContain('Codex CLI');
-    expect(html).toContain('| Mode: Implement');
-    expect(html).toContain('| Current target');
-    expect(html).not.toContain('Current target: OpenClaw Telegram');
-    expect(html).not.toContain('🦞');
+    expect(html).not.toContain('data-kanban-dispatch-summary="desktop"');
+    expect(html).not.toContain('data-kanban-dispatch-summary-item="true"');
     expect(html).not.toContain('/icons/hermes-agent.png');
     expect(html).not.toContain('task-dispatch-target-option');
     expect(html).not.toContain('task-dispatch-target-emoji');
@@ -635,14 +651,13 @@ describe('app/components/kanban-card', () => {
             isMobile
             editHref="/board?panel=task-edit&taskId=PROJ-211"
             telegramEnabled
-            telegramDispatchSummary={
+            telegramDispatchDetail={
               <>
-                <span>Engine: Codex CLI | Target: </span>
+                <span>Codex CLI | </span>
                 {renderTelegramDispatchTarget('hermes-telegram')}
-                <span> | Mode: Implement</span>
+                <span> | Implement</span>
               </>
             }
-            telegramDispatchTooltip="Current target: Hermes Telegram"
             isSendingTelegram={false}
             onQuickMoveTask={vi.fn()}
             onDeleteTask={vi.fn()}
@@ -655,10 +670,13 @@ describe('app/components/kanban-card', () => {
     );
 
     expect(html).toContain('data-kanban-dispatch-detail="true"');
+    expect(html).toContain('data-menu-close-on-click="false"');
     expect(html).not.toContain('data-kanban-dispatch-summary="desktop"');
     expect(html).toContain('/icons/hermes-agent.png');
     expect(html).toContain('Telegram');
-    expect(html).toContain('| Mode: Implement');
+    expect(html).toContain('Codex CLI | ');
+    expect(html).toContain('| Implement');
+    expect(html).not.toContain('Mode: Implement');
   });
 
   it('renders the Hermes telegram target detail with the shared icon styling', () => {
@@ -675,11 +693,9 @@ describe('app/components/kanban-card', () => {
       /\.kanbanDispatchTargetLogo\s*\{[\s\S]*width:\s*1rem;[\s\S]*height:\s*1rem;/,
     );
     expect(cardsCss).toMatch(
-      /\.kanbanCardMenuDispatchSummary\s*\{[\s\S]*display:\s*flex;[\s\S]*align-items:\s*center;/,
+      /\.kanbanCardMenuDispatchDetail\s*\{[\s\S]*display:\s*inline-flex;[\s\S]*align-items:\s*center;/,
     );
-    expect(cardsCss).toMatch(
-      /\.kanbanCardMenuDispatchTooltip\s*\{[\s\S]*max-width:\s*16rem;/,
-    );
+    expect(cardsCss).toMatch(/\.kanbanCardMenuDispatchTooltip\s*\{[\s\S]*max-width:\s*16rem;/);
   });
 
   it('builds Hermes card dispatches with the Hermes message payload and target', () => {
