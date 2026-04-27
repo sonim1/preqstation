@@ -81,8 +81,8 @@ async function fetchNotificationPage(params: {
   return (await response.json()) as NotificationPage;
 }
 
-async function markNotificationsRead(notificationIds: string[]) {
-  if (notificationIds.length === 0) {
+async function markNotificationsRead(params: { notificationIds?: string[]; markAll?: true }) {
+  if (!params.markAll && (params.notificationIds?.length ?? 0) === 0) {
     return;
   }
 
@@ -92,7 +92,9 @@ async function markNotificationsRead(notificationIds: string[]) {
     headers: {
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ notificationIds }),
+    body: JSON.stringify(
+      params.markAll ? { markAll: true } : { notificationIds: params.notificationIds ?? [] },
+    ),
   });
 
   if (!response.ok) {
@@ -118,6 +120,8 @@ export function TaskNotificationCenter() {
   const [opened, setOpened] = useState(false);
   const [mode, setMode] = useState<TaskNotificationDrawerMode>('unread');
   const [unreadNotifications, setUnreadNotifications] = useState<TaskNotificationItem[]>([]);
+  const [unreadTotal, setUnreadTotal] = useState(0);
+  const [sessionUnreadTotal, setSessionUnreadTotal] = useState<number | null>(null);
   const [sessionReadNotifications, setSessionReadNotifications] = useState<TaskNotificationItem[]>(
     [],
   );
@@ -130,6 +134,8 @@ export function TaskNotificationCenter() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryLoadingMore, setIsHistoryLoadingMore] = useState(false);
   const knownNotificationIdsRef = useRef(new Set<string>());
+  const hasHydratedUnreadRef = useRef(false);
+  const needsUnreadReloadRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -147,7 +153,14 @@ export function TaskNotificationCenter() {
         for (const notification of page.notifications) {
           knownNotificationIdsRef.current.add(notification.id);
         }
-        setUnreadNotifications(page.notifications);
+        setUnreadNotifications((current) => prependUniqueById(current, page.notifications));
+        setUnreadTotal(page.total);
+        hasHydratedUnreadRef.current = true;
+
+        if (needsUnreadReloadRef.current) {
+          needsUnreadReloadRef.current = false;
+          void loadUnreadNotifications();
+        }
       } catch {
         if (!cancelled) {
           showErrorNotification('Failed to load notifications.');
@@ -181,7 +194,15 @@ export function TaskNotificationCenter() {
         showTaskCompletionNotification(notification);
       }
 
+      if (!hasHydratedUnreadRef.current) {
+        needsUnreadReloadRef.current = true;
+      }
+
       setUnreadNotifications((current) => prependUniqueById(createdNotifications, current));
+      setUnreadTotal((current) => current + createdNotifications.length);
+      setSessionUnreadTotal((current) =>
+        current === null ? current : current + createdNotifications.length,
+      );
       return true;
     });
   }, []);
@@ -223,24 +244,40 @@ export function TaskNotificationCenter() {
     setOpened(true);
     setMode('unread');
 
-    if (unreadNotifications.length === 0) {
+    if (unreadTotal === 0) {
       return;
     }
 
-    const notificationsToMark = unreadNotifications;
-    setSessionReadNotifications((current) => prependUniqueById(notificationsToMark, current));
-    setUnreadNotifications([]);
+    const unreadSnapshot = unreadNotifications;
+    const unreadTotalSnapshot = unreadTotal;
 
-    void markNotificationsRead(notificationsToMark.map((notification) => notification.id)).catch(
-      () => {
-        showErrorNotification('Failed to mark notifications as read.');
-      },
-    );
+    setSessionReadNotifications((current) => prependUniqueById(unreadSnapshot, current));
+    setSessionUnreadTotal(unreadTotalSnapshot);
+    setUnreadNotifications([]);
+    setUnreadTotal(0);
+    setHistoryNotifications([]);
+    setHistoryTotal(0);
+    setHistoryHasMore(false);
+    setHistoryNextOffset(0);
+    setHasLoadedHistory(false);
+
+    void markNotificationsRead({ markAll: true }).catch(() => {
+      setSessionReadNotifications((current) =>
+        current.filter(
+          (notification) => !unreadSnapshot.some((snapshot) => snapshot.id === notification.id),
+        ),
+      );
+      setSessionUnreadTotal(null);
+      setUnreadNotifications((current) => prependUniqueById(current, unreadSnapshot));
+      setUnreadTotal((current) => current + unreadTotalSnapshot);
+      showErrorNotification('Failed to mark notifications as read.');
+    });
   }
 
   function closeDrawer() {
     setOpened(false);
     setMode('unread');
+    setSessionUnreadTotal(null);
     setSessionReadNotifications([]);
   }
 
@@ -267,10 +304,10 @@ export function TaskNotificationCenter() {
     unreadNotifications,
     sessionReadNotifications,
   );
-  const unreadCount = unreadNotifications.length;
+  const unreadCount = unreadTotal;
   const drawerNotifications =
     mode === 'history' ? historyNotifications : visibleUnreadNotifications;
-  const drawerTotal = mode === 'history' ? historyTotal : visibleUnreadNotifications.length;
+  const drawerTotal = mode === 'history' ? historyTotal : (sessionUnreadTotal ?? unreadTotal);
   const drawerLoading = mode === 'history' ? isHistoryLoading : isUnreadLoading;
   const drawerHasMore = mode === 'history' ? historyHasMore : false;
   const drawerLoadingMore = mode === 'history' ? isHistoryLoadingMore : false;

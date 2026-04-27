@@ -311,3 +311,18 @@ export async function markTaskNotificationsRead(
 
   return resultRows(result).map((row) => String(row.id));
 }
+
+export async function markAllTaskNotificationsRead(
+  params: Pick<MarkTaskNotificationsReadParams, 'ownerId' | 'now'>,
+  client: DbClientOrTx = db,
+) {
+  const result = await client.execute(sql`
+    update task_notifications
+    set read_at = ${params.now ?? new Date()}
+    where owner_id = ${params.ownerId}
+      and read_at is null
+    returning id
+  `);
+
+  return resultRows(result).map((row) => String(row.id));
+}
