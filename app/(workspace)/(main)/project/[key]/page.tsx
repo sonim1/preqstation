@@ -784,24 +784,13 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
 
         <section id="project-activity" className={panelStyles.sectionAnchor}>
           <Stack gap="md">
-            <Group justify="space-between" align="flex-end" wrap="wrap" gap="xs">
+            <Group align="flex-end" gap="xs">
               <div>
                 <Title order={3}>Activity</Title>
                 <Text c="dimmed" size="sm">
                   Jump into the board, capture work, and review recent progress.
                 </Text>
               </div>
-              <Group gap="xs" wrap="wrap">
-                <LinkButton href={boardHref} size="compact-sm" variant="default">
-                  Open Kanban
-                </LinkButton>
-                <LinkButton href={newTaskHref} size="compact-sm">
-                  {`New ${terminology.task.singular}`}
-                </LinkButton>
-                <LinkButton href={newWorkLogHref} size="compact-sm" variant="default">
-                  New Work Log
-                </LinkButton>
-              </Group>
             </Group>
 
             <Paper

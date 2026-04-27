@@ -66,7 +66,7 @@
 .sectionAnchor {
   scroll-margin-top: calc(
     var(--app-shell-header-offset, 0px) + var(--mantine-spacing-sm) +
-      var(--project-section-nav-height, calc(5.5rem - var(--mantine-spacing-sm)))
+      var(--project-section-nav-height, calc(8rem - var(--mantine-spacing-sm)))
   );
 }
 
