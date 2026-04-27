@@ -33,8 +33,10 @@ describe('ProjectSectionAnchorOffset', () => {
     }
 
     vi.stubGlobal('ResizeObserver', ResizeObserverMock);
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
-      if ((this as HTMLElement).dataset.projectSectionNav === 'true') {
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+      this: HTMLElement,
+    ) {
+      if (this.dataset.projectSectionNav === 'true') {
         return {
           bottom: navHeight,
           height: navHeight,
@@ -75,7 +77,7 @@ describe('ProjectSectionAnchorOffset', () => {
       </div>,
     );
 
-    const shell = container.querySelector('[data-testid="project-sections-shell"]');
+    const shell = container.querySelector<HTMLElement>('[data-testid="project-sections-shell"]');
     expect(shell).not.toBeNull();
 
     await waitFor(() =>
