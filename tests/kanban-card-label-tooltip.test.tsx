@@ -242,7 +242,7 @@ describe('app/components/kanban-card label tooltip behavior', () => {
                 <span> | Current target</span>
               </>
             }
-            telegramDispatchTooltip="Current target: OpenClaw Telegram"
+            telegramDispatchTooltip="OpenClaw Telegram"
             isSendingTelegram={false}
             onQuickMoveTask={vi.fn()}
             onDeleteTask={vi.fn()}
@@ -255,13 +255,14 @@ describe('app/components/kanban-card label tooltip behavior', () => {
     );
 
     expect(html).toContain('data-kanban-dispatch-summary="desktop"');
+    expect(html).toContain('data-kanban-dispatch-summary-item="true"');
     expect(html).toContain('data-tooltip-events-hover="true"');
     expect(html).toContain('data-tooltip-events-focus="true"');
     expect(html).toContain('data-tooltip-events-touch="true"');
     expect(tooltipPropsMock).toHaveBeenCalledWith(
       expect.objectContaining({
         events: { hover: true, focus: true, touch: true },
-        label: 'Current target: OpenClaw Telegram',
+        label: 'OpenClaw Telegram',
       }),
     );
   });

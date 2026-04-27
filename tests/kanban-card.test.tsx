@@ -581,7 +581,7 @@ describe('app/components/kanban-card', () => {
           <span> | Current target</span>
         </>
       ),
-      telegramDispatchTooltip: 'Current target: OpenClaw Telegram',
+      telegramDispatchTooltip: 'OpenClaw Telegram',
       isSendingTelegram: false,
       onQuickMoveTask: vi.fn(),
       onDeleteTask: vi.fn(),
@@ -605,10 +605,12 @@ describe('app/components/kanban-card', () => {
     expect(html).toContain('Send Telegram Message');
     expect(html).not.toContain('data-kanban-dispatch-detail="true"');
     expect(html).toContain('data-kanban-dispatch-summary="desktop"');
-    expect(html).toContain('data-kanban-dispatch-tooltip="Current target: OpenClaw Telegram"');
+    expect(html).toContain('data-kanban-dispatch-summary-item="true"');
+    expect(html).toContain('data-kanban-dispatch-tooltip="OpenClaw Telegram"');
     expect(html).toContain('Codex CLI');
     expect(html).toContain('| Mode: Implement');
     expect(html).toContain('| Current target');
+    expect(html).not.toContain('Current target: OpenClaw Telegram');
     expect(html).not.toContain('🦞');
     expect(html).not.toContain('/icons/hermes-agent.png');
     expect(html).not.toContain('task-dispatch-target-option');

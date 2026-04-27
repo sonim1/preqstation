@@ -316,14 +316,15 @@ export function KanbanCardMenuDropdown({
           openDelay={0}
           events={{ hover: true, focus: true, touch: true }}
         >
-          <div
-            className={styles.kanbanCardMenuDispatchSummary}
+          <Menu.Item
+            className={styles.kanbanCardMenuDispatchSummaryItem}
+            closeMenuOnClick={false}
             data-kanban-dispatch-summary="desktop"
+            data-kanban-dispatch-summary-item="true"
             data-kanban-dispatch-tooltip={telegramDispatchTooltip}
-            tabIndex={0}
           >
-            {telegramDispatchSummary}
-          </div>
+            <div className={styles.kanbanCardMenuDispatchSummary}>{telegramDispatchSummary}</div>
+          </Menu.Item>
         </Tooltip>
       ) : null}
       <Menu.Divider />
@@ -412,7 +413,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const telegramMessage = telegramDispatch.message;
   const telegramEngineConfig = getEngineConfig(displayEngine) ?? ENGINE_CONFIGS.codex;
   const telegramDispatchModeLabel = toDispatchModeLabel(task.status);
-  const telegramDispatchTooltip = `Current target: ${resolveTelegramDispatchTargetLabel(task.dispatchTarget)}`;
+  const telegramDispatchTooltip = resolveTelegramDispatchTargetLabel(task.dispatchTarget);
   const telegramDispatchSummary = isMobile ? (
     <>
       <span>Engine: {telegramEngineConfig.label} | Target: </span>

@@ -258,23 +258,28 @@
   flex-shrink: 0;
 }
 
+.kanbanCardMenuDispatchSummaryItem {
+  padding: 0;
+  cursor: default;
+  min-height: 0;
+}
+
+.kanbanCardMenuDispatchSummaryItem:focus-visible {
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ui-focus-ring), transparent 18%);
+}
+
 .kanbanCardMenuDispatchSummary {
   display: flex;
   align-items: center;
   gap: 0.25rem;
+  width: 100%;
   padding: 0 0.75rem 0.45rem 2.25rem;
   color: color-mix(in srgb, var(--ui-text), transparent 24%);
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.01em;
-  cursor: default;
-  outline: none;
-}
-
-.kanbanCardMenuDispatchSummary:focus-visible {
-  border-radius: 8px;
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--ui-focus-ring), transparent 18%);
 }
 
 .kanbanCardMenuDispatchSummaryHint {
