@@ -154,6 +154,7 @@ describe('kanban label shortcut wiring', () => {
     expect(capturedCardProps).toHaveLength(1);
     expect(capturedCardProps[0]?.labelOptions).toEqual(labelOptions);
     expect(capturedCardProps[0]?.onUpdateTaskLabels).toBe(onUpdateTaskLabels);
+    expect(capturedCardProps[0]?.isMobile).toBe(false);
   });
 
   it('passes label options and the update callback through the mobile board renderer', () => {
@@ -188,6 +189,7 @@ describe('kanban label shortcut wiring', () => {
     expect(capturedCardProps).toHaveLength(1);
     expect(capturedCardProps[0]?.labelOptions).toEqual(labelOptions);
     expect(capturedCardProps[0]?.onUpdateTaskLabels).toBe(onUpdateTaskLabels);
+    expect(capturedCardProps[0]?.isMobile).toBe(true);
   });
 });
 

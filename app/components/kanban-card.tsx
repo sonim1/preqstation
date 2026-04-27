@@ -121,6 +121,7 @@ function KanbanRunStateDecor({ runState }: { runState: TaskRunState }) {
 export type KanbanCardContentProps = {
   task: KanbanTask;
   isPending: boolean;
+  isMobile?: boolean;
   editHref: string;
   telegramEnabled?: boolean;
   onTaskQueued?: (taskKey: string, queuedAt: string) => void;
@@ -134,9 +135,11 @@ export type KanbanCardContentProps = {
 type KanbanCardMenuDropdownProps = {
   task: KanbanTask;
   isPending: boolean;
+  isMobile: boolean;
   editHref: string;
   telegramEnabled: boolean;
   telegramDispatchSummary?: ReactNode;
+  telegramDispatchTooltip?: string;
   isSendingTelegram: boolean;
   onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
   onDeleteTask: (taskId: string) => void;
@@ -158,6 +161,10 @@ function toDispatchModeLabel(status: KanbanStatus) {
     default:
       return 'Status';
   }
+}
+
+function resolveTelegramDispatchTargetLabel(dispatchTarget: KanbanTask['dispatchTarget']) {
+  return dispatchTarget === 'hermes-telegram' ? 'Hermes Telegram' : 'OpenClaw Telegram';
 }
 
 export function renderTelegramDispatchTarget(dispatchTarget: KanbanTask['dispatchTarget']) {
@@ -220,9 +227,11 @@ export function buildKanbanCardTelegramDispatch({
 export function KanbanCardMenuDropdown({
   task,
   isPending,
+  isMobile,
   editHref,
   telegramEnabled,
   telegramDispatchSummary,
+  telegramDispatchTooltip,
   isSendingTelegram,
   onQuickMoveTask,
   onDeleteTask,
@@ -284,7 +293,7 @@ export function KanbanCardMenuDropdown({
         >
           <>
             <span>Send Telegram Message</span>
-            {telegramDispatchSummary ? (
+            {isMobile && telegramDispatchSummary ? (
               <Text
                 component="span"
                 display="block"
@@ -298,6 +307,24 @@ export function KanbanCardMenuDropdown({
             ) : null}
           </>
         </Menu.Item>
+      ) : null}
+      {telegramEnabled && !isMobile && telegramDispatchSummary ? (
+        <Tooltip
+          classNames={{ tooltip: styles.kanbanCardMenuDispatchTooltip }}
+          label={telegramDispatchTooltip}
+          withArrow
+          openDelay={0}
+          events={{ hover: true, focus: true, touch: false }}
+        >
+          <div
+            className={styles.kanbanCardMenuDispatchSummary}
+            data-kanban-dispatch-summary="desktop"
+            data-kanban-dispatch-tooltip={telegramDispatchTooltip}
+            tabIndex={0}
+          >
+            {telegramDispatchSummary}
+          </div>
+        </Tooltip>
       ) : null}
       <Menu.Divider />
       <Menu.Item component={Link} href={editHref}>
@@ -314,6 +341,7 @@ export function KanbanCardMenuDropdown({
 export const KanbanCardContent = memo(function KanbanCardContent({
   task,
   isPending,
+  isMobile = false,
   editHref,
   telegramEnabled = false,
   onTaskQueued,
@@ -383,11 +411,19 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const telegramDispatch = buildKanbanCardTelegramDispatch({ task, displayEngine });
   const telegramMessage = telegramDispatch.message;
   const telegramEngineConfig = getEngineConfig(displayEngine) ?? ENGINE_CONFIGS.codex;
-  const telegramDispatchSummary = (
+  const telegramDispatchModeLabel = toDispatchModeLabel(task.status);
+  const telegramDispatchTooltip = `Current target: ${resolveTelegramDispatchTargetLabel(task.dispatchTarget)}`;
+  const telegramDispatchSummary = isMobile ? (
     <>
       <span>Engine: {telegramEngineConfig.label} | Target: </span>
       {renderTelegramDispatchTarget(task.dispatchTarget)}
-      <span> | Mode: {toDispatchModeLabel(task.status)}</span>
+      <span> | Mode: {telegramDispatchModeLabel}</span>
+    </>
+  ) : (
+    <>
+      <span>{telegramEngineConfig.label}</span>
+      <span> | Mode: {telegramDispatchModeLabel}</span>
+      <span className={styles.kanbanCardMenuDispatchSummaryHint}> | Current target</span>
     </>
   );
 
@@ -525,9 +561,11 @@ export const KanbanCardContent = memo(function KanbanCardContent({
                 <KanbanCardMenuDropdown
                   task={task}
                   isPending={isPending}
+                  isMobile={isMobile}
                   editHref={editHref}
                   telegramEnabled={telegramEnabled}
                   telegramDispatchSummary={telegramDispatchSummary}
+                  telegramDispatchTooltip={telegramDispatchTooltip}
                   isSendingTelegram={isSendingTelegram}
                   onQuickMoveTask={onQuickMoveTask}
                   onDeleteTask={onDeleteTask}

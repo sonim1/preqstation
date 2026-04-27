@@ -139,6 +139,7 @@ export function KanbanColumn({
                       <KanbanCardContent
                         task={task}
                         isPending={isPending}
+                        isMobile={isMobile}
                         editHref={`${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(task.taskKey)}`}
                         telegramEnabled={telegramEnabled}
                         onTaskQueued={onTaskQueued}
