@@ -238,6 +238,12 @@ describe('kanban bottom clearance hooks', () => {
     expect(globalsCss).toMatch(
       /\.kanban-mobile-refresh-indicator\[data-armed='true'\]\s+\.kanban-mobile-refresh-icon\s*\{[\s\S]*filter:\s*drop-shadow\(/,
     );
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-refresh-indicator\[data-state='success'\]\s*\{[\s\S]*color:\s*var\(--ui-success\);/,
+    );
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-refresh-indicator\[data-state='success'\]\s+\.kanban-mobile-refresh-icon\s*\{[\s\S]*transform:\s*scale\(1\.02\);/,
+    );
   });
 
   it('ties the bottom gradient height to the same clearance variable used by the board padding', () => {
