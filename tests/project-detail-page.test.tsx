@@ -6,6 +6,7 @@ const mocked = vi.hoisted(() => ({
   getOwnerUserOrNull: vi.fn(),
   getUserSetting: vi.fn(),
   listProjectTaskLabels: vi.fn(),
+  listProjectTaskLabelUsageCounts: vi.fn(),
   listWorkLogsPage: vi.fn(),
   notFound: vi.fn(),
   projectEditPanelProps: vi.fn(),
@@ -115,12 +116,13 @@ vi.mock('@/app/components/panels/project-labels-panel', () => ({
   ProjectLabelsPanel: ({
     labels,
   }: {
-    labels: Array<{ id: string; name: string; color: string }>;
+    labels: Array<{ id: string; name: string; color: string; usageCount: number }>;
   }) => (
     <div
       data-testid="project-labels-panel"
       data-label-count={String(labels.length)}
       data-label-names={labels.map((label) => label.name).join(',')}
+      data-label-usage={labels.map((label) => `${label.name}:${label.usageCount}`).join(',')}
     />
   ),
 }));
@@ -235,6 +237,7 @@ vi.mock('@/lib/project-settings', () => ({
 
 vi.mock('@/lib/task-labels', () => ({
   listProjectTaskLabels: mocked.listProjectTaskLabels,
+  listProjectTaskLabelUsageCounts: mocked.listProjectTaskLabelUsageCounts,
 }));
 
 vi.mock('@/lib/terminology', () => ({
@@ -295,6 +298,9 @@ describe('project detail page', () => {
       { id: 'label-1', projectId: 'project-1', name: 'Bug', color: 'red' },
       { id: 'label-2', projectId: 'project-1', name: 'Feature', color: 'blue' },
     ]);
+    mocked.listProjectTaskLabelUsageCounts.mockResolvedValue([
+      { labelId: 'label-1', usageCount: 3 },
+    ]);
     mocked.updateProject.mockResolvedValue({
       ok: true,
       data: { id: 'project-1', projectKey: 'PROJ', changed: true },
@@ -341,6 +347,7 @@ describe('project detail page', () => {
     expect(html).toContain('data-testid="project-labels-panel"');
     expect(html).toContain('data-label-count="2"');
     expect(html).toContain('data-label-names="Bug,Feature"');
+    expect(html).toContain('data-label-usage="Bug:3,Feature:0"');
     expect(html).toContain('Keep labels close to the work they belong to in this project.');
   });
 

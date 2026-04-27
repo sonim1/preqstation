@@ -1,7 +1,7 @@
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
-import { taskLabelAssignments, taskLabels } from '@/lib/db/schema';
+import { taskLabelAssignments, taskLabels, tasks } from '@/lib/db/schema';
 import type { DbClientOrTx, DbTransaction } from '@/lib/db/types';
 export {
   extractTaskLabels,
@@ -21,6 +21,24 @@ export async function listProjectTaskLabels(
     orderBy: [asc(taskLabels.name)],
     columns: { id: true, projectId: true, name: true, color: true },
   });
+}
+
+export async function listProjectTaskLabelUsageCounts(
+  ownerId: string,
+  projectId: string,
+  client: DbClientOrTx = db,
+) {
+  return client
+    .select({
+      labelId: taskLabelAssignments.labelId,
+      usageCount: sql<number>`count(*)::int`,
+    })
+    .from(taskLabelAssignments)
+    .innerJoin(tasks, eq(taskLabelAssignments.taskId, tasks.id))
+    .where(
+      and(eq(tasks.ownerId, ownerId), eq(tasks.projectId, projectId), isNull(tasks.archivedAt)),
+    )
+    .groupBy(taskLabelAssignments.labelId);
 }
 
 export async function resolveProjectTaskLabels(

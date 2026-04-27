@@ -50,9 +50,10 @@ const SettingsLabelFormStateContext = createContext<SettingsLabelFormRenderProps
 type SettingsLabelFormProps = {
   action: (prevState: unknown, formData: FormData) => Promise<ActionState>;
   children: React.ReactNode;
+  id?: string;
 };
 
-export function SettingsLabelForm({ action, children }: SettingsLabelFormProps) {
+export function SettingsLabelForm({ action, children, id }: SettingsLabelFormProps) {
   const [state, formAction] = useActionState(action, null);
   const feedbackId = useId();
   const hasError = Boolean(state && !state.ok);
@@ -64,7 +65,7 @@ export function SettingsLabelForm({ action, children }: SettingsLabelFormProps) 
     <SettingsLabelFormStateContext.Provider
       value={{ colorError, feedbackId, hasError, nameError, state }}
     >
-      <form action={formAction}>
+      <form id={id} action={formAction}>
         {children}
         {hasError ? (
           <SettingStatusMessage
