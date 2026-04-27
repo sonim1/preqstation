@@ -240,23 +240,24 @@ export function KanbanCardMenuDropdown({
       onClick={onSendTelegramMessage}
       disabled={isSendingTelegram}
     >
-      <>
-        <span>Send Telegram Message</span>
-        {isMobile && telegramDispatchDetail ? (
-          <Text
-            component="span"
-            display="block"
-            pt={2}
-            size="xs"
-            c="dimmed"
-            data-kanban-dispatch-detail="true"
-          >
-            {telegramDispatchDetail}
-          </Text>
-        ) : null}
-      </>
+      <span>Send Telegram Message</span>
     </Menu.Item>
   );
+  const mobileTelegramDispatchDetailItem =
+    isMobile && telegramDispatchDetail ? (
+      <Menu.Item closeMenuOnClick={false}>
+        <Text
+          component="div"
+          pt={2}
+          size="xs"
+          c="dimmed"
+          className={styles.kanbanCardMenuDispatchDetail}
+          data-kanban-dispatch-detail="true"
+        >
+          {telegramDispatchDetail}
+        </Text>
+      </Menu.Item>
+    ) : null;
 
   return (
     <Menu.Dropdown>
@@ -304,7 +305,12 @@ export function KanbanCardMenuDropdown({
         Copy Telegram Message
       </Menu.Item>
       {telegramEnabled ? (
-        !isMobile && telegramDispatchDetail ? (
+        isMobile ? (
+          <>
+            {sendTelegramItem}
+            {mobileTelegramDispatchDetailItem}
+          </>
+        ) : telegramDispatchDetail ? (
           <Tooltip
             classNames={{ tooltip: styles.kanbanCardMenuDispatchTooltip }}
             label={
@@ -312,7 +318,7 @@ export function KanbanCardMenuDropdown({
             }
             withArrow
             openDelay={0}
-            events={{ hover: true, focus: true, touch: false }}
+            events={{ hover: true, focus: true, touch: true }}
           >
             {sendTelegramItem}
           </Tooltip>
@@ -408,9 +414,9 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const telegramDispatchModeLabel = toDispatchModeLabel(task.status);
   const telegramDispatchDetail = (
     <>
-      <span>Engine: {telegramEngineConfig.label} | Target: </span>
+      <span>{telegramEngineConfig.label} | </span>
       {renderTelegramDispatchTarget(task.dispatchTarget)}
-      <span> | Mode: {telegramDispatchModeLabel}</span>
+      <span> | {telegramDispatchModeLabel}</span>
     </>
   );
 

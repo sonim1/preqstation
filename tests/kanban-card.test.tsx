@@ -6,6 +6,26 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
+vi.mock('@mantine/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@mantine/core')>();
+  const ActualMenuItem = actual.Menu.Item;
+  const MenuItem = ({
+    closeMenuOnClick,
+    ...props
+  }: React.ComponentProps<typeof actual.Menu.Item>) => (
+    <ActualMenuItem
+      {...props}
+      closeMenuOnClick={closeMenuOnClick}
+      data-menu-close-on-click={closeMenuOnClick === undefined ? '' : String(closeMenuOnClick)}
+    />
+  );
+
+  return {
+    ...actual,
+    Menu: Object.assign(actual.Menu, { Item: MenuItem }),
+  };
+});
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     refresh: vi.fn(),
@@ -576,9 +596,9 @@ describe('app/components/kanban-card', () => {
       telegramEnabled: true,
       telegramDispatchDetail: (
         <>
-          <span>Engine: Codex CLI | Target: </span>
+          <span>Codex CLI | </span>
           {renderTelegramDispatchTarget('telegram')}
-          <span> | Mode: Implement</span>
+          <span> | Implement</span>
         </>
       ),
       isSendingTelegram: false,
@@ -630,9 +650,9 @@ describe('app/components/kanban-card', () => {
             telegramEnabled
             telegramDispatchDetail={
               <>
-                <span>Engine: Codex CLI | Target: </span>
+                <span>Codex CLI | </span>
                 {renderTelegramDispatchTarget('hermes-telegram')}
-                <span> | Mode: Implement</span>
+                <span> | Implement</span>
               </>
             }
             isSendingTelegram={false}
@@ -647,10 +667,13 @@ describe('app/components/kanban-card', () => {
     );
 
     expect(html).toContain('data-kanban-dispatch-detail="true"');
+    expect(html).toContain('data-menu-close-on-click="false"');
     expect(html).not.toContain('data-kanban-dispatch-summary="desktop"');
     expect(html).toContain('/icons/hermes-agent.png');
     expect(html).toContain('Telegram');
-    expect(html).toContain('| Mode: Implement');
+    expect(html).toContain('Codex CLI | ');
+    expect(html).toContain('| Implement');
+    expect(html).not.toContain('Mode: Implement');
   });
 
   it('renders the Hermes telegram target detail with the shared icon styling', () => {

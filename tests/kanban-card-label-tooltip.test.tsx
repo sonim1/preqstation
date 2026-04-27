@@ -241,9 +241,9 @@ describe('app/components/kanban-card label tooltip behavior', () => {
             telegramEnabled
             telegramDispatchDetail={
               <>
-                <span>Engine: Codex CLI | Target: </span>
+                <span>Codex CLI | </span>
                 {renderTelegramDispatchTarget('telegram')}
-                <span> | Mode: Implement</span>
+                <span> | Implement</span>
               </>
             }
             isSendingTelegram={false}
@@ -259,13 +259,16 @@ describe('app/components/kanban-card label tooltip behavior', () => {
 
     expect(html).toContain('data-tooltip-events-hover="true"');
     expect(html).toContain('data-tooltip-events-focus="true"');
-    expect(html).toContain('data-tooltip-events-touch="false"');
-    expect(html).toContain('Engine: Codex CLI | Target: ');
+    expect(html).toContain('data-tooltip-events-touch="true"');
+    expect(html).toContain('Codex CLI | ');
     expect(html).toContain('🦞');
-    expect(html).toContain('| Mode: Implement');
+    expect(html).toContain('| Implement');
+    expect(html).not.toContain('Engine: Codex CLI');
+    expect(html).not.toContain('Target: ');
+    expect(html).not.toContain('Mode: Implement');
     expect(tooltipPropsMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        events: { hover: true, focus: true, touch: false },
+        events: { hover: true, focus: true, touch: true },
         label: expect.anything(),
       }),
     );
