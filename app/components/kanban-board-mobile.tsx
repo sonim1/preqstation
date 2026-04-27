@@ -210,6 +210,7 @@ export function KanbanBoardMobile({
                           <KanbanCardContent
                             task={task}
                             isPending={isPending}
+                            isMobile
                             editHref={editHref}
                             telegramEnabled={telegramEnabled}
                             onTaskQueued={onTaskQueued}
