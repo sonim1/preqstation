@@ -96,6 +96,23 @@ describe('useMobilePullToRefresh', () => {
     expect(onRefresh).toHaveBeenCalledTimes(1);
   });
 
+  it('reports the latched pull metrics when the refresh fires', () => {
+    const onRefresh = vi.fn();
+    const harness = createHarness();
+
+    let hook = harness.useHook({ activeTab: 'todo', disabled: false, onRefresh });
+    hook.bindScrollContainer({ scrollTop: 0 } as HTMLDivElement);
+    hook.onTouchStart(touchStart(120));
+    hook.onTouchMove(touchMove(232));
+
+    hook = harness.useHook({ activeTab: 'todo', disabled: false, onRefresh });
+    hook.onTouchEnd();
+
+    const trigger = onRefresh.mock.calls[0]?.[0];
+    expect(trigger?.pullDistance).toBe(50);
+    expect(trigger?.pullProgress).toBeCloseTo(50 / 56);
+  });
+
   it('caps the visible pull distance and reports normalized progress for the indicator', () => {
     const onRefresh = vi.fn();
     const harness = createHarness();
