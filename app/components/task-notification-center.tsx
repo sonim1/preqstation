@@ -121,6 +121,7 @@ export function TaskNotificationCenter() {
   const [mode, setMode] = useState<TaskNotificationDrawerMode>('unread');
   const [unreadNotifications, setUnreadNotifications] = useState<TaskNotificationItem[]>([]);
   const [unreadTotal, setUnreadTotal] = useState(0);
+  const [sessionUnreadTotal, setSessionUnreadTotal] = useState<number | null>(null);
   const [sessionReadNotifications, setSessionReadNotifications] = useState<TaskNotificationItem[]>(
     [],
   );
@@ -199,6 +200,9 @@ export function TaskNotificationCenter() {
 
       setUnreadNotifications((current) => prependUniqueById(createdNotifications, current));
       setUnreadTotal((current) => current + createdNotifications.length);
+      setSessionUnreadTotal((current) =>
+        current === null ? current : current + createdNotifications.length,
+      );
       return true;
     });
   }, []);
@@ -248,6 +252,7 @@ export function TaskNotificationCenter() {
     const unreadTotalSnapshot = unreadTotal;
 
     setSessionReadNotifications((current) => prependUniqueById(unreadSnapshot, current));
+    setSessionUnreadTotal(unreadTotalSnapshot);
     setUnreadNotifications([]);
     setUnreadTotal(0);
     setHistoryNotifications([]);
@@ -262,8 +267,9 @@ export function TaskNotificationCenter() {
           (notification) => !unreadSnapshot.some((snapshot) => snapshot.id === notification.id),
         ),
       );
-      setUnreadNotifications((current) => prependUniqueById(unreadSnapshot, current));
-      setUnreadTotal(unreadTotalSnapshot);
+      setSessionUnreadTotal(null);
+      setUnreadNotifications((current) => prependUniqueById(current, unreadSnapshot));
+      setUnreadTotal((current) => current + unreadTotalSnapshot);
       showErrorNotification('Failed to mark notifications as read.');
     });
   }
@@ -271,6 +277,7 @@ export function TaskNotificationCenter() {
   function closeDrawer() {
     setOpened(false);
     setMode('unread');
+    setSessionUnreadTotal(null);
     setSessionReadNotifications([]);
   }
 
@@ -300,7 +307,7 @@ export function TaskNotificationCenter() {
   const unreadCount = unreadTotal;
   const drawerNotifications =
     mode === 'history' ? historyNotifications : visibleUnreadNotifications;
-  const drawerTotal = mode === 'history' ? historyTotal : unreadTotal;
+  const drawerTotal = mode === 'history' ? historyTotal : (sessionUnreadTotal ?? unreadTotal);
   const drawerLoading = mode === 'history' ? isHistoryLoading : isUnreadLoading;
   const drawerHasMore = mode === 'history' ? historyHasMore : false;
   const drawerLoadingMore = mode === 'history' ? isHistoryLoadingMore : false;

@@ -89,10 +89,12 @@ function makePage(total: number, notifications: ReturnType<typeof buildNotificat
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
-  const promise = new Promise<T>((nextResolve) => {
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
     resolve = nextResolve;
+    reject = nextReject;
   });
-  return { promise, resolve };
+  return { promise, resolve, reject };
 }
 
 describe('app/components/task-notification-center', () => {
@@ -244,6 +246,43 @@ describe('app/components/task-notification-center', () => {
     await waitFor(() => {
       expect(drawerProps?.total).toBe(3);
       expect((drawerProps?.notifications as Array<{ id: string }>).length).toBe(3);
+    });
+  });
+
+  it('restores polled notifications ahead of the unread snapshot when mark-all fails', async () => {
+    const markAllRequest = deferred<{ ok: boolean; json: () => Promise<{ ok: true }> }>();
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => makePage(3, buildNotifications(3)),
+      })
+      .mockReturnValueOnce(markAllRequest.promise);
+
+    renderTaskNotificationCenter();
+
+    fireEvent.click(await screen.findByLabelText('Open notifications (3 unread)'));
+
+    await subscriber?.([
+      makeNotification({
+        id: 'notif-live',
+        taskKey: 'PROJ-999',
+        taskTitle: 'Live notification',
+      }),
+    ]);
+
+    markAllRequest.reject(new Error('patch failed'));
+
+    await waitFor(() => {
+      expect(showErrorNotificationMock).toHaveBeenCalledWith(
+        'Failed to mark notifications as read.',
+      );
+      expect(drawerProps?.total).toBe(4);
+      expect((drawerProps?.notifications as Array<{ id: string }>).map(({ id }) => id)).toEqual([
+        'notif-live',
+        'notif-1',
+        'notif-2',
+        'notif-3',
+      ]);
     });
   });
 });
