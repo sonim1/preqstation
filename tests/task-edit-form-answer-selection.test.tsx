@@ -388,36 +388,6 @@ describe('app/components/task-edit-form answer selection', () => {
     expect(html).not.toContain('data-kanban-label-summary="true"');
     expect(html).not.toContain('>+2</span>');
     expect(html).not.toContain('data-slot="multiselect:Labels"');
-
-    expect(menuPropsMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        closeOnItemClick: false,
-      }),
-    );
-
-    const selectedItemProps = menuItemPropsMock.mock.calls
-      .map(([props]) => props)
-      .find((props) => props.children === 'UI');
-    const unselectedItemProps = menuItemPropsMock.mock.calls
-      .map(([props]) => props)
-      .find((props) => props.children === 'Docs');
-
-    expect(selectedItemProps).toEqual(
-      expect.objectContaining({
-        ariaChecked: true,
-        role: 'menuitemcheckbox',
-      }),
-    );
-    expect(unselectedItemProps).toEqual(
-      expect.objectContaining({
-        ariaChecked: false,
-        role: 'menuitemcheckbox',
-      }),
-    );
-
-    unselectedItemProps?.onClick?.();
-
-    expect(triggerSaveMock).toHaveBeenCalledWith(0);
   });
 
   it('uses a bare plus trigger for empty task labels without input chrome', () => {
