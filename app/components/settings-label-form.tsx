@@ -66,12 +66,14 @@ type SettingsLabelFormProps = {
   action: (prevState: unknown, formData: FormData) => Promise<ActionState>;
   children: React.ReactNode;
   showModeHint?: boolean;
+  id?: string;
 };
 
 export function SettingsLabelForm({
   action,
   children,
   showModeHint = false,
+  id,
 }: SettingsLabelFormProps) {
   const [state, setState] = useState<ActionState>(null);
   const [saveState, setSaveState] = useState<SettingSaveState>('idle');
@@ -142,7 +144,12 @@ export function SettingsLabelForm({
     <SettingsLabelFormStateContext.Provider
       value={{ colorError, feedbackId, hasError, isPending, markDirty, nameError, state }}
     >
-      <form onSubmit={handleSubmit} onChangeCapture={markDirty} onInputCapture={markDirty}>
+      <form
+        id={id}
+        onSubmit={handleSubmit}
+        onChangeCapture={markDirty}
+        onInputCapture={markDirty}
+      >
         <fieldset disabled={isPending} style={disabledFieldsetStyle}>
           {children}
         </fieldset>

@@ -48,12 +48,14 @@ import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
 import { isProjectStatus, PROJECT_STATUS_COLORS, PROJECT_STATUS_LABELS } from '@/lib/project-meta';
 import { resolveProjectByKey } from '@/lib/project-resolve';
 import { resolveAgentInstructions, resolveDeployStrategyConfig } from '@/lib/project-settings';
-import { listProjectTaskLabels } from '@/lib/task-labels';
+import { listProjectTaskLabels, listProjectTaskLabelUsageCounts } from '@/lib/task-labels';
 import { normalizeTaskLabelColor, parseTaskLabelColor } from '@/lib/task-meta';
 import { resolveTerminology } from '@/lib/terminology';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 import { listWorkLogsPage } from '@/lib/work-log-list';
 import { PROJECT_WORK_LOG_PAGE_SIZE } from '@/lib/work-log-pagination';
+
+import { ProjectSectionAnchorOffset } from './project-section-anchor-offset';
 
 type ProjectDetailPageProps = {
   params: Promise<{ key: string }>;
@@ -82,9 +84,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   );
   if (!resolved) notFound();
 
-  const [project, kitchenMode, todos, labels, projectWorkLogPage] = await withOwnerDb(
-    owner.id,
-    async (client) =>
+  const [project, kitchenMode, todos, rawLabels, labelUsageCounts, projectWorkLogPage] =
+    await withOwnerDb(owner.id, async (client) =>
       Promise.all([
         client.query.projects.findFirst({
           where: and(
@@ -109,6 +110,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           },
         }),
         listProjectTaskLabels(owner.id, resolved.id, client),
+        listProjectTaskLabelUsageCounts(owner.id, resolved.id, client),
         listWorkLogsPage({
           ownerId: owner.id,
           projectId: resolved.id,
@@ -116,7 +118,15 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           client,
         }),
       ]),
+    );
+
+  const labelUsageCountById = new Map(
+    labelUsageCounts.map((row) => [row.labelId, row.usageCount] as const),
   );
+  const labels = rawLabels.map((label) => ({
+    ...label,
+    usageCount: labelUsageCountById.get(label.id) ?? 0,
+  }));
 
   if (!project) notFound();
   const projectId = project.id;
@@ -126,6 +136,10 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   const projectStatus = projectStatusBadge(project.status);
   const dashboardClassName = 'dashboard-root';
   const terminology = resolveTerminology(kitchenMode === 'true');
+  const boardHref = `/board/${projectKey}`;
+  const newTaskHref = `/dashboard?panel=task&projectId=${projectId}`;
+  const newWorkLogHref = `/dashboard?panel=worklog&projectId=${projectId}`;
+  const editProjectHref = `/project/${projectKey}?panel=project-edit`;
 
   const openTaskCount = todos.filter(
     (t) =>
@@ -484,16 +498,14 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 </Text>
               </div>
               <Group gap="xs" wrap="wrap">
-                <LinkButton href={`/board/${projectKey}`} variant="default">
+                <LinkButton href={boardHref} variant="default">
                   Open Kanban
                 </LinkButton>
-                <LinkButton href={`/dashboard?panel=task&projectId=${projectId}`}>
-                  {`New ${terminology.task.singular}`}
+                <LinkButton href={newTaskHref}>{`New ${terminology.task.singular}`}</LinkButton>
+                <LinkButton href={editProjectHref} variant="default">
+                  Edit Details
                 </LinkButton>
-                <ProjectHeroMenu
-                  workLogHref={`/dashboard?panel=worklog&projectId=${projectId}`}
-                  editProjectHref={`/project/${projectKey}?panel=project-edit`}
-                />
+                <ProjectHeroMenu workLogHref={newWorkLogHref} editProjectHref={editProjectHref} />
               </Group>
             </Group>
 
@@ -636,135 +648,205 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           </Stack>
         </Paper>
 
-        <Paper
-          withBorder
-          radius="lg"
-          p={{ base: 'md', sm: 'lg' }}
-          className={panelStyles.sectionPanel}
-        >
-          <Title order={3}>Overview</Title>
-          <MarkdownViewer
-            markdown={project.description}
-            persistence={{ endpoint: `/api/projects/${project.id}`, field: 'description' }}
-          />
-        </Paper>
+        <ProjectSectionAnchorOffset />
 
-        <Paper
-          withBorder
-          radius="lg"
-          p={{ base: 'md', sm: 'lg' }}
-          className={panelStyles.sectionPanel}
-        >
-          <Title order={3} mb="sm">
-            Labels
-          </Title>
-          <Text c="dimmed" size="sm" mb="md">
-            Each label change stays local until you save it.
-          </Text>
-          <ProjectLabelsPanel
-            labels={labels}
-            taskPluralLower={terminology.task.plural.toLowerCase()}
-            createLabelAction={createLabel}
-            updateLabelAction={updateLabel}
-            deleteLabelAction={deleteLabel}
-          />
-        </Paper>
+        <nav aria-label="Project sections" data-project-section-nav="true">
+          <Paper
+            withBorder
+            radius="lg"
+            p={{ base: 'sm', sm: 'md' }}
+            className={`${panelStyles.sectionPanel} ${panelStyles.sectionNav}`}
+          >
+            <div className={panelStyles.sectionNavLayout}>
+              <div className={panelStyles.sectionNavLinks}>
+                <Anchor href="#project-overview" size="sm">
+                  Overview
+                </Anchor>
+                <Anchor href="#project-configuration" size="sm">
+                  Configuration
+                </Anchor>
+                <Anchor href="#project-activity" size="sm">
+                  Activity
+                </Anchor>
+              </div>
+              <div className={panelStyles.sectionNavActions}>
+                <LinkButton href={boardHref} size="compact-sm" variant="default">
+                  Open Kanban
+                </LinkButton>
+                <LinkButton href={newTaskHref} size="compact-sm">
+                  {`New ${terminology.task.singular}`}
+                </LinkButton>
+                <LinkButton href={newWorkLogHref} size="compact-sm" variant="default">
+                  New Work Log
+                </LinkButton>
+              </div>
+            </div>
+          </Paper>
+        </nav>
 
-        <Paper
-          withBorder
-          radius="lg"
-          p={{ base: 'md', sm: 'lg' }}
-          className={panelStyles.sectionPanel}
-        >
-          <Title order={3} mb="sm">
-            Agent Instructions
-          </Title>
-          <Text c="dimmed" size="sm" mb="md">
-            Add short project guidance that PREQ agents can read after `preq_get_task`. Changes stay
-            local until you save them to the project.
-          </Text>
-          <AgentInstructionsPanel
-            action={updateAgentInstructions}
-            projectId={projectId}
-            value={agentInstructions}
-          />
-        </Paper>
+        <section id="project-overview" className={panelStyles.sectionAnchor}>
+          <Stack gap="md">
+            <Group justify="space-between" align="flex-end" wrap="wrap" gap="xs">
+              <div>
+                <Title order={3}>Overview</Title>
+                <Text c="dimmed" size="sm">
+                  Keep the current goal and project context in one place.
+                </Text>
+              </div>
+            </Group>
+            <Paper
+              withBorder
+              radius="lg"
+              p={{ base: 'md', sm: 'lg' }}
+              className={panelStyles.sectionPanel}
+            >
+              <MarkdownViewer
+                markdown={project.description}
+                persistence={{ endpoint: `/api/projects/${project.id}`, field: 'description' }}
+              />
+            </Paper>
+          </Stack>
+        </section>
 
-        <Paper
-          withBorder
-          radius="lg"
-          p={{ base: 'md', sm: 'lg' }}
-          className={panelStyles.sectionPanel}
-        >
-          <Title order={3} mb="sm">
-            Deployment Strategy
-          </Title>
-          <Text c="dimmed" size="sm" mb="md">
-            Configure deployment behavior for external PREQSTATION skills. Changes stay local until
-            you save them to the project.
-          </Text>
-          <DeploySettingsPanel
-            action={updateDeploySettings}
-            singleProject
-            defaultProjectId={projectId}
-            projects={[
-              {
-                id: projectId,
-                name: project.name,
-                deployStrategy,
-              },
-            ]}
-          />
-        </Paper>
+        <section id="project-configuration" className={panelStyles.sectionAnchor}>
+          <Stack gap="md">
+            <Group justify="space-between" align="flex-end" wrap="wrap" gap="xs">
+              <div>
+                <Title order={3}>Configuration</Title>
+                <Text c="dimmed" size="sm">
+                  Manage project metadata, labels, and agent behavior together.
+                </Text>
+              </div>
+              <LinkButton href={editProjectHref} variant="default" size="compact-sm">
+                Edit Details
+              </LinkButton>
+            </Group>
 
-        <Paper
-          withBorder
-          radius="lg"
-          p={{ base: 'md', sm: 'lg' }}
-          className={panelStyles.sectionPanel}
-        >
-          <Title order={3} mb="sm">
-            {`${terminology.task.singular} Pipeline`}
-          </Title>
-          <TaskStatusBar
-            tasks={todos}
-            boardHref={`/board/${projectKey}`}
-            newTaskHref={`/dashboard?panel=task&projectId=${projectId}`}
-          />
-        </Paper>
+            <Paper
+              withBorder
+              radius="lg"
+              p={{ base: 'md', sm: 'lg' }}
+              className={panelStyles.sectionPanel}
+            >
+              <Title order={4} mb="sm">
+                Labels
+              </Title>
+              <Text c="dimmed" size="sm" mb="md">
+                Keep labels close to the work they belong to in this project. Each label change
+                stays local until you save it.
+              </Text>
+              <ProjectLabelsPanel
+                labels={labels}
+                taskSingularLower={terminology.task.singularLower}
+                taskPluralLower={terminology.task.pluralLower}
+                createLabelAction={createLabel}
+                updateLabelAction={updateLabel}
+                deleteLabelAction={deleteLabel}
+              />
+            </Paper>
 
-        <Paper
-          withBorder
-          radius="lg"
-          p={{ base: 'md', sm: 'lg' }}
-          className={panelStyles.sectionPanel}
-        >
-          <Title order={3} mb="sm">
-            Work Logs
-          </Title>
-          <ProjectWorkLogTimeline
-            projectId={projectId}
-            initialLogs={projectWorkLogPage.workLogs}
-            initialNextOffset={projectWorkLogPage.nextOffset}
-            emptyText="No work logs in this project."
-            emptyState={
-              <EmptyState
-                icon={<IconClipboardList size={24} />}
-                title="No work logs in this project"
-                description="Record your progress by logging work."
-                action={
-                  <LinkButton
-                    href={`/dashboard?panel=worklog&projectId=${projectId}`}
-                    size="compact-xs"
-                    variant="default"
-                  >
-                    New Work Log
-                  </LinkButton>
+            <Paper
+              withBorder
+              radius="lg"
+              p={{ base: 'md', sm: 'lg' }}
+              className={panelStyles.sectionPanel}
+            >
+              <Title order={4} mb="sm">
+                Agent Instructions
+              </Title>
+              <Text c="dimmed" size="sm" mb="md">
+                Add short project guidance that PREQ agents can read after `preq_get_task`.
+                Changes stay local until you save them to the project.
+              </Text>
+              <AgentInstructionsPanel
+                action={updateAgentInstructions}
+                projectId={projectId}
+                value={agentInstructions}
+              />
+            </Paper>
+
+            <Paper
+              withBorder
+              radius="lg"
+              p={{ base: 'md', sm: 'lg' }}
+              className={panelStyles.sectionPanel}
+            >
+              <Title order={4} mb="sm">
+                Deployment Strategy
+              </Title>
+              <Text c="dimmed" size="sm" mb="md">
+                Configure deployment behavior for external PREQSTATION skills. Changes stay local
+                until you save them to the project.
+              </Text>
+              <DeploySettingsPanel
+                action={updateDeploySettings}
+                singleProject
+                defaultProjectId={projectId}
+                projects={[
+                  {
+                    id: projectId,
+                    name: project.name,
+                    deployStrategy,
+                  },
+                ]}
+              />
+            </Paper>
+          </Stack>
+        </section>
+
+        <section id="project-activity" className={panelStyles.sectionAnchor}>
+          <Stack gap="md">
+            <Group align="flex-end" gap="xs">
+              <div>
+                <Title order={3}>Activity</Title>
+                <Text c="dimmed" size="sm">
+                  Jump into the board, capture work, and review recent progress.
+                </Text>
+              </div>
+            </Group>
+
+            <Paper
+              withBorder
+              radius="lg"
+              p={{ base: 'md', sm: 'lg' }}
+              className={panelStyles.sectionPanel}
+            >
+              <Title order={4} mb="sm">
+                {`${terminology.task.singular} Pipeline`}
+              </Title>
+              <TaskStatusBar tasks={todos} boardHref={boardHref} newTaskHref={newTaskHref} />
+            </Paper>
+
+            <Paper
+              withBorder
+              radius="lg"
+              p={{ base: 'md', sm: 'lg' }}
+              className={panelStyles.sectionPanel}
+            >
+              <Title order={4} mb="sm">
+                Work Logs
+              </Title>
+              <ProjectWorkLogTimeline
+                projectId={projectId}
+                initialLogs={projectWorkLogPage.workLogs}
+                initialNextOffset={projectWorkLogPage.nextOffset}
+                emptyText="No work logs in this project."
+                emptyState={
+                  <EmptyState
+                    icon={<IconClipboardList size={24} />}
+                    title="No work logs in this project"
+                    description="Record your progress by logging work."
+                    action={
+                      <LinkButton href={newWorkLogHref} size="compact-xs" variant="default">
+                        New Work Log
+                      </LinkButton>
+                    }
+                  />
                 }
               />
-            }
-          />
-        </Paper>
+            </Paper>
+          </Stack>
+        </section>
 
         {activePanel === 'project-edit' ? (
           <ProjectEditModal

@@ -3,6 +3,7 @@
 import { MantineProvider } from '@mantine/core';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const reactHooks = vi.hoisted(() => ({
@@ -206,5 +207,17 @@ describe('app/components/settings-label-form', () => {
     await waitFor(() => {
       expect(screen.getByText('Saved.')).toBeTruthy();
     });
+  });
+
+  it('passes through a form id for confirm-action submit flows', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <SettingsLabelForm action={vi.fn(async () => null)} id="delete-label-form">
+          <SettingsLabelNameInput aria-label="Label name" name="name" />
+        </SettingsLabelForm>
+      </MantineProvider>,
+    );
+
+    expect(html).toMatch(/<form[^>]*id="delete-label-form"/);
   });
 });
