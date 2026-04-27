@@ -2617,6 +2617,19 @@ html[data-mantine-color-scheme='dark'] .live-editor-input [data-live-editor-empt
     opacity: 1;
   }
 
+  .kanban-mobile-refresh-indicator[data-state='refreshing'],
+  .kanban-mobile-refresh-indicator[data-state='success'] {
+    opacity: 1;
+  }
+
+  .kanban-mobile-refresh-indicator[data-state='refreshing'] {
+    color: var(--ui-accent-strong);
+  }
+
+  .kanban-mobile-refresh-indicator[data-state='success'] {
+    color: var(--ui-success);
+  }
+
   .kanban-mobile-refresh-icon {
     display: inline-flex;
     transform: rotate(calc(var(--kanban-mobile-refresh-progress, 0) * 220deg))
@@ -2629,6 +2642,11 @@ html[data-mantine-color-scheme='dark'] .live-editor-input [data-live-editor-empt
 
   .kanban-mobile-refresh-indicator[data-armed='true'] .kanban-mobile-refresh-icon {
     filter: drop-shadow(0 0 10px color-mix(in srgb, var(--ui-accent-soft), transparent 28%));
+  }
+
+  .kanban-mobile-refresh-indicator[data-state='success'] .kanban-mobile-refresh-icon {
+    transform: scale(1.02);
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--ui-success-soft), transparent 18%));
   }
 
   .kanban-mobile-panel-list {

@@ -19,11 +19,32 @@ vi.mock('react', async () => {
 
 import { useMobilePullToRefresh } from '@/app/hooks/use-mobile-pull-to-refresh';
 
+function areDepsEqual(previous: readonly unknown[], next: readonly unknown[]) {
+  return (
+    previous.length === next.length &&
+    previous.every((dependency, index) => Object.is(dependency, next[index]))
+  );
+}
+
 function createHarness() {
+  const callbacks: Array<{ deps: readonly unknown[]; value: unknown }> = [];
   const refs: Array<{ current: unknown }> = [];
   const stateValues: unknown[] = [];
+  let callbackIndex = 0;
   let refIndex = 0;
   let stateIndex = 0;
+
+  useCallbackMock.mockImplementation(<T,>(callback: T, deps: readonly unknown[]) => {
+    const index = callbackIndex++;
+    const previous = callbacks[index];
+
+    if (previous && areDepsEqual(previous.deps, deps)) {
+      return previous.value as T;
+    }
+
+    callbacks[index] = { deps, value: callback };
+    return callback;
+  });
 
   useRefMock.mockImplementation((initialValue: unknown) => {
     const index = refIndex++;
@@ -50,6 +71,7 @@ function createHarness() {
 
   return {
     useHook(options: Parameters<typeof useMobilePullToRefresh>[0]) {
+      callbackIndex = 0;
       refIndex = 0;
       stateIndex = 0;
       return useMobilePullToRefresh(options);
@@ -94,6 +116,23 @@ describe('useMobilePullToRefresh', () => {
 
     hook.onTouchEnd();
     expect(onRefresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('reports the latched pull metrics when the refresh fires', () => {
+    const onRefresh = vi.fn();
+    const harness = createHarness();
+
+    let hook = harness.useHook({ activeTab: 'todo', disabled: false, onRefresh });
+    hook.bindScrollContainer({ scrollTop: 0 } as HTMLDivElement);
+    hook.onTouchStart(touchStart(120));
+    hook.onTouchMove(touchMove(232));
+
+    hook = harness.useHook({ activeTab: 'todo', disabled: false, onRefresh });
+    hook.onTouchEnd();
+
+    const trigger = onRefresh.mock.calls[0]?.[0];
+    expect(trigger?.pullDistance).toBe(50);
+    expect(trigger?.pullProgress).toBeCloseTo(50 / 56);
   });
 
   it('caps the visible pull distance and reports normalized progress for the indicator', () => {
@@ -180,5 +219,19 @@ describe('useMobilePullToRefresh', () => {
 
     hook.onTouchEnd();
     expect(onRefresh).not.toHaveBeenCalled();
+  });
+
+  it('keeps the touch-end handler stable while the gesture tab state changes', () => {
+    const onRefresh = vi.fn();
+    const harness = createHarness();
+
+    let hook = harness.useHook({ activeTab: 'todo', disabled: false, onRefresh });
+    const initialOnTouchEnd = hook.onTouchEnd;
+
+    hook.bindScrollContainer({ scrollTop: 0 } as HTMLDivElement);
+    hook.onTouchStart(touchStart(120));
+
+    hook = harness.useHook({ activeTab: 'todo', disabled: false, onRefresh });
+    expect(hook.onTouchEnd).toBe(initialOnTouchEnd);
   });
 });

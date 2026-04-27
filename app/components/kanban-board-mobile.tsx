@@ -10,9 +10,12 @@ import {
   IconRefresh,
 } from '@tabler/icons-react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import { type ComponentType, type CSSProperties, useEffect, useRef } from 'react';
+import { type ComponentType, type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 
-import { useMobilePullToRefresh } from '@/app/hooks/use-mobile-pull-to-refresh';
+import {
+  type MobilePullToRefreshTrigger,
+  useMobilePullToRefresh,
+} from '@/app/hooks/use-mobile-pull-to-refresh';
 import { useMobileTabSwipe } from '@/app/hooks/use-mobile-tab-swipe';
 import {
   boardStatusLabel,
@@ -22,7 +25,6 @@ import {
   type KanbanStatus,
   type KanbanTask,
 } from '@/lib/kanban-helpers';
-import { showSuccessNotification } from '@/lib/notifications';
 
 import cardStyles from './cards.module.css';
 import { KanbanCardContent } from './kanban-card';
@@ -42,6 +44,15 @@ const mobileStatusIcons: Record<string, ComponentType<{ size?: number }>> = {
   ready: IconEye,
   done: IconCircleCheck,
 };
+
+type RefreshFeedbackState = {
+  phase: 'idle' | 'refreshing' | 'success';
+  pullDistance: number;
+  pullProgress: number;
+};
+
+const REFRESH_SUCCESS_HIDE_DELAY_MS = 900;
+const NOOP_REFRESH = () => {};
 
 type KanbanBoardMobileProps = {
   columns: KanbanColumns;
@@ -72,7 +83,7 @@ export function KanbanBoardMobile({
   editHrefJoiner,
   telegramEnabled = false,
   router,
-  onRefresh = () => {},
+  onRefresh = NOOP_REFRESH,
   onTaskQueued,
   onOpenTaskEditor,
   onQuickMoveTask,
@@ -87,29 +98,82 @@ export function KanbanBoardMobile({
   const swipeHandlers = useMobileTabSwipe(mobileStatuses, activeTab, onTabChange);
   const pullRefreshRequestedRef = useRef(false);
   const pullRefreshPendingRef = useRef(false);
+  const hideSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [refreshFeedback, setRefreshFeedback] = useState<RefreshFeedbackState>({
+    phase: 'idle',
+    pullDistance: 0,
+    pullProgress: 0,
+  });
 
   useEffect(() => {
     if (!pullRefreshRequestedRef.current) return;
+
     if (isPending) {
       pullRefreshPendingRef.current = true;
       return;
     }
+
     if (!pullRefreshPendingRef.current) return;
 
     pullRefreshRequestedRef.current = false;
     pullRefreshPendingRef.current = false;
-    showSuccessNotification('Board refreshed.');
+
+    if (hideSuccessTimeoutRef.current !== null) {
+      clearTimeout(hideSuccessTimeoutRef.current);
+    }
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- success feedback must sync to the completed refresh cycle without an extra delay
+    setRefreshFeedback((current) => ({ ...current, phase: 'success' }));
+    hideSuccessTimeoutRef.current = setTimeout(() => {
+      setRefreshFeedback({ phase: 'idle', pullDistance: 0, pullProgress: 0 });
+      hideSuccessTimeoutRef.current = null;
+    }, REFRESH_SUCCESS_HIDE_DELAY_MS);
   }, [isPending]);
+
+  useEffect(() => {
+    return () => {
+      if (hideSuccessTimeoutRef.current !== null) {
+        clearTimeout(hideSuccessTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleRefresh = useCallback(
+    ({ pullDistance, pullProgress }: MobilePullToRefreshTrigger) => {
+      if (hideSuccessTimeoutRef.current !== null) {
+        clearTimeout(hideSuccessTimeoutRef.current);
+        hideSuccessTimeoutRef.current = null;
+      }
+
+      pullRefreshRequestedRef.current = true;
+      pullRefreshPendingRef.current = false;
+      setRefreshFeedback({
+        phase: 'refreshing',
+        pullDistance,
+        pullProgress,
+      });
+      onRefresh();
+    },
+    [onRefresh],
+  );
 
   const pullToRefresh = useMobilePullToRefresh({
     activeTab,
     disabled: isPending,
-    onRefresh: () => {
-      pullRefreshRequestedRef.current = true;
-      pullRefreshPendingRef.current = false;
-      onRefresh();
-    },
+    onRefresh: handleRefresh,
   });
+  const indicatorPullDistance =
+    refreshFeedback.phase === 'idle' ? pullToRefresh.pullDistance : refreshFeedback.pullDistance;
+  const indicatorPullProgress =
+    refreshFeedback.phase === 'idle' ? pullToRefresh.pullProgress : refreshFeedback.pullProgress;
+  const indicatorState =
+    refreshFeedback.phase !== 'idle'
+      ? refreshFeedback.phase
+      : pullToRefresh.isArmed
+        ? 'armed'
+        : indicatorPullDistance > 0
+          ? 'pulling'
+          : 'idle';
 
   return (
     <Tabs value={activeTab} onChange={(v) => v && onTabChange(v)} className="kanban-mobile-tabs">
@@ -140,10 +204,10 @@ export function KanbanBoardMobile({
           const isActivePanel = status === activeTab;
           const panelBodyStyle = isActivePanel
             ? ({
-                '--kanban-mobile-refresh-offset': `${pullToRefresh.pullDistance}px`,
-                '--kanban-mobile-refresh-progress': pullToRefresh.pullProgress,
+                '--kanban-mobile-refresh-offset': `${indicatorPullDistance}px`,
+                '--kanban-mobile-refresh-progress': indicatorPullProgress,
                 '--kanban-mobile-refresh-progress-percent': `${Math.round(
-                  pullToRefresh.pullProgress * 100,
+                  indicatorPullProgress * 100,
                 )}%`,
               } as CSSProperties)
             : undefined;
@@ -162,12 +226,19 @@ export function KanbanBoardMobile({
                 {isActivePanel ? (
                   <div
                     className="kanban-mobile-refresh-indicator"
-                    data-visible={pullToRefresh.pullDistance > 0 ? 'true' : undefined}
-                    data-armed={pullToRefresh.isArmed ? 'true' : undefined}
+                    data-visible={indicatorPullDistance > 0 ? 'true' : undefined}
+                    data-armed={
+                      refreshFeedback.phase === 'idle' && pullToRefresh.isArmed ? 'true' : undefined
+                    }
+                    data-state={indicatorState !== 'idle' ? indicatorState : undefined}
                     aria-hidden="true"
                   >
                     <span className="kanban-mobile-refresh-icon">
-                      <IconRefresh size={22} stroke={2.1} />
+                      {refreshFeedback.phase === 'success' ? (
+                        <IconCircleCheck size={22} stroke={2.1} />
+                      ) : (
+                        <IconRefresh size={22} stroke={2.1} />
+                      )}
                     </span>
                   </div>
                 ) : null}
