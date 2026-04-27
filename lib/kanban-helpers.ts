@@ -1,4 +1,5 @@
 import { generateKeyBetween, rebalanceKeys } from '@/lib/fractional-ordering';
+import { normalizeTaskDispatchTarget, type TaskDispatchTarget } from '@/lib/task-dispatch';
 import { extractTaskLabels } from '@/lib/task-label-utils';
 import {
   BOARD_FLOW_TASK_STATUSES,
@@ -16,7 +17,6 @@ import {
   getTaskStatusLabel,
   type Terminology,
 } from '@/lib/terminology';
-import { normalizeTaskDispatchTarget, type TaskDispatchTarget } from '@/lib/task-dispatch';
 
 export type KanbanStatus = TaskStatus;
 
