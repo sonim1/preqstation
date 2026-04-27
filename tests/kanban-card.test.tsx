@@ -13,6 +13,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 import {
+  buildKanbanCardTelegramDispatch,
   getRunStateWaveConfig,
   KanbanCardContent,
   KanbanCardMenuDropdown,
@@ -625,5 +626,23 @@ describe('app/components/kanban-card', () => {
     expect(html).not.toContain('task-dispatch-target-option');
     expect(html).not.toContain('task-dispatch-target-logo');
     expect(html).not.toContain('task-dispatch-target-emoji');
+  });
+
+  it('builds Hermes card dispatches with the Hermes message payload and target', () => {
+    const dispatch = buildKanbanCardTelegramDispatch({
+      task: {
+        ...BASE_TASK,
+        branch: 'task/proj-211/label-color-update',
+        dispatchTarget: 'hermes-telegram',
+      },
+      displayEngine: 'codex',
+    });
+
+    expect(dispatch.dispatchTarget).toBe('hermes-telegram');
+    expect(dispatch.message).toContain('/preq_dispatch@PreqHermesBot');
+    expect(dispatch.message).toContain('task_key=PROJ-211');
+    expect(dispatch.message).toContain('engine=codex');
+    expect(dispatch.message).toContain('branch_name=task/proj-211/label-color-update');
+    expect(dispatch.message).not.toContain('!/skill preqstation-dispatch');
   });
 });

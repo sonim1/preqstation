@@ -271,7 +271,7 @@ export type TaskForKanban = {
   taskPriority: string;
   dueAt: Date | null;
   engine: string | null;
-  dispatchTarget?: string | null;
+  dispatchTarget: string | null;
   runState: string | null;
   runStateUpdatedAt: Date | null;
   archivedAt: Date | null;

@@ -63,6 +63,7 @@ describe('lib/task-status-transition', () => {
         taskPriority: 'none',
         dueAt: null,
         engine: 'codex',
+        dispatchTarget: 'hermes-telegram',
         runState: 'running',
         runStateUpdatedAt: new Date('2026-04-10T14:00:00.000Z'),
         projectId: 'project-1',

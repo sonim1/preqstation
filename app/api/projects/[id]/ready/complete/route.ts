@@ -65,6 +65,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           taskPriority: true,
           dueAt: true,
           engine: true,
+          dispatchTarget: true,
           runState: true,
           runStateUpdatedAt: true,
           archivedAt: true,

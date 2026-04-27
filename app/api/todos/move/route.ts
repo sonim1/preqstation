@@ -56,6 +56,7 @@ export async function POST(req: Request) {
           taskPriority: true,
           dueAt: true,
           engine: true,
+          dispatchTarget: true,
           runState: true,
           runStateUpdatedAt: true,
           archivedAt: true,

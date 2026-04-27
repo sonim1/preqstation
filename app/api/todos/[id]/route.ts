@@ -316,6 +316,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             sortOrder: true,
             taskPriority: true,
             projectId: true,
+            dispatchTarget: true,
             runState: true,
             runStateUpdatedAt: true,
             labelId: true,

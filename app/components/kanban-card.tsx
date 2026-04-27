@@ -12,7 +12,11 @@ import { boardStatusLabel, resolveDisplayEngine } from '@/lib/kanban-helpers';
 import { showErrorNotification, showSuccessNotification } from '@/lib/notifications';
 import { resolveTaskDispatchVerb } from '@/lib/openclaw-command';
 import { parseTaskPriority, resolveTaskLabelSwatchColor, type TaskRunState } from '@/lib/task-meta';
-import { buildTaskTelegramMessage, sendTaskTelegramMessage } from '@/lib/task-telegram-client';
+import {
+  buildHermesTaskTelegramMessage,
+  buildTaskTelegramMessage,
+  sendTaskTelegramMessage,
+} from '@/lib/task-telegram-client';
 import { parseChecklistCounts } from '@/lib/utils/task-utils';
 
 import styles from './cards.module.css';
@@ -183,6 +187,36 @@ export function renderTelegramDispatchTarget(dispatchTarget: KanbanTask['dispatc
   );
 }
 
+export function buildKanbanCardTelegramDispatch({
+  task,
+  displayEngine,
+}: {
+  task: Pick<KanbanTask, 'taskKey' | 'status' | 'branch' | 'dispatchTarget'>;
+  displayEngine: string | null;
+}) {
+  if (task.dispatchTarget === 'hermes-telegram') {
+    return {
+      dispatchTarget: 'hermes-telegram' as const,
+      message: buildHermesTaskTelegramMessage({
+        taskKey: task.taskKey,
+        status: task.status,
+        engine: displayEngine,
+        branchName: task.branch ?? null,
+      }),
+    };
+  }
+
+  return {
+    dispatchTarget: 'telegram' as const,
+    message: buildTaskTelegramMessage({
+      taskKey: task.taskKey,
+      status: task.status,
+      engine: displayEngine,
+      branchName: task.branch ?? null,
+    }),
+  };
+}
+
 export function KanbanCardMenuDropdown({
   task,
   isPending,
@@ -346,12 +380,8 @@ export const KanbanCardContent = memo(function KanbanCardContent({
     </span>
   );
 
-  const telegramMessage = buildTaskTelegramMessage({
-    taskKey: task.taskKey,
-    status: task.status,
-    engine: displayEngine,
-    branchName: task.branch ?? null,
-  });
+  const telegramDispatch = buildKanbanCardTelegramDispatch({ task, displayEngine });
+  const telegramMessage = telegramDispatch.message;
   const telegramEngineConfig = getEngineConfig(displayEngine) ?? ENGINE_CONFIGS.codex;
   const telegramDispatchSummary = (
     <>
@@ -402,7 +432,11 @@ export const KanbanCardContent = memo(function KanbanCardContent({
 
     setIsSendingTelegram(true);
     try {
-      const result = await sendTaskTelegramMessage(task.taskKey, telegramMessage);
+      const result = await sendTaskTelegramMessage(
+        task.taskKey,
+        telegramMessage,
+        telegramDispatch.dispatchTarget,
+      );
       if (!result.ok) {
         showErrorNotification(result.error);
         return;
