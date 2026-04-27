@@ -18,6 +18,7 @@ import {
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from 'react';
@@ -43,12 +44,23 @@ type SettingsLabelFormRenderProps = {
   colorError: boolean;
   feedbackId: string;
   hasError: boolean;
+  isPending: boolean;
   markDirty: () => void;
   nameError: boolean;
   state: ActionState;
 };
 
 const SettingsLabelFormStateContext = createContext<SettingsLabelFormRenderProps | null>(null);
+const disabledFieldsetStyle = {
+  margin: 0,
+  padding: 0,
+  border: 0,
+  minWidth: 0,
+} as const;
+const pendingPopoverStyle = {
+  pointerEvents: 'none',
+  opacity: 0.6,
+} as const;
 
 type SettingsLabelFormProps = {
   action: (prevState: unknown, formData: FormData) => Promise<ActionState>;
@@ -64,6 +76,7 @@ export function SettingsLabelForm({
   const [state, setState] = useState<ActionState>(null);
   const [saveState, setSaveState] = useState<SettingSaveState>('idle');
   const [isPending, startTransition] = useTransition();
+  const isSubmittingRef = useRef(false);
   const feedbackId = useId();
   const hasError = Boolean(state && !state.ok);
   const errorField = state && !state.ok ? (state.field ?? 'form') : null;
@@ -79,24 +92,33 @@ export function SettingsLabelForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (isPending || isSubmittingRef.current) return;
     const form = event.currentTarget;
+    const formData = new FormData(form);
 
+    isSubmittingRef.current = true;
     setState(null);
     setSaveState('saving');
 
     startTransition(async () => {
-      const result = await action(null, new FormData(form));
-      setState(result);
-      setSaveState(result?.ok ? 'saved' : result ? 'error' : 'idle');
+      try {
+        const result = await action(null, formData);
+        setState(result);
+        setSaveState(result?.ok ? 'saved' : result ? 'error' : 'idle');
+      } finally {
+        isSubmittingRef.current = false;
+      }
     });
   }
 
   return (
     <SettingsLabelFormStateContext.Provider
-      value={{ colorError, feedbackId, hasError, markDirty, nameError, state }}
+      value={{ colorError, feedbackId, hasError, isPending, markDirty, nameError, state }}
     >
       <form onSubmit={handleSubmit} onChangeCapture={markDirty} onInputCapture={markDirty}>
-        {children}
+        <fieldset disabled={isPending} style={disabledFieldsetStyle}>
+          {children}
+        </fieldset>
         {hasError && errorField !== 'form' ? (
           <SettingStatusMessage
             id={feedbackId}
@@ -199,12 +221,13 @@ export function TaskLabelColorField({
             }
             aria-invalid={invalid ?? (formState?.colorError || undefined)}
             className={controlClasses.colorTrigger}
+            disabled={formState?.isPending}
           >
             {formatColorLabel(color)}
           </Button>
         </Popover.Target>
         <Popover.Dropdown>
-          <Stack gap="xs">
+          <Stack gap="xs" style={formState?.isPending ? pendingPopoverStyle : undefined}>
             <ColorPicker
               format="hex"
               fullWidth
@@ -225,6 +248,7 @@ export function TaskLabelColorField({
                     <button
                       key={entry}
                       type="button"
+                      disabled={formState?.isPending}
                       onClick={() => {
                         setColor(entry);
                         formState?.markDirty();

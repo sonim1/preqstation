@@ -26,10 +26,12 @@ export function AgentInstructionsPanel({ action, projectId, value }: AgentInstru
   const [saveState, setSaveState] = useState<SettingSaveState>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const draftRef = useRef(value || '');
   const submittedValueRef = useRef(value || '');
 
   useEffect(() => {
     const nextValue = value || '';
+    draftRef.current = nextValue;
     submittedValueRef.current = nextValue;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- local draft state must resync when saved defaults change
     setDraft(nextValue);
@@ -42,6 +44,7 @@ export function AgentInstructionsPanel({ action, projectId, value }: AgentInstru
   const isDirty = draft !== savedValue;
 
   function handleChange(nextValue: string) {
+    draftRef.current = nextValue;
     setDraft(nextValue);
     setErrorMessage(null);
     setSaveState(nextValue === savedValue ? 'idle' : 'dirty');
@@ -58,8 +61,9 @@ export function AgentInstructionsPanel({ action, projectId, value }: AgentInstru
     startTransition(async () => {
       const result = await action(null, new FormData(form));
       if (result?.ok) {
-        setSavedValue(submittedValueRef.current);
-        setSaveState('saved');
+        const submittedValue = submittedValueRef.current;
+        setSavedValue(submittedValue);
+        setSaveState(draftRef.current === submittedValue ? 'saved' : 'dirty');
         return;
       }
 

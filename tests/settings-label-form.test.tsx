@@ -24,6 +24,14 @@ import {
   TaskLabelColorField,
 } from '@/app/components/settings-label-form';
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((nextResolve) => {
+    resolve = nextResolve;
+  });
+  return { promise, resolve };
+}
+
 describe('app/components/settings-label-form', () => {
   afterEach(() => {
     cleanup();
@@ -120,6 +128,47 @@ describe('app/components/settings-label-form', () => {
     await waitFor(() => {
       expect(action).toHaveBeenCalledTimes(1);
     });
+    await waitFor(() => {
+      expect(screen.getByText('Saved.')).toBeTruthy();
+    });
+  });
+
+  it('disables controls and ignores duplicate submits while a save is pending', async () => {
+    const request = deferred<{ ok: true }>();
+    const action = vi.fn(async () => request.promise);
+
+    render(
+      <MantineProvider>
+        <SettingsLabelForm action={action}>
+          <input aria-label="Label name" name="name" defaultValue="" />
+          <button type="submit">Save label</button>
+        </SettingsLabelForm>
+      </MantineProvider>,
+    );
+
+    const form = screen.getByText('Save label').closest('form') as HTMLFormElement;
+    const input = screen.getByLabelText('Label name');
+    const button = screen.getByText('Save label');
+
+    fireEvent.change(input, {
+      target: { value: 'Bug' },
+    });
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(action).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(input.matches(':disabled')).toBe(true);
+      expect(button.matches(':disabled')).toBe(true);
+    });
+
+    fireEvent.submit(form);
+
+    expect(action).toHaveBeenCalledTimes(1);
+
+    request.resolve({ ok: true });
+
     await waitFor(() => {
       expect(screen.getByText('Saved.')).toBeTruthy();
     });

@@ -8,6 +8,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AgentInstructionsPanel } from '@/app/components/panels/agent-instructions-panel';
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((nextResolve) => {
+    resolve = nextResolve;
+  });
+  return { promise, resolve };
+}
+
 describe('app/components/panels/agent-instructions-panel', () => {
   afterEach(() => {
     cleanup();
@@ -110,5 +118,37 @@ describe('app/components/panels/agent-instructions-panel', () => {
     await waitFor(() => {
       expect(screen.getByText('Failed to save agent instructions.')).toBeTruthy();
     });
+  });
+
+  it('keeps the form dirty when edits continue after save starts', async () => {
+    const request = deferred<{ ok: true }>();
+    const action = vi.fn(async () => request.promise);
+
+    render(
+      <MantineProvider>
+        <AgentInstructionsPanel action={action} projectId="project-1" value="Keep it sharp." />
+      </MantineProvider>,
+    );
+
+    const textarea = screen.getByLabelText('Agent instructions');
+    fireEvent.change(textarea, {
+      target: { value: 'Always answer in Korean unless asked otherwise.' },
+    });
+    fireEvent.submit(textarea.closest('form') as HTMLFormElement);
+
+    await waitFor(() => {
+      expect(action).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.change(textarea, {
+      target: { value: 'Always answer in Korean unless asked otherwise. Add examples too.' },
+    });
+
+    request.resolve({ ok: true });
+
+    await waitFor(() => {
+      expect(screen.getByText('Unsaved changes.')).toBeTruthy();
+    });
+    expect(screen.queryByText('Saved.')).toBeNull();
   });
 });
