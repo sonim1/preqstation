@@ -9,10 +9,13 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('@mantine/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@mantine/core')>();
   const ActualMenuItem = actual.Menu.Item;
+  type MockMenuItemProps = React.ComponentProps<typeof actual.Menu.Item> & {
+    closeMenuOnClick?: boolean;
+  };
   const MenuItem = ({
     closeMenuOnClick,
     ...props
-  }: React.ComponentProps<typeof actual.Menu.Item>) => (
+  }: MockMenuItemProps) => (
     <ActualMenuItem
       {...props}
       closeMenuOnClick={closeMenuOnClick}
