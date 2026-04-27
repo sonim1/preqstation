@@ -86,7 +86,7 @@ vi.mock('@/app/components/task-edit-form', () => ({
   }),
 }));
 
-import { BoardContent } from '@/app/components/board-content';
+import { BoardContent, upsertProjectLabelOptionsByProjectId } from '@/app/components/board-content';
 
 describe('BoardContent background image handling', () => {
   it('keeps the board on the default stage even when a project background is configured', () => {
@@ -203,5 +203,40 @@ describe('BoardContent background image handling', () => {
         boardKey: 'PROJ',
       }),
     );
+  });
+});
+
+describe('upsertProjectLabelOptionsByProjectId', () => {
+  it('adds new labels within a project and keeps the options sorted by name', () => {
+    expect(
+      upsertProjectLabelOptionsByProjectId(
+        {
+          'project-1': [{ id: 'label-b', name: 'Bug', color: 'red' }],
+        },
+        'project-1',
+        { id: 'label-a', name: 'Alpha', color: 'blue' },
+      ),
+    ).toEqual({
+      'project-1': [
+        { id: 'label-a', name: 'Alpha', color: 'blue' },
+        { id: 'label-b', name: 'Bug', color: 'red' },
+      ],
+    });
+  });
+
+  it('replaces an existing project label by id without mutating other projects', () => {
+    expect(
+      upsertProjectLabelOptionsByProjectId(
+        {
+          'project-1': [{ id: 'label-a', name: 'Alpha', color: 'blue' }],
+          'project-2': [{ id: 'label-z', name: 'Zed', color: 'gray' }],
+        },
+        'project-1',
+        { id: 'label-a', name: 'Alpha', color: 'green' },
+      ),
+    ).toEqual({
+      'project-1': [{ id: 'label-a', name: 'Alpha', color: 'green' }],
+      'project-2': [{ id: 'label-z', name: 'Zed', color: 'gray' }],
+    });
   });
 });

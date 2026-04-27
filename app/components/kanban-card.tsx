@@ -130,6 +130,10 @@ export type KanbanCardContentProps = {
   enginePresets?: EnginePresets | null;
   labelOptions?: Array<{ id: string; name: string; color: string }>;
   onUpdateTaskLabels?: (taskKey: string, labelIds: string[]) => Promise<void>;
+  onProjectLabelOptionsChange?: (
+    projectId: string,
+    labelOptions: Array<{ id: string; name: string; color: string }>,
+  ) => void;
 };
 
 type KanbanCardMenuDropdownProps = {
@@ -351,6 +355,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   enginePresets,
   labelOptions = [],
   onUpdateTaskLabels,
+  onProjectLabelOptionsChange,
 }: KanbanCardContentProps) {
   const terminology = useTerminology();
   const timeZone = useTimeZone();
@@ -628,6 +633,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
                       labelOptions={labelOptions}
                       isPending={isPending}
                       onUpdateTaskLabels={onUpdateTaskLabels}
+                      onProjectLabelOptionsChange={onProjectLabelOptionsChange}
                       renderLabelInline={renderLabelInline}
                       renderLabelTooltipItem={renderLabelTooltipItem}
                       labelTooltipStyles={labelTooltipStyles}

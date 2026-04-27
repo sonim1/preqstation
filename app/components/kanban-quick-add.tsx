@@ -1,21 +1,12 @@
 'use client';
 
-import {
-  Badge,
-  Button,
-  Group,
-  MultiSelect,
-  NativeSelect,
-  Paper,
-  Stack,
-  Text,
-  TextInput,
-} from '@mantine/core';
+import { Badge, Button, Group, NativeSelect, Paper, Stack, Text, TextInput } from '@mantine/core';
 import { useRouter } from 'next/navigation';
 import { type FormEvent, useMemo, useState } from 'react';
 
 import { useBoardOfflineSync } from '@/app/components/board-offline-sync-provider';
 import { useOfflineStatus } from '@/app/components/offline-status-provider';
+import { TaskLabelPicker } from '@/app/components/task-label-picker';
 import { useTerminology } from '@/app/components/terminology-provider';
 import type { KanbanTask } from '@/lib/kanban-helpers';
 import { parseTaskPriority, taskPriorityOptionData } from '@/lib/task-meta';
@@ -27,6 +18,7 @@ type KanbanQuickAddProps = {
   selectedProject: ProjectOption | null;
   projectOptions: ProjectOption[];
   projectLabelOptionsByProjectId?: Record<string, LabelOption[]>;
+  onProjectLabelOptionsChange?: (projectId: string, labelOptions: LabelOption[]) => void;
   editHrefBase: string;
   editHrefJoiner: string;
   onClose: () => void;
@@ -37,6 +29,7 @@ export function KanbanQuickAdd({
   selectedProject,
   projectOptions,
   projectLabelOptionsByProjectId = {},
+  onProjectLabelOptionsChange,
   editHrefBase,
   editHrefJoiner,
   onClose,
@@ -57,6 +50,7 @@ export function KanbanQuickAdd({
   const availableLabels = activeProjectId
     ? (projectLabelOptionsByProjectId[activeProjectId] ?? [])
     : [];
+  const selectedLabels = availableLabels.filter((label) => labelIds.includes(label.id));
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -79,7 +73,6 @@ export function KanbanQuickAdd({
 
     try {
       const parsedTaskPriority = parseTaskPriority(taskPriority);
-      const selectedLabels = availableLabels.filter((label) => labelIds.includes(label.id));
       const selectedProjectOption =
         (selectedProject && selectedProject.id === pid
           ? selectedProject
@@ -189,15 +182,29 @@ export function KanbanQuickAdd({
               ]}
             />
           )}
-          <MultiSelect
-            value={labelIds}
-            onChange={setLabelIds}
-            data={availableLabels.map((label) => ({ value: label.id, label: label.name }))}
-            placeholder={activeProjectId ? 'Select labels' : 'Select a project first'}
-            aria-label="Labels"
-            searchable
-            clearable
+          <TaskLabelPicker
+            labelOptions={availableLabels}
+            selectedLabelIds={labelIds}
+            selectedLabels={selectedLabels}
+            projectId={activeProjectId}
+            triggerAriaLabel="Labels"
+            triggerLabel="Labels"
+            emptyStateLabel={activeProjectId ? 'Select labels' : 'Select a project first'}
+            searchPlaceholder="Search labels"
             disabled={!activeProjectId}
+            onChange={setLabelIds}
+            onOptionsChange={(nextLabelOptions) => {
+              if (activeProjectId) {
+                onProjectLabelOptionsChange?.(
+                  activeProjectId,
+                  nextLabelOptions.map((label) => ({
+                    id: label.id,
+                    name: label.name,
+                    color: label.color ?? 'blue',
+                  })),
+                );
+              }
+            }}
           />
           <NativeSelect
             value={taskPriority}

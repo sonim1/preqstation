@@ -60,6 +60,7 @@ import {
 
 import cardStyles from './cards.module.css';
 import classes from './task-edit-form.module.css';
+import { TaskLabelPicker } from './task-label-picker';
 import { useTerminology } from './terminology-provider';
 
 type ActionState =
@@ -104,6 +105,10 @@ export type TaskEditFormProps = {
     boardTask?: KanbanTask | null;
     focusedTask?: EditableBoardTask | null;
   }) => void;
+  onProjectLabelOptionsChange?: (
+    projectId: string,
+    labelOptions: Array<{ id: string; name: string; color: string | null }>,
+  ) => void;
 };
 
 type SectionHeadingProps = {
@@ -158,19 +163,21 @@ type TaskEditLabelShortcutProps = {
   labelOptions: TaskEditLabelOption[];
   selectedLabelIds: string[];
   selectedLabels: TaskEditLabelOption[];
+  projectId: string | null;
   taskTitle: string;
   onChange: (labelIds: string[]) => void;
+  onOptionsChange?: (labelOptions: TaskEditLabelOption[]) => void;
 };
 
 function TaskEditLabelShortcut({
   labelOptions,
   selectedLabelIds,
   selectedLabels,
+  projectId,
   taskTitle,
   onChange,
+  onOptionsChange,
 }: TaskEditLabelShortcutProps) {
-  const hasSelectedLabels = selectedLabels.length > 0;
-
   const renderLabelInline = (label: TaskEditLabelOption) => (
     <>
       <span
@@ -184,32 +191,29 @@ function TaskEditLabelShortcut({
     </>
   );
 
-  const toggleLabel = (labelId: string) => {
-    const nextLabelIds = selectedLabelIds.includes(labelId)
-      ? selectedLabelIds.filter((currentLabelId) => currentLabelId !== labelId)
-      : [...selectedLabelIds, labelId];
-
-    onChange(nextLabelIds);
-  };
-
   return (
     <div className={classes.labelShortcutField} data-task-edit-label-shortcut="true">
       <Text component="div" size="sm" fw={500} className={classes.labelShortcutLabel}>
         Labels
       </Text>
-      <Menu position="bottom-start" shadow="md" withinPortal closeOnItemClick={false}>
-        <Menu.Target>
-          <UnstyledButton
-            type="button"
+      <TaskLabelPicker
+        labelOptions={labelOptions}
+        selectedLabelIds={selectedLabelIds}
+        selectedLabels={selectedLabels}
+        projectId={projectId}
+        triggerAriaLabel={`Edit labels for ${taskTitle}`}
+        onChange={onChange}
+        onOptionsChange={onOptionsChange}
+        renderTrigger={({ hasSelectedLabels, selectedLabels: triggerLabels }) => (
+          <span
             className={`${cardStyles.kanbanLabelShortcutButton} ${classes.labelShortcutButton}`}
             data-kanban-label-shortcut={hasSelectedLabels ? 'labels' : 'empty'}
-            aria-label={`Edit labels for ${taskTitle}`}
           >
             {hasSelectedLabels ? (
               <span
                 className={`${cardStyles.kanbanLabelShortcutSurface} ${classes.labelShortcutInlineList}`}
               >
-                {selectedLabels.map((label) => (
+                {triggerLabels.map((label) => (
                   <span
                     key={label.id}
                     className={cardStyles.kanbanLabelText}
@@ -227,38 +231,9 @@ function TaskEditLabelShortcut({
                 +
               </span>
             )}
-          </UnstyledButton>
-        </Menu.Target>
-
-        <Menu.Dropdown>
-          {labelOptions.map((label) => {
-            const isSelected = selectedLabelIds.includes(label.id);
-
-            return (
-              <Menu.Item
-                key={label.id}
-                role="menuitemcheckbox"
-                aria-checked={isSelected}
-                leftSection={
-                  <span
-                    className={cardStyles.kanbanLabelShortcutMenuHash}
-                    aria-hidden="true"
-                    style={{ color: resolveTaskLabelSwatchColor(label.color) }}
-                  >
-                    #
-                  </span>
-                }
-                rightSection={isSelected ? <IconCheck size={14} /> : null}
-                onClick={() => {
-                  toggleLabel(label.id);
-                }}
-              >
-                {label.name}
-              </Menu.Item>
-            );
-          })}
-        </Menu.Dropdown>
-      </Menu>
+          </span>
+        )}
+      />
     </div>
   );
 }
@@ -691,6 +666,7 @@ function TaskEditFormContent({
   onTaskQueued,
   onDispatchQueued,
   onTaskUpdated: _onTaskUpdated,
+  onProjectLabelOptionsChange,
   controller,
 }: TaskEditFormContentProps) {
   const terminology = useTerminology();
@@ -823,7 +799,9 @@ function TaskEditFormContent({
                     <Alert
                       color={noteConflict ? 'yellow' : 'blue'}
                       variant="light"
-                      icon={noteConflict ? <IconAlertCircle size={16} /> : <IconInfoCircle size={16} />}
+                      icon={
+                        noteConflict ? <IconAlertCircle size={16} /> : <IconInfoCircle size={16} />
+                      }
                     >
                       <Group justify="space-between" align="center" gap="sm" wrap="wrap">
                         <Text size="sm">
@@ -981,10 +959,16 @@ function TaskEditFormContent({
                       labelOptions={labelOptions}
                       selectedLabelIds={selectedLabelIds}
                       selectedLabels={selectedLabels}
+                      projectId={projectId}
                       taskTitle={editableTodo.title}
                       onChange={(value) => {
                         setSelectedLabelIds(value);
                         triggerSave(0);
+                      }}
+                      onOptionsChange={(nextLabelOptions) => {
+                        if (projectId) {
+                          onProjectLabelOptionsChange?.(projectId, nextLabelOptions);
+                        }
                       }}
                     />
                     <TaskEditPriorityShortcut

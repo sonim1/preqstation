@@ -34,6 +34,10 @@ type BoardTaskPanelProps = {
     string,
     Array<{ id: string; name: string; color: string }>
   >;
+  onProjectLabelOptionsChange?: (
+    projectId: string,
+    labelOptions: Array<{ id: string; name: string; color: string | null }>,
+  ) => void;
   taskPriorityOptions: { value: string; label: string }[];
   updateTodoAction: (
     prevState: unknown,
@@ -55,6 +59,7 @@ export function BoardTaskPanel({
   serverFocusedTask,
   projects,
   projectLabelOptionsByProjectId = {},
+  onProjectLabelOptionsChange,
   taskPriorityOptions,
   updateTodoAction,
   telegramEnabled,
@@ -224,6 +229,7 @@ export function BoardTaskPanel({
       branchName={focusedTask.branch}
       telegramEnabled={telegramEnabled}
       hermesTelegramEnabled={hermesTelegramEnabled}
+      onProjectLabelOptionsChange={onProjectLabelOptionsChange}
       onTaskQueued={handleTaskQueued}
       onTaskUpdated={handleTaskUpdated}
     />

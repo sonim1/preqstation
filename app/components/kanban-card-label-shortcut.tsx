@@ -1,13 +1,12 @@
 'use client';
 
-import { Menu, Tooltip, UnstyledButton } from '@mantine/core';
-import { IconCheck } from '@tabler/icons-react';
+import { Tooltip } from '@mantine/core';
 import { type CSSProperties, type ReactNode, type SyntheticEvent, useState } from 'react';
 
 import type { KanbanTask } from '@/lib/kanban-helpers';
-import { resolveTaskLabelSwatchColor } from '@/lib/task-meta';
 
 import styles from './cards.module.css';
+import { TaskLabelPicker } from './task-label-picker';
 
 type LabelOption = {
   id: string;
@@ -20,6 +19,7 @@ type KanbanCardLabelShortcutProps = {
   labelOptions: LabelOption[];
   isPending: boolean;
   onUpdateTaskLabels: (taskKey: string, labelIds: string[]) => Promise<void>;
+  onProjectLabelOptionsChange?: (projectId: string, labelOptions: LabelOption[]) => void;
   renderLabelInline: (label: KanbanTask['labels'][number]) => ReactNode;
   renderLabelTooltipItem: (label: KanbanTask['labels'][number]) => ReactNode;
   labelTooltipStyles: {
@@ -37,11 +37,11 @@ export function KanbanCardLabelShortcut({
   labelOptions,
   isPending,
   onUpdateTaskLabels,
+  onProjectLabelOptionsChange,
   renderLabelInline,
   renderLabelTooltipItem,
   labelTooltipStyles,
 }: KanbanCardLabelShortcutProps) {
-  const [opened, setOpened] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const selectedLabelIds = task.labels.map((label) => label.id);
   const primaryLabel = task.labels[0] ?? null;
@@ -49,12 +49,8 @@ export function KanbanCardLabelShortcut({
   const hiddenLabelCount = additionalLabels.length;
   const hiddenLabelTooltip = additionalLabels.map((label) => `# ${label.name}`).join(', ');
 
-  const toggleLabel = async (labelId: string) => {
+  const updateLabels = async (nextLabelIds: string[]) => {
     if (isPending || isSaving) return;
-
-    const nextLabelIds = selectedLabelIds.includes(labelId)
-      ? selectedLabelIds.filter((currentLabelId) => currentLabelId !== labelId)
-      : [...selectedLabelIds, labelId];
 
     setIsSaving(true);
     try {
@@ -65,23 +61,34 @@ export function KanbanCardLabelShortcut({
   };
 
   return (
-    <Menu
-      opened={opened}
-      onChange={setOpened}
-      position="bottom-end"
-      shadow="md"
-      withinPortal
-      closeOnItemClick={false}
-    >
-      <Menu.Target>
-        <UnstyledButton
-          type="button"
+    <TaskLabelPicker
+      labelOptions={labelOptions}
+      selectedLabelIds={selectedLabelIds}
+      selectedLabels={task.labels}
+      projectId={task.project?.id ?? null}
+      triggerAriaLabel={`Edit labels for ${task.title}`}
+      disabled={isPending || isSaving}
+      onTriggerPointerDown={stopCardOpen}
+      onTriggerClick={stopCardOpen}
+      onChange={(nextLabelIds) => {
+        void updateLabels(nextLabelIds);
+      }}
+      onOptionsChange={(nextLabelOptions) => {
+        if (task.project?.id) {
+          onProjectLabelOptionsChange?.(
+            task.project.id,
+            nextLabelOptions.map((label) => ({
+              id: label.id,
+              name: label.name,
+              color: label.color ?? 'blue',
+            })),
+          );
+        }
+      }}
+      renderTrigger={() => (
+        <span
           className={styles.kanbanLabelShortcutButton}
           data-kanban-label-shortcut={primaryLabel ? 'labels' : 'empty'}
-          aria-label={`Edit labels for ${task.title}`}
-          onPointerDown={stopCardOpen}
-          onClick={stopCardOpen}
-          disabled={isPending || isSaving}
         >
           {primaryLabel ? (
             <span className={styles.kanbanLabelShortcutSurface}>
@@ -128,38 +135,8 @@ export function KanbanCardLabelShortcut({
           ) : (
             <span className={styles.kanbanLabelShortcutEmpty}>#</span>
           )}
-        </UnstyledButton>
-      </Menu.Target>
-
-      <Menu.Dropdown onPointerDown={stopCardOpen} onClick={stopCardOpen}>
-        {labelOptions.map((label) => {
-          const isSelected = selectedLabelIds.includes(label.id);
-
-          return (
-            <Menu.Item
-              key={label.id}
-              role="menuitemcheckbox"
-              aria-checked={isSelected}
-              disabled={isPending || isSaving}
-              leftSection={
-                <span
-                  className={styles.kanbanLabelShortcutMenuHash}
-                  aria-hidden="true"
-                  style={{ color: resolveTaskLabelSwatchColor(label.color) }}
-                >
-                  #
-                </span>
-              }
-              rightSection={isSelected ? <IconCheck size={14} /> : null}
-              onClick={() => {
-                void toggleLabel(label.id);
-              }}
-            >
-              {label.name}
-            </Menu.Item>
-          );
-        })}
-      </Menu.Dropdown>
-    </Menu>
+        </span>
+      )}
+    />
   );
 }

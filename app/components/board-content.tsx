@@ -17,6 +17,7 @@ import {
 import type { EnginePresets, KanbanColumns, KanbanTask } from '@/lib/kanban-helpers';
 import type { EditableBoardTask } from '@/lib/kanban-store';
 import type { ProjectBackgroundCredit } from '@/lib/project-backgrounds';
+import { upsertProjectLabelOptions } from '@/lib/project-label-client';
 import type { QaRunView } from '@/lib/qa-runs';
 
 type BoardContentProps = {
@@ -57,6 +58,23 @@ type BoardContentProps = {
   } | null;
 };
 
+type ProjectLabelOptionsByProjectId = NonNullable<
+  BoardContentProps['projectLabelOptionsByProjectId']
+>;
+
+type ProjectLabelOption = ProjectLabelOptionsByProjectId[string][number];
+
+export function upsertProjectLabelOptionsByProjectId(
+  current: ProjectLabelOptionsByProjectId,
+  projectId: string,
+  label: ProjectLabelOption,
+): ProjectLabelOptionsByProjectId {
+  return {
+    ...current,
+    [projectId]: upsertProjectLabelOptions(current[projectId] ?? [], label),
+  };
+}
+
 export function BoardContent({
   kanbanTasks,
   editHrefBase,
@@ -80,10 +98,17 @@ export function BoardContent({
 }: BoardContentProps) {
   const searchParams = useSearchParams();
   const [archivedCount, setArchivedCount] = useState(initialArchivedCount);
+  const [projectLabelOptionsState, setProjectLabelOptionsState] = useState(
+    projectLabelOptionsByProjectId,
+  );
 
   useEffect(() => {
     setArchivedCount(initialArchivedCount);
   }, [initialArchivedCount]);
+
+  useEffect(() => {
+    setProjectLabelOptionsState(projectLabelOptionsByProjectId);
+  }, [projectLabelOptionsByProjectId]);
 
   const clientPanelLocation = useMemo(() => {
     if (!searchParams) {
@@ -126,6 +151,27 @@ export function BoardContent({
     setArchivedCount(typeof payload.total === 'number' ? payload.total : 0);
   }, [archiveProjectId]);
 
+  const handleProjectLabelOptionsChange = useCallback(
+    (
+      projectId: string,
+      nextLabelOptions: Array<{ id: string; name: string; color: string | null }>,
+    ) => {
+      setProjectLabelOptionsState((current) => ({
+        ...current,
+        [projectId]: nextLabelOptions.map((label) => ({
+          id: label.id,
+          name: label.name,
+          color: label.color ?? 'blue',
+        })),
+      }));
+    },
+    [],
+  );
+
+  const selectedBoardLabelOptions = selectedProject
+    ? (projectLabelOptionsState[selectedProject.id] ?? [])
+    : todoLabels;
+
   return (
     <KanbanStoreProvider initialColumns={kanbanTasks} initialFocusedTask={editableTodo}>
       <OfflineBoardHydrator boardKey={selectedProject?.projectKey ?? 'ALL'} />
@@ -153,12 +199,13 @@ export function BoardContent({
                     id: project.id,
                     name: project.name,
                   }))}
-                  labelOptions={todoLabels.map((label) => ({
+                  labelOptions={selectedBoardLabelOptions.map((label) => ({
                     id: label.id,
                     name: label.name,
                     color: label.color,
                   }))}
-                  projectLabelOptionsByProjectId={projectLabelOptionsByProjectId}
+                  projectLabelOptionsByProjectId={projectLabelOptionsState}
+                  onProjectLabelOptionsChange={handleProjectLabelOptionsChange}
                   selectedProject={selectedProject}
                   enginePresets={enginePresets ?? null}
                   readyQaConfig={readyQaConfig}
@@ -174,7 +221,8 @@ export function BoardContent({
             boardHref={boardHref}
             serverFocusedTask={editableTodo}
             projects={projects}
-            projectLabelOptionsByProjectId={projectLabelOptionsByProjectId}
+            projectLabelOptionsByProjectId={projectLabelOptionsState}
+            onProjectLabelOptionsChange={handleProjectLabelOptionsChange}
             taskPriorityOptions={taskPriorityOptions}
             updateTodoAction={updateTodoAction}
             telegramEnabled={telegramEnabled}

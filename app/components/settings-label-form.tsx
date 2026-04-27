@@ -90,8 +90,8 @@ export function SettingsLabelNameInput(props: SettingsLabelNameInputProps) {
 }
 
 type TaskLabelColorFieldProps = {
-  name?: string;
-  defaultColor?: string;
+  value: TaskLabelColorValue;
+  onChange: (value: TaskLabelColorValue) => void;
   usedColors?: string[];
   label?: string;
   showLabel?: boolean;
@@ -106,9 +106,9 @@ function formatColorLabel(color: string) {
   return color.slice(0, 1).toUpperCase() + color.slice(1);
 }
 
-export function TaskLabelColorField({
-  name = 'color',
-  defaultColor = 'blue',
+export function TaskLabelColorPicker({
+  value,
+  onChange,
   usedColors = [],
   label = 'Color',
   showLabel = true,
@@ -118,11 +118,7 @@ export function TaskLabelColorField({
   invalid,
 }: TaskLabelColorFieldProps) {
   const formState = useContext(SettingsLabelFormStateContext);
-  const [color, setColor] = useState<TaskLabelColorValue>(parseTaskLabelColor(defaultColor));
-
-  useEffect(() => {
-    setColor(parseTaskLabelColor(defaultColor));
-  }, [defaultColor]);
+  const color = parseTaskLabelColor(value);
 
   const swatches = useMemo(
     () => TASK_LABEL_COLORS.map((entry) => TASK_LABEL_COLOR_SWATCHES[entry]),
@@ -172,7 +168,7 @@ export function TaskLabelColorField({
               fullWidth
               value={resolveTaskLabelSwatchColor(color)}
               swatches={swatches}
-              onChange={(value) => setColor(parseTaskLabelColor(value))}
+              onChange={(nextValue) => onChange(parseTaskLabelColor(nextValue))}
             />
             {usedColorValues.length > 0 ? (
               <Stack gap={4}>
@@ -184,7 +180,7 @@ export function TaskLabelColorField({
                     <button
                       key={entry}
                       type="button"
-                      onClick={() => setColor(entry)}
+                      onClick={() => onChange(entry)}
                       style={{
                         padding: 0,
                         border: 0,
@@ -204,7 +200,30 @@ export function TaskLabelColorField({
           </Stack>
         </Popover.Dropdown>
       </Popover>
-      <input type="hidden" name={name} value={color} />
     </Stack>
+  );
+}
+
+type TaskLabelColorFieldStateProps = Omit<TaskLabelColorFieldProps, 'onChange' | 'value'> & {
+  name?: string;
+  defaultColor?: string;
+};
+
+export function TaskLabelColorField({
+  name = 'color',
+  defaultColor = 'blue',
+  ...props
+}: TaskLabelColorFieldStateProps) {
+  const [color, setColor] = useState<TaskLabelColorValue>(parseTaskLabelColor(defaultColor));
+
+  useEffect(() => {
+    setColor(parseTaskLabelColor(defaultColor));
+  }, [defaultColor]);
+
+  return (
+    <>
+      <TaskLabelColorPicker {...props} value={color} onChange={setColor} />
+      <input type="hidden" name={name} value={color} />
+    </>
   );
 }
