@@ -1,4 +1,5 @@
 import { generateKeyBetween, rebalanceKeys } from '@/lib/fractional-ordering';
+import { normalizeTaskDispatchTarget, type TaskDispatchTarget } from '@/lib/task-dispatch';
 import { extractTaskLabels } from '@/lib/task-label-utils';
 import {
   BOARD_FLOW_TASK_STATUSES,
@@ -30,6 +31,7 @@ export type KanbanTask = {
   taskPriority: string;
   dueAt: string | null;
   engine: string | null;
+  dispatchTarget?: TaskDispatchTarget | null;
   runState: TaskRunState | null;
   runStateUpdatedAt: string | null;
   project: { id: string; name: string; projectKey: string } | null;
@@ -269,6 +271,7 @@ export type TaskForKanban = {
   taskPriority: string;
   dueAt: Date | null;
   engine: string | null;
+  dispatchTarget: string | null;
   runState: string | null;
   runStateUpdatedAt: Date | null;
   archivedAt: Date | null;
@@ -296,6 +299,7 @@ export function toKanbanTask(task: TaskForKanban, status: KanbanStatus): KanbanT
     taskPriority: task.taskPriority,
     dueAt: task.dueAt ? task.dueAt.toISOString() : null,
     engine: task.engine ?? null,
+    dispatchTarget: normalizeTaskDispatchTarget(task.dispatchTarget),
     runState: coerceTaskRunState(task.runState),
     runStateUpdatedAt: task.runStateUpdatedAt ? task.runStateUpdatedAt.toISOString() : null,
     archivedAt: task.archivedAt ? task.archivedAt.toISOString() : null,

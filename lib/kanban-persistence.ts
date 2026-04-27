@@ -56,6 +56,7 @@ function hasSameRenderedKanbanTask(left: KanbanTask, right: KanbanTask | undefin
     left.taskPriority === right.taskPriority &&
     left.dueAt === right.dueAt &&
     left.engine === right.engine &&
+    left.dispatchTarget === right.dispatchTarget &&
     left.updatedAt === right.updatedAt &&
     hasSameKanbanLabels(left, right) &&
     hasSameKanbanChecklist(left, right)

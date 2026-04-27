@@ -3,7 +3,7 @@
 import { ActionIcon, Image, Menu, Text, Tooltip } from '@mantine/core';
 import { IconChecklist, IconCopy, IconDots, IconSend } from '@tabler/icons-react';
 import Link from 'next/link';
-import { memo, useState } from 'react';
+import { memo, type ReactNode, useState } from 'react';
 
 import { formatDateForDisplay } from '@/lib/date-time';
 import { ENGINE_CONFIGS, getEngineConfig } from '@/lib/engine-icons';
@@ -12,7 +12,11 @@ import { boardStatusLabel, resolveDisplayEngine } from '@/lib/kanban-helpers';
 import { showErrorNotification, showSuccessNotification } from '@/lib/notifications';
 import { resolveTaskDispatchVerb } from '@/lib/openclaw-command';
 import { parseTaskPriority, resolveTaskLabelSwatchColor, type TaskRunState } from '@/lib/task-meta';
-import { buildTaskTelegramMessage, sendTaskTelegramMessage } from '@/lib/task-telegram-client';
+import {
+  buildHermesTaskTelegramMessage,
+  buildTaskTelegramMessage,
+  sendTaskTelegramMessage,
+} from '@/lib/task-telegram-client';
 import { parseChecklistCounts } from '@/lib/utils/task-utils';
 
 import styles from './cards.module.css';
@@ -132,7 +136,7 @@ type KanbanCardMenuDropdownProps = {
   isPending: boolean;
   editHref: string;
   telegramEnabled: boolean;
-  telegramDispatchSummary?: string | null;
+  telegramDispatchSummary?: ReactNode;
   isSendingTelegram: boolean;
   onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
   onDeleteTask: (taskId: string) => void;
@@ -154,6 +158,63 @@ function toDispatchModeLabel(status: KanbanStatus) {
     default:
       return 'Status';
   }
+}
+
+export function renderTelegramDispatchTarget(dispatchTarget: KanbanTask['dispatchTarget']) {
+  if (dispatchTarget === 'hermes-telegram') {
+    return (
+      <span className={styles.kanbanDispatchTargetOption}>
+        <Image
+          className={styles.kanbanDispatchTargetLogo}
+          src="/icons/hermes-agent.png"
+          alt=""
+          width={16}
+          height={16}
+          aria-hidden="true"
+        />
+        <span>Telegram</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className={styles.kanbanDispatchTargetOption}>
+      <span className={styles.kanbanDispatchTargetEmoji} aria-hidden="true">
+        🦞
+      </span>
+      <span>Telegram</span>
+    </span>
+  );
+}
+
+export function buildKanbanCardTelegramDispatch({
+  task,
+  displayEngine,
+}: {
+  task: Pick<KanbanTask, 'taskKey' | 'status' | 'branch' | 'dispatchTarget'>;
+  displayEngine: string | null;
+}) {
+  if (task.dispatchTarget === 'hermes-telegram') {
+    return {
+      dispatchTarget: 'hermes-telegram' as const,
+      message: buildHermesTaskTelegramMessage({
+        taskKey: task.taskKey,
+        status: task.status,
+        engine: displayEngine,
+        branchName: task.branch ?? null,
+      }),
+    };
+  }
+
+  return {
+    dispatchTarget: 'telegram' as const,
+    message: buildTaskTelegramMessage({
+      taskKey: task.taskKey,
+      status: task.status,
+      engine: displayEngine,
+      branchName: task.branch ?? null,
+    }),
+  };
 }
 
 export function KanbanCardMenuDropdown({
@@ -319,14 +380,16 @@ export const KanbanCardContent = memo(function KanbanCardContent({
     </span>
   );
 
-  const telegramMessage = buildTaskTelegramMessage({
-    taskKey: task.taskKey,
-    status: task.status,
-    engine: displayEngine,
-    branchName: task.branch ?? null,
-  });
+  const telegramDispatch = buildKanbanCardTelegramDispatch({ task, displayEngine });
+  const telegramMessage = telegramDispatch.message;
   const telegramEngineConfig = getEngineConfig(displayEngine) ?? ENGINE_CONFIGS.codex;
-  const telegramDispatchSummary = `Engine: ${telegramEngineConfig.label} | Target: Telegram | Mode: ${toDispatchModeLabel(task.status)}`;
+  const telegramDispatchSummary = (
+    <>
+      <span>Engine: {telegramEngineConfig.label} | Target: </span>
+      {renderTelegramDispatchTarget(task.dispatchTarget)}
+      <span> | Mode: {toDispatchModeLabel(task.status)}</span>
+    </>
+  );
 
   const prepareCardMenuPosition = (trigger: HTMLButtonElement) => {
     if (typeof window === 'undefined') return;
@@ -369,7 +432,11 @@ export const KanbanCardContent = memo(function KanbanCardContent({
 
     setIsSendingTelegram(true);
     try {
-      const result = await sendTaskTelegramMessage(task.taskKey, telegramMessage);
+      const result = await sendTaskTelegramMessage(
+        task.taskKey,
+        telegramMessage,
+        telegramDispatch.dispatchTarget,
+      );
       if (!result.ok) {
         showErrorNotification(result.error);
         return;

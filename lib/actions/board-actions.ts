@@ -36,6 +36,7 @@ async function loadBoardTask(ownerId: string, identifier: string, client: DbClie
       taskPriority: true,
       status: true,
       engine: true,
+      dispatchTarget: true,
       runState: true,
       runStateUpdatedAt: true,
       sortOrder: true,
