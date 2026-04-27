@@ -38,6 +38,7 @@ class MemoryStorage implements Storage {
 }
 
 const originalWindow = globalThis.window;
+const legacyClaudeDispatchAction = ['send', 'claude-code'].join('-');
 
 function installWindow(localStorage: Storage) {
   Object.defineProperty(globalThis, 'window', {
@@ -64,7 +65,7 @@ describe('lib/dispatch-preferences', () => {
   it('round-trips task dispatch preferences by board status', () => {
     writeTaskDispatchPreference('ready', {
       engine: 'claude-code',
-      action: 'send-claude-code',
+      action: 'send-telegram',
       objective: 'review',
     });
     writeTaskDispatchPreference('inbox', {
@@ -75,7 +76,7 @@ describe('lib/dispatch-preferences', () => {
 
     expect(readTaskDispatchPreference('ready')).toEqual({
       engine: 'claude-code',
-      action: 'send-claude-code',
+      action: 'send-telegram',
       objective: 'review',
     });
     expect(readTaskDispatchPreference('inbox')).toEqual({
@@ -101,6 +102,21 @@ describe('lib/dispatch-preferences', () => {
           engine: 'not-real',
           action: 'launch-rocket',
           objective: 'ask',
+        },
+      }),
+    );
+
+    expect(readTaskDispatchPreference('todo')).toBeNull();
+  });
+
+  it('returns null for legacy Claude task dispatch actions', () => {
+    localStorage.setItem(
+      TASK_DISPATCH_PREFERENCES_STORAGE,
+      JSON.stringify({
+        todo: {
+          engine: 'codex',
+          action: legacyClaudeDispatchAction,
+          objective: 'implement',
         },
       }),
     );

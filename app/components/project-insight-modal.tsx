@@ -14,9 +14,7 @@ import {
   normalizeEngineKey,
 } from '@/lib/engine-icons';
 import { showErrorNotification, showSuccessNotification } from '@/lib/notifications';
-import { encodeDispatchPromptMetadata } from '@/lib/openclaw-command';
 import type { TaskDispatchTarget } from '@/lib/task-dispatch';
-import { queueClaudeCodeInsightDispatch } from '@/lib/task-dispatch-client';
 import {
   buildProjectInsightDispatchMessage,
   sendProjectInsightTelegramMessage,
@@ -42,16 +40,9 @@ type ProjectInsightModalProps = {
 
 const insightPlaceholder =
   '예: Connections 페이지 개편 작업을 나눠줘\n브라우저 알림 추가를 위한 다음 작업들을 정리해줘';
-const claudeTargetConfig = ENGINE_CONFIGS['claude-code'];
-const claudeTargetIconStyles = {
-  '--engine-color': claudeTargetConfig.iconColor,
-  '--engine-icon': `url(${claudeTargetConfig.icon})`,
-} as CSSProperties;
 
 function getProjectDispatchTargetLabel(target: ProjectInsightTarget) {
   switch (target) {
-    case 'claude-code-channel':
-      return 'Channels';
     case 'hermes-telegram':
       return 'H Telegram';
     case 'telegram':
@@ -61,7 +52,7 @@ function getProjectDispatchTargetLabel(target: ProjectInsightTarget) {
 }
 
 export function resolveInsightTargets({
-  engineKey,
+  engineKey: _engineKey,
   telegramEnabled,
   hermesTelegramEnabled,
 }: {
@@ -70,19 +61,12 @@ export function resolveInsightTargets({
   hermesTelegramEnabled: boolean;
 }) {
   const targets: ProjectInsightTargetOption[] = [];
-  const normalizedEngineKey = normalizeEngineKey(engineKey);
 
-  if (normalizedEngineKey === 'claude-code') {
-    targets.push({ value: 'claude-code-channel', label: 'Channels' });
-  }
   if (telegramEnabled) {
     targets.push({ value: 'telegram', label: '🦞 Telegram' });
   }
   if (hermesTelegramEnabled) {
     targets.push({ value: 'hermes-telegram', label: 'H Telegram' });
-  }
-  if (normalizedEngineKey !== 'claude-code') {
-    targets.push({ value: 'claude-code-channel', label: 'Channels' });
   }
 
   return targets;
@@ -186,15 +170,17 @@ export function ProjectInsightModal({
   }, [defaultEngine, hermesTelegramEnabled, opened, telegramEnabled]);
 
   const trimmedPrompt = prompt.trim();
-  const dispatchPrompt =
-    selectedProject && selectedTarget
-      ? buildProjectInsightDispatchMessage({
-          projectKey: selectedProject.projectKey,
-          engine: resolvedEngine.key,
-          insightPrompt: trimmedPrompt || null,
-          dispatchTarget: selectedTarget,
-        })
-      : '';
+  const previewTarget: ProjectInsightTarget =
+    selectedTarget ??
+    (telegramEnabled ? 'telegram' : hermesTelegramEnabled ? 'hermes-telegram' : 'telegram');
+  const dispatchPrompt = selectedProject
+    ? buildProjectInsightDispatchMessage({
+        projectKey: selectedProject.projectKey,
+        engine: resolvedEngine.key,
+        insightPrompt: trimmedPrompt || null,
+        dispatchTarget: previewTarget,
+      })
+    : '';
 
   const handleEngineChange = (nextEngineKey: string) => {
     const nextTargetOptions = resolveInsightTargets({
@@ -215,29 +201,6 @@ export function ProjectInsightModal({
     setIsSubmitting(true);
 
     try {
-      const insightPromptB64 = encodeDispatchPromptMetadata(trimmedPrompt);
-      if (!insightPromptB64) {
-        showErrorNotification('Insight prompt is required.');
-        return;
-      }
-
-      if (selectedTarget === 'claude-code-channel') {
-        const result = await queueClaudeCodeInsightDispatch({
-          projectKey: selectedProject.projectKey,
-          engine: resolvedEngine.key,
-          insightPromptB64,
-        });
-
-        if (!result.ok) {
-          showErrorNotification(result.error);
-          return;
-        }
-
-        showSuccessNotification(`Insight queued for ${selectedProject.projectKey}.`);
-        onClose();
-        return;
-      }
-
       const result = await sendProjectInsightTelegramMessage(
         selectedProject.projectKey,
         dispatchPrompt,
@@ -322,17 +285,7 @@ export function ProjectInsightModal({
               selected,
               ariaLabel: selected ? `Selected target: ${label}` : `Select target: ${label}`,
               content:
-                option.value === 'claude-code-channel' ? (
-                  <>
-                    <span
-                      className="task-dispatch-engine-icon task-dispatch-target-icon"
-                      aria-hidden="true"
-                      data-engine-icon="claude-code"
-                      style={claudeTargetIconStyles}
-                    />
-                    <span>{option.label}</span>
-                  </>
-                ) : option.value === 'telegram' ? (
+                option.value === 'telegram' ? (
                   <span className="task-dispatch-target-option">
                     <span className="task-dispatch-target-emoji" aria-hidden="true">
                       🦞
@@ -388,7 +341,7 @@ export function ProjectInsightModal({
             Cancel
           </Button>
           <Button onClick={executeInsight} loading={isSubmitting} disabled={executeDisabled}>
-            {selectedTarget === 'claude-code-channel' ? 'Queue Insight' : 'Send Insight'}
+            Send Insight
           </Button>
         </Group>
       </Stack>

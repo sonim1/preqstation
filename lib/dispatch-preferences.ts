@@ -5,12 +5,7 @@ import type { BoardTaskStatus } from '@/lib/task-meta';
 export const TASK_DISPATCH_PREFERENCES_STORAGE = 'pm:taskDispatchPreferences';
 export const QA_DISPATCH_PREFERENCE_STORAGE = 'pm:qaDispatchPreference';
 
-const TASK_DISPATCH_ACTIONS = [
-  'copy-telegram',
-  'send-claude-code',
-  'send-telegram',
-  'send-hermes-telegram',
-] as const;
+const TASK_DISPATCH_ACTIONS = ['send-telegram', 'send-hermes-telegram'] as const;
 
 export type TaskDispatchPreferenceStatus = BoardTaskStatus;
 export type TaskDispatchPreferenceAction = (typeof TASK_DISPATCH_ACTIONS)[number];

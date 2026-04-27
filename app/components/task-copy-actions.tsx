@@ -21,9 +21,8 @@ import {
   normalizeEngineKey,
 } from '@/lib/engine-icons';
 import { showErrorNotification } from '@/lib/notifications';
-import { buildOpenClawTaskCommand, type TaskDispatchObjective } from '@/lib/openclaw-command';
+import type { TaskDispatchObjective } from '@/lib/openclaw-command';
 import { extractTaskAskPrompt } from '@/lib/task-ask';
-import { queueClaudeCodeDispatch } from '@/lib/task-dispatch-client';
 import {
   buildHermesTaskTelegramMessage,
   buildTaskTelegramMessage,
@@ -77,14 +76,8 @@ type TaskDispatchMode = Extract<
 >;
 type TaskEditDispatchAction = Extract<
   TaskDispatchPreferenceAction,
-  'send-claude-code' | 'send-telegram' | 'send-hermes-telegram'
+  'send-telegram' | 'send-hermes-telegram'
 >;
-
-const claudeTargetConfig = ENGINE_CONFIGS['claude-code'];
-const claudeTargetIconStyles = {
-  '--engine-color': claudeTargetConfig.iconColor,
-  '--engine-icon': `url(${claudeTargetConfig.icon})`,
-} as CSSProperties;
 
 function normalizeTaskDispatchPreferenceStatus(
   status: string,
@@ -131,35 +124,20 @@ function resolveInitialMode(
 function isTaskEditDispatchAction(
   action: TaskDispatchPreferenceAction | TaskEditDispatchAction | null | undefined,
 ): action is TaskEditDispatchAction {
-  return (
-    action === 'send-claude-code' || action === 'send-telegram' || action === 'send-hermes-telegram'
-  );
+  return action === 'send-telegram' || action === 'send-hermes-telegram';
 }
 
 function resolveTaskEditDispatchActions(
-  engineKey: string | null,
   telegramEnabled: boolean,
   hermesTelegramEnabled: boolean,
 ): TaskEditDispatchAction[] {
-  const normalizedEngineKey = normalizeEngineKey(engineKey);
   const actions: TaskEditDispatchAction[] = [];
-
-  if (normalizedEngineKey === 'claude-code' || (!telegramEnabled && !hermesTelegramEnabled)) {
-    actions.push('send-claude-code');
-  }
 
   if (telegramEnabled) {
     actions.push('send-telegram');
   }
   if (hermesTelegramEnabled) {
     actions.push('send-hermes-telegram');
-  }
-  if (
-    normalizedEngineKey !== 'claude-code' &&
-    (telegramEnabled || hermesTelegramEnabled) &&
-    !actions.includes('send-claude-code')
-  ) {
-    actions.push('send-claude-code');
   }
 
   return actions;
@@ -175,8 +153,6 @@ function resolveInitialAction(
 
 function getTaskEditDispatchActionLabel(action: TaskEditDispatchAction) {
   switch (action) {
-    case 'send-claude-code':
-      return 'Channels';
     case 'send-telegram':
       return '🦞 Telegram';
     case 'send-hermes-telegram':
@@ -185,21 +161,17 @@ function getTaskEditDispatchActionLabel(action: TaskEditDispatchAction) {
 }
 
 function getDispatchStatusMessage(state: DispatchState, action: TaskEditDispatchAction) {
-  const noun = action === 'send-claude-code' ? 'Channels dispatch' : 'Telegram message';
+  const noun = action === 'send-hermes-telegram' ? 'Telegram message' : 'Telegram message';
 
   switch (state) {
     case 'loading':
       return `Sending ${noun}.`;
     case 'success':
-      return action === 'send-claude-code' ? 'Channels dispatch sent.' : 'Telegram message sent.';
+      return 'Telegram message sent.';
     case 'error':
-      return action === 'send-claude-code'
-        ? 'Channels dispatch failed.'
-        : 'Telegram message failed.';
+      return 'Telegram message failed.';
     default:
-      return action === 'send-claude-code'
-        ? 'Ready to send Channels dispatch.'
-        : 'Ready to send Telegram message.';
+      return 'Ready to send Telegram message.';
   }
 }
 
@@ -237,11 +209,7 @@ export function TaskCopyActions({
   const [selectedEngine, setSelectedEngine] = useState<EngineConfig | null>(() => initialEngine);
   const [selectedAction, setSelectedAction] = useState<TaskEditDispatchAction>(() =>
     resolveInitialAction(
-      resolveTaskEditDispatchActions(
-        initialEngine.key,
-        telegramEnabled,
-        resolvedHermesTelegramEnabled,
-      ),
+      resolveTaskEditDispatchActions(telegramEnabled, resolvedHermesTelegramEnabled),
       storedPreference?.action,
     ),
   );
@@ -252,7 +220,6 @@ export function TaskCopyActions({
   const [dispatchState, setDispatchState] = useState<DispatchState>('idle');
   const isSending = dispatchState === 'loading';
   const availableActions = resolveTaskEditDispatchActions(
-    selectedEngine?.key ?? null,
     telegramEnabled,
     resolvedHermesTelegramEnabled,
   );
@@ -276,10 +243,10 @@ export function TaskCopyActions({
           objective: effectiveObjective,
           askHint,
         })
-      : buildOpenClawTaskCommand({
+      : buildTaskTelegramMessage({
           taskKey,
           status,
-          engineKey: selectedEngine?.key,
+          engine: selectedEngine?.key,
           branchName,
           objective: effectiveObjective,
           askHint,
@@ -304,11 +271,7 @@ export function TaskCopyActions({
 
   const selectEngine = (nextEngine: EngineConfig) => {
     const nextAction = resolveInitialAction(
-      resolveTaskEditDispatchActions(
-        nextEngine.key,
-        telegramEnabled,
-        resolvedHermesTelegramEnabled,
-      ),
+      resolveTaskEditDispatchActions(telegramEnabled, resolvedHermesTelegramEnabled),
       effectiveAction,
     );
     setSelectedEngine(nextEngine);
@@ -335,40 +298,28 @@ export function TaskCopyActions({
     setDispatchState('loading');
 
     try {
-      let result: Awaited<ReturnType<typeof queueClaudeCodeDispatch>>;
-
-      if (effectiveAction === 'send-claude-code') {
-        result = await queueClaudeCodeDispatch({
-          taskKey,
-          engine: selectedEngine?.key,
-          branchName,
-          objective: effectiveObjective,
-          askHint: effectiveObjective === 'ask' ? askHint : null,
-        });
-      } else {
-        const isHermesTelegram = effectiveAction === 'send-hermes-telegram';
-        result = await sendTaskTelegramMessage(
-          taskKey,
-          isHermesTelegram
-            ? buildHermesTaskTelegramMessage({
-                taskKey,
-                status,
-                engine: selectedEngine?.key,
-                branchName,
-                objective: effectiveObjective,
-                askHint: effectiveObjective === 'ask' ? askHint : null,
-              })
-            : buildTaskTelegramMessage({
-                taskKey,
-                status,
-                engine: selectedEngine?.key,
-                branchName,
-                objective: effectiveObjective,
-                askHint: effectiveObjective === 'ask' ? askHint : null,
-              }),
-          isHermesTelegram ? 'hermes-telegram' : 'telegram',
-        );
-      }
+      const isHermesTelegram = effectiveAction === 'send-hermes-telegram';
+      const result = await sendTaskTelegramMessage(
+        taskKey,
+        isHermesTelegram
+          ? buildHermesTaskTelegramMessage({
+              taskKey,
+              status,
+              engine: selectedEngine?.key,
+              branchName,
+              objective: effectiveObjective,
+              askHint: effectiveObjective === 'ask' ? askHint : null,
+            })
+          : buildTaskTelegramMessage({
+              taskKey,
+              status,
+              engine: selectedEngine?.key,
+              branchName,
+              objective: effectiveObjective,
+              askHint: effectiveObjective === 'ask' ? askHint : null,
+            }),
+        isHermesTelegram ? 'hermes-telegram' : 'telegram',
+      );
 
       if (!result.ok) {
         setDispatchState('error');
@@ -381,11 +332,7 @@ export function TaskCopyActions({
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error && error.message
-          ? error.message
-          : effectiveAction === 'send-claude-code'
-            ? 'Failed to send Channels dispatch'
-            : 'Failed to send Telegram message';
+        error instanceof Error && error.message ? error.message : 'Failed to send Telegram message';
       setDispatchState('error');
       showErrorNotification(errorMessage);
     }
@@ -415,7 +362,7 @@ export function TaskCopyActions({
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [isSending]);
 
-  if (availableModes.length === 0) {
+  if (availableModes.length === 0 || availableActions.length === 0) {
     return null;
   }
 
@@ -494,17 +441,7 @@ export function TaskCopyActions({
               selected,
               ariaLabel: selected ? `Selected target: ${label}` : `Select target: ${label}`,
               content:
-                action === 'send-claude-code' ? (
-                  <>
-                    <span
-                      className="task-dispatch-engine-icon task-dispatch-target-icon"
-                      aria-hidden="true"
-                      data-engine-icon="claude-code"
-                      style={claudeTargetIconStyles}
-                    />
-                    <span>{label}</span>
-                  </>
-                ) : action === 'send-telegram' ? (
+                action === 'send-telegram' ? (
                   <span className="task-dispatch-target-option">
                     <span className="task-dispatch-target-emoji" aria-hidden="true">
                       🦞

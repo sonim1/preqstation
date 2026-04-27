@@ -64,7 +64,7 @@ describe('app/components/project-insight-modal', () => {
       hermesTelegramEnabled: true,
     });
 
-    expect(resolveInitialInsightTarget(targetOptions, null)).toBe('claude-code-channel');
+    expect(resolveInitialInsightTarget(targetOptions, null)).toBe('telegram');
     expect(
       isInsightExecuteDisabled({
         opened: true,
@@ -91,19 +91,19 @@ describe('app/components/project-insight-modal', () => {
     expect(html).toContain('0/1200');
   });
 
-  it('renders shared engine and target controls instead of the old action select', () => {
+  it('renders shared engine and target controls without a Claude target', () => {
     const html = renderInsightModal({ defaultEngine: 'claude-code' });
 
     expect(html).toContain('task-dispatch-engine-segments');
     expect(html).toContain('task-dispatch-target-segments');
     expect(html).toContain('task-dispatch-prompt-shell');
     expect(html).toContain('aria-label="Copy dispatch prompt"');
-    expect(html).toContain('Channels');
     expect(html).toContain('🦞 Telegram');
     expect(html).toContain('H Telegram');
-    expect(html).toContain('aria-label="Selected target: Channels"');
+    expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
     expect(html).not.toContain('aria-label="Insight action"');
     expect(html).not.toContain('Copy Telegram');
+    expect(html).not.toContain('Channels');
     expect(html).toContain('!/skill preqstation-dispatch insight PROJ using claude-code');
   });
 
@@ -117,9 +117,21 @@ describe('app/components/project-insight-modal', () => {
     expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
   });
 
+  it('falls back to Hermes when it is the only available target', () => {
+    const html = renderInsightModal({
+      defaultEngine: 'codex',
+      telegramEnabled: false,
+      hermesTelegramEnabled: true,
+    });
+
+    expect(html).toContain('aria-label="Selected target: H Telegram"');
+    expect(html).not.toContain('🦞 Telegram');
+    expect(html).toContain('/preq_dispatch@PreqHermesBot');
+  });
+
   it('shows the resolved primary action label on first render for Claude Code', () => {
     const html = renderInsightModal({ defaultEngine: 'claude-code', telegramEnabled: true });
 
-    expect(html).toContain('Queue Insight');
+    expect(html).toContain('Send Insight');
   });
 });

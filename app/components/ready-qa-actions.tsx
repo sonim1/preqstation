@@ -60,11 +60,6 @@ type QaDispatchTargetOption = { value: QaDispatchTarget; label: string };
 export const INITIAL_VISIBLE_QA_RUNS = 5;
 const QA_ENGINE_OPTIONS = Object.values(ENGINE_CONFIGS);
 const qaFlowHelp = 'Choose engine, then press play to queue QA.';
-const claudeTargetConfig = ENGINE_CONFIGS['claude-code'];
-const claudeTargetIconStyles = {
-  '--engine-color': claudeTargetConfig.iconColor,
-  '--engine-icon': `url(${claudeTargetConfig.icon})`,
-} as CSSProperties;
 
 function statusColor(status: QaRunView['status']) {
   switch (status) {
@@ -89,8 +84,6 @@ function formatTimestamp(value: string, timeZone: string) {
 
 function getQaTargetLabel(target: QaDispatchTarget) {
   switch (target) {
-    case 'claude-code-channel':
-      return 'Channels';
     case 'hermes-telegram':
       return 'H Telegram';
     case 'telegram':
@@ -114,7 +107,6 @@ function resolveQaTargets({
   if (hermesTelegramEnabled) {
     targets.push({ value: 'hermes-telegram', label: 'H Telegram' });
   }
-  targets.push({ value: 'claude-code-channel', label: 'Channels' });
 
   return targets;
 }
@@ -127,7 +119,7 @@ function resolveInitialQaTarget(
     return target;
   }
 
-  return targetOptions[0]?.value ?? 'claude-code-channel';
+  return targetOptions[0]?.value ?? null;
 }
 
 export function getVisibleQaRuns(runs: QaRunView[], visibleCount: number) {
@@ -198,6 +190,7 @@ export function ReadyQaActions({
   const visibleRuns = getVisibleQaRuns(runs, visibleRunCount);
   const availableTargets = resolveQaTargets({ telegramEnabled, hermesTelegramEnabled });
   const effectiveTarget = resolveInitialQaTarget(availableTargets, selectedTarget);
+  const canQueueQa = readyCount > 0 && effectiveTarget !== null;
   const qaPreview = queuedQaPrompt ?? QUEUED_QA_PROMPT_HELP;
 
   function openRunsModal() {
@@ -214,7 +207,7 @@ export function ReadyQaActions({
   }
 
   async function runQa() {
-    if (isSubmitting) return;
+    if (isSubmitting || !effectiveTarget) return;
     setIsSubmitting(true);
 
     try {
@@ -371,17 +364,7 @@ export function ReadyQaActions({
                     selected,
                     ariaLabel: selected ? `Selected target: ${label}` : `Select target: ${label}`,
                     content:
-                      option.value === 'claude-code-channel' ? (
-                        <>
-                          <span
-                            className="task-dispatch-engine-icon task-dispatch-target-icon"
-                            aria-hidden="true"
-                            data-engine-icon="claude-code"
-                            style={claudeTargetIconStyles}
-                          />
-                          <span>{option.label}</span>
-                        </>
-                      ) : option.value === 'telegram' ? (
+                      option.value === 'telegram' ? (
                         <span className="task-dispatch-target-option">
                           <span className="task-dispatch-target-emoji" aria-hidden="true">
                             🦞
@@ -415,7 +398,7 @@ export function ReadyQaActions({
               <UnstyledButton
                 type="button"
                 className="task-dispatch-send"
-                disabled={readyCount === 0 || isSubmitting}
+                disabled={!canQueueQa || isSubmitting}
                 onClick={() => {
                   void runQa();
                 }}

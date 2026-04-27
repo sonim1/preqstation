@@ -5,10 +5,7 @@ import { z } from 'zod';
 import { writeAuditLog } from '@/lib/audit';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, tasks } from '@/lib/db/schema';
-import { createDispatchRequest } from '@/lib/dispatch-request-store';
 import { DEFAULT_ENGINE_KEY, ENGINE_KEYS } from '@/lib/engine-icons';
-import { buildHermesQaCommand } from '@/lib/hermes-command';
-import { buildOpenClawQaCommand } from '@/lib/openclaw-command';
 import { requireOwnerUser } from '@/lib/owner';
 import { getProjectSettings, PROJECT_SETTING_KEYS } from '@/lib/project-settings';
 import {
@@ -19,6 +16,7 @@ import {
   qaRunsStorageAvailable,
 } from '@/lib/qa-runs';
 import { assertSameOrigin } from '@/lib/request-security';
+import { buildProjectQaDispatchMessage } from '@/lib/task-telegram-client';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { decryptTelegramToken } from '@/lib/telegram-crypto';
 import { resolveTelegramDispatchConfig } from '@/lib/telegram-dispatch-settings';
@@ -27,10 +25,7 @@ import { getUserSettings } from '@/lib/user-settings';
 const triggerQaRunSchema = z
   .object({
     engine: z.enum(ENGINE_KEYS).optional(),
-    dispatchTarget: z
-      .enum(['telegram', 'hermes-telegram', 'claude-code-channel'])
-      .optional()
-      .default('telegram'),
+    dispatchTarget: z.enum(['telegram', 'hermes-telegram']).optional().default('telegram'),
   })
   .strict();
 
@@ -73,37 +68,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       const branchName = projectSettings[PROJECT_SETTING_KEYS.DEPLOY_DEFAULT_BRANCH] || 'main';
       const qaEngine = payload.engine ?? DEFAULT_ENGINE_KEY;
       const dispatchTarget = payload.dispatchTarget ?? 'telegram';
+      const settings = await getUserSettings(owner.id, client);
+      const target = dispatchTarget === 'hermes-telegram' ? 'hermes' : 'openclaw';
+      const { enabled, encryptedToken, chatId } = resolveTelegramDispatchConfig(settings, target);
+      if (!enabled || !encryptedToken || !chatId) {
+        return NextResponse.json(
+          { error: 'Telegram is not fully configured or disabled' },
+          { status: 400 },
+        );
+      }
+
       let botToken = '';
-      let chatId = '';
-
-      if (dispatchTarget !== 'claude-code-channel') {
-        const settings = await getUserSettings(owner.id, client);
-        const target = dispatchTarget === 'hermes-telegram' ? 'hermes' : 'openclaw';
-        const {
-          enabled,
-          encryptedToken,
-          chatId: resolvedChatId,
-        } = resolveTelegramDispatchConfig(settings, target);
-        if (!enabled || !encryptedToken || !resolvedChatId) {
-          return NextResponse.json(
-            { error: 'Telegram is not fully configured or disabled' },
-            { status: 400 },
-          );
-        }
-
-        chatId = resolvedChatId;
-        try {
-          botToken = await decryptTelegramToken(encryptedToken);
-        } catch (error) {
-          console.error(
-            '[api/projects/:id/qa-runs/trigger] failed to decrypt Telegram token:',
-            error,
-          );
-          return NextResponse.json(
-            { error: 'Telegram bot token is invalid. Save Telegram settings again.' },
-            { status: 500 },
-          );
-        }
+      try {
+        botToken = await decryptTelegramToken(encryptedToken);
+      } catch (error) {
+        console.error(
+          '[api/projects/:id/qa-runs/trigger] failed to decrypt Telegram token:',
+          error,
+        );
+        return NextResponse.json(
+          { error: 'Telegram bot token is invalid. Save Telegram settings again.' },
+          { status: 500 },
+        );
       }
 
       const run = await createQueuedQaRun(
@@ -117,62 +103,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         client,
       );
 
-      let dispatchRequestId: string | null = null;
+      const message = buildProjectQaDispatchMessage({
+        projectKey: project.projectKey,
+        engine: qaEngine,
+        branchName,
+        dispatchTarget,
+        qaRunId: run.id,
+        qaTaskKeys: run.taskKeys,
+      });
 
-      if (dispatchTarget === 'claude-code-channel') {
-        // The external dispatcher must forward qaRunId and qaTaskKeys when it renders
-        // the project-scope QA worker prompt from this explicit request.
-        const request = await createDispatchRequest(
-          {
-            ownerId: owner.id,
-            scope: 'project',
-            objective: 'qa',
-            projectKey: project.projectKey,
-            engine: qaEngine,
-            dispatchTarget: 'claude-code-channel',
-            branchName,
-            promptMetadata: {
-              qaRunId: run.id,
-              qaTaskKeys: run.taskKeys,
-            },
-          },
-          client,
+      const sendResult = await sendTelegramMessage(botToken, chatId, message, {
+        normalizeCommand: dispatchTarget !== 'hermes-telegram',
+      });
+      if (!sendResult.ok) {
+        await deleteQaRun(run.id, owner.id, client);
+        return NextResponse.json(
+          { error: sendResult.description || 'Failed to send Telegram message' },
+          { status: 502 },
         );
-
-        if (!request) {
-          await deleteQaRun(run.id, owner.id, client);
-          return NextResponse.json({ error: 'Failed to queue QA run' }, { status: 500 });
-        }
-
-        dispatchRequestId = request.id;
-      } else {
-        const message =
-          dispatchTarget === 'hermes-telegram'
-            ? buildHermesQaCommand({
-                projectKey: project.projectKey,
-                engineKey: qaEngine,
-                branchName,
-                qaRunId: run.id,
-                qaTaskKeys: run.taskKeys,
-              })
-            : buildOpenClawQaCommand({
-                projectKey: project.projectKey,
-                engineKey: qaEngine,
-                branchName,
-                qaRunId: run.id,
-                qaTaskKeys: run.taskKeys,
-              });
-
-        const sendResult = await sendTelegramMessage(botToken, chatId, message, {
-          normalizeCommand: dispatchTarget !== 'hermes-telegram',
-        });
-        if (!sendResult.ok) {
-          await deleteQaRun(run.id, owner.id, client);
-          return NextResponse.json(
-            { error: sendResult.description || 'Failed to send Telegram message' },
-            { status: 502 },
-          );
-        }
       }
 
       await writeAuditLog(
@@ -187,7 +135,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             branchName,
             taskKeys: run.taskKeys,
             dispatchTarget,
-            dispatchRequestId,
           },
         },
         client,

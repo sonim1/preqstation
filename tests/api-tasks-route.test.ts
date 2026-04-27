@@ -292,7 +292,7 @@ describe('app/api/tasks/route', () => {
       await GET(
         jsonRequest(
           'GET',
-          `${TEST_BASE_URL}/api/tasks?engine=claude-code&run_state=queued&dispatch_target=claude-code-channel`,
+          `${TEST_BASE_URL}/api/tasks?engine=claude-code&run_state=queued&dispatch_target=telegram`,
         ),
       );
 

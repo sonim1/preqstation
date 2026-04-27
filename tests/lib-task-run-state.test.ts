@@ -56,7 +56,7 @@ describe('lib/task-run-state', () => {
     const result = await queueTaskExecutionByTaskKey({
       ownerId: 'owner-1',
       taskKey: 'PROJ-1',
-      dispatchTarget: 'claude-code-channel',
+      dispatchTarget: 'telegram',
       engine: 'codex',
       branch: 'task/proj-1/fix-auth',
       now: new Date('2026-03-22T23:30:00.000Z'),
@@ -68,7 +68,7 @@ describe('lib/task-run-state', () => {
       archivedAt: null,
       runState: 'queued',
       runStateUpdatedAt: new Date('2026-03-22T23:30:00.000Z'),
-      dispatchTarget: 'claude-code-channel',
+      dispatchTarget: 'telegram',
       engine: 'codex',
       branch: 'task/proj-1/fix-auth',
     });

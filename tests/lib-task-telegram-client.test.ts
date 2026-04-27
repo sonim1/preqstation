@@ -93,12 +93,12 @@ describe('lib/task-telegram-client', () => {
     ).toContain('insight_prompt_b64=');
   });
 
-  it('builds project QA messages with run metadata for Channels previews', () => {
+  it('builds project QA messages with run metadata for OpenClaw previews', () => {
     expect(
       buildProjectQaDispatchMessage({
         projectKey: 'PROJ',
         engine: 'gemini-cli',
-        dispatchTarget: 'claude-code-channel',
+        dispatchTarget: 'telegram',
         branchName: 'main',
         qaRunId: 'run-123',
         qaTaskKeys: ['PROJ-1', 'PROJ-2'],

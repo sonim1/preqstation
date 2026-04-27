@@ -11,7 +11,6 @@ const mocked = vi.hoisted(() => {
     decryptTelegramToken: vi.fn(),
     sendTelegramMessage: vi.fn(),
     writeAuditLog: vi.fn(),
-    createDispatchRequest: vi.fn(),
     createQueuedQaRun: vi.fn(),
     deleteQaRun: vi.fn(),
     qaRunsStorageAvailable: vi.fn(),
@@ -56,10 +55,6 @@ vi.mock('@/lib/telegram-crypto', () => ({
 
 vi.mock('@/lib/telegram', () => ({
   sendTelegramMessage: mocked.sendTelegramMessage,
-}));
-
-vi.mock('@/lib/dispatch-request-store', () => ({
-  createDispatchRequest: mocked.createDispatchRequest,
 }));
 
 vi.mock('@/lib/audit', () => ({
@@ -121,7 +116,6 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
     });
     mocked.decryptTelegramToken.mockResolvedValue('bot-token');
     mocked.sendTelegramMessage.mockResolvedValue({ ok: true });
-    mocked.createDispatchRequest.mockResolvedValue({ id: 'dispatch-request-1' });
     mocked.qaRunsStorageAvailable.mockResolvedValue(true);
     mocked.isMissingQaRunsRelationError.mockReturnValue(false);
     mocked.createQueuedQaRun.mockResolvedValue({
@@ -235,35 +229,6 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
         'qa_task_keys=PROJ-1,PROJ-2',
       ].join('\n'),
       { normalizeCommand: false },
-    );
-    expect(mocked.createDispatchRequest).not.toHaveBeenCalled();
-  });
-
-  it('creates a project-scope Channels dispatch request with qaRunId and qaTaskKeys metadata', async () => {
-    const response = await POST(
-      postRequest({ engine: 'codex', dispatchTarget: 'claude-code-channel' }),
-      {
-        params: Promise.resolve({ id: 'project-1' }),
-      },
-    );
-
-    expect(response.status).toBe(200);
-    expect(mocked.sendTelegramMessage).not.toHaveBeenCalled();
-    expect(mocked.createDispatchRequest).toHaveBeenCalledWith(
-      {
-        ownerId: 'owner-1',
-        scope: 'project',
-        objective: 'qa',
-        projectKey: 'PROJ',
-        engine: 'codex',
-        dispatchTarget: 'claude-code-channel',
-        branchName: 'main',
-        promptMetadata: {
-          qaRunId: 'run-123',
-          qaTaskKeys: ['PROJ-1', 'PROJ-2'],
-        },
-      },
-      expect.anything(),
     );
   });
 

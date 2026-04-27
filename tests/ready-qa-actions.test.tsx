@@ -276,7 +276,7 @@ describe('app/components/ready-qa-actions', () => {
     expect(formatReadyQaScopeLabel(2, KITCHEN_TERMINOLOGY)).toBe('2 ready tickets');
   });
 
-  it('shows Channels and Hermes as additional QA targets when those transports are available', () => {
+  it('shows only Telegram QA targets when both transports are available', () => {
     const html = renderToStaticMarkup(
       <MantineProvider>
         <ReadyQaActionsAny
@@ -292,9 +292,9 @@ describe('app/components/ready-qa-actions', () => {
       </MantineProvider>,
     );
 
-    expect(html).toContain('Channels');
     expect(html).toContain('H Telegram');
     expect(html).toContain('🦞 Telegram');
+    expect(html).not.toContain('Channels');
   });
 
   it('prefers the stored QA engine over the incoming default engine', () => {
