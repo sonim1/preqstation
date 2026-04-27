@@ -133,7 +133,7 @@ Coding agent checks task status via preq_get_task, then:
 | ------------------ | --------------------------------------------------------------------------------------------------------------- |
 | `users`            | Single-owner account                                                                                            |
 | `tasks`            | Task items with `taskKey` (e.g. `PROJ-123`), workflow status, priority, engine, branch, sort order, `run_state` |
-| `task_labels`      | Custom label taxonomy (owner-scoped, unique name per owner)                                                     |
+| `task_labels`      | Project-owned task label taxonomy (`project_id` required, unique name per project, owner-protected via RLS)     |
 | `projects`         | GitHub/Vercel project tracking with repo URL, background image, soft-delete                                     |
 | `project_settings` | Per-project config (deploy strategy, default branch, auto PR, squash merge, agent instructions)                 |
 | `oauth_clients`    | Registered OAuth clients for MCP installs, including client name and redirect URIs                              |
@@ -183,27 +183,29 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 
 #### Internal APIs (Session cookie)
 
-| Method   | Endpoint                  | Purpose                         |
-| -------- | ------------------------- | ------------------------------- |
-| `GET`    | `/api/todos`              | List todos (internal dashboard) |
-| `POST`   | `/api/todos`              | Create todo                     |
-| `PATCH`  | `/api/todos/:id`          | Update todo                     |
-| `DELETE` | `/api/todos/:id`          | Delete todo                     |
-| `POST`   | `/api/todos/rebalance`    | Rebalance sort order            |
-| `POST`   | `/api/todos/archive-done` | Archive completed todos         |
-| `GET`    | `/api/task-labels`        | List task labels                |
-| `POST`   | `/api/task-labels`        | Create task label               |
-| `PATCH`  | `/api/task-labels/:id`    | Update task label               |
-| `DELETE` | `/api/task-labels/:id`    | Delete task label               |
-| `POST`   | `/api/events/cleanup`     | Clean up old outbox entries     |
-| `GET`    | `/api/settings`           | Get/update user settings        |
-| `POST`   | `/api/projects/:id/qa-runs/trigger` | Queue a QA run to OpenClaw Telegram or Hermes Telegram |
-| `POST`   | `/api/telegram/send`      | Send task Telegram message to OpenClaw or Hermes |
-| `POST`   | `/api/telegram/send/insight` | Send project insight to the OpenClaw or Hermes Telegram channel |
-| `POST`   | `/api/telegram/test`      | Test Telegram connection        |
-| `POST`   | `/api/send-to-openclaw`   | Legacy OpenClaw message relay   |
-| `GET`    | `/api/work-logs/:id`      | Get work log entry              |
-| `DELETE` | `/api/work-logs/:id`      | Delete work log entry           |
+| Method   | Endpoint                             | Purpose                                                 |
+| -------- | ------------------------------------ | ------------------------------------------------------- |
+| `GET`    | `/api/todos`                         | List todos (internal dashboard)                         |
+| `POST`   | `/api/todos`                         | Create todo                                             |
+| `PATCH`  | `/api/todos/:id`                     | Update todo                                             |
+| `DELETE` | `/api/todos/:id`                     | Delete todo                                             |
+| `POST`   | `/api/todos/rebalance`               | Rebalance sort order                                    |
+| `POST`   | `/api/todos/archive-done`            | Archive completed todos                                 |
+| `GET`    | `/api/projects/:id/labels`           | List labels for one project                             |
+| `POST`   | `/api/projects/:id/labels`           | Create a label for one project                          |
+| `PATCH`  | `/api/projects/:id/labels/:labelId`  | Update one project label                                |
+| `DELETE` | `/api/projects/:id/labels/:labelId`  | Delete one project label                                |
+| `POST`   | `/api/events/cleanup`                | Clean up old outbox entries                             |
+| `GET`    | `/api/settings`                      | Get/update user settings                                |
+| `POST`   | `/api/projects/:id/qa-runs/trigger`  | Queue a QA run to OpenClaw Telegram or Hermes Telegram  |
+| `POST`   | `/api/telegram/send`                 | Send task Telegram message to OpenClaw or Hermes        |
+| `POST`   | `/api/telegram/send/insight`         | Send project insight to the OpenClaw or Hermes Telegram channel |
+| `POST`   | `/api/telegram/test`                 | Test Telegram connection                                |
+| `POST`   | `/api/send-to-openclaw`              | Legacy OpenClaw message relay                           |
+| `GET`    | `/api/work-logs/:id`                 | Get work log entry                                      |
+| `DELETE` | `/api/work-logs/:id`                 | Delete work log entry                                   |
+
+Legacy `/api/task-labels` and `/api/task-labels/:id` handlers are compatibility tombstones only: they return `410 Gone` and point callers to the canonical `/api/projects/:id/labels*` routes.
 
 ### Offline Board Path
 
