@@ -3,7 +3,7 @@
 import { ActionIcon, Image, Menu, Text, Tooltip } from '@mantine/core';
 import { IconChecklist, IconCopy, IconDots, IconSend } from '@tabler/icons-react';
 import Link from 'next/link';
-import { memo, useState } from 'react';
+import { memo, type ReactNode, useState } from 'react';
 
 import { formatDateForDisplay } from '@/lib/date-time';
 import { ENGINE_CONFIGS, getEngineConfig } from '@/lib/engine-icons';
@@ -132,7 +132,7 @@ type KanbanCardMenuDropdownProps = {
   isPending: boolean;
   editHref: string;
   telegramEnabled: boolean;
-  telegramDispatchSummary?: string | null;
+  telegramDispatchSummary?: ReactNode;
   isSendingTelegram: boolean;
   onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
   onDeleteTask: (taskId: string) => void;
@@ -154,6 +154,33 @@ function toDispatchModeLabel(status: KanbanStatus) {
     default:
       return 'Status';
   }
+}
+
+export function renderTelegramDispatchTarget(dispatchTarget: KanbanTask['dispatchTarget']) {
+  if (dispatchTarget === 'hermes-telegram') {
+    return (
+      <span className="task-dispatch-target-option">
+        <img
+          className="task-dispatch-target-logo"
+          src="/icons/hermes-agent.png"
+          alt=""
+          width={16}
+          height={16}
+          aria-hidden="true"
+        />
+        <span>Telegram</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="task-dispatch-target-option">
+      <span className="task-dispatch-target-emoji" aria-hidden="true">
+        🦞
+      </span>
+      <span>Telegram</span>
+    </span>
+  );
 }
 
 export function KanbanCardMenuDropdown({
@@ -326,7 +353,13 @@ export const KanbanCardContent = memo(function KanbanCardContent({
     branchName: task.branch ?? null,
   });
   const telegramEngineConfig = getEngineConfig(displayEngine) ?? ENGINE_CONFIGS.codex;
-  const telegramDispatchSummary = `Engine: ${telegramEngineConfig.label} | Target: Telegram | Mode: ${toDispatchModeLabel(task.status)}`;
+  const telegramDispatchSummary = (
+    <>
+      <span>Engine: {telegramEngineConfig.label} | Target: </span>
+      {renderTelegramDispatchTarget(task.dispatchTarget)}
+      <span> | Mode: {toDispatchModeLabel(task.status)}</span>
+    </>
+  );
 
   const prepareCardMenuPosition = (trigger: HTMLButtonElement) => {
     if (typeof window === 'undefined') return;

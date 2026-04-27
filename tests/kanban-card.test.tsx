@@ -16,6 +16,7 @@ import {
   getRunStateWaveConfig,
   KanbanCardContent,
   KanbanCardMenuDropdown,
+  renderTelegramDispatchTarget,
   resolveKanbanCardMenuPosition,
   resolveLabelHashStyle,
   resolveRunStateFrameStyle,
@@ -571,7 +572,13 @@ describe('app/components/kanban-card', () => {
       isPending: false,
       editHref: '/board?panel=task-edit&taskId=PROJ-211',
       telegramEnabled: true,
-      telegramDispatchSummary: 'Engine: Codex CLI | Target: Telegram | Mode: Implement',
+      telegramDispatchSummary: (
+        <>
+          <span>Engine: Codex CLI | Target: </span>
+          {renderTelegramDispatchTarget(undefined)}
+          <span> | Mode: Implement</span>
+        </>
+      ),
       isSendingTelegram: false,
       onQuickMoveTask: vi.fn(),
       onDeleteTask: vi.fn(),
@@ -595,11 +602,26 @@ describe('app/components/kanban-card', () => {
     expect(html).toContain('Send Telegram Message');
     expect(html).toContain('data-kanban-dispatch-detail="true"');
     expect(html).not.toContain('data-kanban-dispatch-summary="true"');
-    expect(html).toContain('Engine: Codex CLI | Target: Telegram | Mode: Implement');
+    expect(html).toContain('Engine: Codex CLI | Target:');
+    expect(html).toContain('task-dispatch-target-emoji');
+    expect(html).toContain('🦞');
+    expect(html).toContain('Telegram');
+    expect(html).toContain('| Mode: Implement');
     expect(html).toContain('Move to Planned');
     expect(html).not.toContain('Move to Todo');
     expect(html).toContain('Edit');
     expect(html).toContain('Delete');
     expect(html).not.toContain('Open Project');
+  });
+
+  it('renders the Hermes telegram target detail with the shared icon styling', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>{renderTelegramDispatchTarget('hermes-telegram')}</MantineProvider>,
+    );
+
+    expect(html).toContain('task-dispatch-target-logo');
+    expect(html).toContain('/icons/hermes-agent.png');
+    expect(html).toContain('Telegram');
+    expect(html).not.toContain('task-dispatch-target-emoji');
   });
 });

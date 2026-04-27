@@ -355,5 +355,30 @@ describe('kanban-helpers', () => {
 
       expect(task.branch).toBe('task/proj-1/implement-auth');
     });
+
+    it('preserves dispatch target metadata for downstream telegram details', () => {
+      const task = toKanbanTask(
+        {
+          id: 'task-1',
+          taskKey: 'PROJ-1',
+          title: 'Task',
+          note: null,
+          sortOrder: 'a0',
+          taskPriority: 'none',
+          dueAt: null,
+          engine: 'codex',
+          dispatchTarget: 'hermes-telegram',
+          runState: null,
+          runStateUpdatedAt: null,
+          archivedAt: null,
+          updatedAt: new Date('2026-03-10T12:00:00.000Z'),
+          project: null,
+          labels: [],
+        } as never,
+        'todo',
+      ) as unknown as { dispatchTarget?: string | null };
+
+      expect(task.dispatchTarget).toBe('hermes-telegram');
+    });
   });
 });

@@ -108,6 +108,13 @@ describe('lib/kanban-persistence', () => {
     expect(hasKanbanServerSnapshotChanged(previous, next)).toBe(true);
   });
 
+  it('detects refreshed server snapshots when only the dispatch target changes', () => {
+    const previous = buildColumns(buildTask({ dispatchTarget: 'telegram' }));
+    const next = buildColumns(buildTask({ dispatchTarget: 'hermes-telegram' }));
+
+    expect(hasKanbanServerSnapshotChanged(previous, next)).toBe(true);
+  });
+
   it('ignores server snapshots when the rendered kanban task state is unchanged', () => {
     const previous = buildColumns(buildTask());
     const next = buildColumns(buildTask());
