@@ -118,6 +118,7 @@ export function TaskNotificationCenter() {
   const [opened, setOpened] = useState(false);
   const [mode, setMode] = useState<TaskNotificationDrawerMode>('unread');
   const [unreadNotifications, setUnreadNotifications] = useState<TaskNotificationItem[]>([]);
+  const [unreadTotal, setUnreadTotal] = useState(0);
   const [sessionReadNotifications, setSessionReadNotifications] = useState<TaskNotificationItem[]>(
     [],
   );
@@ -130,6 +131,8 @@ export function TaskNotificationCenter() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryLoadingMore, setIsHistoryLoadingMore] = useState(false);
   const knownNotificationIdsRef = useRef(new Set<string>());
+  const hasHydratedUnreadRef = useRef(false);
+  const needsUnreadReloadRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -147,7 +150,14 @@ export function TaskNotificationCenter() {
         for (const notification of page.notifications) {
           knownNotificationIdsRef.current.add(notification.id);
         }
-        setUnreadNotifications(page.notifications);
+        setUnreadNotifications((current) => prependUniqueById(current, page.notifications));
+        setUnreadTotal(page.total);
+        hasHydratedUnreadRef.current = true;
+
+        if (needsUnreadReloadRef.current) {
+          needsUnreadReloadRef.current = false;
+          void loadUnreadNotifications();
+        }
       } catch {
         if (!cancelled) {
           showErrorNotification('Failed to load notifications.');
@@ -181,7 +191,12 @@ export function TaskNotificationCenter() {
         showTaskCompletionNotification(notification);
       }
 
+      if (!hasHydratedUnreadRef.current) {
+        needsUnreadReloadRef.current = true;
+      }
+
       setUnreadNotifications((current) => prependUniqueById(createdNotifications, current));
+      setUnreadTotal((current) => current + createdNotifications.length);
       return true;
     });
   }, []);
@@ -267,10 +282,10 @@ export function TaskNotificationCenter() {
     unreadNotifications,
     sessionReadNotifications,
   );
-  const unreadCount = unreadNotifications.length;
+  const unreadCount = unreadTotal;
   const drawerNotifications =
     mode === 'history' ? historyNotifications : visibleUnreadNotifications;
-  const drawerTotal = mode === 'history' ? historyTotal : visibleUnreadNotifications.length;
+  const drawerTotal = mode === 'history' ? historyTotal : unreadTotal;
   const drawerLoading = mode === 'history' ? isHistoryLoading : isUnreadLoading;
   const drawerHasMore = mode === 'history' ? historyHasMore : false;
   const drawerLoadingMore = mode === 'history' ? isHistoryLoadingMore : false;
