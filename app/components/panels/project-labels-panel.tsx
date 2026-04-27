@@ -163,7 +163,6 @@ export function ProjectLabelsPanel({
                         color="red"
                         variant="subtle"
                         size="sm"
-                        type="button"
                         formId={deleteFormId}
                         confirmTitle={`Delete ${label.name}?`}
                         confirmMessage={formatDeleteConfirmMessage(
