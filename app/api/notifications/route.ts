@@ -6,6 +6,7 @@ import { requireOwnerUser } from '@/lib/owner';
 import { assertSameOrigin } from '@/lib/request-security';
 import {
   listTaskNotifications,
+  markAllTaskNotificationsRead,
   markTaskNotificationsRead,
   type TaskNotification,
 } from '@/lib/task-notifications';
@@ -13,9 +14,14 @@ import {
 const DEFAULT_NOTIFICATION_LIMIT = 20;
 const MAX_NOTIFICATION_LIMIT = 50;
 
-const markNotificationsReadSchema = z.object({
-  notificationIds: z.array(z.string().trim().min(1)),
-});
+const markNotificationsReadSchema = z.union([
+  z.object({
+    markAll: z.literal(true),
+  }),
+  z.object({
+    notificationIds: z.array(z.string().trim().min(1)),
+  }),
+]);
 
 function isMissingTaskNotificationsRelation(error: unknown) {
   if (!error || typeof error !== 'object') return false;
@@ -119,13 +125,21 @@ export async function PATCH(req: Request) {
     const payload = markNotificationsReadSchema.parse(await req.json());
 
     return await withOwnerDb(owner.id, async (client) => {
-      const updatedIds = await markTaskNotificationsRead(
-        {
-          ownerId: owner.id,
-          notificationIds: payload.notificationIds,
-        },
-        client,
-      );
+      const updatedIds =
+        'markAll' in payload
+          ? await markAllTaskNotificationsRead(
+              {
+                ownerId: owner.id,
+              },
+              client,
+            )
+          : await markTaskNotificationsRead(
+              {
+                ownerId: owner.id,
+                notificationIds: payload.notificationIds,
+              },
+              client,
+            );
 
       return NextResponse.json({
         ok: true,

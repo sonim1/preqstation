@@ -38,6 +38,7 @@ import {
   createTaskCompletionNotification,
   isMissingTaskNotificationsRelationError,
   listTaskNotifications,
+  markAllTaskNotificationsRead,
   markTaskNotificationsRead,
   safeCreateTaskCompletionNotification,
   shouldCreateTaskCompletionNotification,
@@ -299,6 +300,21 @@ describe('lib/task-notifications', () => {
       expect.arrayContaining([OWNER_ID, 'notif-1', 'notif-3']),
     );
     expect(queryText(execute.mock.calls[0]?.[0])).toContain('update task_notifications');
+  });
+
+  it('marks all unread notifications for an owner', async () => {
+    const execute = vi.fn().mockResolvedValue({
+      rows: [{ id: 'notif-1' }, { id: 'notif-2' }],
+    });
+
+    const updatedIds = await markAllTaskNotificationsRead({ ownerId: OWNER_ID }, {
+      execute,
+    } as never);
+
+    expect(updatedIds).toEqual(['notif-1', 'notif-2']);
+    expect(queryText(execute.mock.calls[0]?.[0])).toContain('update task_notifications');
+    expect(queryText(execute.mock.calls[0]?.[0])).toContain('where owner_id =');
+    expect(queryText(execute.mock.calls[0]?.[0])).toContain('read_at is null');
   });
 
   it('detects missing task_notifications relation errors', () => {

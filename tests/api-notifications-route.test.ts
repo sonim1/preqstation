@@ -6,6 +6,7 @@ const mocked = vi.hoisted(() => ({
   requireOwnerUser: vi.fn(),
   assertSameOrigin: vi.fn(),
   listTaskNotifications: vi.fn(),
+  markAllTaskNotificationsRead: vi.fn(),
   markTaskNotificationsRead: vi.fn(),
 }));
 
@@ -24,6 +25,7 @@ vi.mock('@/lib/db/rls', () => ({
 
 vi.mock('@/lib/task-notifications', () => ({
   listTaskNotifications: mocked.listTaskNotifications,
+  markAllTaskNotificationsRead: mocked.markAllTaskNotificationsRead,
   markTaskNotificationsRead: mocked.markTaskNotificationsRead,
 }));
 
@@ -71,6 +73,7 @@ describe('app/api/notifications/route', () => {
       limit: 20,
       hasMore: false,
     });
+    mocked.markAllTaskNotificationsRead.mockResolvedValue(['notif-1', 'notif-2']);
     mocked.markTaskNotificationsRead.mockResolvedValue(['notif-1']);
   });
 
@@ -170,6 +173,26 @@ describe('app/api/notifications/route', () => {
     expect(await response.json()).toEqual({
       ok: true,
       updatedIds: ['notif-1'],
+    });
+  });
+
+  it('PATCH can mark every unread notification for the current owner', async () => {
+    const response = await PATCH(
+      patchRequest({
+        markAll: true,
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocked.markAllTaskNotificationsRead).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+      },
+      expect.anything(),
+    );
+    expect(await response.json()).toEqual({
+      ok: true,
+      updatedIds: ['notif-1', 'notif-2'],
     });
   });
 
