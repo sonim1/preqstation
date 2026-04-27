@@ -1,10 +1,11 @@
 import { MantineProvider } from '@mantine/core';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const useEffectMock = vi.hoisted(() => vi.fn());
 const useRefMock = vi.hoisted(() => vi.fn());
+const useStateMock = vi.hoisted(() => vi.fn());
 const useMobilePullToRefreshMock = vi.hoisted(() => vi.fn());
 const notifications = vi.hoisted(() => ({
   showSuccessNotification: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock('react', async () => {
     ...actual,
     useEffect: useEffectMock,
     useRef: useRefMock,
+    useState: useStateMock,
   };
 });
 
@@ -68,17 +70,35 @@ function buildPullToRefreshState(overrides: Partial<ReturnType<typeof vi.fn>> = 
 
 function createRenderHarness() {
   const refs: Array<{ current: unknown }> = [];
+  const stateValues: unknown[] = [];
 
   return function renderBoard(
     overrides: Partial<React.ComponentProps<typeof KanbanBoardMobile>> = {},
   ) {
     let refIndex = 0;
+    let stateIndex = 0;
     const effects: Array<() => void | (() => void)> = [];
 
     useRefMock.mockImplementation((initialValue: unknown) => {
       const index = refIndex++;
       refs[index] ??= { current: initialValue };
       return refs[index];
+    });
+    useStateMock.mockImplementation((initialValue: unknown) => {
+      const index = stateIndex++;
+      if (!(index in stateValues)) {
+        stateValues[index] = initialValue;
+      }
+
+      return [
+        stateValues[index],
+        (value: unknown) => {
+          stateValues[index] =
+            typeof value === 'function'
+              ? (value as (current: unknown) => unknown)(stateValues[index])
+              : value;
+        },
+      ];
     });
     useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
       effects.push(effect);
@@ -114,12 +134,18 @@ describe('KanbanBoardMobile refresh wiring', () => {
   beforeEach(() => {
     useEffectMock.mockReset();
     useRefMock.mockReset();
+    useStateMock.mockReset();
     useMobilePullToRefreshMock.mockReset();
     notifications.showSuccessNotification.mockReset();
 
     useEffectMock.mockImplementation(() => undefined);
     useRefMock.mockImplementation((initialValue: unknown) => ({ current: initialValue }));
+    useStateMock.mockImplementation((initialValue: unknown) => [initialValue, vi.fn()]);
     useMobilePullToRefreshMock.mockReturnValue(buildPullToRefreshState());
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('renders the pull-to-refresh affordance on the active mobile lane', () => {
@@ -164,7 +190,9 @@ describe('KanbanBoardMobile refresh wiring', () => {
     expect(html).toContain('data-size="22"');
   });
 
-  it('shows a success toast only after a pull-triggered refresh settles', () => {
+  it('keeps the indicator visible through refresh settle, swaps to success, then dismisses it', () => {
+    vi.useFakeTimers();
+
     const onRefresh = vi.fn();
     const renderBoard = createRenderHarness();
 
@@ -175,47 +203,54 @@ describe('KanbanBoardMobile refresh wiring', () => {
       throw new Error('Expected KanbanBoardMobile to configure pull-to-refresh.');
     }
 
-    pullToRefreshOptions.onRefresh();
+    pullToRefreshOptions.onRefresh({ pullDistance: 40, pullProgress: 40 / 56 });
     expect(onRefresh).toHaveBeenCalledTimes(1);
     expect(notifications.showSuccessNotification).not.toHaveBeenCalled();
 
-    let pendingRender = renderBoard({ isPending: true, onRefresh });
-    pendingRender.effects.forEach((effect) => {
+    let renderResult = renderBoard({ isPending: true, onRefresh });
+    renderResult.effects.forEach((effect) => {
       effect();
     });
+    expect(renderResult.html).toContain('data-state="refreshing"');
+    expect(renderResult.html).toContain('data-visible="true"');
+    expect(renderResult.html).toContain('--kanban-mobile-refresh-offset:40px');
+
+    renderResult = renderBoard({ isPending: false, onRefresh });
+    renderResult.effects.forEach((effect) => {
+      effect();
+    });
+    vi.advanceTimersByTime(0);
+    renderResult = renderBoard({ isPending: false, onRefresh });
+    expect(renderResult.html).toContain('data-state="success"');
     expect(notifications.showSuccessNotification).not.toHaveBeenCalled();
 
-    const settledRender = renderBoard({ isPending: false, onRefresh });
-    settledRender.effects.forEach((effect) => {
-      effect();
-    });
-    expect(notifications.showSuccessNotification).toHaveBeenCalledWith('Board refreshed.');
-
-    pendingRender = renderBoard({ isPending: false, onRefresh });
-    pendingRender.effects.forEach((effect) => {
-      effect();
-    });
-    expect(notifications.showSuccessNotification).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(900);
+    renderResult = renderBoard({ isPending: false, onRefresh });
+    expect(renderResult.html).not.toContain('data-state="success"');
+    expect(renderResult.html).not.toContain('data-visible="true"');
   });
 
-  it('does not show a success toast for unrelated pending cycles', () => {
+  it('does not show inline success feedback for unrelated pending cycles', () => {
     const renderBoard = createRenderHarness();
 
-    let pendingRender = renderBoard({ isPending: false });
-    pendingRender.effects.forEach((effect) => {
+    let renderResult = renderBoard({ isPending: false });
+    renderResult.effects.forEach((effect) => {
       effect();
     });
 
-    pendingRender = renderBoard({ isPending: true });
-    pendingRender.effects.forEach((effect) => {
+    renderResult = renderBoard({ isPending: true });
+    renderResult.effects.forEach((effect) => {
       effect();
     });
 
-    pendingRender = renderBoard({ isPending: false });
-    pendingRender.effects.forEach((effect) => {
+    renderResult = renderBoard({ isPending: false });
+    renderResult.effects.forEach((effect) => {
       effect();
     });
 
+    renderResult = renderBoard({ isPending: false });
+    expect(renderResult.html).not.toContain('data-state="success"');
+    expect(renderResult.html).not.toContain('data-state="refreshing"');
     expect(notifications.showSuccessNotification).not.toHaveBeenCalled();
   });
 });
