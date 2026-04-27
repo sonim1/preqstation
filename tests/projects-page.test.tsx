@@ -572,7 +572,12 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectsPageSource).toContain("action: 'project.updated'");
   });
 
-  it('keeps image overlays and mobile single-column collapse in the CSS contract', () => {
+  it('keeps /projects wrappers shrink-safe so mobile content cannot widen the page column', () => {
+    expect(projectsPageCss).toMatch(/\.topGrid\s*\{[^}]*min-width:\s*0;/);
+    expect(projectsPageCss).toMatch(/\.topSection\s*\{[^}]*min-width:\s*0;/);
+    expect(projectsPageCss).toMatch(/\.portfolioSection\s*\{[^}]*min-width:\s*0;/);
+    expect(projectsPageCss).toMatch(/\.mosaic\s*\{[^}]*min-width:\s*0;/);
+    expect(projectsPageCss).toMatch(/\.quietLane\s*\{[^}]*min-width:\s*0;/);
     expect(projectsPageCss).toContain('--card-image');
     expect(projectsPageCss).toMatch(/\.projectCard::before\s*\{[\s\S]*linear-gradient\(/);
     expect(projectsPageCss).toMatch(
