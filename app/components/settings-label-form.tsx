@@ -13,14 +13,16 @@ import {
 import {
   type ComponentProps,
   createContext,
-  useActionState,
+  type FormEvent,
   useContext,
   useEffect,
   useId,
   useMemo,
   useState,
+  useTransition,
 } from 'react';
 
+import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setting-save-status';
 import { SettingStatusMessage } from '@/app/components/setting-status-message';
 import controlClasses from '@/app/components/settings-controls.module.css';
 import {
@@ -41,6 +43,7 @@ type SettingsLabelFormRenderProps = {
   colorError: boolean;
   feedbackId: string;
   hasError: boolean;
+  markDirty: () => void;
   nameError: boolean;
   state: ActionState;
 };
@@ -50,29 +53,64 @@ const SettingsLabelFormStateContext = createContext<SettingsLabelFormRenderProps
 type SettingsLabelFormProps = {
   action: (prevState: unknown, formData: FormData) => Promise<ActionState>;
   children: React.ReactNode;
+  showModeHint?: boolean;
 };
 
-export function SettingsLabelForm({ action, children }: SettingsLabelFormProps) {
-  const [state, formAction] = useActionState(action, null);
+export function SettingsLabelForm({
+  action,
+  children,
+  showModeHint = false,
+}: SettingsLabelFormProps) {
+  const [state, setState] = useState<ActionState>(null);
+  const [saveState, setSaveState] = useState<SettingSaveState>('idle');
+  const [isPending, startTransition] = useTransition();
   const feedbackId = useId();
   const hasError = Boolean(state && !state.ok);
   const errorField = state && !state.ok ? (state.field ?? 'form') : null;
   const nameError = errorField === 'name';
   const colorError = errorField === 'color';
+  const currentState =
+    hasError && errorField !== 'form' ? 'idle' : isPending ? 'saving' : saveState;
+
+  function markDirty() {
+    setState((current) => (current && !current.ok ? null : current));
+    setSaveState('dirty');
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+
+    setState(null);
+    setSaveState('saving');
+
+    startTransition(async () => {
+      const result = await action(null, new FormData(form));
+      setState(result);
+      setSaveState(result?.ok ? 'saved' : result ? 'error' : 'idle');
+    });
+  }
 
   return (
     <SettingsLabelFormStateContext.Provider
-      value={{ colorError, feedbackId, hasError, nameError, state }}
+      value={{ colorError, feedbackId, hasError, markDirty, nameError, state }}
     >
-      <form action={formAction}>
+      <form onSubmit={handleSubmit} onChangeCapture={markDirty} onInputCapture={markDirty}>
         {children}
-        {hasError ? (
+        {hasError && errorField !== 'form' ? (
           <SettingStatusMessage
             id={feedbackId}
             tone="error"
             message={state && !state.ok ? state.message : 'Failed to save label.'}
           />
         ) : null}
+        <SettingSaveStatus
+          id={hasError && errorField === 'form' ? feedbackId : undefined}
+          mode="manual"
+          state={currentState}
+          errorMessage={state && !state.ok ? state.message : undefined}
+          showModeHint={showModeHint}
+        />
       </form>
     </SettingsLabelFormStateContext.Provider>
   );
@@ -172,7 +210,10 @@ export function TaskLabelColorField({
               fullWidth
               value={resolveTaskLabelSwatchColor(color)}
               swatches={swatches}
-              onChange={(value) => setColor(parseTaskLabelColor(value))}
+              onChange={(value) => {
+                setColor(parseTaskLabelColor(value));
+                formState?.markDirty();
+              }}
             />
             {usedColorValues.length > 0 ? (
               <Stack gap={4}>
@@ -184,7 +225,10 @@ export function TaskLabelColorField({
                     <button
                       key={entry}
                       type="button"
-                      onClick={() => setColor(entry)}
+                      onClick={() => {
+                        setColor(entry);
+                        formState?.markDirty();
+                      }}
                       style={{
                         padding: 0,
                         border: 0,

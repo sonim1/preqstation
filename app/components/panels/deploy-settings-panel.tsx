@@ -12,11 +12,10 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { IconInfoCircle } from '@tabler/icons-react';
-import { useRouter } from 'next/navigation';
-import { useActionState, useEffect, useMemo, useState } from 'react';
+import { type FormEvent, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
+import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setting-save-status';
 import { SubmitButton } from '@/app/components/submit-button';
-import { showErrorNotification } from '@/lib/notifications';
 
 type ActionState = { ok: true; message?: string } | { ok: false; message: string } | null;
 type DeployStrategy = 'direct_commit' | 'feature_branch' | 'none';
@@ -50,14 +49,43 @@ const STRATEGY_LABELS: Record<DeployStrategy, string> = {
   none: 'None',
 };
 
+type DeployDraft = {
+  projectId: string;
+  strategy: DeployStrategy;
+  defaultBranch: string;
+  autoPr: boolean;
+  commitOnReview: boolean;
+  squashMerge: boolean;
+};
+
+function buildDraft(project: DeploySettingsPanelProps['projects'][number] | null): DeployDraft {
+  return {
+    projectId: project?.id || '',
+    strategy: project?.deployStrategy.strategy || 'none',
+    defaultBranch: project?.deployStrategy.default_branch || 'main',
+    autoPr: Boolean(project?.deployStrategy.auto_pr),
+    commitOnReview: project?.deployStrategy.commit_on_review !== false,
+    squashMerge: project?.deployStrategy.squash_merge !== false,
+  };
+}
+
+function draftsMatch(left: DeployDraft, right: DeployDraft) {
+  return (
+    left.projectId === right.projectId &&
+    left.strategy === right.strategy &&
+    left.defaultBranch === right.defaultBranch &&
+    left.autoPr === right.autoPr &&
+    left.commitOnReview === right.commitOnReview &&
+    left.squashMerge === right.squashMerge
+  );
+}
+
 export function DeploySettingsPanel({
   action,
   projects,
   defaultProjectId,
   singleProject,
 }: DeploySettingsPanelProps) {
-  const router = useRouter();
-  const [state, formAction] = useActionState(action, null);
   const initialProjectId = defaultProjectId || projects[0]?.id || '';
   const initialProject =
     projects.find((project) => project.id === initialProjectId) || projects[0] || null;
@@ -75,14 +103,39 @@ export function DeploySettingsPanel({
   const [squashMerge, setSquashMerge] = useState(
     initialProject?.deployStrategy.squash_merge !== false,
   );
+  const [savedDraft, setSavedDraft] = useState<DeployDraft>(() => buildDraft(initialProject));
+  const [saveState, setSaveState] = useState<SettingSaveState>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const submittedDraftRef = useRef<DeployDraft>(buildDraft(initialProject));
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedProjectId) || projects[0] || null,
     [projects, selectedProjectId],
   );
+  const selectedProjectRevision = selectedProject
+    ? JSON.stringify({
+        id: selectedProject.id,
+        strategy: selectedProject.deployStrategy.strategy,
+        defaultBranch: selectedProject.deployStrategy.default_branch,
+        autoPr: selectedProject.deployStrategy.auto_pr,
+        commitOnReview: selectedProject.deployStrategy.commit_on_review,
+        squashMerge: selectedProject.deployStrategy.squash_merge,
+      })
+    : null;
 
   const isDirectCommit = strategy === 'direct_commit';
   const isFeatureBranch = strategy === 'feature_branch';
+  const currentDraft: DeployDraft = {
+    projectId: selectedProject?.id || selectedProjectId,
+    strategy,
+    defaultBranch,
+    autoPr,
+    commitOnReview,
+    squashMerge,
+  };
+  const isDirty = !draftsMatch(currentDraft, savedDraft);
+  const currentState = isPending ? 'saving' : saveState;
 
   const promptPreview = useMemo(() => {
     if (strategy === 'none') {
@@ -132,13 +185,20 @@ export function DeploySettingsPanel({
   ]);
 
   useEffect(() => {
-    if (!state) return;
-    if (state.ok) {
-      router.refresh();
-      return;
-    }
-    showErrorNotification(state.message);
-  }, [router, state]);
+    if (!selectedProjectRevision || !selectedProject) return;
+    const nextDraft = buildDraft(selectedProject);
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- local draft state must resync when saved defaults change
+    setSelectedProjectId(nextDraft.projectId);
+    setStrategy(nextDraft.strategy);
+    setDefaultBranch(nextDraft.defaultBranch);
+    setAutoPr(nextDraft.autoPr);
+    setCommitOnReview(nextDraft.commitOnReview);
+    setSquashMerge(nextDraft.squashMerge);
+    setSavedDraft(nextDraft);
+    setSaveState('idle');
+    setErrorMessage(null);
+  }, [selectedProject, selectedProjectRevision]);
 
   if (projects.length === 0) {
     return <Text c="dimmed">Create a project first to configure deployment strategy.</Text>;
@@ -148,16 +208,47 @@ export function DeploySettingsPanel({
     setSelectedProjectId(nextProjectId);
     const nextProject = projects.find((project) => project.id === nextProjectId);
     if (!nextProject) return;
-    setStrategy(nextProject.deployStrategy.strategy);
-    setDefaultBranch(nextProject.deployStrategy.default_branch);
-    setAutoPr(nextProject.deployStrategy.auto_pr);
-    setCommitOnReview(nextProject.deployStrategy.commit_on_review);
-    setSquashMerge(nextProject.deployStrategy.squash_merge);
+    const nextDraft = buildDraft(nextProject);
+    setStrategy(nextDraft.strategy);
+    setDefaultBranch(nextDraft.defaultBranch);
+    setAutoPr(nextDraft.autoPr);
+    setCommitOnReview(nextDraft.commitOnReview);
+    setSquashMerge(nextDraft.squashMerge);
+    setSavedDraft(nextDraft);
+    setSaveState('idle');
+    setErrorMessage(null);
+  }
+
+  function updateSaveState(nextDraft: DeployDraft) {
+    setErrorMessage(null);
+    setSaveState(draftsMatch(nextDraft, savedDraft) ? 'idle' : 'dirty');
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+
+    submittedDraftRef.current = currentDraft;
+    setErrorMessage(null);
+    setSaveState('saving');
+
+    startTransition(async () => {
+      const result = await action(null, new FormData(form));
+      if (result?.ok) {
+        setSavedDraft(submittedDraftRef.current);
+        setSaveState('saved');
+        return;
+      }
+
+      setErrorMessage(result?.message || 'Failed to save deployment settings.');
+      setSaveState('error');
+    });
   }
 
   return (
-    <form action={formAction}>
+    <form onSubmit={handleSubmit}>
       <Stack gap="md">
+        <SettingSaveStatus mode="manual" state={currentState} errorMessage={errorMessage} />
         {singleProject ? (
           <input type="hidden" name="projectId" value={selectedProject?.id || ''} />
         ) : (
@@ -175,7 +266,11 @@ export function DeploySettingsPanel({
           name="deploy_strategy"
           label="Strategy"
           value={strategy}
-          onChange={(event) => setStrategy(event.currentTarget.value as DeployStrategy)}
+          onChange={(event) => {
+            const nextStrategy = event.currentTarget.value as DeployStrategy;
+            setStrategy(nextStrategy);
+            updateSaveState({ ...currentDraft, strategy: nextStrategy });
+          }}
           data={DEPLOY_STRATEGIES.map((value) => ({
             value,
             label: STRATEGY_LABELS[value],
@@ -187,7 +282,11 @@ export function DeploySettingsPanel({
           name="deploy_default_branch"
           label="Default Branch"
           value={defaultBranch}
-          onChange={(event) => setDefaultBranch(event.currentTarget.value)}
+          onChange={(event) => {
+            const nextBranch = event.currentTarget.value;
+            setDefaultBranch(nextBranch);
+            updateSaveState({ ...currentDraft, defaultBranch: nextBranch });
+          }}
           placeholder="main"
           required
         />
@@ -198,7 +297,11 @@ export function DeploySettingsPanel({
             <Group gap={6} align="center">
               <Checkbox
                 checked={autoPr}
-                onChange={(event) => setAutoPr(event.currentTarget.checked)}
+                onChange={(event) => {
+                  const nextValue = event.currentTarget.checked;
+                  setAutoPr(nextValue);
+                  updateSaveState({ ...currentDraft, autoPr: nextValue });
+                }}
                 label="Auto-create PR on push"
               />
               <Tooltip
@@ -230,7 +333,11 @@ export function DeploySettingsPanel({
             <Group gap={6} align="center">
               <Checkbox
                 checked={squashMerge}
-                onChange={(event) => setSquashMerge(event.currentTarget.checked)}
+                onChange={(event) => {
+                  const nextValue = event.currentTarget.checked;
+                  setSquashMerge(nextValue);
+                  updateSaveState({ ...currentDraft, squashMerge: nextValue });
+                }}
                 label="Enable squash merge to default branch"
               />
               <Tooltip
@@ -256,7 +363,11 @@ export function DeploySettingsPanel({
             />
             <Checkbox
               checked={commitOnReview}
-              onChange={(event) => setCommitOnReview(event.currentTarget.checked)}
+              onChange={(event) => {
+                const nextValue = event.currentTarget.checked;
+                setCommitOnReview(nextValue);
+                updateSaveState({ ...currentDraft, commitOnReview: nextValue });
+              }}
               label="Commit required before In Review"
             />
           </>
@@ -264,7 +375,7 @@ export function DeploySettingsPanel({
           <input type="hidden" name="deploy_commit_on_review" value="false" />
         )}
 
-        <SubmitButton>Save Settings</SubmitButton>
+        <SubmitButton disabled={!isDirty || isPending}>Save Settings</SubmitButton>
 
         <Accordion variant="subtle" chevronPosition="left">
           <Accordion.Item value="preview">
