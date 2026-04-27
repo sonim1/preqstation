@@ -48,7 +48,7 @@ import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
 import { isProjectStatus, PROJECT_STATUS_COLORS, PROJECT_STATUS_LABELS } from '@/lib/project-meta';
 import { resolveProjectByKey } from '@/lib/project-resolve';
 import { resolveAgentInstructions, resolveDeployStrategyConfig } from '@/lib/project-settings';
-import { listProjectTaskLabels } from '@/lib/task-labels';
+import { listProjectTaskLabels, listProjectTaskLabelUsageCounts } from '@/lib/task-labels';
 import { normalizeTaskLabelColor, parseTaskLabelColor } from '@/lib/task-meta';
 import { resolveTerminology } from '@/lib/terminology';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
@@ -84,9 +84,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   );
   if (!resolved) notFound();
 
-  const [project, kitchenMode, todos, labels, projectWorkLogPage] = await withOwnerDb(
-    owner.id,
-    async (client) =>
+  const [project, kitchenMode, todos, rawLabels, labelUsageCounts, projectWorkLogPage] =
+    await withOwnerDb(owner.id, async (client) =>
       Promise.all([
         client.query.projects.findFirst({
           where: and(
@@ -111,6 +110,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           },
         }),
         listProjectTaskLabels(owner.id, resolved.id, client),
+        listProjectTaskLabelUsageCounts(owner.id, resolved.id, client),
         listWorkLogsPage({
           ownerId: owner.id,
           projectId: resolved.id,
@@ -118,7 +118,15 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           client,
         }),
       ]),
+    );
+
+  const labelUsageCountById = new Map(
+    labelUsageCounts.map((row) => [row.labelId, row.usageCount] as const),
   );
+  const labels = rawLabels.map((label) => ({
+    ...label,
+    usageCount: labelUsageCountById.get(label.id) ?? 0,
+  }));
 
   if (!project) notFound();
   const projectId = project.id;
@@ -728,7 +736,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               </Text>
               <ProjectLabelsPanel
                 labels={labels}
-                taskPluralLower={terminology.task.plural.toLowerCase()}
+                taskSingularLower={terminology.task.singularLower}
+                taskPluralLower={terminology.task.pluralLower}
                 createLabelAction={createLabel}
                 updateLabelAction={updateLabel}
                 deleteLabelAction={deleteLabel}

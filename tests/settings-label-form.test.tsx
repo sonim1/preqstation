@@ -72,4 +72,16 @@ describe('app/components/settings-label-form', () => {
       /<button[^>]*aria-label="Label color"[^>]*aria-describedby="settings-feedback"[^>]*aria-invalid="true"/,
     );
   });
+
+  it('passes through a form id for confirm-action submit flows', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <SettingsLabelForm action={vi.fn(async () => null)} id="delete-label-form">
+          <SettingsLabelNameInput aria-label="Label name" name="name" />
+        </SettingsLabelForm>
+      </MantineProvider>,
+    );
+
+    expect(html).toMatch(/<form[^>]*id="delete-label-form"/);
+  });
 });
