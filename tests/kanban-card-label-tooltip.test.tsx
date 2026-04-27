@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { MantineProvider } from '@mantine/core';
+import { MantineProvider, Menu } from '@mantine/core';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -60,7 +60,7 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-import { KanbanCardContent } from '@/app/components/kanban-card';
+import { KanbanCardContent, KanbanCardMenuDropdown } from '@/app/components/kanban-card';
 import type { KanbanTask } from '@/lib/kanban-helpers';
 
 const cardsCss = fs.readFileSync(
@@ -220,6 +220,50 @@ describe('app/components/kanban-card label tooltip behavior', () => {
     expect(html).toContain('data-tooltip-open-delay="0"');
     expect(html).toContain('data-tooltip-style-bg="rgba(11, 20, 38, 0.96)"');
     expect(html).toContain('data-tooltip-style-color="#f5f8ff"');
+  });
+
+  it('allows touch users to open the desktop dispatch target tooltip', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <Menu opened withinPortal={false}>
+          <Menu.Target>
+            <button type="button">Actions</button>
+          </Menu.Target>
+          <KanbanCardMenuDropdown
+            task={BASE_TASK}
+            isPending={false}
+            isMobile={false}
+            editHref="/board?panel=task-edit&taskId=PROJ-323"
+            telegramEnabled
+            telegramDispatchSummary={
+              <>
+                <span>Codex CLI</span>
+                <span> | Mode: Implement</span>
+                <span> | Current target</span>
+              </>
+            }
+            telegramDispatchTooltip="Current target: OpenClaw Telegram"
+            isSendingTelegram={false}
+            onQuickMoveTask={vi.fn()}
+            onDeleteTask={vi.fn()}
+            onCopyTaskId={vi.fn()}
+            onCopyTelegramMessage={vi.fn()}
+            onSendTelegramMessage={vi.fn()}
+          />
+        </Menu>
+      </MantineProvider>,
+    );
+
+    expect(html).toContain('data-kanban-dispatch-summary="desktop"');
+    expect(html).toContain('data-tooltip-events-hover="true"');
+    expect(html).toContain('data-tooltip-events-focus="true"');
+    expect(html).toContain('data-tooltip-events-touch="true"');
+    expect(tooltipPropsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        events: { hover: true, focus: true, touch: true },
+        label: 'Current target: OpenClaw Telegram',
+      }),
+    );
   });
 
   it('uses an arrow cursor on the summary and explicit contrast rules inside the tooltip', () => {

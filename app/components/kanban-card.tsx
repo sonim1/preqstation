@@ -314,7 +314,7 @@ export function KanbanCardMenuDropdown({
           label={telegramDispatchTooltip}
           withArrow
           openDelay={0}
-          events={{ hover: true, focus: true, touch: false }}
+          events={{ hover: true, focus: true, touch: true }}
         >
           <div
             className={styles.kanbanCardMenuDispatchSummary}
