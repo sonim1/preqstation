@@ -55,6 +55,8 @@ import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 import { listWorkLogsPage } from '@/lib/work-log-list';
 import { PROJECT_WORK_LOG_PAGE_SIZE } from '@/lib/work-log-pagination';
 
+import { ProjectSectionAnchorOffset } from './project-section-anchor-offset';
+
 type ProjectDetailPageProps = {
   params: Promise<{ key: string }>;
   searchParams?: Promise<{ panel?: string }>;
@@ -638,7 +640,9 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           </Stack>
         </Paper>
 
-        <nav aria-label="Project sections">
+        <ProjectSectionAnchorOffset />
+
+        <nav aria-label="Project sections" data-project-section-nav="true">
           <Paper
             withBorder
             radius="lg"

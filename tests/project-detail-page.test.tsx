@@ -323,6 +323,7 @@ describe('project detail page', () => {
     );
 
     expect(html).toContain('aria-label="Project sections"');
+    expect(html).toContain('data-project-section-nav="true"');
     expect(html).toContain('href="#project-overview"');
     expect(html).toContain('href="#project-configuration"');
     expect(html).toContain('href="#project-activity"');
