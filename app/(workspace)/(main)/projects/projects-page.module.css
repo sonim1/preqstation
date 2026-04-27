@@ -1,10 +1,12 @@
 .topSection {
+  min-width: 0;
   border-color: color-mix(in srgb, var(--ui-border), var(--ui-accent) 12%);
   background: var(--ui-surface-muted);
   box-shadow: none;
 }
 
 .topGrid {
+  min-width: 0;
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
@@ -67,6 +69,7 @@
 }
 
 .portfolioSection {
+  min-width: 0;
   display: grid;
   gap: 1rem;
 }
@@ -102,6 +105,7 @@
 }
 
 .mosaic {
+  min-width: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
@@ -109,6 +113,7 @@
 }
 
 .quietLane {
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
