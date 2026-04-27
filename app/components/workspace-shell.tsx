@@ -113,7 +113,7 @@ function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) 
   );
 }
 
-function partitionWorkspaceProjectOptions(projectOptions: WorkspaceProjectOption[]) {
+function filterActiveProjectOptions(projectOptions: WorkspaceProjectOption[]) {
   return projectOptions.filter((project) => project.status === ACTIVE_PROJECT_STATUS);
 }
 
@@ -187,7 +187,7 @@ export function WorkspaceShell({
     () => null,
   );
   const activeProjectOptions = useMemo(
-    () => partitionWorkspaceProjectOptions(projectOptions),
+    () => filterActiveProjectOptions(projectOptions),
     [projectOptions],
   );
 
