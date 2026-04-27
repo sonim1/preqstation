@@ -6,6 +6,7 @@ const mocked = vi.hoisted(() => ({
   getOwnerUserOrNull: vi.fn(),
   getUserSetting: vi.fn(),
   listProjectTaskLabels: vi.fn(),
+  listProjectTaskLabelUsageCounts: vi.fn(),
   listWorkLogsPage: vi.fn(),
   notFound: vi.fn(),
   projectEditPanelProps: vi.fn(),
@@ -115,12 +116,13 @@ vi.mock('@/app/components/panels/project-labels-panel', () => ({
   ProjectLabelsPanel: ({
     labels,
   }: {
-    labels: Array<{ id: string; name: string; color: string }>;
+    labels: Array<{ id: string; name: string; color: string; usageCount: number }>;
   }) => (
     <div
       data-testid="project-labels-panel"
       data-label-count={String(labels.length)}
       data-label-names={labels.map((label) => label.name).join(',')}
+      data-label-usage={labels.map((label) => `${label.name}:${label.usageCount}`).join(',')}
     />
   ),
 }));
@@ -235,6 +237,7 @@ vi.mock('@/lib/project-settings', () => ({
 
 vi.mock('@/lib/task-labels', () => ({
   listProjectTaskLabels: mocked.listProjectTaskLabels,
+  listProjectTaskLabelUsageCounts: mocked.listProjectTaskLabelUsageCounts,
 }));
 
 vi.mock('@/lib/terminology', () => ({
@@ -295,6 +298,9 @@ describe('project detail page', () => {
       { id: 'label-1', projectId: 'project-1', name: 'Bug', color: 'red' },
       { id: 'label-2', projectId: 'project-1', name: 'Feature', color: 'blue' },
     ]);
+    mocked.listProjectTaskLabelUsageCounts.mockResolvedValue([
+      { labelId: 'label-1', usageCount: 3 },
+    ]);
     mocked.updateProject.mockResolvedValue({
       ok: true,
       data: { id: 'project-1', projectKey: 'PROJ', changed: true },
@@ -313,6 +319,30 @@ describe('project detail page', () => {
     expect(html).toContain('data-edit-project-href="/project/PROJ?panel=project-edit"');
     expect(html).toContain('data-work-log-href="/dashboard?panel=worklog&amp;projectId=project-1"');
     expect(html).toContain('data-integration-href=""');
+  });
+
+  it('groups the page into anchored overview, configuration, and activity sections', async () => {
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('aria-label="Project sections"');
+    expect(html).toContain('data-project-section-nav="true"');
+    expect(html).toContain('href="#project-overview"');
+    expect(html).toContain('href="#project-configuration"');
+    expect(html).toContain('href="#project-activity"');
+    expect(html).toContain('id="project-overview"');
+    expect(html).toContain('id="project-configuration"');
+    expect(html).toContain('id="project-activity"');
+    expect(html).toContain('>Configuration<');
+    expect(html).toContain('>Activity<');
+    expect(html).toContain('Edit Details');
+    expect(html).toContain('href="/project/PROJ?panel=project-edit"');
+    expect(html).toContain('href="/board/PROJ"');
+    expect(html).toContain('href="/dashboard?panel=task&amp;projectId=project-1"');
+    expect(html).toContain('href="/dashboard?panel=worklog&amp;projectId=project-1"');
   });
 
   it('renders project editing inside the shared modal shell on the detail route', async () => {
@@ -341,6 +371,7 @@ describe('project detail page', () => {
     expect(html).toContain('data-testid="project-labels-panel"');
     expect(html).toContain('data-label-count="2"');
     expect(html).toContain('data-label-names="Bug,Feature"');
+    expect(html).toContain('data-label-usage="Bug:3,Feature:0"');
     expect(html).toContain('Keep labels close to the work they belong to in this project.');
   });
 

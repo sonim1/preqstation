@@ -142,8 +142,7 @@ type KanbanCardMenuDropdownProps = {
   isMobile: boolean;
   editHref: string;
   telegramEnabled: boolean;
-  telegramDispatchSummary?: ReactNode;
-  telegramDispatchTooltip?: string;
+  telegramDispatchDetail?: ReactNode;
   isSendingTelegram: boolean;
   onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
   onDeleteTask: (taskId: string) => void;
@@ -165,10 +164,6 @@ function toDispatchModeLabel(status: KanbanStatus) {
     default:
       return 'Status';
   }
-}
-
-function resolveTelegramDispatchTargetLabel(dispatchTarget: KanbanTask['dispatchTarget']) {
-  return dispatchTarget === 'hermes-telegram' ? 'Hermes Telegram' : 'OpenClaw Telegram';
 }
 
 export function renderTelegramDispatchTarget(dispatchTarget: KanbanTask['dispatchTarget']) {
@@ -234,8 +229,7 @@ export function KanbanCardMenuDropdown({
   isMobile,
   editHref,
   telegramEnabled,
-  telegramDispatchSummary,
-  telegramDispatchTooltip,
+  telegramDispatchDetail,
   isSendingTelegram,
   onQuickMoveTask,
   onDeleteTask,
@@ -244,6 +238,31 @@ export function KanbanCardMenuDropdown({
   onSendTelegramMessage,
 }: KanbanCardMenuDropdownProps) {
   const terminology = useTerminology();
+  const sendTelegramItem = (
+    <Menu.Item
+      leftSection={<IconSend size={14} />}
+      onClick={onSendTelegramMessage}
+      disabled={isSendingTelegram}
+    >
+      <span>Send Telegram Message</span>
+    </Menu.Item>
+  );
+  const mobileTelegramDispatchDetailItem =
+    isMobile && telegramDispatchDetail ? (
+      <Menu.Item closeMenuOnClick={false}>
+        <Text
+          component="div"
+          pt={2}
+          size="xs"
+          c="dimmed"
+          className={styles.kanbanCardMenuDispatchDetail}
+          data-kanban-dispatch-detail="true"
+        >
+          {telegramDispatchDetail}
+        </Text>
+      </Menu.Item>
+    ) : null;
+
   return (
     <Menu.Dropdown>
       <Menu.Item
@@ -290,46 +309,26 @@ export function KanbanCardMenuDropdown({
         Copy Telegram Message
       </Menu.Item>
       {telegramEnabled ? (
-        <Menu.Item
-          leftSection={<IconSend size={14} />}
-          onClick={onSendTelegramMessage}
-          disabled={isSendingTelegram}
-        >
+        isMobile ? (
           <>
-            <span>Send Telegram Message</span>
-            {isMobile && telegramDispatchSummary ? (
-              <Text
-                component="span"
-                display="block"
-                pt={2}
-                size="xs"
-                c="dimmed"
-                data-kanban-dispatch-detail="true"
-              >
-                {telegramDispatchSummary}
-              </Text>
-            ) : null}
+            {sendTelegramItem}
+            {mobileTelegramDispatchDetailItem}
           </>
-        </Menu.Item>
-      ) : null}
-      {telegramEnabled && !isMobile && telegramDispatchSummary ? (
-        <Tooltip
-          classNames={{ tooltip: styles.kanbanCardMenuDispatchTooltip }}
-          label={telegramDispatchTooltip}
-          withArrow
-          openDelay={0}
-          events={{ hover: true, focus: true, touch: true }}
-        >
-          <Menu.Item
-            className={styles.kanbanCardMenuDispatchSummaryItem}
-            closeMenuOnClick={false}
-            data-kanban-dispatch-summary="desktop"
-            data-kanban-dispatch-summary-item="true"
-            data-kanban-dispatch-tooltip={telegramDispatchTooltip}
+        ) : telegramDispatchDetail ? (
+          <Tooltip
+            classNames={{ tooltip: styles.kanbanCardMenuDispatchTooltip }}
+            label={
+              <div className={styles.kanbanCardMenuDispatchDetail}>{telegramDispatchDetail}</div>
+            }
+            withArrow
+            openDelay={0}
+            events={{ hover: true, focus: true, touch: true }}
           >
-            <div className={styles.kanbanCardMenuDispatchSummary}>{telegramDispatchSummary}</div>
-          </Menu.Item>
-        </Tooltip>
+            {sendTelegramItem}
+          </Tooltip>
+        ) : (
+          sendTelegramItem
+        )
       ) : null}
       <Menu.Divider />
       <Menu.Item component={Link} href={editHref}>
@@ -418,18 +417,11 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const telegramMessage = telegramDispatch.message;
   const telegramEngineConfig = getEngineConfig(displayEngine) ?? ENGINE_CONFIGS.codex;
   const telegramDispatchModeLabel = toDispatchModeLabel(task.status);
-  const telegramDispatchTooltip = resolveTelegramDispatchTargetLabel(task.dispatchTarget);
-  const telegramDispatchSummary = isMobile ? (
+  const telegramDispatchDetail = (
     <>
-      <span>Engine: {telegramEngineConfig.label} | Target: </span>
+      <span>{telegramEngineConfig.label} | </span>
       {renderTelegramDispatchTarget(task.dispatchTarget)}
-      <span> | Mode: {telegramDispatchModeLabel}</span>
-    </>
-  ) : (
-    <>
-      <span>{telegramEngineConfig.label}</span>
-      <span> | Mode: {telegramDispatchModeLabel}</span>
-      <span className={styles.kanbanCardMenuDispatchSummaryHint}> | Current target</span>
+      <span> | {telegramDispatchModeLabel}</span>
     </>
   );
 
@@ -570,8 +562,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
                   isMobile={isMobile}
                   editHref={editHref}
                   telegramEnabled={telegramEnabled}
-                  telegramDispatchSummary={telegramDispatchSummary}
-                  telegramDispatchTooltip={telegramDispatchTooltip}
+                  telegramDispatchDetail={telegramDispatchDetail}
                   isSendingTelegram={isSendingTelegram}
                   onQuickMoveTask={onQuickMoveTask}
                   onDeleteTask={onDeleteTask}
