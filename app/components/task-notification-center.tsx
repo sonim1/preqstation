@@ -81,8 +81,8 @@ async function fetchNotificationPage(params: {
   return (await response.json()) as NotificationPage;
 }
 
-async function markNotificationsRead(notificationIds: string[]) {
-  if (notificationIds.length === 0) {
+async function markNotificationsRead(params: { notificationIds?: string[]; markAll?: true }) {
+  if (!params.markAll && (params.notificationIds?.length ?? 0) === 0) {
     return;
   }
 
@@ -92,7 +92,9 @@ async function markNotificationsRead(notificationIds: string[]) {
     headers: {
       'content-type': 'application/json',
     },
-    body: JSON.stringify({ notificationIds }),
+    body: JSON.stringify(
+      params.markAll ? { markAll: true } : { notificationIds: params.notificationIds ?? [] },
+    ),
   });
 
   if (!response.ok) {
@@ -238,19 +240,32 @@ export function TaskNotificationCenter() {
     setOpened(true);
     setMode('unread');
 
-    if (unreadNotifications.length === 0) {
+    if (unreadTotal === 0) {
       return;
     }
 
-    const notificationsToMark = unreadNotifications;
-    setSessionReadNotifications((current) => prependUniqueById(notificationsToMark, current));
-    setUnreadNotifications([]);
+    const unreadSnapshot = unreadNotifications;
+    const unreadTotalSnapshot = unreadTotal;
 
-    void markNotificationsRead(notificationsToMark.map((notification) => notification.id)).catch(
-      () => {
-        showErrorNotification('Failed to mark notifications as read.');
-      },
-    );
+    setSessionReadNotifications((current) => prependUniqueById(unreadSnapshot, current));
+    setUnreadNotifications([]);
+    setUnreadTotal(0);
+    setHistoryNotifications([]);
+    setHistoryTotal(0);
+    setHistoryHasMore(false);
+    setHistoryNextOffset(0);
+    setHasLoadedHistory(false);
+
+    void markNotificationsRead({ markAll: true }).catch(() => {
+      setSessionReadNotifications((current) =>
+        current.filter(
+          (notification) => !unreadSnapshot.some((snapshot) => snapshot.id === notification.id),
+        ),
+      );
+      setUnreadNotifications((current) => prependUniqueById(unreadSnapshot, current));
+      setUnreadTotal(unreadTotalSnapshot);
+      showErrorNotification('Failed to mark notifications as read.');
+    });
   }
 
   function closeDrawer() {

@@ -73,6 +73,10 @@ function buildNotifications(count: number) {
   );
 }
 
+function buildNotificationIds(count: number) {
+  return Array.from({ length: count }, (_unused, index) => `notif-${index + 1}`);
+}
+
 function makePage(total: number, notifications: ReturnType<typeof buildNotifications>) {
   return {
     notifications,
@@ -184,6 +188,62 @@ describe('app/components/task-notification-center', () => {
     await waitFor(() => {
       const notifications = drawerProps?.notifications as Array<{ id: string }>;
       expect(notifications.some((notification) => notification.id === 'notif-live')).toBe(true);
+    });
+  });
+
+  it('marks all unread notifications when the drawer opens', async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => makePage(26, buildNotifications(20)),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ ok: true, updatedIds: buildNotificationIds(26) }),
+      });
+
+    renderTaskNotificationCenter();
+
+    fireEvent.click(await screen.findByLabelText('Open notifications (26 unread)'));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        2,
+        '/api/notifications',
+        expect.objectContaining({
+          method: 'PATCH',
+          credentials: 'same-origin',
+          body: JSON.stringify({ markAll: true }),
+        }),
+      );
+    });
+  });
+
+  it('restores unread state when mark-all fails after closing and reopening the drawer', async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => makePage(3, buildNotifications(3)),
+      })
+      .mockRejectedValueOnce(new Error('patch failed'));
+
+    renderTaskNotificationCenter();
+
+    fireEvent.click(await screen.findByLabelText('Open notifications (3 unread)'));
+
+    await waitFor(() => {
+      expect(showErrorNotificationMock).toHaveBeenCalledWith(
+        'Failed to mark notifications as read.',
+      );
+      expect(screen.getByLabelText('Open notifications (3 unread)')).toBeTruthy();
+    });
+
+    (drawerProps?.onClose as (() => void) | undefined)?.();
+
+    fireEvent.click(screen.getByLabelText('Open notifications (3 unread)'));
+    await waitFor(() => {
+      expect(drawerProps?.total).toBe(3);
+      expect((drawerProps?.notifications as Array<{ id: string }>).length).toBe(3);
     });
   });
 });
