@@ -135,7 +135,15 @@ export function DeploySettingsPanel({
     squashMerge,
   };
   const isDirty = !draftsMatch(currentDraft, savedDraft);
-  const currentState = isPending ? 'saving' : saveState;
+  const currentState: SettingSaveState = isPending
+    ? 'saving'
+    : saveState === 'error'
+      ? 'error'
+      : isDirty
+        ? 'dirty'
+        : saveState === 'saved'
+          ? 'saved'
+          : 'idle';
 
   const promptPreview = useMemo(() => {
     if (strategy === 'none') {

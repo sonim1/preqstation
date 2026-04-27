@@ -1,12 +1,20 @@
 // @vitest-environment jsdom
 
 import { MantineProvider } from '@mantine/core';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DeploySettingsPanel } from '@/app/components/panels/deploy-settings-panel';
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((nextResolve) => {
+    resolve = nextResolve;
+  });
+  return { promise, resolve };
+}
 
 const singleProject = [
   {
@@ -25,6 +33,7 @@ const singleProject = [
 describe('app/components/panels/deploy-settings-panel', () => {
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
   });
 
   beforeEach(() => {
@@ -128,6 +137,45 @@ describe('app/components/panels/deploy-settings-panel', () => {
     await waitFor(() => {
       expect(screen.getByText('Failed to save deployment settings.')).toBeTruthy();
     });
+  });
+
+  it('keeps the form dirty when edits continue after save starts', async () => {
+    const request = deferred<{ ok: true }>();
+    const action = vi.fn(async () => request.promise);
+
+    render(
+      <MantineProvider>
+        <DeploySettingsPanel
+          action={action}
+          singleProject
+          defaultProjectId="project-1"
+          projects={singleProject}
+        />
+      </MantineProvider>,
+    );
+
+    const defaultBranchInput = screen.getByRole('textbox', { name: /Default Branch/i });
+
+    fireEvent.change(defaultBranchInput, {
+      target: { value: 'release' },
+    });
+    fireEvent.submit(defaultBranchInput.closest('form') as HTMLFormElement);
+
+    await waitFor(() => {
+      expect(action).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.change(defaultBranchInput, {
+      target: { value: 'release-candidate' },
+    });
+
+    await act(async () => {
+      request.resolve({ ok: true });
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('Unsaved changes.')).toBeTruthy();
+    expect(screen.queryByText('Saved.')).toBeNull();
   });
 
   it('describes auto PR requirements in terms of gh auth or GitHub MCP', () => {

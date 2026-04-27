@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { MantineProvider } from '@mantine/core';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -35,6 +35,7 @@ function deferred<T>() {
 describe('app/components/settings-label-form', () => {
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
   });
 
   beforeEach(() => {
@@ -131,6 +132,39 @@ describe('app/components/settings-label-form', () => {
     await waitFor(() => {
       expect(screen.getByText('Saved.')).toBeTruthy();
     });
+  });
+
+  it('clears the saved state after a short delay', async () => {
+    vi.useFakeTimers();
+    const request = deferred<{ ok: true }>();
+    const action = vi.fn(async () => request.promise);
+
+    render(
+      <MantineProvider>
+        <SettingsLabelForm action={action}>
+          <input aria-label="Label name" name="name" defaultValue="" />
+          <button type="submit">Save label</button>
+        </SettingsLabelForm>
+      </MantineProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText('Label name'), {
+      target: { value: 'Bug' },
+    });
+    fireEvent.submit(screen.getByText('Save label').closest('form') as HTMLFormElement);
+
+    await act(async () => {
+      request.resolve({ ok: true });
+      await Promise.resolve();
+    });
+
+    expect(screen.getByText('Saved.')).toBeTruthy();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2_000);
+    });
+
+    expect(screen.queryByText('Saved.')).toBeNull();
   });
 
   it('disables controls and ignores duplicate submits while a save is pending', async () => {

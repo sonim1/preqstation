@@ -77,6 +77,7 @@ export function SettingsLabelForm({
   const [saveState, setSaveState] = useState<SettingSaveState>('idle');
   const [isPending, startTransition] = useTransition();
   const isSubmittingRef = useRef(false);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackId = useId();
   const hasError = Boolean(state && !state.ok);
   const errorField = state && !state.ok ? (state.field ?? 'form') : null;
@@ -85,7 +86,20 @@ export function SettingsLabelForm({
   const currentState =
     hasError && errorField !== 'form' ? 'idle' : isPending ? 'saving' : saveState;
 
+  useEffect(
+    () => () => {
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+      }
+    },
+    [],
+  );
+
   function markDirty() {
+    if (savedTimerRef.current) {
+      clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = null;
+    }
     setState((current) => (current && !current.ok ? null : current));
     setSaveState('dirty');
   }
@@ -97,6 +111,10 @@ export function SettingsLabelForm({
     const formData = new FormData(form);
 
     isSubmittingRef.current = true;
+    if (savedTimerRef.current) {
+      clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = null;
+    }
     setState(null);
     setSaveState('saving');
 
@@ -104,7 +122,16 @@ export function SettingsLabelForm({
       try {
         const result = await action(null, formData);
         setState(result);
-        setSaveState(result?.ok ? 'saved' : result ? 'error' : 'idle');
+        if (result?.ok) {
+          setSaveState('saved');
+          savedTimerRef.current = setTimeout(() => {
+            setSaveState((current) => (current === 'saved' ? 'idle' : current));
+            savedTimerRef.current = null;
+          }, 2_000);
+          return;
+        }
+
+        setSaveState(result ? 'error' : 'idle');
       } finally {
         isSubmittingRef.current = false;
       }
