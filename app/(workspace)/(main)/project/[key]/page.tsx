@@ -671,7 +671,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           </Text>
           <ProjectLabelsPanel
             labels={labels}
-            taskPluralLower={terminology.task.plural.toLowerCase()}
+            taskSingularLower={terminology.task.singularLower}
+            taskPluralLower={terminology.task.pluralLower}
             createLabelAction={createLabel}
             updateLabelAction={updateLabel}
             deleteLabelAction={deleteLabel}

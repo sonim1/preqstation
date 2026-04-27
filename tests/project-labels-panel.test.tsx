@@ -71,12 +71,14 @@ import { ProjectLabelsPanel } from '@/app/components/panels/project-labels-panel
 
 function renderPanel(
   labels: Array<{ id: string; name: string; color: string; usageCount: number }> = [],
+  options: { taskPluralLower?: string; taskSingularLower?: string } = {},
 ) {
   return renderToStaticMarkup(
     <MantineProvider>
       <ProjectLabelsPanel
         labels={labels}
-        taskPluralLower="tasks"
+        taskPluralLower={options.taskPluralLower ?? 'tasks'}
+        taskSingularLower={options.taskSingularLower ?? 'task'}
         createLabelAction={vi.fn(async () => null)}
         updateLabelAction={vi.fn(async () => null)}
         deleteLabelAction={vi.fn(async () => null)}
@@ -116,5 +118,17 @@ describe('app/components/panels/project-labels-panel', () => {
       'data-confirm-message="Deleting this label will remove it from 2 tasks. This cannot be undone."',
     );
     expect(html).toContain('data-confirm-message="Deleting this label cannot be undone."');
+  });
+
+  it('uses custom singular terminology for one-item usage and delete confirmation copy', () => {
+    const html = renderPanel(
+      [{ id: 'label-1', name: 'Bug', color: 'red', usageCount: 1 }],
+      { taskPluralLower: 'tickets', taskSingularLower: 'ticket' },
+    );
+
+    expect(html).toContain('Used by 1 ticket');
+    expect(html).toContain(
+      'data-confirm-message="Deleting this label will remove it from 1 ticket. This cannot be undone."',
+    );
   });
 });

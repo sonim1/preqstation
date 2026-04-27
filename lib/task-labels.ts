@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { taskLabelAssignments, taskLabels, tasks } from '@/lib/db/schema';
@@ -35,9 +35,7 @@ export async function listProjectTaskLabelUsageCounts(
     })
     .from(taskLabelAssignments)
     .innerJoin(tasks, eq(taskLabelAssignments.taskId, tasks.id))
-    .where(
-      and(eq(tasks.ownerId, ownerId), eq(tasks.projectId, projectId), isNull(tasks.archivedAt)),
-    )
+    .where(and(eq(tasks.ownerId, ownerId), eq(tasks.projectId, projectId)))
     .groupBy(taskLabelAssignments.labelId);
 }
 

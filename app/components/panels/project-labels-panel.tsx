@@ -21,26 +21,36 @@ type LabelActionState =
 
 type ProjectLabelsPanelProps = {
   labels: Array<{ id: string; name: string; color: string; usageCount: number }>;
+  taskSingularLower: string;
   taskPluralLower: string;
   createLabelAction: (prevState: unknown, formData: FormData) => Promise<LabelActionState>;
   updateLabelAction: (prevState: unknown, formData: FormData) => Promise<LabelActionState>;
   deleteLabelAction: (prevState: unknown, formData: FormData) => Promise<LabelActionState>;
 };
 
-function formatLabelUsageCopy(usageCount: number, taskPluralLower: string) {
+function formatLabelUsageCopy(
+  usageCount: number,
+  taskSingularLower: string,
+  taskPluralLower: string,
+) {
   if (usageCount === 0) return 'Not used yet';
-  const taskLabel = usageCount === 1 ? 'task' : taskPluralLower;
+  const taskLabel = usageCount === 1 ? taskSingularLower : taskPluralLower;
   return `Used by ${usageCount} ${taskLabel}`;
 }
 
-function formatDeleteConfirmMessage(usageCount: number, taskPluralLower: string) {
+function formatDeleteConfirmMessage(
+  usageCount: number,
+  taskSingularLower: string,
+  taskPluralLower: string,
+) {
   if (usageCount === 0) return 'Deleting this label cannot be undone.';
-  const taskLabel = usageCount === 1 ? 'task' : taskPluralLower;
+  const taskLabel = usageCount === 1 ? taskSingularLower : taskPluralLower;
   return `Deleting this label will remove it from ${usageCount} ${taskLabel}. This cannot be undone.`;
 }
 
 export function ProjectLabelsPanel({
   labels,
+  taskSingularLower,
   taskPluralLower,
   createLabelAction,
   updateLabelAction,
@@ -123,7 +133,7 @@ export function ProjectLabelsPanel({
                   </div>
 
                   <Text className={settingsClasses.labelRowMeta} size="sm">
-                    {formatLabelUsageCopy(label.usageCount, taskPluralLower)}
+                    {formatLabelUsageCopy(label.usageCount, taskSingularLower, taskPluralLower)}
                   </Text>
 
                   <SettingsLabelForm action={updateLabelAction}>
@@ -167,6 +177,7 @@ export function ProjectLabelsPanel({
                         confirmTitle={`Delete ${label.name}?`}
                         confirmMessage={formatDeleteConfirmMessage(
                           label.usageCount,
+                          taskSingularLower,
                           taskPluralLower,
                         )}
                         confirmLabel="Delete label"
