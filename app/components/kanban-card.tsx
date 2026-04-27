@@ -159,9 +159,9 @@ function toDispatchModeLabel(status: KanbanStatus) {
 export function renderTelegramDispatchTarget(dispatchTarget: KanbanTask['dispatchTarget']) {
   if (dispatchTarget === 'hermes-telegram') {
     return (
-      <span className="task-dispatch-target-option">
-        <img
-          className="task-dispatch-target-logo"
+      <span className={styles.kanbanDispatchTargetOption}>
+        <Image
+          className={styles.kanbanDispatchTargetLogo}
           src="/icons/hermes-agent.png"
           alt=""
           width={16}
@@ -174,8 +174,8 @@ export function renderTelegramDispatchTarget(dispatchTarget: KanbanTask['dispatc
   }
 
   return (
-    <span className="task-dispatch-target-option">
-      <span className="task-dispatch-target-emoji" aria-hidden="true">
+    <span className={styles.kanbanDispatchTargetOption}>
+      <span className={styles.kanbanDispatchTargetEmoji} aria-hidden="true">
         🦞
       </span>
       <span>Telegram</span>

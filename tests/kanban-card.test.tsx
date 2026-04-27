@@ -603,10 +603,11 @@ describe('app/components/kanban-card', () => {
     expect(html).toContain('data-kanban-dispatch-detail="true"');
     expect(html).not.toContain('data-kanban-dispatch-summary="true"');
     expect(html).toContain('Engine: Codex CLI | Target:');
-    expect(html).toContain('task-dispatch-target-emoji');
     expect(html).toContain('🦞');
     expect(html).toContain('Telegram');
     expect(html).toContain('| Mode: Implement');
+    expect(html).not.toContain('task-dispatch-target-option');
+    expect(html).not.toContain('task-dispatch-target-emoji');
     expect(html).toContain('Move to Planned');
     expect(html).not.toContain('Move to Todo');
     expect(html).toContain('Edit');
@@ -619,9 +620,10 @@ describe('app/components/kanban-card', () => {
       <MantineProvider>{renderTelegramDispatchTarget('hermes-telegram')}</MantineProvider>,
     );
 
-    expect(html).toContain('task-dispatch-target-logo');
     expect(html).toContain('/icons/hermes-agent.png');
     expect(html).toContain('Telegram');
+    expect(html).not.toContain('task-dispatch-target-option');
+    expect(html).not.toContain('task-dispatch-target-logo');
     expect(html).not.toContain('task-dispatch-target-emoji');
   });
 });
