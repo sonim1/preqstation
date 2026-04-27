@@ -31,13 +31,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { outfit } from '@/app/fonts';
-import { PAUSED_PROJECT_STATUS } from '@/lib/project-meta';
+import { ACTIVE_PROJECT_STATUS } from '@/lib/project-meta';
 import {
   findProjectByKey,
   findVisibleProjectByKey,
   getProjectSelectHref,
   getWorkspaceProjectSubtitle,
-  isVisibleWorkspaceProject,
   LAST_PROJECT_KEY_STORAGE,
   pushRecentProjectKey,
   resolvePickerProject,
@@ -115,21 +114,7 @@ function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) 
 }
 
 function partitionWorkspaceProjectOptions(projectOptions: WorkspaceProjectOption[]) {
-  const visibleProjectOptions: WorkspaceProjectOption[] = [];
-  const pausedProjectOptions: WorkspaceProjectOption[] = [];
-
-  for (const project of projectOptions) {
-    if (project.status === PAUSED_PROJECT_STATUS) {
-      pausedProjectOptions.push(project);
-      continue;
-    }
-
-    if (isVisibleWorkspaceProject(project)) {
-      visibleProjectOptions.push(project);
-    }
-  }
-
-  return { visibleProjectOptions, pausedProjectOptions };
+  return projectOptions.filter((project) => project.status === ACTIVE_PROJECT_STATUS);
 }
 
 function readRememberedProjectKey() {
@@ -196,13 +181,12 @@ export function WorkspaceShell({
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
   const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
   const [commandPaletteRequested, setCommandPaletteRequested] = useState(false);
-  const [pausedBoardsRequested, setPausedBoardsRequested] = useState(false);
   const rememberedProjectKey = useSyncExternalStore(
     subscribeRememberedProjectKey,
     readRememberedProjectKey,
     () => null,
   );
-  const { visibleProjectOptions, pausedProjectOptions } = useMemo(
+  const activeProjectOptions = useMemo(
     () => partitionWorkspaceProjectOptions(projectOptions),
     [projectOptions],
   );
@@ -233,16 +217,11 @@ export function WorkspaceShell({
           : 'dashboard';
   const currentBoardProject = active === 'kanban' ? selectedProject : null;
   const mobilePickerProject = selectedProject;
-  const currentVisibleBoardProject =
-    currentBoardProject && isVisibleWorkspaceProject(currentBoardProject)
-      ? currentBoardProject
-      : null;
-  const currentPausedBoardProject =
-    currentBoardProject?.status === PAUSED_PROJECT_STATUS ? currentBoardProject : null;
-  const currentBoardIndex = currentVisibleBoardProject
-    ? visibleProjectOptions.findIndex((project) => project.id === currentVisibleBoardProject.id)
+  const currentActiveBoardProject =
+    currentBoardProject?.status === ACTIVE_PROJECT_STATUS ? currentBoardProject : null;
+  const currentBoardIndex = currentActiveBoardProject
+    ? activeProjectOptions.findIndex((project) => project.id === currentActiveBoardProject.id)
     : -1;
-  const pausedBoardsOpened = pausedBoardsRequested || !!currentPausedBoardProject;
   const isBoardContext = active === 'kanban';
   const currentScopeLabel = mobilePickerProject?.name || 'Boards';
   const workspaceSubtitle = getWorkspaceProjectSubtitle(currentBoardProject);
@@ -509,7 +488,7 @@ export function WorkspaceShell({
             />
             <Box visibleFrom="md">
               <Stack gap={6}>
-                {visibleProjectOptions.length > 0 ? (
+                {activeProjectOptions.length > 0 ? (
                   <Stack
                     gap={BOARD_SUBNAV_ROW_GAP}
                     className="workspace-board-subnav"
@@ -520,50 +499,14 @@ export function WorkspaceShell({
                       aria-hidden="true"
                       style={boardSelectionSurfaceStyle}
                     />
-                    {visibleProjectOptions.map((project) => (
+                    {activeProjectOptions.map((project) => (
                       <BoardNavLink
                         key={project.id}
                         project={project}
-                        isCurrentBoard={currentVisibleBoardProject?.id === project.id}
+                        isCurrentBoard={currentActiveBoardProject?.id === project.id}
                         onSelect={handleBoardSelect}
                       />
                     ))}
-                  </Stack>
-                ) : null}
-                {pausedProjectOptions.length > 0 ? (
-                  <Stack gap={BOARD_SUBNAV_ROW_GAP} className="workspace-board-subnav">
-                    <NavLink
-                      label="Paused"
-                      onClick={() => {
-                        setPausedBoardsRequested((opened) => !opened);
-                      }}
-                      className="workspace-nav-link workspace-board-subnav-link workspace-board-subnav-toggle"
-                      data-open={pausedBoardsOpened ? 'true' : undefined}
-                      aria-expanded={pausedBoardsOpened}
-                      aria-controls="workspace-paused-board-group"
-                      rightSection={
-                        <IconChevronRight
-                          size={14}
-                          className="workspace-board-subnav-toggle-icon"
-                        />
-                      }
-                    />
-                    {pausedBoardsOpened ? (
-                      <Stack
-                        gap={BOARD_SUBNAV_ROW_GAP}
-                        id="workspace-paused-board-group"
-                        className="workspace-board-subnav-children"
-                      >
-                        {pausedProjectOptions.map((project) => (
-                          <BoardNavLink
-                            key={project.id}
-                            project={project}
-                            isCurrentBoard={currentPausedBoardProject?.id === project.id}
-                            onSelect={handleBoardSelect}
-                          />
-                        ))}
-                      </Stack>
-                    ) : null}
                   </Stack>
                 ) : null}
               </Stack>

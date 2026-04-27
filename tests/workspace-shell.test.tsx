@@ -317,7 +317,7 @@ describe('app/components/workspace-shell', () => {
     expect(alphaIndex).toBeGreaterThan(boardIndex);
   });
 
-  it('keeps paused boards behind a secondary paused group instead of the always-visible board list', () => {
+  it('renders only active boards in the desktop board list', () => {
     const html = renderWorkspaceShell({
       desktopOpened: true,
       pathname: '/board/ALPHA',
@@ -326,11 +326,13 @@ describe('app/components/workspace-shell', () => {
         { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
         { id: '2', name: 'Beta', projectKey: 'BETA', status: 'paused' },
         { id: '3', name: 'Gamma', projectKey: 'GAMMA', status: 'active' },
+        { id: '4', name: 'Delta', projectKey: 'DELTA', status: 'done' },
       ],
     });
 
-    expect(html).toContain('>Paused<');
+    expect(html).not.toContain('>Paused<');
     expect(html).not.toContain('href="/board/BETA"');
+    expect(html).not.toContain('href="/board/DELTA"');
     expect(html).toMatch(
       /href="\/board\/ALPHA"[\s\S]*workspace-board-subnav-link[\s\S]*href="\/board\/GAMMA"[\s\S]*workspace-board-subnav-link/,
     );
@@ -454,7 +456,7 @@ describe('app/components/workspace-shell', () => {
     expect(html).not.toContain('data-current-board="true"');
   });
 
-  it('opens the paused group when the current board is paused and keeps the active selection surface hidden', () => {
+  it('keeps paused current boards out of the desktop board list while leaving the active selection surface hidden', () => {
     const html = renderWorkspaceShell({
       desktopOpened: true,
       pathname: '/board/BETA',
@@ -462,13 +464,14 @@ describe('app/components/workspace-shell', () => {
       projectOptions: [
         { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
         { id: '2', name: 'Beta', projectKey: 'BETA', status: 'paused' },
+        { id: '3', name: 'Gamma', projectKey: 'GAMMA', status: 'active' },
       ],
     });
 
-    expect(html).toContain('aria-expanded="true"');
-    expect(html).toMatch(
-      /href="\/board\/BETA"[\s\S]*workspace-board-subnav-link[\s\S]*aria-current="page"/,
-    );
+    expect(html).not.toContain('>Paused<');
+    expect(html).not.toContain('href="/board/BETA"');
+    expect(html).toContain('href="/board/ALPHA"');
+    expect(html).toContain('href="/board/GAMMA"');
     expect(html).toContain('data-current-board-index="-1"');
     expect(html).toContain('opacity:0');
   });
