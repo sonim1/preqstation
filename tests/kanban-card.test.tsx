@@ -574,14 +574,13 @@ describe('app/components/kanban-card', () => {
       isMobile: false,
       editHref: '/board?panel=task-edit&taskId=PROJ-211',
       telegramEnabled: true,
-      telegramDispatchSummary: (
+      telegramDispatchDetail: (
         <>
-          <span>Codex CLI</span>
+          <span>Engine: Codex CLI | Target: </span>
+          {renderTelegramDispatchTarget('telegram')}
           <span> | Mode: Implement</span>
-          <span> | Current target</span>
         </>
       ),
-      telegramDispatchTooltip: 'OpenClaw Telegram',
       isSendingTelegram: false,
       onQuickMoveTask: vi.fn(),
       onDeleteTask: vi.fn(),
@@ -604,14 +603,8 @@ describe('app/components/kanban-card', () => {
     expect(html).toContain('Copy Telegram Message');
     expect(html).toContain('Send Telegram Message');
     expect(html).not.toContain('data-kanban-dispatch-detail="true"');
-    expect(html).toContain('data-kanban-dispatch-summary="desktop"');
-    expect(html).toContain('data-kanban-dispatch-summary-item="true"');
-    expect(html).toContain('data-kanban-dispatch-tooltip="OpenClaw Telegram"');
-    expect(html).toContain('Codex CLI');
-    expect(html).toContain('| Mode: Implement');
-    expect(html).toContain('| Current target');
-    expect(html).not.toContain('Current target: OpenClaw Telegram');
-    expect(html).not.toContain('🦞');
+    expect(html).not.toContain('data-kanban-dispatch-summary="desktop"');
+    expect(html).not.toContain('data-kanban-dispatch-summary-item="true"');
     expect(html).not.toContain('/icons/hermes-agent.png');
     expect(html).not.toContain('task-dispatch-target-option');
     expect(html).not.toContain('task-dispatch-target-emoji');
@@ -635,14 +628,13 @@ describe('app/components/kanban-card', () => {
             isMobile
             editHref="/board?panel=task-edit&taskId=PROJ-211"
             telegramEnabled
-            telegramDispatchSummary={
+            telegramDispatchDetail={
               <>
                 <span>Engine: Codex CLI | Target: </span>
                 {renderTelegramDispatchTarget('hermes-telegram')}
                 <span> | Mode: Implement</span>
               </>
             }
-            telegramDispatchTooltip="Current target: Hermes Telegram"
             isSendingTelegram={false}
             onQuickMoveTask={vi.fn()}
             onDeleteTask={vi.fn()}
@@ -675,11 +667,9 @@ describe('app/components/kanban-card', () => {
       /\.kanbanDispatchTargetLogo\s*\{[\s\S]*width:\s*1rem;[\s\S]*height:\s*1rem;/,
     );
     expect(cardsCss).toMatch(
-      /\.kanbanCardMenuDispatchSummary\s*\{[\s\S]*display:\s*flex;[\s\S]*align-items:\s*center;/,
+      /\.kanbanCardMenuDispatchDetail\s*\{[\s\S]*display:\s*inline-flex;[\s\S]*align-items:\s*center;/,
     );
-    expect(cardsCss).toMatch(
-      /\.kanbanCardMenuDispatchTooltip\s*\{[\s\S]*max-width:\s*16rem;/,
-    );
+    expect(cardsCss).toMatch(/\.kanbanCardMenuDispatchTooltip\s*\{[\s\S]*max-width:\s*16rem;/);
   });
 
   it('builds Hermes card dispatches with the Hermes message payload and target', () => {

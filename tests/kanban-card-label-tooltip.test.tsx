@@ -60,7 +60,11 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-import { KanbanCardContent, KanbanCardMenuDropdown } from '@/app/components/kanban-card';
+import {
+  KanbanCardContent,
+  KanbanCardMenuDropdown,
+  renderTelegramDispatchTarget,
+} from '@/app/components/kanban-card';
 import type { KanbanTask } from '@/lib/kanban-helpers';
 
 const cardsCss = fs.readFileSync(
@@ -222,7 +226,7 @@ describe('app/components/kanban-card label tooltip behavior', () => {
     expect(html).toContain('data-tooltip-style-color="#f5f8ff"');
   });
 
-  it('allows touch users to open the desktop dispatch target tooltip', () => {
+  it('shows the shared telegram detail copy in the desktop send tooltip', () => {
     const html = renderToStaticMarkup(
       <MantineProvider>
         <Menu opened withinPortal={false}>
@@ -235,14 +239,13 @@ describe('app/components/kanban-card label tooltip behavior', () => {
             isMobile={false}
             editHref="/board?panel=task-edit&taskId=PROJ-323"
             telegramEnabled
-            telegramDispatchSummary={
+            telegramDispatchDetail={
               <>
-                <span>Codex CLI</span>
+                <span>Engine: Codex CLI | Target: </span>
+                {renderTelegramDispatchTarget('telegram')}
                 <span> | Mode: Implement</span>
-                <span> | Current target</span>
               </>
             }
-            telegramDispatchTooltip="OpenClaw Telegram"
             isSendingTelegram={false}
             onQuickMoveTask={vi.fn()}
             onDeleteTask={vi.fn()}
@@ -254,15 +257,16 @@ describe('app/components/kanban-card label tooltip behavior', () => {
       </MantineProvider>,
     );
 
-    expect(html).toContain('data-kanban-dispatch-summary="desktop"');
-    expect(html).toContain('data-kanban-dispatch-summary-item="true"');
     expect(html).toContain('data-tooltip-events-hover="true"');
     expect(html).toContain('data-tooltip-events-focus="true"');
-    expect(html).toContain('data-tooltip-events-touch="true"');
+    expect(html).toContain('data-tooltip-events-touch="false"');
+    expect(html).toContain('Engine: Codex CLI | Target: ');
+    expect(html).toContain('🦞');
+    expect(html).toContain('| Mode: Implement');
     expect(tooltipPropsMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        events: { hover: true, focus: true, touch: true },
-        label: 'OpenClaw Telegram',
+        events: { hover: true, focus: true, touch: false },
+        label: expect.anything(),
       }),
     );
   });
