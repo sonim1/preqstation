@@ -35,4 +35,18 @@ describe('drizzle remove none deploy strategy migration', () => {
     expect(sql).toContain(`SET "value" = 'direct_commit'`);
     expect(sql).toContain(`WHERE "key" = 'deploy_strategy' AND "value" = 'none'`);
   });
+
+  it('normalizes companion direct-commit flags for the same legacy none projects', () => {
+    const migrationPath = path.join(
+      process.cwd(),
+      'drizzle',
+      '0020_remove_none_deploy_strategy.sql',
+    );
+    const sql = readFileSync(migrationPath, 'utf8');
+
+    expect(sql).toContain('affected_projects');
+    expect(sql).toContain(`SET "value" = 'true'`);
+    expect(sql).toContain(`"project_id" IN (SELECT "project_id" FROM affected_projects)`);
+    expect(sql).toContain(`"key" IN ('deploy_commit_on_review', 'deploy_squash_merge')`);
+  });
 });
