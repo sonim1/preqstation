@@ -67,6 +67,47 @@ describe('app/hooks/use-task-offline-draft', () => {
     expect(result.current.canRestoreDraft).toBe(false);
   });
 
+  it('suppresses a stale draft conflict when the saved draft already matches the latest server note', async () => {
+    mocked.getDraft.mockResolvedValue({
+      updatedAt: '2026-04-28T15:00:00.000Z',
+      fields: {
+        title: '원본 제목',
+        note: '## Server note',
+        baseNoteFingerprint: buildTaskNoteFingerprint('## Older note'),
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note', true),
+    );
+
+    await waitFor(() => {
+      expect(result.current.draftNote).toBe('## Server note');
+    });
+    expect(result.current.hasNoteConflict).toBe(false);
+    expect(result.current.canRestoreDraft).toBe(false);
+    expect(mocked.deleteDraft).toHaveBeenCalledWith('task:PROJ-310');
+  });
+
+  it('keeps a title-only stale draft restorable without surfacing a note conflict', async () => {
+    mocked.getDraft.mockResolvedValue({
+      fields: {
+        title: '로컬 초안 제목',
+        note: '## Server note',
+        baseNoteFingerprint: buildTaskNoteFingerprint('## Older note'),
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note', true),
+    );
+
+    await waitFor(() => {
+      expect(result.current.canRestoreDraft).toBe(true);
+    });
+    expect(result.current.hasNoteConflict).toBe(false);
+  });
+
   it('keeps the server note active online and exposes a restorable stale local draft', async () => {
     mocked.getDraft.mockResolvedValue({
       fields: {
