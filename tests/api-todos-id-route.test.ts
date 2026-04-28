@@ -201,6 +201,7 @@ describe('app/api/todos/[id]/route', () => {
       ...existingTask,
       branch: 'task/proj-255/justand-sayong',
       note: '## Detail',
+      dispatchTarget: 'hermes-telegram',
       runState: null,
       runStateUpdatedAt: null,
       labelAssignments: [],
@@ -228,6 +229,7 @@ describe('app/api/todos/[id]/route', () => {
       todo: expect.objectContaining({
         taskKey: 'NONE-1',
         note: '## Detail',
+        dispatchTarget: 'hermes-telegram',
         workLogs: [
           expect.objectContaining({
             id: 'log-1',
