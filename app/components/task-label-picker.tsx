@@ -193,7 +193,11 @@ export function TaskLabelPicker({
   const hasSelectedLabels = resolvedSelectedLabels.length > 0;
 
   const commitLabelChange = (nextLabelIds: string[]) => {
-    Promise.resolve(onChange(nextLabelIds)).catch(() => undefined);
+    try {
+      Promise.resolve(onChange(nextLabelIds)).catch(() => undefined);
+    } catch {
+      // Prevent synchronous label update failures from crashing the UI.
+    }
   };
 
   const toggleLabel = (labelId: string) => {

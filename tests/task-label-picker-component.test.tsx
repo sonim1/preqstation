@@ -276,6 +276,30 @@ describe('app/components/task-label-picker UI behavior', () => {
     }
   });
 
+  it('does not throw when label updates fail synchronously', () => {
+    const onChange = vi.fn(() => {
+      throw new Error('Failed to save labels.');
+    });
+
+    render(
+      <TaskLabelPicker
+        labelOptions={labelOptions}
+        onChange={onChange}
+        projectId="project-1"
+        selectedLabelIds={[]}
+        triggerAriaLabel="Edit labels"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit labels' }));
+
+    expect(() => {
+      fireEvent.click(screen.getByRole('button', { name: 'Bug' }));
+    }).not.toThrow();
+    expect(onChange).toHaveBeenCalledWith(['label-1']);
+    expect(screen.getByPlaceholderText('Search labels')).toBeTruthy();
+  });
+
   it('creates a new label when Enter is pressed in the search input', async () => {
     const onChange = vi.fn();
 
