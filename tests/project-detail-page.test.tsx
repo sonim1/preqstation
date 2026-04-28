@@ -54,12 +54,22 @@ vi.mock('@mantine/core', () => ({
     children,
     component,
     href,
+    rel,
+    target,
   }: {
     children: React.ReactNode;
     component?: string;
     href?: string;
+    rel?: string;
+    target?: string;
   }) =>
-    component === 'a' ? <a href={href}>{children}</a> : <button type="button">{children}</button>,
+    component === 'a' ? (
+      <a href={href} rel={rel} target={target}>
+        {children}
+      </a>
+    ) : (
+      <button type="button">{children}</button>
+    ),
   Container: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Group: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Paper: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -257,7 +267,7 @@ vi.mock('@/lib/task-labels', () => ({
 
 vi.mock('@/lib/terminology', () => ({
   resolveTerminology: vi.fn(() => ({
-    task: { singular: 'Task', plural: 'Tasks' },
+    task: { singular: 'Task', singularLower: 'task', plural: 'Tasks', pluralLower: 'tasks' },
   })),
 }));
 
@@ -407,6 +417,7 @@ describe('project detail page', () => {
       commit_on_review: true,
       squash_merge: false,
     });
+    mocked.tasksFindMany.mockResolvedValueOnce([{ status: 'todo' }]);
     mocked.listWorkLogsPage.mockResolvedValueOnce({
       workLogs: [
         {
@@ -441,6 +452,11 @@ describe('project detail page', () => {
     expect(html).toContain('Feature Branch to main. Auto-create a PR and push before review.');
     expect(html).toContain('Instructions saved for dispatched agents.');
     expect(html).toContain('Last recorded work on 2026-04-26.');
+    expect(html).toContain('1 open Task');
+    expect(html).not.toContain('1 open Tasks');
+    expect(html).toContain(
+      'href="https://github.com/example/repo" rel="noopener noreferrer" target="_blank"',
+    );
   });
 
   it('uses the neutral recent-activity color for inactive projects with work logs', async () => {

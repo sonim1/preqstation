@@ -184,6 +184,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
     (t) =>
       t.status === 'inbox' || t.status === 'todo' || t.status === 'hold' || t.status === 'ready',
   ).length;
+  const openTaskLabel = openTaskCount === 1 ? terminology.task.singular : terminology.task.plural;
 
   const agentInstructions = resolveAgentInstructions(project.projectSettings);
   const deployStrategy = resolveDeployStrategyConfig(project.projectSettings);
@@ -630,7 +631,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                     {projectStatus.label}
                   </Badge>
                   <Badge color={openTaskCount === 0 ? 'gray' : 'blue'} variant="light">
-                    {`${openTaskCount} open ${terminology.task.plural}`}
+                    {`${openTaskCount} open ${openTaskLabel}`}
                   </Badge>
                 </Group>
               </Stack>
@@ -674,7 +675,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                     component="a"
                     href={hasRepo ? (project.repoUrl ?? editProjectHref) : editProjectHref}
                     target={hasRepo ? '_blank' : undefined}
-                    rel={hasRepo ? 'noreferrer' : undefined}
+                    rel={hasRepo ? 'noopener noreferrer' : undefined}
                     variant="subtle"
                     size="compact-xs"
                   >
