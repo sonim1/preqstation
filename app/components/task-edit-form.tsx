@@ -79,7 +79,7 @@ export type TaskEditFormProps = {
     taskPriority: string;
     status: string;
     engine?: string | null;
-    dispatchTarget?: 'telegram' | 'hermes-telegram' | null;
+    dispatchTarget?: EditableBoardTask['dispatchTarget'];
     runState?: 'queued' | 'running' | null;
     runStateUpdatedAt?: string | null;
     workLogs?: Array<{
