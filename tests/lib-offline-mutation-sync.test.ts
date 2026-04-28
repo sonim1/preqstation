@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { flushOfflineMutations } from '@/lib/offline/mutation-sync';
 
@@ -13,6 +13,12 @@ vi.mock('@/lib/offline/mutation-store', () => ({
 }));
 
 describe('lib/offline/mutation-sync', () => {
+  beforeEach(() => {
+    listQueuedOfflineMutationsMock.mockReset();
+    deleteOfflineMutationMock.mockReset();
+    rekeyOfflinePatchMutationMock.mockReset();
+  });
+
   it('rekeys queued patch mutations after syncing an offline-created task', async () => {
     listQueuedOfflineMutationsMock.mockResolvedValueOnce([
       {
@@ -241,5 +247,83 @@ describe('lib/offline/mutation-sync', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(deleteOfflineMutationMock).not.toHaveBeenCalled();
     expect(onApplied).not.toHaveBeenCalled();
+  });
+
+  it('treats note conflicts as handled replay outcomes and returns the latest task snapshots', async () => {
+    listQueuedOfflineMutationsMock.mockResolvedValueOnce([
+      {
+        id: 'patch:PROJ-514',
+        kind: 'patch',
+        createdAt: '2026-04-25T12:00:00.000Z',
+        taskKey: 'PROJ-514',
+        payload: {
+          note: 'Local stale rewrite',
+          baseNoteFingerprint: 'task-note:v1:9:oldernote',
+        },
+      },
+    ]);
+
+    const onApplied = vi.fn();
+    const onConflict = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: async () => ({
+        error: 'Task notes changed in another session. Reload the latest notes and try again.',
+        boardTask: {
+          id: 'task-514',
+          taskKey: 'PROJ-514',
+          title: 'Server title',
+          note: 'Latest server note',
+          branch: null,
+          status: 'todo',
+          sortOrder: 'a0',
+          taskPriority: 'none',
+          dueAt: null,
+          engine: null,
+          runState: null,
+          runStateUpdatedAt: null,
+          project: { id: 'project-1', name: 'Alpha', projectKey: 'PROJ' },
+          updatedAt: '2026-04-25T12:02:00.000Z',
+          archivedAt: null,
+          labels: [],
+        },
+        focusedTask: {
+          id: 'task-514',
+          taskKey: 'PROJ-514',
+          title: 'Server title',
+          branch: null,
+          note: 'Latest server note',
+          projectId: 'project-1',
+          labelIds: [],
+          labels: [],
+          taskPriority: 'none',
+          status: 'todo',
+          engine: null,
+          runState: null,
+          runStateUpdatedAt: null,
+          workLogs: [],
+        },
+      }),
+    });
+
+    const result = await flushOfflineMutations({ fetchImpl: fetchMock, onApplied, onConflict });
+
+    expect(result).toEqual({ appliedCount: 0, error: null, halted: false });
+    expect(deleteOfflineMutationMock).toHaveBeenCalledWith('patch:PROJ-514');
+    expect(onApplied).not.toHaveBeenCalled();
+    expect(onConflict).toHaveBeenCalledWith({
+      kind: 'patch',
+      taskKey: 'PROJ-514',
+      error: 'Task notes changed in another session. Reload the latest notes and try again.',
+      boardTask: expect.objectContaining({
+        taskKey: 'PROJ-514',
+        note: 'Latest server note',
+      }),
+      focusedTask: expect.objectContaining({
+        taskKey: 'PROJ-514',
+        note: 'Latest server note',
+      }),
+    });
   });
 });

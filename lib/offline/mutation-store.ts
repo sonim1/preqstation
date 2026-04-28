@@ -31,6 +31,7 @@ export type QueueOfflineCreateInput = {
 };
 
 export type QueueOfflinePatchInput = {
+  baseNoteFingerprint?: string;
   labelIds?: string[];
   labels?: OptimisticLabel[];
   note?: string;
@@ -49,10 +50,7 @@ export function buildOfflinePatchMutationId(taskKey: string) {
   return `patch:${taskKey}`;
 }
 
-function mergeDefinedFields<T extends Record<string, unknown>>(
-  previous: T,
-  next: Partial<T>,
-): T {
+function mergeDefinedFields<T extends Record<string, unknown>>(previous: T, next: Partial<T>): T {
   const merged = { ...previous };
 
   for (const [key, value] of Object.entries(next)) {

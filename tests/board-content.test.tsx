@@ -8,6 +8,7 @@ const routerMock = vi.hoisted(() => ({
   replace: vi.fn(),
 }));
 const offlineBoardHydratorPropsMock = vi.hoisted(() => vi.fn());
+const offlineBoardRouteWarmerPropsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => useSearchParamsMock(),
@@ -69,6 +70,13 @@ vi.mock('@/app/components/offline-board-hydrator', () => ({
   OfflineBoardHydrator: (props: unknown) => {
     offlineBoardHydratorPropsMock(props);
     return <div data-testid="offline-board-hydrator" />;
+  },
+}));
+
+vi.mock('@/app/components/offline-board-route-warmer', () => ({
+  OfflineBoardRouteWarmer: (props: unknown) => {
+    offlineBoardRouteWarmerPropsMock(props);
+    return <div data-testid="offline-board-route-warmer" />;
   },
 }));
 
@@ -195,6 +203,7 @@ describe('BoardContent background image handling', () => {
     expect(html).toContain('data-close-href="/board"');
     expect(html).toContain('data-size="80rem"');
     expect(html).toContain('data-testid="offline-board-hydrator"');
+    expect(html).toContain('data-testid="offline-board-route-warmer"');
     expect(html).toContain('data-archived-count="7"');
     expect(html).toContain('data-archive-project-id="project-1"');
     expect(html).toContain('data-project-id="project-1"');
@@ -204,6 +213,7 @@ describe('BoardContent background image handling', () => {
         boardKey: 'PROJ',
       }),
     );
+    expect(offlineBoardRouteWarmerPropsMock).toHaveBeenCalledWith({});
   });
 });
 

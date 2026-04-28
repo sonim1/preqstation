@@ -21,6 +21,14 @@ type OfflinePatchResponse = {
   focusedTask?: SerializedEditableBoardTask;
 };
 
+export type HandledOfflinePatchConflict = {
+  boardTask: KanbanTask;
+  error: string;
+  focusedTask: EditableBoardTask | null;
+  kind: 'patch';
+  taskKey: string;
+};
+
 export type AppliedOfflineMutation =
   | {
       boardTask: KanbanTask;
@@ -53,10 +61,23 @@ async function readErrorMessage(response: Response) {
   }
 }
 
+function readStructuredErrorMessage(
+  payload: { error?: unknown } | null,
+  status: number,
+  action: string,
+) {
+  if (typeof payload?.error === 'string' && payload.error.trim()) {
+    return payload.error;
+  }
+
+  return `Failed to sync offline task ${action} (${status}).`;
+}
+
 export async function flushOfflineMutations(
   params: {
     fetchImpl?: typeof fetch;
     onApplied?: (mutation: AppliedOfflineMutation) => Promise<void> | void;
+    onConflict?: (conflict: HandledOfflinePatchConflict) => Promise<void> | void;
   } = {},
 ): Promise<FlushOfflineMutationsResult> {
   const fetchImpl = params.fetchImpl ?? fetch;
@@ -121,8 +142,28 @@ export async function flushOfflineMutations(
       });
 
       if (!response.ok) {
-        const message = await readErrorMessage(response);
-        const syncError = message ?? `Failed to sync offline task update (${response.status}).`;
+        let structuredPayload: OfflinePatchResponse | null = null;
+        try {
+          structuredPayload = (await response.json()) as OfflinePatchResponse;
+        } catch {
+          structuredPayload = null;
+        }
+
+        const syncError = readStructuredErrorMessage(structuredPayload, response.status, 'update');
+        if (response.status === 409 && structuredPayload?.boardTask) {
+          await deleteOfflineMutation(mutation.id);
+          await params.onConflict?.({
+            kind: 'patch',
+            taskKey: mutation.taskKey,
+            error: syncError,
+            boardTask: structuredPayload.boardTask,
+            focusedTask: structuredPayload.focusedTask
+              ? hydrateEditableBoardTask(structuredPayload.focusedTask)
+              : null,
+          });
+          continue;
+        }
+
         if (isPermanentOfflineMutationFailure(response.status)) {
           await deleteOfflineMutation(mutation.id);
           skippedError ??= syncError;

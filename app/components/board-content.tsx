@@ -10,6 +10,7 @@ import { BoardTaskPanel } from '@/app/components/board-task-panel';
 import { buildArchivedTasksRequestPath, KanbanBoard } from '@/app/components/kanban-board';
 import { KanbanStoreProvider } from '@/app/components/kanban-store-provider';
 import { OfflineBoardHydrator } from '@/app/components/offline-board-hydrator';
+import { OfflineBoardRouteWarmer } from '@/app/components/offline-board-route-warmer';
 import {
   buildBoardTaskEditHref,
   resolveBoardTaskPanelLocation,
@@ -175,6 +176,7 @@ export function BoardContent({
   return (
     <KanbanStoreProvider initialColumns={kanbanTasks} initialFocusedTask={editableTodo}>
       <OfflineBoardHydrator boardKey={selectedProject?.projectKey ?? 'ALL'} />
+      <OfflineBoardRouteWarmer />
       <BoardOfflineSyncProvider
         editHrefBase={editHrefBase}
         activeProjectId={selectedProject?.id ?? null}

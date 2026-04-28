@@ -33,6 +33,7 @@ export type OfflineCreateMutationPayload = {
 };
 
 export type OfflinePatchMutationPayload = {
+  baseNoteFingerprint?: string;
   labelIds?: string[];
   note?: string;
   sortOrder?: string;
