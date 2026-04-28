@@ -561,7 +561,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
       /\.metricStrip\s*\{[\s\S]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/,
     );
     expect(projectsPageCss).toMatch(
-      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metricStrip\s*\{[\s\S]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/,
+      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metricStrip\s*\{[\s\S]*gap:\s*0\.4rem;/,
     );
     expect(projectsPageCss).toMatch(
       /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metric\s*\{[\s\S]*padding:\s*0\.5rem 0\.55rem;/,
@@ -570,7 +570,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
       /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metricValue\s*\{[\s\S]*font-size:\s*0\.95rem;/,
     );
     expect(projectsPageCss).not.toMatch(
-      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metricStrip\s*\{[\s\S]*grid-template-columns:\s*1fr;/,
+      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metricStrip\s*\{[\s\S]*grid-template-columns:/,
     );
   });
 
