@@ -26,6 +26,7 @@ import {
 import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setting-save-status';
 import { SettingStatusMessage } from '@/app/components/setting-status-message';
 import controlClasses from '@/app/components/settings-controls.module.css';
+import { SubmitButton } from '@/app/components/submit-button';
 import {
   normalizeTaskLabelColor,
   parseTaskLabelColor,
@@ -44,6 +45,7 @@ type SettingsLabelFormRenderProps = {
   colorError: boolean;
   feedbackId: string;
   hasError: boolean;
+  isDirty: boolean;
   isPending: boolean;
   markDirty: () => void;
   nameError: boolean;
@@ -62,6 +64,15 @@ const pendingPopoverStyle = {
   opacity: 0.6,
 } as const;
 
+function serializeFormData(formData: FormData) {
+  return JSON.stringify(
+    Array.from(formData.entries()).map(([key, value]) => [
+      key,
+      typeof value === 'string' ? value : value.name,
+    ]),
+  );
+}
+
 type SettingsLabelFormProps = {
   action: (prevState: unknown, formData: FormData) => Promise<ActionState>;
   children: React.ReactNode;
@@ -75,10 +86,14 @@ export function SettingsLabelForm({
   showModeHint = false,
   id,
 }: SettingsLabelFormProps) {
+  const formRef = useRef<HTMLFormElement | null>(null);
   const [state, setState] = useState<ActionState>(null);
+  const [isDirty, setIsDirty] = useState(false);
   const [saveState, setSaveState] = useState<SettingSaveState>('idle');
   const [isPending, startTransition] = useTransition();
   const isSubmittingRef = useRef(false);
+  const baselineSnapshotRef = useRef('');
+  const dirtyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackId = useId();
   const hasError = Boolean(state && !state.ok);
@@ -93,17 +108,41 @@ export function SettingsLabelForm({
       if (savedTimerRef.current) {
         clearTimeout(savedTimerRef.current);
       }
+      if (dirtyTimerRef.current) {
+        clearTimeout(dirtyTimerRef.current);
+      }
     },
     [],
   );
 
-  function markDirty() {
+  useEffect(() => {
+    if (!formRef.current) return;
+    baselineSnapshotRef.current = serializeFormData(new FormData(formRef.current));
+    setIsDirty(false);
+  }, []);
+
+  function syncDirtyState() {
+    if (!formRef.current) return;
     if (savedTimerRef.current) {
       clearTimeout(savedTimerRef.current);
       savedTimerRef.current = null;
     }
+    const nextIsDirty =
+      serializeFormData(new FormData(formRef.current)) !== baselineSnapshotRef.current;
     setState((current) => (current && !current.ok ? null : current));
-    setSaveState('dirty');
+    setIsDirty(nextIsDirty);
+    setSaveState(nextIsDirty ? 'dirty' : 'idle');
+  }
+
+  function markDirty() {
+    syncDirtyState();
+    if (dirtyTimerRef.current) {
+      clearTimeout(dirtyTimerRef.current);
+    }
+    dirtyTimerRef.current = setTimeout(() => {
+      dirtyTimerRef.current = null;
+      syncDirtyState();
+    }, 0);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -117,6 +156,10 @@ export function SettingsLabelForm({
       clearTimeout(savedTimerRef.current);
       savedTimerRef.current = null;
     }
+    if (dirtyTimerRef.current) {
+      clearTimeout(dirtyTimerRef.current);
+      dirtyTimerRef.current = null;
+    }
     setState(null);
     setSaveState('saving');
 
@@ -125,6 +168,8 @@ export function SettingsLabelForm({
         const result = await action(null, formData);
         setState(result);
         if (result?.ok) {
+          baselineSnapshotRef.current = serializeFormData(formData);
+          setIsDirty(false);
           setSaveState('saved');
           savedTimerRef.current = setTimeout(() => {
             setSaveState((current) => (current === 'saved' ? 'idle' : current));
@@ -142,9 +187,15 @@ export function SettingsLabelForm({
 
   return (
     <SettingsLabelFormStateContext.Provider
-      value={{ colorError, feedbackId, hasError, isPending, markDirty, nameError, state }}
+      value={{ colorError, feedbackId, hasError, isDirty, isPending, markDirty, nameError, state }}
     >
-      <form id={id} onSubmit={handleSubmit} onChangeCapture={markDirty} onInputCapture={markDirty}>
+      <form
+        id={id}
+        ref={formRef}
+        onSubmit={handleSubmit}
+        onChangeCapture={markDirty}
+        onInputCapture={markDirty}
+      >
         <fieldset disabled={isPending} style={disabledFieldsetStyle}>
           {children}
         </fieldset>
@@ -168,6 +219,25 @@ export function SettingsLabelForm({
 }
 
 type SettingsLabelNameInputProps = ComponentProps<typeof TextInput>;
+
+type SettingsLabelSubmitButtonProps = ComponentProps<typeof SubmitButton>;
+
+export function SettingsLabelSubmitButton({
+  children,
+  disabled,
+  loading,
+  ...props
+}: SettingsLabelSubmitButtonProps) {
+  const formState = useContext(SettingsLabelFormStateContext);
+  const isDisabled =
+    Boolean(disabled) || (formState ? !formState.isDirty || formState.isPending : false);
+
+  return (
+    <SubmitButton {...props} disabled={isDisabled} loading={loading ?? formState?.isPending}>
+      {children}
+    </SubmitButton>
+  );
+}
 
 export function SettingsLabelNameInput(props: SettingsLabelNameInputProps) {
   const formState = useContext(SettingsLabelFormStateContext);

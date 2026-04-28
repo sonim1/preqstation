@@ -1,4 +1,4 @@
-import { Stack, Text } from '@mantine/core';
+import { Stack, Text, Title } from '@mantine/core';
 import { IconTag } from '@tabler/icons-react';
 
 import settingsClasses from '@/app/(workspace)/(main)/settings/settings-page.module.css';
@@ -8,6 +8,7 @@ import controlClasses from '@/app/components/settings-controls.module.css';
 import {
   SettingsLabelForm,
   SettingsLabelNameInput,
+  SettingsLabelSubmitButton,
   TaskLabelColorField,
 } from '@/app/components/settings-label-form';
 import { SubmitButton } from '@/app/components/submit-button';
@@ -62,9 +63,9 @@ export function ProjectLabelsPanel({
     <Stack gap="md" data-layout="project-label-management">
       <div className={settingsClasses.labelCreate} data-panel="project-label-create">
         <div className={settingsClasses.labelSubhead}>
-          <Text fw={600} className={settingsClasses.labelSubheadTitle}>
+          <Title order={5} className={settingsClasses.labelSubheadTitle}>
             Create label
-          </Text>
+          </Title>
           <Text className={settingsClasses.labelSectionDescription} size="sm">
             {`Add a reusable label for this project's ${taskPluralLower}.`}
           </Text>
@@ -73,6 +74,7 @@ export function ProjectLabelsPanel({
         <SettingsLabelForm action={createLabelAction}>
           <div className={settingsClasses.labelCreateForm} data-slot="project-label-create-form">
             <SettingsLabelNameInput
+              label="Name"
               name="name"
               aria-label="New project label name"
               placeholder="Improvement, Bug, Refactor..."
@@ -84,9 +86,8 @@ export function ProjectLabelsPanel({
             <TaskLabelColorField
               defaultColor="blue"
               usedColors={usedLabelColors}
-              label="New project label color"
+              label="Color"
               ariaLabel="New project label color"
-              showLabel={false}
               size="sm"
             />
             <SubmitButton size="sm" className={controlClasses.touchButton}>
@@ -98,9 +99,9 @@ export function ProjectLabelsPanel({
 
       <div className={settingsClasses.labelManage} data-panel="project-label-manage">
         <div className={settingsClasses.labelSubhead}>
-          <Text fw={600} className={settingsClasses.labelSubheadTitle}>
+          <Title order={5} className={settingsClasses.labelSubheadTitle}>
             Manage labels
-          </Text>
+          </Title>
           <Text className={settingsClasses.labelSectionDescription} size="sm">
             Rename, recolor, or remove labels without leaving this project.
           </Text>
@@ -140,6 +141,7 @@ export function ProjectLabelsPanel({
                     <div className={settingsClasses.labelRowEditor} data-slot="label-row-editor">
                       <input type="hidden" name="id" value={label.id} />
                       <SettingsLabelNameInput
+                        label="Name"
                         name="name"
                         aria-label={`${label.name} label name`}
                         defaultValue={label.name}
@@ -151,18 +153,17 @@ export function ProjectLabelsPanel({
                       <TaskLabelColorField
                         defaultColor={label.color}
                         usedColors={usedLabelColors}
-                        label={`${label.name} label color`}
+                        label="Color"
                         ariaLabel={`${label.name} label color`}
-                        showLabel={false}
                         size="sm"
                       />
-                      <SubmitButton
+                      <SettingsLabelSubmitButton
                         variant="default"
                         size="sm"
                         className={controlClasses.touchButton}
                       >
-                        Save
-                      </SubmitButton>
+                        Save label
+                      </SettingsLabelSubmitButton>
                     </div>
                   </SettingsLabelForm>
 
@@ -183,7 +184,7 @@ export function ProjectLabelsPanel({
                         confirmLabel="Delete label"
                         className={controlClasses.touchButton}
                       >
-                        Delete
+                        Delete label
                       </ConfirmActionButton>
                     </div>
                   </SettingsLabelForm>
