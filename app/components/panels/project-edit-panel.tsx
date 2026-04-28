@@ -1,17 +1,17 @@
 'use client';
 
 import { NativeSelect, Stack, Text, TextInput } from '@mantine/core';
-import { useActionState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { AutoSaveIndicator } from '@/app/components/auto-save-indicator';
 import { LiveMarkdownEditor } from '@/app/components/live-markdown-editor';
 import { ProjectBackgroundPicker } from '@/app/components/project-background-picker';
+import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setting-save-status';
 import { useAutoSave } from '@/app/hooks/use-auto-save';
 import { showErrorNotification } from '@/lib/notifications';
 import type { ProjectBackgroundCredit } from '@/lib/project-backgrounds';
 import { projectStatusOptionData } from '@/lib/project-meta';
 
-type ActionState = { ok: true } | { ok: false; message: string } | null;
+type ActionState = { ok: true } | { ok: false; message: string };
 
 type SelectedProject = {
   id: string;
@@ -33,8 +33,28 @@ type ProjectEditPanelProps = {
 
 export function ProjectEditPanel({ selectedProject, updateProjectAction }: ProjectEditPanelProps) {
   const formRef = useRef<HTMLFormElement>(null);
-  const [state, formAction] = useActionState(updateProjectAction, null);
-  const { markDirty, triggerSave, syncSnapshot, status: saveStatus } = useAutoSave(formRef);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const submitProjectUpdate = useCallback(
+    async (form: HTMLFormElement) => {
+      const result = await updateProjectAction(null, new FormData(form));
+      if (result.ok) {
+        setSaveError(null);
+        return;
+      }
+
+      setSaveError(result.message);
+      showErrorNotification(result.message);
+      throw new Error(result.message);
+    },
+    [updateProjectAction],
+  );
+  const {
+    markDirty: baseMarkDirty,
+    triggerSave: baseTriggerSave,
+    syncSnapshot,
+    status: saveStatus,
+    isDirty,
+  } = useAutoSave(formRef, 800, { submit: submitProjectUpdate });
   const selectedProjectRevision = selectedProject
     ? JSON.stringify({
         id: selectedProject.id,
@@ -47,11 +67,28 @@ export function ProjectEditPanel({ selectedProject, updateProjectAction }: Proje
       })
     : null;
 
-  useEffect(() => {
-    if (state && !state.ok) {
-      showErrorNotification(state.message);
-    }
-  }, [state]);
+  const markDirty = useCallback(() => {
+    setSaveError(null);
+    baseMarkDirty();
+  }, [baseMarkDirty]);
+
+  const triggerSave = useCallback(
+    (delay?: number) => {
+      setSaveError(null);
+      baseTriggerSave(delay);
+    },
+    [baseTriggerSave],
+  );
+
+  const saveState: SettingSaveState = saveError
+    ? 'error'
+    : saveStatus === 'saving'
+      ? 'saving'
+      : isDirty
+        ? 'dirty'
+        : saveStatus === 'saved'
+          ? 'saved'
+          : 'idle';
 
   useEffect(() => {
     if (!selectedProjectRevision) return;
@@ -70,8 +107,14 @@ export function ProjectEditPanel({ selectedProject, updateProjectAction }: Proje
   }
 
   return (
-    <form ref={formRef} action={formAction}>
+    <form
+      ref={formRef}
+      onSubmit={(event) => {
+        event.preventDefault();
+      }}
+    >
       <Stack gap="md">
+        <SettingSaveStatus mode="autosave" state={saveState} errorMessage={saveError} />
         <input type="hidden" name="projectId" value={selectedProject.id} />
         <TextInput
           name="name"
@@ -146,7 +189,6 @@ export function ProjectEditPanel({ selectedProject, updateProjectAction }: Proje
           onChange={markDirty}
           onBlur={() => triggerSave(0)}
         />
-        <AutoSaveIndicator status={saveStatus} />
       </Stack>
     </form>
   );

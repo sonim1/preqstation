@@ -894,7 +894,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 Labels
               </Title>
               <Text c="dimmed" size="sm" mb="md">
-                Keep labels close to the work they belong to in this project.
+                Keep labels close to the work they belong to in this project. Each label change
+                stays local until you save it.
               </Text>
               <ProjectLabelsPanel
                 labels={labels}
@@ -917,6 +918,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               </Title>
               <Text c="dimmed" size="sm" mb="md">
                 Add short project guidance that PREQ agents can read after `preq_get_task`.
+                Changes stay local until you save them to the project.
               </Text>
               <AgentInstructionsPanel
                 action={updateAgentInstructions}
@@ -935,7 +937,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 Deployment Strategy
               </Title>
               <Text c="dimmed" size="sm" mb="md">
-                Configure deployment behavior for external PREQSTATION skills.
+                Configure deployment behavior for external PREQSTATION skills. Changes stay local
+                until you save them to the project.
               </Text>
               <DeploySettingsPanel
                 action={updateDeploySettings}

@@ -405,6 +405,8 @@ describe('project detail page', () => {
     expect(html).toContain('data-testid="project-labels-panel"');
     expect(html).toContain('data-label-count="2"');
     expect(html).toContain('data-label-names="Bug,Feature"');
+    expect(html).toContain('Each label change stays local until you save it.');
+    expect(html).toContain('Changes stay local until you save them to the project.');
     expect(html).toContain('data-label-usage="Bug:3,Feature:0"');
     expect(html).toContain('Keep labels close to the work they belong to in this project.');
   });

@@ -13,14 +13,17 @@ import {
 import {
   type ComponentProps,
   createContext,
-  useActionState,
+  type FormEvent,
   useContext,
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
+  useTransition,
 } from 'react';
 
+import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setting-save-status';
 import { SettingStatusMessage } from '@/app/components/setting-status-message';
 import controlClasses from '@/app/components/settings-controls.module.css';
 import {
@@ -41,39 +44,129 @@ type SettingsLabelFormRenderProps = {
   colorError: boolean;
   feedbackId: string;
   hasError: boolean;
+  isPending: boolean;
+  markDirty: () => void;
   nameError: boolean;
   state: ActionState;
 };
 
 const SettingsLabelFormStateContext = createContext<SettingsLabelFormRenderProps | null>(null);
+const disabledFieldsetStyle = {
+  margin: 0,
+  padding: 0,
+  border: 0,
+  minWidth: 0,
+} as const;
+const pendingPopoverStyle = {
+  pointerEvents: 'none',
+  opacity: 0.6,
+} as const;
 
 type SettingsLabelFormProps = {
   action: (prevState: unknown, formData: FormData) => Promise<ActionState>;
   children: React.ReactNode;
+  showModeHint?: boolean;
   id?: string;
 };
 
-export function SettingsLabelForm({ action, children, id }: SettingsLabelFormProps) {
-  const [state, formAction] = useActionState(action, null);
+export function SettingsLabelForm({
+  action,
+  children,
+  showModeHint = false,
+  id,
+}: SettingsLabelFormProps) {
+  const [state, setState] = useState<ActionState>(null);
+  const [saveState, setSaveState] = useState<SettingSaveState>('idle');
+  const [isPending, startTransition] = useTransition();
+  const isSubmittingRef = useRef(false);
+  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const feedbackId = useId();
   const hasError = Boolean(state && !state.ok);
   const errorField = state && !state.ok ? (state.field ?? 'form') : null;
   const nameError = errorField === 'name';
   const colorError = errorField === 'color';
+  const currentState =
+    hasError && errorField !== 'form' ? 'idle' : isPending ? 'saving' : saveState;
+
+  useEffect(
+    () => () => {
+      if (savedTimerRef.current) {
+        clearTimeout(savedTimerRef.current);
+      }
+    },
+    [],
+  );
+
+  function markDirty() {
+    if (savedTimerRef.current) {
+      clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = null;
+    }
+    setState((current) => (current && !current.ok ? null : current));
+    setSaveState('dirty');
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (isPending || isSubmittingRef.current) return;
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+
+    isSubmittingRef.current = true;
+    if (savedTimerRef.current) {
+      clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = null;
+    }
+    setState(null);
+    setSaveState('saving');
+
+    startTransition(async () => {
+      try {
+        const result = await action(null, formData);
+        setState(result);
+        if (result?.ok) {
+          setSaveState('saved');
+          savedTimerRef.current = setTimeout(() => {
+            setSaveState((current) => (current === 'saved' ? 'idle' : current));
+            savedTimerRef.current = null;
+          }, 2_000);
+          return;
+        }
+
+        setSaveState(result ? 'error' : 'idle');
+      } finally {
+        isSubmittingRef.current = false;
+      }
+    });
+  }
 
   return (
     <SettingsLabelFormStateContext.Provider
-      value={{ colorError, feedbackId, hasError, nameError, state }}
+      value={{ colorError, feedbackId, hasError, isPending, markDirty, nameError, state }}
     >
-      <form id={id} action={formAction}>
-        {children}
-        {hasError ? (
+      <form
+        id={id}
+        onSubmit={handleSubmit}
+        onChangeCapture={markDirty}
+        onInputCapture={markDirty}
+      >
+        <fieldset disabled={isPending} style={disabledFieldsetStyle}>
+          {children}
+        </fieldset>
+        {hasError && errorField !== 'form' ? (
           <SettingStatusMessage
             id={feedbackId}
             tone="error"
             message={state && !state.ok ? state.message : 'Failed to save label.'}
           />
         ) : null}
+        <SettingSaveStatus
+          id={hasError && errorField === 'form' ? feedbackId : undefined}
+          mode="manual"
+          state={currentState}
+          errorMessage={state && !state.ok ? state.message : undefined}
+          showModeHint={showModeHint}
+        />
       </form>
     </SettingsLabelFormStateContext.Provider>
   );
@@ -162,18 +255,22 @@ export function TaskLabelColorField({
             }
             aria-invalid={invalid ?? (formState?.colorError || undefined)}
             className={controlClasses.colorTrigger}
+            disabled={formState?.isPending}
           >
             {formatColorLabel(color)}
           </Button>
         </Popover.Target>
         <Popover.Dropdown>
-          <Stack gap="xs">
+          <Stack gap="xs" style={formState?.isPending ? pendingPopoverStyle : undefined}>
             <ColorPicker
               format="hex"
               fullWidth
               value={resolveTaskLabelSwatchColor(color)}
               swatches={swatches}
-              onChange={(value) => setColor(parseTaskLabelColor(value))}
+              onChange={(value) => {
+                setColor(parseTaskLabelColor(value));
+                formState?.markDirty();
+              }}
             />
             {usedColorValues.length > 0 ? (
               <Stack gap={4}>
@@ -185,7 +282,11 @@ export function TaskLabelColorField({
                     <button
                       key={entry}
                       type="button"
-                      onClick={() => setColor(entry)}
+                      disabled={formState?.isPending}
+                      onClick={() => {
+                        setColor(entry);
+                        formState?.markDirty();
+                      }}
                       style={{
                         padding: 0,
                         border: 0,
