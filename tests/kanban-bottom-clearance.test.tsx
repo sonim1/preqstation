@@ -277,7 +277,7 @@ describe('kanban bottom clearance hooks', () => {
       /\.kanban-mobile-panel-list\s*\{[\s\S]*gap:\s*var\(--mantine-spacing-sm\);[\s\S]*padding:\s*6px 6px 0;/,
     );
     expect(globalsCss).toMatch(
-      /\.kanban-mobile-panel-list\.kanban-bottom-clearance\s*\{[\s\S]*--kanban-bottom-fade-height:\s*calc\(var\(--kanban-action-island-clearance\) \+ var\(--kanban-mobile-tab-bar-height\)\);[\s\S]*--kanban-bottom-clearance-height:\s*calc\(var\(--kanban-action-island-clearance\) \+ var\(--kanban-mobile-tab-bar-height\)\);/,
+      /\.kanban-mobile-panel-list\.kanban-bottom-clearance\s*\{[\s\S]*--kanban-bottom-fade-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);[\s\S]*--kanban-bottom-clearance-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);/,
     );
     expect(globalsCss).not.toMatch(/\.kanban-bottom-gradient--empty/);
   });
@@ -331,7 +331,7 @@ describe('kanban bottom clearance hooks', () => {
       /\.kanban-mobile-tab-bar\s*\{[\s\S]*flex:\s*0 0 auto;[\s\S]*padding:\s*8px 6px 0;[\s\S]*padding-bottom:\s*calc\(8px \+ env\(safe-area-inset-bottom\)\);/,
     );
     expect(globalsCss).toMatch(
-      /\.kanban-mobile-panel-list\.kanban-bottom-clearance\s*\{[\s\S]*--kanban-bottom-fade-height:\s*calc\(var\(--kanban-action-island-clearance\) \+ var\(--kanban-mobile-tab-bar-height\)\);[\s\S]*--kanban-bottom-clearance-height:\s*calc\(var\(--kanban-action-island-clearance\) \+ var\(--kanban-mobile-tab-bar-height\)\);/,
+      /\.kanban-mobile-panel-list\.kanban-bottom-clearance\s*\{[\s\S]*--kanban-bottom-fade-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);[\s\S]*--kanban-bottom-clearance-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);/,
     );
     expect(globalsCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanban-stage\s*\{[\s\S]*--kanban-mobile-tab-bar-height:\s*calc\(64px \+ env\(safe-area-inset-bottom\)\);/,
