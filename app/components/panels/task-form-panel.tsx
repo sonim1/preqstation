@@ -1,10 +1,11 @@
 'use client';
 
-import { MultiSelect, NativeSelect, Stack, Text, TextInput } from '@mantine/core';
+import { NativeSelect, Stack, Text, TextInput } from '@mantine/core';
 import { useActionState, useEffect, useState } from 'react';
 
 import { LiveMarkdownEditor } from '@/app/components/live-markdown-editor';
 import { SubmitButton } from '@/app/components/submit-button';
+import { TaskLabelPicker } from '@/app/components/task-label-picker';
 import { showErrorNotification } from '@/lib/notifications';
 
 import { useTerminology } from '../terminology-provider';
@@ -35,6 +36,7 @@ export function TaskFormPanel({
   const [projectId, setProjectId] = useState(defaultProjectId || '');
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   const availableLabels = projectId ? (projectLabelsByProjectId[projectId] ?? []) : [];
+  const selectedLabels = availableLabels.filter((label) => selectedLabelIds.includes(label.id));
 
   useEffect(() => {
     if (state && !state.ok) {
@@ -116,15 +118,17 @@ export function TaskFormPanel({
                 </Text>
               </div>
 
-              <MultiSelect
-                label="Labels"
-                placeholder={projectId ? 'Select labels' : 'Select a project first'}
-                value={selectedLabelIds}
-                onChange={setSelectedLabelIds}
-                data={availableLabels.map((label) => ({ value: label.id, label: label.name }))}
-                searchable
-                clearable
+              <TaskLabelPicker
+                labelOptions={availableLabels}
+                selectedLabelIds={selectedLabelIds}
+                selectedLabels={selectedLabels}
+                projectId={projectId}
+                triggerAriaLabel="Labels"
+                triggerLabel="Labels"
+                emptyStateLabel={projectId ? 'Select labels' : 'Select a project first'}
+                searchPlaceholder="Search labels"
                 disabled={!projectId}
+                onChange={setSelectedLabelIds}
               />
               <NativeSelect
                 name="taskPriority"

@@ -15,6 +15,7 @@ const useAutoSaveMock = vi.hoisted(() => vi.fn());
 const useEffectMock = vi.hoisted(() => vi.fn());
 const useTaskOfflineDraftMock = vi.hoisted(() => vi.fn());
 const setTaskEditRefreshBlockedMock = vi.hoisted(() => vi.fn());
+const taskLabelPickerPropsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('react', async () => {
   const actual = await vi.importActual<typeof import('react')>('react');
@@ -72,6 +73,13 @@ vi.mock('@/lib/notifications', () => ({
 
 vi.mock('@/lib/task-edit-refresh-guard', () => ({
   setTaskEditRefreshBlocked: setTaskEditRefreshBlockedMock,
+}));
+
+vi.mock('@/app/components/task-label-picker', () => ({
+  TaskLabelPicker: (props: Record<string, unknown>) => {
+    taskLabelPickerPropsMock(props);
+    return React.createElement('div', { 'data-component': 'TaskLabelPicker' });
+  },
 }));
 
 import { TaskEditForm } from '@/app/components/task-edit-form';
@@ -149,6 +157,7 @@ describe('app/components/task-edit-form', () => {
     useEffectMock.mockReset();
     useActionStateMock.mockReset();
     setTaskEditRefreshBlockedMock.mockReset();
+    taskLabelPickerPropsMock.mockReset();
 
     useActionStateMock.mockReturnValue([null, formAction]);
     useAutoSaveMock.mockReturnValue({
@@ -198,6 +207,18 @@ describe('app/components/task-edit-form', () => {
     expect(html).toContain('Notes');
     expect(html).toContain('aria-label="Notes mode"');
     expect(html).not.toContain('Ticket content (Markdown)');
+  });
+
+  it('wires the shared task label picker with the editable task project and selected labels', () => {
+    renderTaskEditForm();
+
+    expect(taskLabelPickerPropsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: 'project-1',
+        selectedLabelIds: [],
+        labelOptions: [],
+      }),
+    );
   });
 
   it('includes the note base fingerprint, stale note warning, and restore action when a stale draft is available', () => {

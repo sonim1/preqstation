@@ -1,6 +1,8 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const taskLabelPickerPropsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -26,31 +28,6 @@ vi.mock('@mantine/core', () => ({
     </button>
   ),
   Group: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  MultiSelect: ({
-    value,
-    placeholder,
-    searchable: _searchable,
-    clearable: _clearable,
-    onChange: _onChange,
-    data: _data,
-    ...props
-  }: {
-    value?: string[];
-    placeholder?: string;
-    searchable?: boolean;
-    clearable?: boolean;
-    onChange?: (value: string[]) => void;
-    data?: Array<{ value: string; label: string }>;
-    'aria-label'?: string;
-  }) => (
-    <input
-      readOnly
-      data-multiselect="true"
-      defaultValue={value?.join(',') ?? ''}
-      placeholder={placeholder}
-      {...props}
-    />
-  ),
   NativeSelect: ({
     data,
     value,
@@ -80,6 +57,13 @@ vi.mock('@mantine/core', () => ({
   ),
 }));
 
+vi.mock('@/app/components/task-label-picker', () => ({
+  TaskLabelPicker: (props: Record<string, unknown>) => {
+    taskLabelPickerPropsMock(props);
+    return <div data-component="TaskLabelPicker" />;
+  },
+}));
+
 import { KanbanQuickAdd } from '@/app/components/kanban-quick-add';
 
 function renderQuickAdd(selectedProject: { id: string; name: string } | null) {
@@ -98,13 +82,22 @@ function renderQuickAdd(selectedProject: { id: string; name: string } | null) {
 }
 
 describe('app/components/kanban-quick-add accessibility', () => {
+  beforeEach(() => {
+    taskLabelPickerPropsMock.mockReset();
+  });
+
   it('renders accessible names for all interactive fields on all-project boards', () => {
     const html = renderQuickAdd(null);
 
     expect(html).toContain('aria-label="Task title"');
     expect(html).toContain('aria-label="Project"');
-    expect(html).toContain('aria-label="Labels"');
     expect(html).toContain('aria-label="Priority"');
+    expect(taskLabelPickerPropsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: '',
+        selectedLabelIds: [],
+      }),
+    );
   });
 
   it('keeps the scoped project badge while naming the remaining form fields', () => {
@@ -113,7 +106,12 @@ describe('app/components/kanban-quick-add accessibility', () => {
     expect(html).toContain('Alpha');
     expect(html).toContain('aria-label="Task title"');
     expect(html).not.toContain('aria-label="Project"');
-    expect(html).toContain('aria-label="Labels"');
     expect(html).toContain('aria-label="Priority"');
+    expect(taskLabelPickerPropsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: 'project-1',
+        labelOptions: [{ id: 'label-1', name: 'Bug', color: 'red' }],
+      }),
+    );
   });
 });

@@ -7,6 +7,7 @@ import { TerminologyProvider } from '@/app/components/terminology-provider';
 import { KITCHEN_TERMINOLOGY } from '@/lib/terminology';
 
 const formAction = vi.hoisted(() => vi.fn());
+const taskLabelPickerPropsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('react', async () => {
   const actual = await vi.importActual<typeof import('react')>('react');
@@ -24,6 +25,13 @@ vi.mock('@/app/components/live-markdown-editor', () => ({
 
 vi.mock('@/app/components/submit-button', () => ({
   SubmitButton: ({ children }: { children: React.ReactNode }) => <button>{children}</button>,
+}));
+
+vi.mock('@/app/components/task-label-picker', () => ({
+  TaskLabelPicker: (props: Record<string, unknown>) => {
+    taskLabelPickerPropsMock(props);
+    return <div data-slot="task-label-picker" />;
+  },
 }));
 
 vi.mock('@/lib/notifications', () => ({
@@ -81,8 +89,20 @@ describe('TaskFormPanel layout', () => {
     expect(html.indexOf('data-panel="task-form-notes"')).toBeLessThan(
       html.indexOf('data-panel="task-form-metadata"'),
     );
-    expect(html.indexOf('data-slot="live-markdown-editor"')).toBeLessThan(html.indexOf('Labels'));
+    expect(html).toContain('data-slot="task-label-picker"');
+    expect(html.indexOf('data-slot="live-markdown-editor"')).toBeLessThan(
+      html.indexOf('data-slot="task-label-picker"'),
+    );
     expect(html).toContain('Ticket title');
     expect(html).toContain('Create Ticket');
+    expect(taskLabelPickerPropsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: 'project-1',
+        labelOptions: [
+          { id: 'label-1', name: 'Frontend', color: '#228be6' },
+          { id: 'label-2', name: 'Urgent', color: '#fa5252' },
+        ],
+      }),
+    );
   });
 });

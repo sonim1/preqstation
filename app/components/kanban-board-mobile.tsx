@@ -10,7 +10,14 @@ import {
   IconRefresh,
 } from '@tabler/icons-react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import { type ComponentType, type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
+import {
+  type ComponentType,
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import {
   type MobilePullToRefreshTrigger,
@@ -69,7 +76,14 @@ type KanbanBoardMobileProps = {
   onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
   onDeleteTask: (taskId: string) => void;
   labelOptions?: Array<{ id: string; name: string; color: string }>;
+  resolveTaskLabelOptions?: (
+    task: KanbanTask,
+  ) => Array<{ id: string; name: string; color: string }>;
   onUpdateTaskLabels?: (taskKey: string, labelIds: string[]) => Promise<void>;
+  onProjectLabelOptionsChange?: (
+    projectId: string,
+    labelOptions: Array<{ id: string; name: string; color: string }>,
+  ) => void;
   saveError: string | null;
   enginePresets?: EnginePresets | null;
 };
@@ -89,7 +103,9 @@ export function KanbanBoardMobile({
   onQuickMoveTask,
   onDeleteTask,
   labelOptions = [],
+  resolveTaskLabelOptions,
   onUpdateTaskLabels,
+  onProjectLabelOptionsChange,
   saveError,
   enginePresets,
 }: KanbanBoardMobileProps) {
@@ -288,8 +304,11 @@ export function KanbanBoardMobile({
                             onQuickMoveTask={onQuickMoveTask}
                             onDeleteTask={onDeleteTask}
                             enginePresets={enginePresets ?? null}
-                            labelOptions={labelOptions}
+                            labelOptions={
+                              resolveTaskLabelOptions ? resolveTaskLabelOptions(task) : labelOptions
+                            }
                             onUpdateTaskLabels={onUpdateTaskLabels}
+                            onProjectLabelOptionsChange={onProjectLabelOptionsChange}
                           />
                         </Paper>
                       );

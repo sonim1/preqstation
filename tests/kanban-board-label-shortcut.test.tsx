@@ -3,13 +3,16 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { resolveKanbanTaskLabelOptions } from '@/app/components/kanban-board';
 import { KanbanBoardMobile } from '@/app/components/kanban-board-mobile';
+import { KanbanCardLabelShortcut } from '@/app/components/kanban-card-label-shortcut';
 import { KanbanColumn } from '@/app/components/kanban-column';
 import { updateKanbanTaskLabelsFromBoard } from '@/lib/kanban-board-label-shortcut';
 import type { KanbanTask } from '@/lib/kanban-helpers';
 import type { EditableBoardTask } from '@/lib/kanban-store';
 
 const capturedCardProps = vi.hoisted(() => [] as Array<Record<string, unknown>>);
+const taskLabelPickerPropsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@hello-pangea/dnd', () => ({
   Draggable: ({
@@ -66,6 +69,13 @@ vi.mock('@/app/components/kanban-card', () => ({
     return (
       <div data-testid={`kanban-card:${String((props.task as { taskKey: string }).taskKey)}`} />
     );
+  },
+}));
+
+vi.mock('@/app/components/task-label-picker', () => ({
+  TaskLabelPicker: (props: Record<string, unknown>) => {
+    taskLabelPickerPropsMock(props);
+    return <div data-component="TaskLabelPicker" />;
   },
 }));
 
@@ -128,6 +138,7 @@ const labelOptions = [
 describe('kanban label shortcut wiring', () => {
   beforeEach(() => {
     capturedCardProps.length = 0;
+    taskLabelPickerPropsMock.mockReset();
   });
 
   it('passes label options and the update callback from KanbanColumn into KanbanCardContent', () => {
@@ -190,6 +201,48 @@ describe('kanban label shortcut wiring', () => {
     expect(capturedCardProps[0]?.labelOptions).toEqual(labelOptions);
     expect(capturedCardProps[0]?.onUpdateTaskLabels).toBe(onUpdateTaskLabels);
     expect(capturedCardProps[0]?.isMobile).toBe(true);
+  });
+
+  it('uses the task project label options on all-project boards', () => {
+    expect(
+      resolveKanbanTaskLabelOptions({
+        task: buildTask({
+          project: { id: 'project-2', name: 'Beta', projectKey: 'BETA' },
+        }),
+        selectedProject: null,
+        labelOptions: [],
+        projectLabelOptionsByProjectId: {
+          'project-2': [{ id: 'label-p2', name: 'Backend', color: 'green' }],
+        },
+      }),
+    ).toEqual([{ id: 'label-p2', name: 'Backend', color: 'green' }]);
+  });
+
+  it('wires the shared task label picker inside the card shortcut with the task project scope', () => {
+    renderToStaticMarkup(
+      <MantineProvider>
+        <KanbanCardLabelShortcut
+          task={buildTask({
+            project: { id: 'project-1', name: 'Alpha', projectKey: 'ALPHA' },
+            labels: [{ id: 'label-a', name: 'Feature', color: 'blue' }],
+          })}
+          labelOptions={labelOptions}
+          isPending={false}
+          onUpdateTaskLabels={vi.fn(async () => undefined)}
+          renderLabelInline={(label) => <span>{label.name}</span>}
+          renderLabelTooltipItem={(label) => <span>{label.name}</span>}
+          labelTooltipStyles={{ arrow: {}, tooltip: {} }}
+        />
+      </MantineProvider>,
+    );
+
+    expect(taskLabelPickerPropsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        projectId: 'project-1',
+        selectedLabelIds: ['label-a'],
+        labelOptions,
+      }),
+    );
   });
 });
 

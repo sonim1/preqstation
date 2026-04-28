@@ -134,6 +134,7 @@ type KanbanBoardProps = {
   projectOptions: ProjectOption[];
   labelOptions: LabelOption[];
   projectLabelOptionsByProjectId?: Record<string, LabelOption[]>;
+  onProjectLabelOptionsChange?: (projectId: string, labelOptions: LabelOption[]) => void;
   selectedProject: SelectedProject | null;
   enginePresets: EnginePresets | null;
   readyQaConfig?: ReadyQaConfig | null;
@@ -149,6 +150,24 @@ function buildInitialArchivedDrawerState(total: number): ArchivedDrawerPageState
     nextOffset: 0,
     hasMore: false,
   };
+}
+
+export function resolveKanbanTaskLabelOptions(params: {
+  task: KanbanTask;
+  selectedProject: SelectedProject | null;
+  labelOptions: LabelOption[];
+  projectLabelOptionsByProjectId: Record<string, LabelOption[]>;
+}) {
+  if (params.selectedProject) {
+    return params.projectLabelOptionsByProjectId[params.selectedProject.id] ?? params.labelOptions;
+  }
+
+  const taskProjectId = params.task.project?.id ?? null;
+  if (!taskProjectId) {
+    return params.labelOptions;
+  }
+
+  return params.projectLabelOptionsByProjectId[taskProjectId] ?? [];
 }
 
 export function buildMoveIntentRequest(params: {
@@ -398,6 +417,7 @@ export function KanbanBoard({
   projectOptions,
   labelOptions,
   projectLabelOptionsByProjectId = {},
+  onProjectLabelOptionsChange,
   selectedProject,
   enginePresets,
   readyQaConfig = null,
@@ -854,6 +874,17 @@ export function KanbanBoard({
     [kanbanStore, readColumnsFromStore],
   );
 
+  const resolveTaskLabelOptions = useCallback(
+    (task: KanbanTask) =>
+      resolveKanbanTaskLabelOptions({
+        task,
+        selectedProject,
+        labelOptions,
+        projectLabelOptionsByProjectId,
+      }),
+    [labelOptions, projectLabelOptionsByProjectId, selectedProject],
+  );
+
   const restoreArchivedTask = useCallback(
     (taskId: string, targetStatus: KanbanStatus) => {
       const archivedTask = archivedDrawerState.tasks.find((task) => task.id === taskId);
@@ -1192,7 +1223,9 @@ export function KanbanBoard({
             onQuickMoveTask={mobileQuickMove}
             onDeleteTask={requestDeleteTask}
             labelOptions={labelOptions}
+            resolveTaskLabelOptions={resolveTaskLabelOptions}
             onUpdateTaskLabels={updateTaskLabels}
+            onProjectLabelOptionsChange={onProjectLabelOptionsChange}
             saveError={saveError}
             enginePresets={enginePresets}
             onOpenTaskEditor={openTaskEditor}
@@ -1241,7 +1274,9 @@ export function KanbanBoard({
                       onQuickMoveTask={quickMoveTask}
                       onDeleteTask={requestDeleteTask}
                       labelOptions={labelOptions}
+                      resolveTaskLabelOptions={resolveTaskLabelOptions}
                       onUpdateTaskLabels={updateTaskLabels}
+                      onProjectLabelOptionsChange={onProjectLabelOptionsChange}
                       enginePresets={enginePresets}
                       onOpenTaskEditor={openTaskEditor}
                       headerActions={headerActions}
@@ -1265,7 +1300,9 @@ export function KanbanBoard({
                     onQuickMoveTask={quickMoveTask}
                     onDeleteTask={requestDeleteTask}
                     labelOptions={labelOptions}
+                    resolveTaskLabelOptions={resolveTaskLabelOptions}
                     onUpdateTaskLabels={updateTaskLabels}
+                    onProjectLabelOptionsChange={onProjectLabelOptionsChange}
                     enginePresets={enginePresets}
                     className="kanban-column--hold-rail"
                     onOpenTaskEditor={openTaskEditor}
@@ -1378,6 +1415,7 @@ export function KanbanBoard({
           selectedProject={selectedProject}
           projectOptions={projectOptions}
           projectLabelOptionsByProjectId={projectLabelOptionsByProjectId}
+          onProjectLabelOptionsChange={onProjectLabelOptionsChange}
           editHrefBase={editHrefBase}
           editHrefJoiner={editHrefJoiner}
           onClose={() => setQuickAddOpened(false)}

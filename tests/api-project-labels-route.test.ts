@@ -124,6 +124,15 @@ describe('app/api/projects/[id]/labels/route', () => {
     );
 
     expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({
+      label: {
+        id: 'label-1',
+        ownerId: 'owner-1',
+        projectId: 'project-1',
+        name: 'Bug',
+        color: 'red',
+      },
+    });
     expect(mocked.valuesFn).toHaveBeenCalledWith(
       expect.objectContaining({
         ownerId: 'owner-1',

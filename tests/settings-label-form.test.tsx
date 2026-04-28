@@ -23,6 +23,7 @@ import {
   SettingsLabelForm,
   SettingsLabelNameInput,
   TaskLabelColorField,
+  TaskLabelColorPicker,
 } from '@/app/components/settings-label-form';
 
 function deferred<T>() {
@@ -207,6 +208,25 @@ describe('app/components/settings-label-form', () => {
     await waitFor(() => {
       expect(screen.getByText('Saved.')).toBeTruthy();
     });
+  });
+
+  it('supports a controlled task label color picker for non-form label creation flows', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <SettingsLabelForm action={vi.fn(async () => null)}>
+          <TaskLabelColorPicker
+            value="red"
+            onChange={vi.fn()}
+            ariaLabel="Task label color"
+            label="Task label color"
+            showLabel={false}
+          />
+        </SettingsLabelForm>
+      </MantineProvider>,
+    );
+
+    expect(html).toContain('aria-label="Task label color"');
+    expect(html).toContain('>Red<');
   });
 
   it('passes through a form id for confirm-action submit flows', () => {

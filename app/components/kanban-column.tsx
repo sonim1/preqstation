@@ -34,7 +34,14 @@ type KanbanColumnProps = {
   onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
   onDeleteTask: (taskId: string) => void;
   labelOptions?: Array<{ id: string; name: string; color: string }>;
+  resolveTaskLabelOptions?: (
+    task: KanbanTask,
+  ) => Array<{ id: string; name: string; color: string }>;
   onUpdateTaskLabels?: (taskKey: string, labelIds: string[]) => Promise<void>;
+  onProjectLabelOptionsChange?: (
+    projectId: string,
+    labelOptions: Array<{ id: string; name: string; color: string }>,
+  ) => void;
   enginePresets?: EnginePresets | null;
   headerActions?: ReactNode;
   className?: string;
@@ -55,7 +62,9 @@ export function KanbanColumn({
   onQuickMoveTask,
   onDeleteTask,
   labelOptions = [],
+  resolveTaskLabelOptions,
   onUpdateTaskLabels,
+  onProjectLabelOptionsChange,
   enginePresets,
   headerActions,
   className,
@@ -146,8 +155,11 @@ export function KanbanColumn({
                         onQuickMoveTask={onQuickMoveTask}
                         onDeleteTask={onDeleteTask}
                         enginePresets={enginePresets ?? null}
-                        labelOptions={labelOptions}
+                        labelOptions={
+                          resolveTaskLabelOptions ? resolveTaskLabelOptions(task) : labelOptions
+                        }
                         onUpdateTaskLabels={onUpdateTaskLabels}
+                        onProjectLabelOptionsChange={onProjectLabelOptionsChange}
                       />
                     </Paper>
                   )}
