@@ -28,7 +28,7 @@ import {
   sortProjectLabelOptions,
   upsertProjectLabelOptions,
 } from '@/lib/project-label-client';
-import { resolveTaskLabelSwatchColor } from '@/lib/task-meta';
+import { resolveTaskLabelSwatchColor, type TaskLabelColorValue } from '@/lib/task-meta';
 
 type TaskLabelPickerProps = {
   labelOptions: ProjectLabelOption[];
@@ -145,19 +145,7 @@ export function TaskLabelPicker({
   const { online } = useOfflineStatus();
   const [opened, setOpened] = useState(false);
   const [search, setSearch] = useState('');
-  const [createColor, setCreateColor] = useState<
-    | 'gray'
-    | 'blue'
-    | 'green'
-    | 'orange'
-    | 'yellow'
-    | 'red'
-    | 'violet'
-    | 'indigo'
-    | 'teal'
-    | 'pink'
-    | `#${string}`
-  >('blue');
+  const [createColor, setCreateColor] = useState<TaskLabelColorValue>('blue');
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [localLabelOptions, setLocalLabelOptions] = useState(() =>
