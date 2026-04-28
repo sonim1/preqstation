@@ -221,6 +221,14 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
       : setupReadyCount === 0
         ? 'Setup missing'
         : 'Needs attention';
+  const recentActivityBadgeColor =
+    !lastWorkedAt || activityStatus.status === 'inactive'
+      ? 'gray'
+      : activityStatus.status === 'healthy'
+        ? 'green'
+        : activityStatus.status === 'warning'
+          ? 'yellow'
+          : 'red';
   const setupSummary =
     setupReadyCount === 4
       ? '4 of 4 setup checks are ready. Repo, deploy rules, agent instructions, and recent activity are all visible.'
@@ -776,20 +784,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 }}
               >
                 <Group gap="xs" align="flex-start" mb={6}>
-                  <ThemeIcon
-                    variant="light"
-                    color={
-                      !lastWorkedAt
-                        ? 'gray'
-                        : activityStatus.status === 'healthy'
-                          ? 'green'
-                          : activityStatus.status === 'warning'
-                            ? 'yellow'
-                            : 'red'
-                    }
-                    size="sm"
-                    radius="xl"
-                  >
+                  <ThemeIcon variant="light" color={recentActivityBadgeColor} size="sm" radius="xl">
                     <IconFlag size={14} />
                   </ThemeIcon>
                   <Text fw={600} size="sm">
@@ -797,18 +792,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                   </Text>
                 </Group>
                 <Stack gap={8} align="flex-start">
-                  <Badge
-                    color={
-                      !lastWorkedAt
-                        ? 'gray'
-                        : activityStatus.status === 'healthy'
-                          ? 'green'
-                          : activityStatus.status === 'warning'
-                            ? 'yellow'
-                            : 'red'
-                    }
-                    variant="light"
-                  >
+                  <Badge color={recentActivityBadgeColor} variant="light">
                     {lastWorkedAt ? activityStatus.label : 'No work logs'}
                   </Badge>
                   <Text size="sm" c="dimmed">

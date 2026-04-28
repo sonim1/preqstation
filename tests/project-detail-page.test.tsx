@@ -36,7 +36,19 @@ vi.mock('@mantine/core', () => ({
   Anchor: ({ children, href }: { children: React.ReactNode; href?: string }) => (
     <a href={href}>{children}</a>
   ),
-  Badge: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Badge: ({
+    children,
+    color,
+    variant,
+  }: {
+    children: React.ReactNode;
+    color?: string;
+    variant?: string;
+  }) => (
+    <div data-color={color ?? ''} data-variant={variant ?? ''}>
+      {children}
+    </div>
+  ),
   Breadcrumbs: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Button: ({
     children,
@@ -54,7 +66,13 @@ vi.mock('@mantine/core', () => ({
   SimpleGrid: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Text: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  ThemeIcon: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  ThemeIcon: ({
+    children,
+    color,
+  }: {
+    children: React.ReactNode;
+    color?: string;
+  }) => <div data-color={color ?? ''}>{children}</div>,
   Title: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
@@ -218,9 +236,9 @@ vi.mock('@/lib/owner', () => ({
 
 vi.mock('@/lib/project-meta', () => ({
   ACTIVE_PROJECT_STATUS: 'active',
-  isProjectStatus: (value: string) => value === 'active',
-  PROJECT_STATUS_COLORS: { active: 'blue' },
-  PROJECT_STATUS_LABELS: { active: 'Active' },
+  isProjectStatus: (value: string) => value === 'active' || value === 'paused' || value === 'done',
+  PROJECT_STATUS_COLORS: { active: 'blue', paused: 'yellow', done: 'gray' },
+  PROJECT_STATUS_LABELS: { active: 'Active', paused: 'Paused', done: 'Done' },
 }));
 
 vi.mock('@/lib/project-resolve', () => ({
@@ -402,11 +420,19 @@ describe('project detail page', () => {
       nextOffset: null,
     });
 
-    const html = renderToStaticMarkup(
-      await ProjectDetailPage({
-        params: Promise.resolve({ key: 'PROJ' }),
-      }),
-    );
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-27T12:00:00.000Z'));
+
+    let html = '';
+    try {
+      html = renderToStaticMarkup(
+        await ProjectDetailPage({
+          params: Promise.resolve({ key: 'PROJ' }),
+        }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
 
     expect(html).toContain('Setup health');
     expect(html).toContain('Dispatch-ready');
@@ -415,6 +441,46 @@ describe('project detail page', () => {
     expect(html).toContain('Feature Branch to main. Auto-create a PR and push before review.');
     expect(html).toContain('Instructions saved for dispatched agents.');
     expect(html).toContain('Last recorded work on 2026-04-26.');
+  });
+
+  it('uses the neutral recent-activity color for inactive projects with work logs', async () => {
+    mocked.projectsFindFirst.mockResolvedValueOnce({
+      id: 'project-1',
+      name: 'Project One',
+      projectKey: 'PROJ',
+      description: 'Ship the next release.',
+      status: 'paused',
+      priority: 2,
+      bgImage: null,
+      bgImageCredit: null,
+      repoUrl: 'https://github.com/example/repo',
+      vercelUrl: 'https://example.vercel.app/',
+      updatedAt: new Date('2026-04-24T12:00:00.000Z'),
+      projectSettings: [],
+    });
+    mocked.listWorkLogsPage.mockResolvedValueOnce({
+      workLogs: [
+        {
+          id: 'log-1',
+          title: 'Paused while waiting on feedback',
+          detail: null,
+          engine: 'codex',
+          workedAt: new Date('2026-04-26T10:00:00.000Z'),
+        },
+      ],
+      nextOffset: null,
+    });
+
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('data-color="gray" data-variant="light">Inactive - no recent work logs');
+    expect(html).not.toContain(
+      'data-color="red" data-variant="light">Inactive - no recent work logs',
+    );
   });
 
   it('surfaces explicit next steps when critical setup is missing', async () => {
