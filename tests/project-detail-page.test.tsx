@@ -13,6 +13,8 @@ const mocked = vi.hoisted(() => ({
   projectsFindFirst: vi.fn(),
   redirect: vi.fn(),
   requireOwnerUser: vi.fn(),
+  resolveAgentInstructions: vi.fn(),
+  resolveDeployStrategyConfig: vi.fn(),
   resolveProjectByKey: vi.fn(),
   revalidatePath: vi.fn(),
   tasksFindMany: vi.fn(),
@@ -215,6 +217,7 @@ vi.mock('@/lib/owner', () => ({
 }));
 
 vi.mock('@/lib/project-meta', () => ({
+  ACTIVE_PROJECT_STATUS: 'active',
   isProjectStatus: (value: string) => value === 'active',
   PROJECT_STATUS_COLORS: { active: 'blue' },
   PROJECT_STATUS_LABELS: { active: 'Active' },
@@ -225,14 +228,8 @@ vi.mock('@/lib/project-resolve', () => ({
 }));
 
 vi.mock('@/lib/project-settings', () => ({
-  resolveAgentInstructions: vi.fn(() => 'Keep it sharp.'),
-  resolveDeployStrategyConfig: vi.fn(() => ({
-    strategy: 'direct_commit',
-    defaultBranch: 'main',
-    autoPr: false,
-    commitOnReview: true,
-    squashMerge: true,
-  })),
+  resolveAgentInstructions: mocked.resolveAgentInstructions,
+  resolveDeployStrategyConfig: mocked.resolveDeployStrategyConfig,
 }));
 
 vi.mock('@/lib/task-labels', () => ({
@@ -286,6 +283,7 @@ describe('project detail page', () => {
       bgImageCredit: null,
       repoUrl: 'https://github.com/example/repo',
       vercelUrl: 'https://example.vercel.app/',
+      updatedAt: new Date('2026-04-24T12:00:00.000Z'),
       projectSettings: [],
     });
     mocked.tasksFindMany.mockResolvedValue([]);
@@ -304,6 +302,14 @@ describe('project detail page', () => {
     mocked.updateProject.mockResolvedValue({
       ok: true,
       data: { id: 'project-1', projectKey: 'PROJ', changed: true },
+    });
+    mocked.resolveAgentInstructions.mockReturnValue('Keep it sharp.');
+    mocked.resolveDeployStrategyConfig.mockReturnValue({
+      strategy: 'direct_commit',
+      default_branch: 'main',
+      auto_pr: false,
+      commit_on_review: true,
+      squash_merge: true,
     });
     mocked.writeAuditLog.mockResolvedValue(undefined);
   });
@@ -373,6 +379,87 @@ describe('project detail page', () => {
     expect(html).toContain('data-label-names="Bug,Feature"');
     expect(html).toContain('data-label-usage="Bug:3,Feature:0"');
     expect(html).toContain('Keep labels close to the work they belong to in this project.');
+  });
+
+  it('surfaces a dispatch-ready setup summary when repo, deploy rules, instructions, and recent activity exist', async () => {
+    mocked.resolveDeployStrategyConfig.mockReturnValueOnce({
+      strategy: 'feature_branch',
+      default_branch: 'main',
+      auto_pr: true,
+      commit_on_review: true,
+      squash_merge: false,
+    });
+    mocked.listWorkLogsPage.mockResolvedValueOnce({
+      workLogs: [
+        {
+          id: 'log-1',
+          title: 'Shipped detail page improvements',
+          detail: null,
+          engine: 'codex',
+          workedAt: new Date('2026-04-26T10:00:00.000Z'),
+        },
+      ],
+      nextOffset: null,
+    });
+
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('Setup health');
+    expect(html).toContain('Dispatch-ready');
+    expect(html).toContain('4 of 4 setup checks are ready.');
+    expect(html).toContain('Repository linked for branch and PR work.');
+    expect(html).toContain('Feature Branch to main. Auto-create a PR and push before review.');
+    expect(html).toContain('Instructions saved for dispatched agents.');
+    expect(html).toContain('Last recorded work on 2026-04-26.');
+  });
+
+  it('surfaces explicit next steps when critical setup is missing', async () => {
+    mocked.projectsFindFirst.mockResolvedValueOnce({
+      id: 'project-1',
+      name: 'Project One',
+      projectKey: 'PROJ',
+      description: 'Ship the next release.',
+      status: 'active',
+      priority: 2,
+      bgImage: null,
+      bgImageCredit: null,
+      repoUrl: '',
+      vercelUrl: '',
+      updatedAt: new Date('2026-04-24T12:00:00.000Z'),
+      projectSettings: [],
+    });
+    mocked.resolveAgentInstructions.mockReturnValueOnce(null);
+    mocked.resolveDeployStrategyConfig.mockReturnValueOnce({
+      strategy: 'none',
+      default_branch: 'main',
+      auto_pr: false,
+      commit_on_review: true,
+      squash_merge: true,
+    });
+
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('Setup missing');
+    expect(html).toContain('0 of 4 setup checks are ready.');
+    expect(html).toContain(
+      'Add the repository URL in Edit Details before dispatching coding work.',
+    );
+    expect(html).toContain(
+      'Choose a deployment strategy in Configuration before dispatching work.',
+    );
+    expect(html).toContain('Add agent instructions so workers inherit project-specific rules.');
+    expect(html).toContain('No work logs yet. Last project update 2026-04-24.');
+    expect(html).toContain('href="/project/PROJ?panel=project-edit"');
+    expect(html).toContain('href="#project-configuration"');
+    expect(html).toContain('href="/dashboard?panel=worklog&amp;projectId=project-1"');
   });
 
   it('updates the project detail modal in place without redirecting to the dashboard', async () => {

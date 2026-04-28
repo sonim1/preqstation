@@ -12,13 +12,7 @@ import {
   ThemeIcon,
   Title,
 } from '@mantine/core';
-import {
-  IconClipboardList,
-  IconCloud,
-  IconFlag,
-  IconLink,
-  IconListCheck,
-} from '@tabler/icons-react';
+import { IconClipboardList, IconCloud, IconFlag, IconLink } from '@tabler/icons-react';
 import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { notFound, redirect } from 'next/navigation';
@@ -45,6 +39,7 @@ import { TODO_LABEL_NAME_MAX_LENGTH } from '@/lib/content-limits';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, taskLabels, tasks } from '@/lib/db/schema';
 import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
+import { getProjectActivityStatus } from '@/lib/project-activity';
 import { isProjectStatus, PROJECT_STATUS_COLORS, PROJECT_STATUS_LABELS } from '@/lib/project-meta';
 import { resolveProjectByKey } from '@/lib/project-resolve';
 import { resolveAgentInstructions, resolveDeployStrategyConfig } from '@/lib/project-settings';
@@ -62,6 +57,12 @@ type ProjectDetailPageProps = {
   searchParams?: Promise<{ panel?: string }>;
 };
 
+const DEPLOY_STRATEGY_LABELS = {
+  direct_commit: 'Direct Commit',
+  feature_branch: 'Feature Branch',
+  none: 'None',
+} as const;
+
 function projectStatusBadge(status: string) {
   if (!isProjectStatus(status)) {
     return { color: 'gray', label: status };
@@ -71,6 +72,44 @@ function projectStatusBadge(status: string) {
     color: PROJECT_STATUS_COLORS[status],
     label: PROJECT_STATUS_LABELS[status],
   };
+}
+
+function toValidDate(value: Date | string | null | undefined) {
+  if (!value) return null;
+  const parsed = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatUtcDate(value: Date | string | null | undefined) {
+  const parsed = toValidDate(value);
+  return parsed ? parsed.toISOString().slice(0, 10) : null;
+}
+
+function joinWithAnd(values: string[]) {
+  if (values.length === 0) return '';
+  if (values.length === 1) return values[0];
+  if (values.length === 2) return `${values[0]} and ${values[1]}`;
+  return `${values.slice(0, -1).join(', ')}, and ${values.at(-1)}`;
+}
+
+function describeDeployStrategy(config: ReturnType<typeof resolveDeployStrategyConfig>) {
+  const strategyLabel = DEPLOY_STRATEGY_LABELS[config.strategy];
+  if (config.strategy === 'none') {
+    return 'Choose a deployment strategy in Configuration before dispatching work.';
+  }
+
+  if (config.strategy === 'feature_branch') {
+    const reviewNote = config.commit_on_review
+      ? 'Push before review.'
+      : 'Review can happen before push.';
+    return config.auto_pr
+      ? `${strategyLabel} to ${config.default_branch}. Auto-create a PR and ${reviewNote.toLowerCase()}`
+      : `${strategyLabel} to ${config.default_branch}. ${reviewNote}`;
+  }
+
+  return config.commit_on_review
+    ? `${strategyLabel} to ${config.default_branch}. Push before review.`
+    : `${strategyLabel} to ${config.default_branch}. Review can happen before push.`;
 }
 
 export default async function ProjectDetailPage({ params, searchParams }: ProjectDetailPageProps) {
@@ -148,6 +187,49 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
 
   const agentInstructions = resolveAgentInstructions(project.projectSettings);
   const deployStrategy = resolveDeployStrategyConfig(project.projectSettings);
+  const trimmedAgentInstructions = agentInstructions?.trim() ?? '';
+  const hasAgentInstructions = trimmedAgentInstructions.length > 0;
+  const hasRepo = Boolean(project.repoUrl);
+  const hasDeployStrategy = deployStrategy.strategy !== 'none';
+  const latestWorkLog = projectWorkLogPage.workLogs[0] ?? null;
+  const lastWorkedAt = toValidDate(latestWorkLog?.workedAt);
+  const lastProjectUpdate = toValidDate(project.updatedAt);
+  const activityStatus = getProjectActivityStatus({
+    projectStatus: project.status,
+    lastWorkedAt,
+  });
+  const hasRecentActivity =
+    lastWorkedAt !== null &&
+    (activityStatus.status === 'healthy' || activityStatus.status === 'warning');
+  const setupReadyCount = [
+    hasRepo,
+    hasDeployStrategy,
+    hasAgentInstructions,
+    hasRecentActivity,
+  ].filter(Boolean).length;
+  const missingSetupItems = [
+    hasRepo ? null : 'repository',
+    hasDeployStrategy ? null : 'deployment strategy',
+    hasAgentInstructions ? null : 'agent instructions',
+    hasRecentActivity ? null : 'recent activity',
+  ].filter((value): value is string => Boolean(value));
+  const setupBadgeColor =
+    setupReadyCount === 4 ? 'green' : setupReadyCount === 0 ? 'red' : 'yellow';
+  const setupBadgeLabel =
+    setupReadyCount === 4
+      ? 'Dispatch-ready'
+      : setupReadyCount === 0
+        ? 'Setup missing'
+        : 'Needs attention';
+  const setupSummary =
+    setupReadyCount === 4
+      ? '4 of 4 setup checks are ready. Repo, deploy rules, agent instructions, and recent activity are all visible.'
+      : `${setupReadyCount} of 4 setup checks are ready. Next: ${joinWithAnd(missingSetupItems)}.`;
+  const recentActivityDescription = !lastWorkedAt
+    ? `No work logs yet. Last project update ${formatUtcDate(lastProjectUpdate) ?? 'unknown'}.`
+    : activityStatus.status === 'critical'
+      ? `No work log update in over 7 days. Last recorded work on ${formatUtcDate(lastWorkedAt)}.`
+      : `Last recorded work on ${formatUtcDate(lastWorkedAt)}.`;
 
   async function createLabel(_prevState: unknown, formData: FormData) {
     'use server';
@@ -509,64 +591,51 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               </Group>
             </Group>
 
-            <SimpleGrid cols={{ base: 1, md: 2, lg: 4 }} spacing="sm">
-              <Paper
-                withBorder
-                p="sm"
-                radius="md"
-                className={metricStyles.metricTile}
-                style={{ borderLeft: `3px solid var(--mantine-color-${projectStatus.color}-6)` }}
-              >
-                <Group gap="xs" align="flex-start" mb={6}>
-                  <ThemeIcon variant="light" color={projectStatus.color} size="sm" radius="xl">
-                    <IconFlag size={14} />
-                  </ThemeIcon>
-                  <Text fw={600} size="sm">
-                    Status
-                  </Text>
-                </Group>
-                <Badge color={projectStatus.color} variant="light">
-                  {projectStatus.label}
-                </Badge>
-              </Paper>
-              <Paper
-                withBorder
-                p="sm"
-                radius="md"
-                className={metricStyles.metricTile}
-                style={{
-                  borderLeft:
-                    openTaskCount === 0
-                      ? '3px solid var(--mantine-color-gray-4)'
-                      : '3px solid var(--mantine-color-blue-6)',
-                }}
-              >
-                <Group gap="xs" align="flex-start">
-                  <ThemeIcon
-                    variant="light"
-                    color={openTaskCount === 0 ? 'gray' : 'blue'}
-                    size="sm"
-                    radius="xl"
-                  >
-                    <IconListCheck size={14} />
-                  </ThemeIcon>
+            <Paper
+              withBorder
+              p="md"
+              radius="md"
+              className={metricStyles.metricTile}
+              style={{
+                borderLeft: `4px solid var(--mantine-color-${setupBadgeColor}-6)`,
+              }}
+            >
+              <Stack gap="xs">
+                <Group justify="space-between" align="flex-start" wrap="wrap" gap="xs">
                   <div>
-                    <Text fw={700} fz="xl" c={openTaskCount === 0 ? 'dimmed' : undefined}>
-                      {openTaskCount}
+                    <Text fw={700} size="xs" c="dimmed" tt="uppercase">
+                      Setup health
                     </Text>
-                    <Text fw={600} size="sm" c="dimmed">
-                      {`Open ${terminology.task.plural}`}
-                    </Text>
+                    <Title order={3} size="h5">
+                      {setupReadyCount === 4 ? 'Ready to dispatch work' : 'Finish project setup'}
+                    </Title>
                   </div>
+                  <Badge color={setupBadgeColor} variant="light">
+                    {setupBadgeLabel}
+                  </Badge>
                 </Group>
-              </Paper>
+                <Text size="sm" c="dimmed">
+                  {setupSummary}
+                </Text>
+                <Group gap="xs" wrap="wrap">
+                  <Badge color={projectStatus.color} variant="light">
+                    {projectStatus.label}
+                  </Badge>
+                  <Badge color={openTaskCount === 0 ? 'gray' : 'blue'} variant="light">
+                    {`${openTaskCount} open ${terminology.task.plural}`}
+                  </Badge>
+                </Group>
+              </Stack>
+            </Paper>
+
+            <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }} spacing="sm">
               <Paper
                 withBorder
                 p="sm"
                 radius="md"
                 className={metricStyles.metricTile}
                 style={{
-                  borderLeft: project.repoUrl
+                  borderLeft: hasRepo
                     ? '3px solid var(--mantine-color-blue-6)'
                     : '3px solid var(--mantine-color-gray-4)',
                 }}
@@ -574,33 +643,36 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 <Group gap="xs" align="flex-start" mb={6}>
                   <ThemeIcon
                     variant="light"
-                    color={project.repoUrl ? 'blue' : 'gray'}
+                    color={hasRepo ? 'blue' : 'gray'}
                     size="sm"
                     radius="xl"
                   >
                     <IconLink size={14} />
                   </ThemeIcon>
                   <Text fw={600} size="sm">
-                    Repo
+                    Repository
                   </Text>
                 </Group>
-                <Group gap="xs" wrap="wrap">
-                  <Badge color={project.repoUrl ? 'blue' : 'gray'} variant="light">
-                    {project.repoUrl ? 'Linked' : 'Not linked'}
+                <Stack gap={8} align="flex-start">
+                  <Badge color={hasRepo ? 'blue' : 'gray'} variant="light">
+                    {hasRepo ? 'Connected' : 'Missing'}
                   </Badge>
-                  {project.repoUrl ? (
-                    <Button
-                      component="a"
-                      href={project.repoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      variant="subtle"
-                      size="compact-xs"
-                    >
-                      Open
-                    </Button>
-                  ) : null}
-                </Group>
+                  <Text size="sm" c="dimmed">
+                    {hasRepo
+                      ? 'Repository linked for branch and PR work.'
+                      : 'Add the repository URL in Edit Details before dispatching coding work.'}
+                  </Text>
+                  <Button
+                    component="a"
+                    href={hasRepo ? (project.repoUrl ?? editProjectHref) : editProjectHref}
+                    target={hasRepo ? '_blank' : undefined}
+                    rel={hasRepo ? 'noreferrer' : undefined}
+                    variant="subtle"
+                    size="compact-xs"
+                  >
+                    {hasRepo ? 'Open' : 'Edit Details'}
+                  </Button>
+                </Stack>
               </Paper>
               <Paper
                 withBorder
@@ -608,7 +680,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 radius="md"
                 className={metricStyles.metricTile}
                 style={{
-                  borderLeft: project.vercelUrl
+                  borderLeft: hasDeployStrategy
                     ? '3px solid var(--mantine-color-blue-6)'
                     : '3px solid var(--mantine-color-gray-4)',
                 }}
@@ -616,33 +688,138 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 <Group gap="xs" align="flex-start" mb={6}>
                   <ThemeIcon
                     variant="light"
-                    color={project.vercelUrl ? 'blue' : 'gray'}
+                    color={hasDeployStrategy ? 'blue' : 'gray'}
                     size="sm"
                     radius="xl"
                   >
                     <IconCloud size={14} />
                   </ThemeIcon>
                   <Text fw={600} size="sm">
-                    Vercel
+                    Deployment
                   </Text>
                 </Group>
-                <Group gap="xs" wrap="wrap">
-                  <Badge color={project.vercelUrl ? 'blue' : 'gray'} variant="light">
-                    {project.vercelUrl ? 'Linked' : 'Not linked'}
+                <Stack gap={8} align="flex-start">
+                  <Badge color={hasDeployStrategy ? 'blue' : 'gray'} variant="light">
+                    {hasDeployStrategy
+                      ? DEPLOY_STRATEGY_LABELS[deployStrategy.strategy]
+                      : 'Missing'}
                   </Badge>
-                  {project.vercelUrl ? (
+                  <Text size="sm" c="dimmed">
+                    {describeDeployStrategy(deployStrategy)}
+                  </Text>
+                  {!hasDeployStrategy ? (
                     <Button
                       component="a"
-                      href={project.vercelUrl}
-                      target="_blank"
-                      rel="noreferrer"
+                      href="#project-configuration"
                       variant="subtle"
                       size="compact-xs"
                     >
-                      Open
+                      Review settings
                     </Button>
                   ) : null}
+                </Stack>
+              </Paper>
+              <Paper
+                withBorder
+                p="sm"
+                radius="md"
+                className={metricStyles.metricTile}
+                style={{
+                  borderLeft: hasAgentInstructions
+                    ? '3px solid var(--mantine-color-blue-6)'
+                    : '3px solid var(--mantine-color-gray-4)',
+                }}
+              >
+                <Group gap="xs" align="flex-start" mb={6}>
+                  <ThemeIcon
+                    variant="light"
+                    color={hasAgentInstructions ? 'blue' : 'gray'}
+                    size="sm"
+                    radius="xl"
+                  >
+                    <IconClipboardList size={14} />
+                  </ThemeIcon>
+                  <Text fw={600} size="sm">
+                    Agent instructions
+                  </Text>
                 </Group>
+                <Stack gap={8} align="flex-start">
+                  <Badge color={hasAgentInstructions ? 'blue' : 'gray'} variant="light">
+                    {hasAgentInstructions ? 'Configured' : 'Missing'}
+                  </Badge>
+                  <Text size="sm" c="dimmed">
+                    {hasAgentInstructions
+                      ? 'Instructions saved for dispatched agents.'
+                      : 'Add agent instructions so workers inherit project-specific rules.'}
+                  </Text>
+                  {!hasAgentInstructions ? (
+                    <Button
+                      component="a"
+                      href="#project-configuration"
+                      variant="subtle"
+                      size="compact-xs"
+                    >
+                      Add instructions
+                    </Button>
+                  ) : null}
+                </Stack>
+              </Paper>
+              <Paper
+                withBorder
+                p="sm"
+                radius="md"
+                className={metricStyles.metricTile}
+                style={{
+                  borderLeft: lastWorkedAt
+                    ? `3px solid ${activityStatus.color}`
+                    : '3px solid var(--mantine-color-gray-4)',
+                }}
+              >
+                <Group gap="xs" align="flex-start" mb={6}>
+                  <ThemeIcon
+                    variant="light"
+                    color={
+                      !lastWorkedAt
+                        ? 'gray'
+                        : activityStatus.status === 'healthy'
+                          ? 'green'
+                          : activityStatus.status === 'warning'
+                            ? 'yellow'
+                            : 'red'
+                    }
+                    size="sm"
+                    radius="xl"
+                  >
+                    <IconFlag size={14} />
+                  </ThemeIcon>
+                  <Text fw={600} size="sm">
+                    Recent activity
+                  </Text>
+                </Group>
+                <Stack gap={8} align="flex-start">
+                  <Badge
+                    color={
+                      !lastWorkedAt
+                        ? 'gray'
+                        : activityStatus.status === 'healthy'
+                          ? 'green'
+                          : activityStatus.status === 'warning'
+                            ? 'yellow'
+                            : 'red'
+                    }
+                    variant="light"
+                  >
+                    {lastWorkedAt ? activityStatus.label : 'No work logs'}
+                  </Badge>
+                  <Text size="sm" c="dimmed">
+                    {recentActivityDescription}
+                  </Text>
+                  {!hasRecentActivity ? (
+                    <Button component="a" href={newWorkLogHref} variant="subtle" size="compact-xs">
+                      New Work Log
+                    </Button>
+                  ) : null}
+                </Stack>
               </Paper>
             </SimpleGrid>
           </Stack>
