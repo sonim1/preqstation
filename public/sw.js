@@ -2,7 +2,8 @@ const BOARD_CACHE = 'preq-board-v2';
 const STATIC_CACHE = 'preq-static-v2';
 const MANAGED_CACHES = [BOARD_CACHE, STATIC_CACHE];
 const MANAGED_CACHE_PREFIXES = ['preq-board-', 'preq-static-'];
-const PRECACHED_ASSETS = ['/manifest.webmanifest'];
+const OFFLINE_FALLBACK_URL = '/offline.html';
+const PRECACHED_ASSETS = ['/manifest.webmanifest', OFFLINE_FALLBACK_URL];
 
 function isSameOrigin(url) {
   return url.origin === self.location.origin;
@@ -10,6 +11,14 @@ function isSameOrigin(url) {
 
 function isBoardNavigation(url) {
   return url.pathname === '/board' || url.pathname.startsWith('/board/');
+}
+
+function isProjectsNavigation(url) {
+  return url.pathname === '/projects';
+}
+
+function isManagedNavigation(url) {
+  return isBoardNavigation(url) || isProjectsNavigation(url);
 }
 
 function isApiRequest(url) {
@@ -26,6 +35,21 @@ function isStaticAsset(url) {
 
 function buildBoardCacheKey(url) {
   return `${url.origin}${url.pathname}`;
+}
+
+async function getOfflineFallbackResponse() {
+  const offlineResponse = await caches.match(OFFLINE_FALLBACK_URL);
+  if (offlineResponse) {
+    return offlineResponse;
+  }
+
+  return new Response('Offline fallback is unavailable.', {
+    status: 503,
+    statusText: 'Service Unavailable',
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+    },
+  });
 }
 
 self.addEventListener('install', (event) => {
@@ -60,7 +84,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (event.request.mode === 'navigate' && isBoardNavigation(url)) {
+  if (event.request.mode === 'navigate' && isManagedNavigation(url)) {
     const cacheKey = buildBoardCacheKey(url);
     event.respondWith(
       fetch(event.request)
@@ -76,7 +100,8 @@ self.addEventListener('fetch', (event) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-          throw new TypeError('Board page is unavailable offline.');
+
+          return getOfflineFallbackResponse();
         }),
     );
     return;
