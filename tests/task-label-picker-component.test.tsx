@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
-import { render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const popoverPropsMock = vi.hoisted(() => vi.fn());
 const stackPropsMock = vi.hoisted(() => vi.fn());
@@ -69,15 +69,23 @@ vi.mock('@mantine/core', () => {
     TextInput: ({
       ariaLabel,
       onChange,
+      onKeyDown,
       placeholder,
       value,
     }: {
       ariaLabel?: string;
       onChange?: React.ChangeEventHandler<HTMLInputElement>;
+      onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
       placeholder?: string;
       value?: string;
     }) => (
-      <input aria-label={ariaLabel} onChange={onChange} placeholder={placeholder} value={value} />
+      <input
+        aria-label={ariaLabel}
+        onChange={onChange}
+        onKeyDown={onKeyDown}
+        placeholder={placeholder}
+        value={value}
+      />
     ),
     UnstyledButton: ({
       ariaLabel,
@@ -126,6 +134,7 @@ vi.mock('@/lib/task-meta', () => ({
 }));
 
 import { TaskLabelPicker } from '@/app/components/task-label-picker';
+import { createProjectLabelWithRecovery } from '@/lib/project-label-client';
 
 const labelOptions = [
   { id: 'label-1', name: 'Bug', color: 'red' },
@@ -133,9 +142,14 @@ const labelOptions = [
 ];
 
 describe('app/components/task-label-picker UI behavior', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
     popoverPropsMock.mockReset();
     stackPropsMock.mockReset();
+    vi.mocked(createProjectLabelWithRecovery).mockReset();
   });
 
   it('renders the dropdown in a portal, constrains the label list, and disables label actions', () => {
@@ -164,5 +178,37 @@ describe('app/components/task-label-picker UI behavior', () => {
     );
     expect((screen.getByRole('button', { name: 'Bug' }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole('button', { name: 'Ops' }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it('creates a new label when Enter is pressed in the search input', async () => {
+    const onChange = vi.fn();
+
+    vi.mocked(createProjectLabelWithRecovery).mockResolvedValue({
+      label: { id: 'label-3', name: 'Platform', color: 'blue' },
+    });
+
+    render(
+      <TaskLabelPicker
+        labelOptions={labelOptions}
+        onChange={onChange}
+        projectId="project-1"
+        selectedLabelIds={[]}
+        triggerAriaLabel="Edit labels"
+      />,
+    );
+
+    const searchInput = screen.getByPlaceholderText('Search labels');
+
+    fireEvent.change(searchInput, { target: { value: 'Platform' } });
+    fireEvent.keyDown(searchInput, { key: 'Enter' });
+
+    await waitFor(() => {
+      expect(createProjectLabelWithRecovery).toHaveBeenCalledWith({
+        color: 'blue',
+        name: 'Platform',
+        projectId: 'project-1',
+      });
+    });
+    expect(onChange).toHaveBeenCalledWith(['label-3']);
   });
 });

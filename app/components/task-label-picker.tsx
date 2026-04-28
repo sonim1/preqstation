@@ -285,6 +285,12 @@ export function TaskLabelPicker({
                 setCreateError(null);
               }
             }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && canCreate && !disabled) {
+                event.preventDefault();
+                void handleCreateLabel();
+              }
+            }}
             placeholder={searchPlaceholder}
             aria-label={`${triggerLabel} search`}
           />
