@@ -32,7 +32,7 @@ const singleProject = [
 
 function buildProject(
   overrides: Partial<{
-    strategy: 'direct_commit' | 'feature_branch' | 'none';
+    strategy: 'direct_commit' | 'feature_branch';
     default_branch: string;
     auto_pr: boolean;
     commit_on_review: boolean;
@@ -244,41 +244,44 @@ describe('app/components/panels/deploy-settings-panel', () => {
   });
 
   it('explains the selected strategy before raw deploy controls', () => {
-    renderPanel(buildProject({ strategy: 'feature_branch', auto_pr: true }));
-
-    expect(screen.getByText(/Push a task branch and review work in a PR/i)).toBeTruthy();
-    expect(
-      screen.getByText(/A pull request can be opened automatically before review/i),
-    ).toBeTruthy();
-
-    fireEvent.change(screen.getByRole('combobox', { name: /Strategy/i }), {
-      target: { value: 'none' },
-    });
-
-    expect(screen.getByText(/Keep PREQ out of git and PR automation/i)).toBeTruthy();
-    expect(screen.getByText(/Tasks stop after local code changes and task updates/i)).toBeTruthy();
-  });
-
-  it('shows only controls that apply to the selected strategy', () => {
     renderPanel(buildProject({ strategy: 'direct_commit', squash_merge: true }));
 
+    expect(screen.getByText(/Ship straight to the default branch/i)).toBeTruthy();
+    expect(screen.getByText(/Worktree commits are collapsed into one branch commit/i)).toBeTruthy();
+
+    fireEvent.change(screen.getByRole('combobox', { name: /Strategy/i }), {
+      target: { value: 'feature_branch' },
+    });
+
+    expect(screen.getByText(/Push a task branch and review work in a PR/i)).toBeTruthy();
+    expect(screen.getByText(/Operators open the PR manually when they are ready/i)).toBeTruthy();
+  });
+
+  it('removes the none option and only toggles controls that still vary by strategy', () => {
+    renderPanel(buildProject({ strategy: 'direct_commit', squash_merge: true }));
+
+    expect(screen.queryByRole('option', { name: 'None' })).toBeNull();
     expect(screen.getByRole('textbox', { name: /Default Branch/i })).toBeTruthy();
     expect(
       screen.getByRole('checkbox', { name: /Enable squash merge to default branch/i }),
     ).toBeTruthy();
+    expect(
+      screen.getByRole('checkbox', { name: /Commit required before In Review/i }),
+    ).toBeTruthy();
     expect(screen.queryByRole('checkbox', { name: /Auto-create PR on push/i })).toBeNull();
 
     fireEvent.change(screen.getByRole('combobox', { name: /Strategy/i }), {
-      target: { value: 'none' },
+      target: { value: 'feature_branch' },
     });
 
-    expect(screen.queryByRole('textbox', { name: /Default Branch/i })).toBeNull();
+    expect(screen.getByRole('textbox', { name: /Default Branch/i })).toBeTruthy();
     expect(
       screen.queryByRole('checkbox', { name: /Enable squash merge to default branch/i }),
     ).toBeNull();
     expect(
-      screen.queryByRole('checkbox', { name: /Commit required before In Review/i }),
-    ).toBeNull();
+      screen.getByRole('checkbox', { name: /Commit required before In Review/i }),
+    ).toBeTruthy();
+    expect(screen.getByRole('checkbox', { name: /Auto-create PR on push/i })).toBeTruthy();
   });
 
   it('explains guardrails and operator risk in plain language', () => {

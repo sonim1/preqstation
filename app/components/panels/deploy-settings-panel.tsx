@@ -19,8 +19,8 @@ import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setti
 import { SubmitButton } from '@/app/components/submit-button';
 
 type ActionState = { ok: true; message?: string } | { ok: false; message: string } | null;
-type DeployStrategy = 'direct_commit' | 'feature_branch' | 'none';
-const DEPLOY_STRATEGIES: DeployStrategy[] = ['direct_commit', 'feature_branch', 'none'];
+type DeployStrategy = 'direct_commit' | 'feature_branch';
+const DEPLOY_STRATEGIES: DeployStrategy[] = ['direct_commit', 'feature_branch'];
 const promptPreviewStyle = {
   maxWidth: '100%',
   whiteSpace: 'pre-wrap',
@@ -47,7 +47,6 @@ type DeploySettingsPanelProps = {
 const STRATEGY_LABELS: Record<DeployStrategy, string> = {
   direct_commit: 'Direct Commit',
   feature_branch: 'Feature Branch',
-  none: 'None',
 };
 
 const STRATEGY_DETAILS: Record<
@@ -93,12 +92,6 @@ const STRATEGY_DETAILS: Record<
           : 'Review can proceed before the branch is pushed.'
       }`,
   },
-  none: {
-    title: 'Keep PREQ out of git and PR automation',
-    description: 'Use this when deployment is handled outside PREQ or should stay fully manual.',
-    summary: () =>
-      'Tasks stop after local code changes and task updates. No commit, push, or PR steps are part of the workflow.',
-  },
 };
 
 type DeployDraft = {
@@ -113,7 +106,7 @@ type DeployDraft = {
 function buildDraft(project: DeploySettingsPanelProps['projects'][number] | null): DeployDraft {
   return {
     projectId: project?.id || '',
-    strategy: project?.deployStrategy.strategy || 'none',
+    strategy: project?.deployStrategy.strategy || 'direct_commit',
     defaultBranch: project?.deployStrategy.default_branch || 'main',
     autoPr: Boolean(project?.deployStrategy.auto_pr),
     commitOnReview: project?.deployStrategy.commit_on_review !== false,
@@ -143,7 +136,7 @@ export function DeploySettingsPanel({
     projects.find((project) => project.id === initialProjectId) || projects[0] || null;
   const [selectedProjectId, setSelectedProjectId] = useState(initialProjectId);
   const [strategy, setStrategy] = useState<DeployStrategy>(
-    initialProject?.deployStrategy.strategy || 'none',
+    initialProject?.deployStrategy.strategy || 'direct_commit',
   );
   const [defaultBranch, setDefaultBranch] = useState(
     initialProject?.deployStrategy.default_branch || 'main',
@@ -205,9 +198,6 @@ export function DeploySettingsPanel({
           : 'idle';
 
   const promptPreview = useMemo(() => {
-    if (strategy === 'none') {
-      return `strategy: none\nDo not run git commit/push/PR. Only code changes + task update.`;
-    }
     const lines: string[] = [`strategy: ${strategy}`, `default_branch: ${defaultBranch}`];
     if (isDirectCommit) {
       lines.push(`squash_merge: ${squashMerge}`);
@@ -232,14 +222,12 @@ export function DeploySettingsPanel({
         lines.push(`  Create PR targeting ${defaultBranch}`);
       }
     }
-    if (isDirectCommit || isFeatureBranch) {
-      lines.push('');
-      lines.push(
-        commitOnReview
-          ? 'commit_on_review: true — must push before moving to review'
-          : 'commit_on_review: false — review allowed without push',
-      );
-    }
+    lines.push('');
+    lines.push(
+      commitOnReview
+        ? 'commit_on_review: true — must push before moving to review'
+        : 'commit_on_review: false — review allowed without push',
+    );
     return lines.join('\n');
   }, [
     strategy,
@@ -355,22 +343,18 @@ export function DeploySettingsPanel({
           </Stack>
         </Paper>
 
-        {strategy === 'none' ? (
-          <input type="hidden" name="deploy_default_branch" value={defaultBranch} />
-        ) : (
-          <TextInput
-            name="deploy_default_branch"
-            label="Default Branch"
-            value={defaultBranch}
-            onChange={(event) => {
-              const nextBranch = event.currentTarget.value;
-              setDefaultBranch(nextBranch);
-              updateSaveState({ ...currentDraft, defaultBranch: nextBranch });
-            }}
-            placeholder="main"
-            required
-          />
-        )}
+        <TextInput
+          name="deploy_default_branch"
+          label="Default Branch"
+          value={defaultBranch}
+          onChange={(event) => {
+            const nextBranch = event.currentTarget.value;
+            setDefaultBranch(nextBranch);
+            updateSaveState({ ...currentDraft, defaultBranch: nextBranch });
+          }}
+          placeholder="main"
+          required
+        />
 
         {isFeatureBranch ? (
           <>
@@ -447,30 +431,24 @@ export function DeploySettingsPanel({
           <input type="hidden" name="deploy_squash_merge" value="false" />
         )}
 
-        {isDirectCommit || isFeatureBranch ? (
-          <>
-            <input
-              type="hidden"
-              name="deploy_commit_on_review"
-              value={commitOnReview ? 'true' : 'false'}
-            />
-            <Checkbox
-              checked={commitOnReview}
-              onChange={(event) => {
-                const nextValue = event.currentTarget.checked;
-                setCommitOnReview(nextValue);
-                updateSaveState({ ...currentDraft, commitOnReview: nextValue });
-              }}
-              label="Commit required before In Review"
-            />
-            <Text size="sm" c="dimmed">
-              When this is enabled, PREQ cannot move the task into review until the required remote
-              push succeeds.
-            </Text>
-          </>
-        ) : (
-          <input type="hidden" name="deploy_commit_on_review" value="false" />
-        )}
+        <input
+          type="hidden"
+          name="deploy_commit_on_review"
+          value={commitOnReview ? 'true' : 'false'}
+        />
+        <Checkbox
+          checked={commitOnReview}
+          onChange={(event) => {
+            const nextValue = event.currentTarget.checked;
+            setCommitOnReview(nextValue);
+            updateSaveState({ ...currentDraft, commitOnReview: nextValue });
+          }}
+          label="Commit required before In Review"
+        />
+        <Text size="sm" c="dimmed">
+          When this is enabled, PREQ cannot move the task into review until the required remote push
+          succeeds.
+        </Text>
 
         <SubmitButton disabled={!isDirty || isPending}>Save Settings</SubmitButton>
 

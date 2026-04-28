@@ -13,12 +13,12 @@ export const PROJECT_SETTING_KEYS = {
   AGENT_INSTRUCTIONS: 'agent_instructions',
 } as const;
 
-export const DEPLOY_STRATEGIES = ['direct_commit', 'feature_branch', 'none'] as const;
+export const DEPLOY_STRATEGIES = ['direct_commit', 'feature_branch'] as const;
 export type DeployStrategy = (typeof DEPLOY_STRATEGIES)[number];
 const DEPLOY_STRATEGY_SET = new Set<string>(DEPLOY_STRATEGIES);
 
 export const PROJECT_SETTING_DEFAULTS: Record<string, string> = {
-  [PROJECT_SETTING_KEYS.DEPLOY_STRATEGY]: 'none',
+  [PROJECT_SETTING_KEYS.DEPLOY_STRATEGY]: 'direct_commit',
   [PROJECT_SETTING_KEYS.DEPLOY_DEFAULT_BRANCH]: 'main',
   [PROJECT_SETTING_KEYS.DEPLOY_AUTO_PR]: 'false',
   [PROJECT_SETTING_KEYS.DEPLOY_COMMIT_ON_REVIEW]: 'true',
@@ -48,7 +48,7 @@ export function resolveAgentInstructions(
 export function normalizeDeployStrategy(value: string | null | undefined): DeployStrategy {
   const normalized = (value || '').trim().toLowerCase();
   if (DEPLOY_STRATEGY_SET.has(normalized)) return normalized as DeployStrategy;
-  return 'none';
+  return 'direct_commit';
 }
 
 function normalizeBooleanString(

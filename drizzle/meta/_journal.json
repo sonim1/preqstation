@@ -141,6 +141,13 @@
       "when": 1777228800000,
       "tag": "0019_remove_claude_dispatch_channel",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1777334400000,
+      "tag": "0020_remove_none_deploy_strategy",
+      "breakpoints": true
     }
   ]
 }

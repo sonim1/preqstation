@@ -279,4 +279,26 @@ describe('app/api/projects/[id]/route', () => {
       expect.anything(),
     );
   });
+
+  it('PATCH coerces legacy none deploy strategy values before saving settings', async () => {
+    const response = await PATCH(
+      patchRequest({
+        settings: {
+          deploy_strategy: 'none',
+        },
+      }),
+      {
+        params: Promise.resolve({ id: 'project-1' }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocked.setProjectSetting).toHaveBeenCalledTimes(1);
+    expect(mocked.setProjectSetting).toHaveBeenCalledWith(
+      'project-1',
+      'deploy_strategy',
+      'direct_commit',
+      expect.anything(),
+    );
+  });
 });

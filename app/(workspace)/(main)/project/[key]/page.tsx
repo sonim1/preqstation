@@ -60,7 +60,6 @@ type ProjectDetailPageProps = {
 const DEPLOY_STRATEGY_LABELS = {
   direct_commit: 'Direct Commit',
   feature_branch: 'Feature Branch',
-  none: 'None',
 } as const;
 
 function projectStatusBadge(status: string) {
@@ -94,10 +93,6 @@ function joinWithAnd(values: string[]) {
 
 function describeDeployStrategy(config: ReturnType<typeof resolveDeployStrategyConfig>) {
   const strategyLabel = DEPLOY_STRATEGY_LABELS[config.strategy];
-  if (config.strategy === 'none') {
-    return 'Choose a deployment strategy in Configuration before dispatching work.';
-  }
-
   if (config.strategy === 'feature_branch') {
     const reviewNote = config.commit_on_review
       ? 'Push before review.'
@@ -191,7 +186,6 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   const trimmedAgentInstructions = agentInstructions?.trim() ?? '';
   const hasAgentInstructions = trimmedAgentInstructions.length > 0;
   const hasRepo = Boolean(project.repoUrl);
-  const hasDeployStrategy = deployStrategy.strategy !== 'none';
   const latestWorkLog = projectWorkLogPage.workLogs[0] ?? null;
   const lastWorkedAt = toValidDate(latestWorkLog?.workedAt);
   const lastProjectUpdate = toValidDate(project.updatedAt);
@@ -202,15 +196,10 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   const hasRecentActivity =
     lastWorkedAt !== null &&
     (activityStatus.status === 'healthy' || activityStatus.status === 'warning');
-  const setupReadyCount = [
-    hasRepo,
-    hasDeployStrategy,
-    hasAgentInstructions,
-    hasRecentActivity,
-  ].filter(Boolean).length;
+  const setupReadyCount =
+    [hasRepo, hasAgentInstructions, hasRecentActivity].filter(Boolean).length + 1;
   const missingSetupItems = [
     hasRepo ? null : 'repository',
-    hasDeployStrategy ? null : 'deployment strategy',
     hasAgentInstructions ? null : 'agent instructions',
     hasRecentActivity ? null : 'recent activity',
   ].filter((value): value is string => Boolean(value));
@@ -689,18 +678,11 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 radius="md"
                 className={metricStyles.metricTile}
                 style={{
-                  borderLeft: hasDeployStrategy
-                    ? '3px solid var(--mantine-color-blue-6)'
-                    : '3px solid var(--mantine-color-gray-4)',
+                  borderLeft: '3px solid var(--mantine-color-blue-6)',
                 }}
               >
                 <Group gap="xs" align="flex-start" mb={6}>
-                  <ThemeIcon
-                    variant="light"
-                    color={hasDeployStrategy ? 'blue' : 'gray'}
-                    size="sm"
-                    radius="xl"
-                  >
+                  <ThemeIcon variant="light" color="blue" size="sm" radius="xl">
                     <IconCloud size={14} />
                   </ThemeIcon>
                   <Text fw={600} size="sm">
@@ -708,24 +690,12 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                   </Text>
                 </Group>
                 <Stack gap={8} align="flex-start">
-                  <Badge color={hasDeployStrategy ? 'blue' : 'gray'} variant="light">
-                    {hasDeployStrategy
-                      ? DEPLOY_STRATEGY_LABELS[deployStrategy.strategy]
-                      : 'Missing'}
+                  <Badge color="blue" variant="light">
+                    {DEPLOY_STRATEGY_LABELS[deployStrategy.strategy]}
                   </Badge>
                   <Text size="sm" c="dimmed">
                     {describeDeployStrategy(deployStrategy)}
                   </Text>
-                  {!hasDeployStrategy ? (
-                    <Button
-                      component="a"
-                      href="#project-configuration"
-                      variant="subtle"
-                      size="compact-xs"
-                    >
-                      Review settings
-                    </Button>
-                  ) : null}
                 </Stack>
               </Paper>
               <Paper

@@ -514,7 +514,7 @@ describe('project detail page', () => {
     });
     mocked.resolveAgentInstructions.mockReturnValueOnce(null);
     mocked.resolveDeployStrategyConfig.mockReturnValueOnce({
-      strategy: 'none',
+      strategy: 'direct_commit',
       default_branch: 'main',
       auto_pr: false,
       commit_on_review: true,
@@ -527,19 +527,18 @@ describe('project detail page', () => {
       }),
     );
 
-    expect(html).toContain('Setup missing');
-    expect(html).toContain('0 of 4 setup checks are ready.');
+    expect(html).toContain('Needs attention');
+    expect(html).toContain('1 of 4 setup checks are ready.');
     expect(html).toContain(
       'Add the repository URL in Edit Details before dispatching coding work.',
     );
-    expect(html).toContain(
-      'Choose a deployment strategy in Configuration before dispatching work.',
-    );
+    expect(html).toContain('Direct Commit');
+    expect(html).toContain('Direct Commit to main. Push before review.');
     expect(html).toContain('Add agent instructions so workers inherit project-specific rules.');
     expect(html).toContain('No work logs yet. Last project update 2026-04-24.');
     expect(html).toContain('href="/project/PROJ?panel=project-edit"');
-    expect(html).toContain('href="#project-configuration"');
     expect(html).toContain('href="/dashboard?panel=worklog&amp;projectId=project-1"');
+    expect(html).not.toContain('Review settings');
   });
 
   it('updates the project detail modal in place without redirecting to the dashboard', async () => {
