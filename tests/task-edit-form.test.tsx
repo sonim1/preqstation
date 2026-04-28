@@ -13,6 +13,8 @@ const taskCopyActionsPropsMock = vi.hoisted(() => vi.fn());
 const liveMarkdownEditorPropsMock = vi.hoisted(() => vi.fn());
 const useAutoSaveMock = vi.hoisted(() => vi.fn());
 const useEffectMock = vi.hoisted(() => vi.fn());
+const useBoardOfflineSyncMock = vi.hoisted(() => vi.fn());
+const useOfflineStatusMock = vi.hoisted(() => vi.fn());
 const useTaskOfflineDraftMock = vi.hoisted(() => vi.fn());
 const setTaskEditRefreshBlockedMock = vi.hoisted(() => vi.fn());
 const taskLabelPickerPropsMock = vi.hoisted(() => vi.fn());
@@ -30,6 +32,14 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({
     refresh: refreshMock,
   }),
+}));
+
+vi.mock('@/app/components/board-offline-sync-provider', () => ({
+  useBoardOfflineSync: () => useBoardOfflineSyncMock(),
+}));
+
+vi.mock('@/app/components/offline-status-provider', () => ({
+  useOfflineStatus: () => useOfflineStatusMock(),
 }));
 
 vi.mock('@/app/components/live-markdown-editor', () => ({
@@ -153,6 +163,8 @@ describe('app/components/task-edit-form', () => {
     taskCopyActionsPropsMock.mockReset();
     liveMarkdownEditorPropsMock.mockReset();
     useAutoSaveMock.mockReset();
+    useBoardOfflineSyncMock.mockReset();
+    useOfflineStatusMock.mockReset();
     useTaskOfflineDraftMock.mockReset();
     useEffectMock.mockReset();
     useActionStateMock.mockReset();
@@ -160,6 +172,8 @@ describe('app/components/task-edit-form', () => {
     taskLabelPickerPropsMock.mockReset();
 
     useActionStateMock.mockReturnValue([null, formAction]);
+    useBoardOfflineSyncMock.mockReturnValue(null);
+    useOfflineStatusMock.mockReturnValue({ online: true });
     useAutoSaveMock.mockReturnValue({
       markDirty: vi.fn(),
       triggerSave: vi.fn(),
@@ -362,6 +376,150 @@ describe('app/components/task-edit-form', () => {
     expect(savingHtml).toContain('data-slot="task-edit-mobile-saving-overlay"');
     expect(savingHtml).toContain('role="status"');
     expect(savingHtml).toContain('Saving');
+  });
+
+  it('queues offline task edits with the draft fingerprint and keeps the draft until replay settles', async () => {
+    const clearDraft = vi.fn();
+    const queueTaskPatch = vi.fn().mockResolvedValue({
+      boardTask: {
+        id: '1',
+        taskKey: 'PROJ-187',
+        branch: null,
+        title: 'Offline rename',
+        note: '## Offline note',
+        status: 'todo',
+        sortOrder: 'a0',
+        taskPriority: 'none',
+        dueAt: null,
+        engine: null,
+        runState: null,
+        runStateUpdatedAt: null,
+        project: { id: 'project-1', name: 'Project Manager', projectKey: 'PROJ' },
+        updatedAt: '2026-04-28T16:00:00.000Z',
+        archivedAt: null,
+        labels: [],
+      },
+      focusedTask: {
+        id: '1',
+        taskKey: 'PROJ-187',
+        title: 'Offline rename',
+        branch: null,
+        note: '## Offline note',
+        projectId: 'project-1',
+        labelIds: [],
+        labels: [],
+        taskPriority: 'none',
+        status: 'todo',
+        engine: null,
+        dispatchTarget: null,
+        runState: null,
+        runStateUpdatedAt: null,
+        workLogs: [],
+      },
+    });
+    let submitTaskUpdate: ((form: HTMLFormElement) => Promise<void>) | undefined;
+
+    useOfflineStatusMock.mockReturnValueOnce({ online: false });
+    useBoardOfflineSyncMock.mockReturnValueOnce({
+      online: false,
+      queueTaskCreate: vi.fn(),
+      queueTaskMove: vi.fn(),
+      queueTaskPatch,
+    });
+    useTaskOfflineDraftMock.mockReturnValueOnce({
+      canRestoreDraft: false,
+      clearDraft,
+      draftBaseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      draftNote: '## Original note',
+      draftRevision: 0,
+      draftTitle: 'OpenClaw 기능 UI수정',
+      hasNoteConflict: false,
+      restoreDraft: vi.fn(),
+      restoreDraftPreview: null,
+      updateNoteDraft: vi.fn(),
+      updateTitleDraft: vi.fn(),
+    });
+    useAutoSaveMock.mockImplementationOnce((_formRef, _delay, options) => {
+      submitTaskUpdate = options.submit;
+      return {
+        markDirty: vi.fn(),
+        triggerSave: vi.fn(),
+        flushSave: vi.fn(),
+        syncSnapshot: vi.fn(),
+        status: 'idle',
+        isDirty: false,
+        isDirtyRef: { current: false },
+      };
+    });
+
+    const onTaskUpdated = vi.fn();
+    const { container } = render(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'OpenClaw 기능 UI수정',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: [],
+              labels: [],
+              taskPriority: 'none',
+              status: 'todo',
+              engine: 'codex',
+              dispatchTarget: null,
+              runState: null,
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
+            updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
+            onTaskUpdated={onTaskUpdated}
+          />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    const form = container.querySelector('form');
+    if (!form || !submitTaskUpdate) {
+      throw new Error('Task edit form did not render an autosave submit handler.');
+    }
+
+    const titleInput = document.createElement('input');
+    titleInput.name = 'title';
+    titleInput.value = 'Offline rename';
+    form.appendChild(titleInput);
+
+    const noteInput = document.createElement('textarea');
+    noteInput.name = 'noteMd';
+    noteInput.value = '## Offline note';
+    form.appendChild(noteInput);
+
+    const taskPriorityInput = document.createElement('input');
+    taskPriorityInput.name = 'taskPriority';
+    taskPriorityInput.value = 'none';
+    form.appendChild(taskPriorityInput);
+
+    await submitTaskUpdate(form);
+
+    expect(queueTaskPatch).toHaveBeenCalledWith({
+      taskKey: 'PROJ-187',
+      title: 'Offline rename',
+      note: '## Offline note',
+      labelIds: [],
+      labels: [],
+      taskPriority: 'none',
+      status: 'todo',
+      baseNoteFingerprint: 'task-note:v1:42:deadbeef',
+    });
+    expect(onTaskUpdated).toHaveBeenCalledWith({
+      boardTask: expect.objectContaining({ taskKey: 'PROJ-187' }),
+      focusedTask: expect.objectContaining({ taskKey: 'PROJ-187' }),
+    });
+    expect(clearDraft).not.toHaveBeenCalled();
   });
 
   it('blocks polling while the task form has unsaved edits', () => {

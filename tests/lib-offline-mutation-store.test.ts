@@ -72,6 +72,39 @@ describe('lib/offline/mutation-store', () => {
     ]);
   });
 
+  it('preserves a queued base note fingerprint when later offline edits omit it', async () => {
+    await queueOfflinePatchMutation({
+      taskKey: 'PROJ-401',
+      payload: {
+        note: 'First offline rewrite',
+        baseNoteFingerprint: 'task-note:v1:12:abcdef',
+      },
+    });
+    await queueOfflinePatchMutation({
+      taskKey: 'PROJ-401',
+      payload: {
+        title: 'Renamed offline',
+        baseNoteFingerprint: undefined,
+      },
+    });
+
+    const queued = await listQueuedOfflineMutations();
+
+    expect(queued).toEqual([
+      {
+        id: buildOfflinePatchMutationId('PROJ-401'),
+        kind: 'patch',
+        createdAt: expect.any(String),
+        taskKey: 'PROJ-401',
+        payload: {
+          title: 'Renamed offline',
+          note: 'First offline rewrite',
+          baseNoteFingerprint: 'task-note:v1:12:abcdef',
+        },
+      },
+    ]);
+  });
+
   it('merges offline edits into the queued create record for local tasks', async () => {
     await queueOfflineCreateMutation({
       taskKey: 'OFFLINE-123456789',

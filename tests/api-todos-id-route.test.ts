@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { taskLabelAssignments, workLogs } from '@/lib/db/schema';
+import { buildTaskNoteFingerprint } from '@/lib/task-note-fingerprint';
 
 import { TEST_BASE_URL } from './test-utils';
 
@@ -399,6 +400,91 @@ describe('app/api/todos/[id]/route', () => {
       error: 'Task ID is auto-generated and cannot be edited.',
     });
     expect(mocked.db.update).not.toHaveBeenCalled();
+  });
+
+  it('PATCH returns the latest task snapshots when a stale note replay conflicts', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValue({
+      ...existingTask,
+      title: 'Server title',
+      note: 'Latest server note',
+      branch: null,
+      dispatchTarget: null,
+      runState: null,
+      runStateUpdatedAt: null,
+      archivedAt: null,
+      updatedAt: new Date('2026-04-28T16:00:00.000Z'),
+      project: { id: 'project-1', name: 'Project A', projectKey: 'PROJ' },
+      label: { id: 'label-1', name: 'Label A', color: 'blue' },
+      labelAssignments: [],
+      workLogs: [],
+    });
+
+    const response = await PATCH(
+      patchRequest({
+        title: 'Server title',
+        note: 'Local stale rewrite',
+        taskPriority: 'none',
+        baseNoteFingerprint: buildTaskNoteFingerprint('Older note'),
+      }),
+      { params: Promise.resolve({ id: 'todo-1' }) },
+    );
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: 'Task notes changed in another session. Reload the latest notes and try again.',
+      boardTask: expect.objectContaining({
+        taskKey: 'NONE-1',
+        note: 'Latest server note',
+      }),
+      focusedTask: expect.objectContaining({
+        taskKey: 'NONE-1',
+        note: 'Latest server note',
+      }),
+    });
+    expect(mocked.txUpdate).not.toHaveBeenCalled();
+  });
+
+  it('PATCH keeps the latest server note when a stale replay only changes non-note fields', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValue({
+      ...existingTask,
+      title: 'Before',
+      note: 'Latest server note',
+      branch: null,
+      dispatchTarget: null,
+      runState: null,
+      runStateUpdatedAt: null,
+      archivedAt: null,
+      updatedAt: new Date('2026-04-28T16:00:00.000Z'),
+      project: { id: 'project-1', name: 'Project A', projectKey: 'PROJ' },
+      label: { id: 'label-1', name: 'Label A', color: 'blue' },
+      labelAssignments: [],
+      workLogs: [],
+    });
+
+    const response = await PATCH(
+      patchRequest({
+        title: 'After',
+        note: 'Older note',
+        taskPriority: 'none',
+        baseNoteFingerprint: buildTaskNoteFingerprint('Older note'),
+      }),
+      { params: Promise.resolve({ id: 'todo-1' }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).boardTask).toEqual(
+      expect.objectContaining({
+        taskKey: 'NONE-1',
+        title: 'After',
+        note: 'Latest server note',
+      }),
+    );
+    expect(mocked.txSetFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'After',
+        note: 'Latest server note',
+      }),
+    );
   });
 
   it('PATCH retries once on transient connection error', async () => {

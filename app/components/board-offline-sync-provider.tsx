@@ -8,6 +8,7 @@ import { computeSortOrder, type KanbanStatus, type KanbanTask } from '@/lib/kanb
 import type { EditableBoardTask } from '@/lib/kanban-store';
 import { buildEditableBoardTaskPreview } from '@/lib/kanban-store';
 import { showErrorNotification } from '@/lib/notifications';
+import { deleteDraft } from '@/lib/offline/draft-store';
 import {
   applyOptimisticTaskPatch,
   buildOfflineTaskId,
@@ -44,6 +45,47 @@ type BoardOfflineSyncContextValue = {
 
 const BoardOfflineSyncContext = createContext<BoardOfflineSyncContextValue | null>(null);
 
+function buildTaskOfflineDraftId(taskKey: string) {
+  return `task:${taskKey}`;
+}
+
+function buildFallbackBoardTaskFromFocusedTask(params: {
+  focusedTask: EditableBoardTask;
+  patch: QueueOfflinePatchInput;
+  tasksByKey: Record<string, KanbanTask>;
+}): KanbanTask {
+  const project =
+    Object.values(params.tasksByKey).find(
+      (task) => task.project?.id && task.project.id === params.focusedTask.projectId,
+    )?.project ?? null;
+  const nextStatus = (params.patch.status ?? params.focusedTask.status) as KanbanStatus;
+  const updatedAt = new Date().toISOString();
+
+  return {
+    id: params.focusedTask.id,
+    taskKey: params.focusedTask.taskKey,
+    branch: params.focusedTask.branch ?? null,
+    title: params.focusedTask.title,
+    note: params.focusedTask.note,
+    status: nextStatus,
+    sortOrder: params.patch.sortOrder ?? 'a0',
+    taskPriority: params.focusedTask.taskPriority,
+    dueAt: null,
+    engine: params.focusedTask.engine,
+    dispatchTarget: params.focusedTask.dispatchTarget ?? null,
+    runState: params.focusedTask.runState,
+    runStateUpdatedAt: params.focusedTask.runStateUpdatedAt,
+    project,
+    updatedAt,
+    archivedAt: nextStatus === 'archived' ? updatedAt : null,
+    labels: params.focusedTask.labels.map((label) => ({
+      id: label.id,
+      name: label.name,
+      color: label.color ?? 'blue',
+    })),
+  };
+}
+
 export function useBoardOfflineSync() {
   return useContext(BoardOfflineSyncContext);
 }
@@ -74,6 +116,13 @@ export function BoardOfflineSyncProvider({
     try {
       const result = await flushOfflineMutations({
         onApplied: async (mutation) => {
+          if (mutation.kind === 'create') {
+            await deleteDraft(buildTaskOfflineDraftId(mutation.previousTaskKey));
+            await deleteDraft(buildTaskOfflineDraftId(mutation.boardTask.taskKey));
+          } else {
+            await deleteDraft(buildTaskOfflineDraftId(mutation.taskKey));
+          }
+
           if (activeProjectId && mutation.boardTask.project?.id !== activeProjectId) {
             return;
           }
@@ -107,6 +156,19 @@ export function BoardOfflineSyncProvider({
             );
           }
         },
+        onConflict: async (conflict) => {
+          if (activeProjectId && conflict.boardTask.project?.id !== activeProjectId) {
+            return;
+          }
+
+          upsertSnapshots([conflict.boardTask]);
+          if (kanbanStore.getState().focusedTask?.taskKey === conflict.taskKey) {
+            setFocusedTask(
+              conflict.focusedTask ?? buildEditableBoardTaskPreview(conflict.boardTask),
+            );
+          }
+          showErrorNotification(conflict.error);
+        },
       });
 
       if (result.error) {
@@ -115,7 +177,15 @@ export function BoardOfflineSyncProvider({
     } finally {
       isFlushingRef.current = false;
     }
-  }, [activeProjectId, editHrefBase, kanbanStore, online, removeTask, setFocusedTask, upsertSnapshots]);
+  }, [
+    activeProjectId,
+    editHrefBase,
+    kanbanStore,
+    online,
+    removeTask,
+    setFocusedTask,
+    upsertSnapshots,
+  ]);
 
   useEffect(() => {
     void flushPendingMutations();
@@ -163,7 +233,16 @@ export function BoardOfflineSyncProvider({
 
   const queueTaskPatch = useCallback(
     async (input: QueueOfflinePatchInput) => {
-      const boardTask = kanbanStore.getState().tasksByKey[input.taskKey];
+      const currentState = kanbanStore.getState();
+      const boardTask =
+        currentState.tasksByKey[input.taskKey] ??
+        (focusedTask?.taskKey === input.taskKey
+          ? buildFallbackBoardTaskFromFocusedTask({
+              focusedTask,
+              patch: input,
+              tasksByKey: currentState.tasksByKey,
+            })
+          : null);
       if (!boardTask) {
         throw new Error('Task snapshot is unavailable for offline editing.');
       }
@@ -183,6 +262,7 @@ export function BoardOfflineSyncProvider({
           taskPriority: input.taskPriority,
           status: input.status,
           sortOrder: input.sortOrder,
+          baseNoteFingerprint: input.baseNoteFingerprint,
         },
       });
 

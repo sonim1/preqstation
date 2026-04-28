@@ -426,14 +426,14 @@ export function useTaskEditFormController({
         labels: nextLabels,
         taskPriority: parseTaskPriority(String(formData.get('taskPriority') || 'none')),
         status: editableTodo.status as KanbanStatus,
+        baseNoteFingerprint: draftBaseNoteFingerprint,
       });
 
       onTaskUpdated?.(result);
-      await clearDraft();
     },
     [
       boardOfflineSync,
-      clearDraft,
+      draftBaseNoteFingerprint,
       editableTodo.status,
       editableTodo.taskKey,
       labelById,
