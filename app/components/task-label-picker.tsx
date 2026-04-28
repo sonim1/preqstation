@@ -247,7 +247,7 @@ export function TaskLabelPicker({
       onChange={setOpened}
       position="bottom-start"
       shadow="md"
-      withinPortal={false}
+      withinPortal={true}
     >
       <Popover.Target>
         <UnstyledButton
@@ -289,7 +289,7 @@ export function TaskLabelPicker({
             aria-label={`${triggerLabel} search`}
           />
 
-          <Stack gap={4}>
+          <Stack gap={4} mah={300} style={{ overflowY: 'auto' }}>
             {filteredLabelOptions.map((label) => {
               const isSelected = selectedLabelIds.includes(label.id);
 
@@ -300,6 +300,7 @@ export function TaskLabelPicker({
                   variant={isSelected ? 'light' : 'subtle'}
                   color="gray"
                   justify="space-between"
+                  disabled={disabled}
                   leftSection={
                     <Group gap={8} wrap="nowrap">
                       <ColorSwatch color={resolveTaskLabelSwatchColor(label.color)} size={14} />
