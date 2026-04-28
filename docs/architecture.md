@@ -257,19 +257,20 @@ todo + running  → agent actively executing
 
 Each project can configure a deployment strategy:
 
-| Setting                   | Values                                    | Default |
-| ------------------------- | ----------------------------------------- | ------- |
-| `deploy_strategy`         | `none`, `direct_commit`, `feature_branch` | `none`  |
-| `deploy_default_branch`   | branch name                               | `main`  |
-| `deploy_auto_pr`          | boolean (feature_branch only)             | `false` |
-| `deploy_commit_on_review` | boolean                                   | `true`  |
-| `deploy_squash_merge`     | boolean (direct_commit only)              | `true`  |
+| Setting                   | Values                            | Default         |
+| ------------------------- | --------------------------------- | --------------- |
+| `deploy_strategy`         | `direct_commit`, `feature_branch` | `direct_commit` |
+| `deploy_default_branch`   | branch name                       | `main`          |
+| `deploy_auto_pr`          | boolean (feature_branch only)     | `false`         |
+| `deploy_commit_on_review` | boolean                           | `true`          |
+| `deploy_squash_merge`     | boolean (direct_commit only)      | `true`          |
 
 Behavior:
 
-- **`none`** — No git operations. Code changes + task update only.
 - **`direct_commit`** — Commit and push to `default_branch`. No PR. When `squash_merge=true`, squash all worktree commits into a single commit when merging to the default branch.
 - **`feature_branch`** — Commit and push to task branch. Create PR only when `auto_pr=true` (requires GitHub access on the coding agent via `gh auth` or GitHub MCP).
+
+Missing, invalid, and legacy `deploy_strategy=none` values are normalized to `direct_commit` at runtime, and existing stored `none` rows are backfilled by migration `0020_remove_none_deploy_strategy`.
 
 When `commit_on_review=true`, agents must finish the deploy handoff before transitioning to `ready`. For `feature_branch + auto_pr + commit_on_review`, `preq_complete_task` rejects the transition until both the pushed `branchName` and `prUrl` are provided. The setting name is retained for backward compatibility even though the workflow label is now `ready`.
 

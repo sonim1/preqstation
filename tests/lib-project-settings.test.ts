@@ -13,7 +13,21 @@ describe('lib/project-settings', () => {
   it('resolves deploy strategy defaults when no settings exist', () => {
     const result = resolveDeployStrategyConfig(null);
     expect(result).toEqual({
-      strategy: 'none',
+      strategy: 'direct_commit',
+      default_branch: 'main',
+      auto_pr: false,
+      commit_on_review: true,
+      squash_merge: true,
+    });
+  });
+
+  it('coerces legacy none deploy strategy values to direct commit', () => {
+    const result = resolveDeployStrategyConfig({
+      [PROJECT_SETTING_KEYS.DEPLOY_STRATEGY]: 'none',
+    });
+
+    expect(result).toEqual({
+      strategy: 'direct_commit',
       default_branch: 'main',
       auto_pr: false,
       commit_on_review: true,
