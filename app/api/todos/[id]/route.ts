@@ -596,7 +596,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
         const data: Record<string, unknown> = {};
         if (payload.title !== undefined) data.title = payload.title;
-        if (payload.note !== undefined) data.note = payload.note === '' ? null : payload.note;
+        if (payload.note !== undefined) data.note = nextNote;
         if (payload.status !== undefined) {
           data.status = payload.status;
           Object.assign(data, buildTaskRunStateUpdate(null));

@@ -116,13 +116,18 @@ export function BoardOfflineSyncProvider({
     try {
       const result = await flushOfflineMutations({
         onApplied: async (mutation) => {
+          if (mutation.kind === 'create') {
+            await deleteDraft(buildTaskOfflineDraftId(mutation.previousTaskKey));
+            await deleteDraft(buildTaskOfflineDraftId(mutation.boardTask.taskKey));
+          } else {
+            await deleteDraft(buildTaskOfflineDraftId(mutation.taskKey));
+          }
+
           if (activeProjectId && mutation.boardTask.project?.id !== activeProjectId) {
             return;
           }
 
           if (mutation.kind === 'create') {
-            await deleteDraft(buildTaskOfflineDraftId(mutation.previousTaskKey));
-            await deleteDraft(buildTaskOfflineDraftId(mutation.boardTask.taskKey));
             removeTask(mutation.previousTaskKey);
             upsertSnapshots([mutation.boardTask]);
 
@@ -144,7 +149,6 @@ export function BoardOfflineSyncProvider({
             return;
           }
 
-          await deleteDraft(buildTaskOfflineDraftId(mutation.taskKey));
           upsertSnapshots([mutation.boardTask]);
           if (kanbanStore.getState().focusedTask?.taskKey === mutation.taskKey) {
             setFocusedTask(

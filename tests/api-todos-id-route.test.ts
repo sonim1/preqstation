@@ -479,7 +479,12 @@ describe('app/api/todos/[id]/route', () => {
         note: 'Latest server note',
       }),
     );
-    expect(mocked.txSetFn).toHaveBeenCalledWith(expect.objectContaining({ title: 'After' }));
+    expect(mocked.txSetFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'After',
+        note: 'Latest server note',
+      }),
+    );
   });
 
   it('PATCH retries once on transient connection error', async () => {

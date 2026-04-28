@@ -168,6 +168,7 @@ describe('app/components/board-offline-sync-provider', () => {
     expect(upsertSnapshotsMock).not.toHaveBeenCalled();
     expect(removeTaskMock).not.toHaveBeenCalled();
     expect(setFocusedTaskMock).not.toHaveBeenCalled();
+    expect(deleteDraftMock).toHaveBeenCalledWith('task:OPS-1');
   });
 
   it('still applies replayed mutations on the unscoped all-project board', async () => {
