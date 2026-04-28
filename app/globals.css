@@ -1314,6 +1314,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 }
 
 .kanban-column {
+  --kanban-bottom-gradient-surface: transparent;
   flex: 0 0 380px;
   width: 380px;
   height: 100%;
