@@ -74,12 +74,20 @@ export function shouldShowHoldLane(columns: Pick<KanbanColumns, 'hold'>) {
   return columns.hold.length > 0;
 }
 
-export function getMobileBoardStatuses(columns: Pick<KanbanColumns, 'hold'>, activeTab: string) {
+export function getVisibleBoardStatuses(
+  columns: Pick<KanbanColumns, 'hold'>,
+  activeTab?: string,
+) {
   const statuses: BoardTaskStatus[] = [...getBoardFlowStatuses()];
   if (shouldShowHoldLane(columns) || activeTab === 'hold') {
-    statuses.push('hold');
+    return statuses;
   }
-  return statuses;
+
+  return statuses.filter((status) => status !== 'hold');
+}
+
+export function getMobileBoardStatuses(columns: Pick<KanbanColumns, 'hold'>, activeTab: string) {
+  return getVisibleBoardStatuses(columns, activeTab);
 }
 
 export function findTaskLocation(columns: KanbanColumns, taskId: string) {

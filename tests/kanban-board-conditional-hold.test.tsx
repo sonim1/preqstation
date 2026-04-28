@@ -184,17 +184,15 @@ describe('app/components/kanban-board conditional Hold lane', () => {
     );
   });
 
-  it('renders Hold as a separate right-side lane when Hold has tasks', () => {
+  it('renders Hold inline between Planned and Ready when Hold has tasks', () => {
     const html = renderBoard({
       holdTasks: [makeTask({ id: 'hold-1', taskKey: 'PROJ-5', status: 'hold' })],
     });
 
     expect(html).toContain('data-column-status="hold"');
-    expect(html).toContain('kanban-hold-rail');
-    expect(html).toContain('kanban-hold-rail--compact');
-    expect(html).toContain('kanban-hold-rail--fixed-width');
+    expect(html).not.toContain('kanban-hold-rail');
     expect(html).toMatch(
-      /data-column-status="inbox"[\s\S]*data-column-status="todo"[\s\S]*data-column-status="ready"[\s\S]*data-column-status="done"[\s\S]*data-column-status="hold"/,
+      /data-column-status="inbox"[\s\S]*data-column-status="todo"[\s\S]*data-column-status="hold"[\s\S]*data-column-status="ready"[\s\S]*data-column-status="done"/,
     );
   });
 });

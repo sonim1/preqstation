@@ -57,8 +57,8 @@ describe('kanban-helpers', () => {
       expect(boardStatusLabel('hold', KITCHEN_TERMINOLOGY)).toBe("86'd");
     });
 
-    it('returns the default board flow without Hold', () => {
-      expect(getBoardFlowStatuses()).toEqual(['inbox', 'todo', 'ready', 'done']);
+    it('returns the default board flow with Hold between Planned and Ready', () => {
+      expect(getBoardFlowStatuses()).toEqual(['inbox', 'todo', 'hold', 'ready', 'done']);
     });
 
     it('hides the Hold lane when the board has no hold tasks', () => {
@@ -83,13 +83,28 @@ describe('kanban-helpers', () => {
       ]);
     });
 
+    it('shows Hold between Planned and Ready on mobile when Hold has tasks', () => {
+      const columns = {
+        ...emptyColumns(),
+        hold: [makeTask({ id: 'hold-1', status: 'hold', sortOrder: 'a0' })],
+      };
+
+      expect(getMobileBoardStatuses(columns, 'todo')).toEqual([
+        'inbox',
+        'todo',
+        'hold',
+        'ready',
+        'done',
+      ]);
+    });
+
     it('keeps Hold reachable on mobile when Hold is active', () => {
       expect(getMobileBoardStatuses(emptyColumns(), 'hold')).toEqual([
         'inbox',
         'todo',
+        'hold',
         'ready',
         'done',
-        'hold',
       ]);
     });
   });

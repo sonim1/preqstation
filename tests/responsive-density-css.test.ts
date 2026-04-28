@@ -81,8 +81,10 @@ describe('responsive density audit fixes', () => {
     expect(globalsCss).toMatch(
       /@media \(max-width: 62em\)\s*\{[\s\S]*\.kanban-column\s*\{[\s\S]*flex-basis:\s*min\(78vw,\s*320px\);[\s\S]*width:\s*min\(78vw,\s*320px\);/,
     );
+    expect(globalsCss).not.toContain('.kanban-hold-rail');
+    expect(globalsCss).toMatch(/\.kanban-column--hold\s*\{[\s\S]*background:/);
     expect(globalsCss).toMatch(
-      /@media \(max-width: 62em\)\s*\{[\s\S]*\.kanban-hold-rail\s*\{[\s\S]*flex-basis:\s*min\(72vw,\s*280px\);[\s\S]*width:\s*min\(72vw,\s*280px\);/,
+      /html\[data-mantine-color-scheme='dark'\]\s+\.kanban-column--hold\s*\{[\s\S]*background:/,
     );
   });
 

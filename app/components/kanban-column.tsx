@@ -71,9 +71,16 @@ export function KanbanColumn({
 }: KanbanColumnProps) {
   const terminology = useTerminology();
   const label = statusLabel ?? boardStatusLabel(status, terminology);
+  const columnClassName = [
+    'kanban-column',
+    status === 'hold' ? 'kanban-column--hold' : null,
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <Paper p="sm" className={className ? `kanban-column ${className}` : 'kanban-column'}>
+    <Paper p="sm" className={columnClassName}>
       <Group justify="space-between" mb="sm" className="kanban-column-header">
         <Title order={4}>{label}</Title>
         <Group gap={6} align="center">
