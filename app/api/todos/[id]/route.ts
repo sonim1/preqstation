@@ -21,6 +21,7 @@ import {
 } from '@/lib/outbox';
 import { requireOwnerUser } from '@/lib/owner';
 import { assertSameOrigin } from '@/lib/request-security';
+import { normalizeTaskDispatchTarget } from '@/lib/task-dispatch';
 import { isTaskKeyUniqueConstraintError, taskWhereByIdentifier } from '@/lib/task-keys';
 import {
   extractTaskLabels,
@@ -121,6 +122,7 @@ function toEditableTodo(task: {
   taskPriority: string;
   status: string;
   engine: string | null;
+  dispatchTarget: string | null;
   runState: string | null;
   runStateUpdatedAt: Date | null;
   label?: { id: string; name: string; color: string | null } | null;
@@ -156,6 +158,7 @@ function toEditableTodo(task: {
     taskPriority: task.taskPriority,
     status: task.status,
     engine: task.engine,
+    dispatchTarget: normalizeTaskDispatchTarget(task.dispatchTarget),
     runState: coerceTaskRunState(task.runState),
     runStateUpdatedAt: task.runStateUpdatedAt ? task.runStateUpdatedAt.toISOString() : null,
     workLogs:
@@ -239,6 +242,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
           taskPriority: true,
           status: true,
           engine: true,
+          dispatchTarget: true,
           runState: true,
           runStateUpdatedAt: true,
         },
