@@ -27,7 +27,8 @@ describe('ProjectSectionAnchorOffset', () => {
         resizeObservers.push({
           disconnect: this.disconnect,
           observe: this.observe,
-          trigger: () => this.callback([] as ResizeObserverEntry[], this as unknown as ResizeObserver),
+          trigger: () =>
+            this.callback([] as ResizeObserverEntry[], this as unknown as ResizeObserver),
         });
       }
     }

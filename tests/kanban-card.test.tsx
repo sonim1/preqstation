@@ -12,10 +12,7 @@ vi.mock('@mantine/core', async (importOriginal) => {
   type MockMenuItemProps = React.ComponentProps<typeof actual.Menu.Item> & {
     closeMenuOnClick?: boolean;
   };
-  const MenuItem = ({
-    closeMenuOnClick,
-    ...props
-  }: MockMenuItemProps) => (
+  const MenuItem = ({ closeMenuOnClick, ...props }: MockMenuItemProps) => (
     <ActualMenuItem
       {...props}
       closeMenuOnClick={closeMenuOnClick}

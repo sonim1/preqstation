@@ -917,8 +917,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 Agent Instructions
               </Title>
               <Text c="dimmed" size="sm" mb="md">
-                Add short project guidance that PREQ agents can read after `preq_get_task`.
-                Changes stay local until you save them to the project.
+                Add short project guidance that PREQ agents can read after `preq_get_task`. Changes
+                stay local until you save them to the project.
               </Text>
               <AgentInstructionsPanel
                 action={updateAgentInstructions}

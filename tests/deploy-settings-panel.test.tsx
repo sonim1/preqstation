@@ -30,6 +30,42 @@ const singleProject = [
   },
 ];
 
+function buildProject(
+  overrides: Partial<{
+    strategy: 'direct_commit' | 'feature_branch' | 'none';
+    default_branch: string;
+    auto_pr: boolean;
+    commit_on_review: boolean;
+    squash_merge: boolean;
+  }> = {},
+) {
+  return {
+    id: 'project-1',
+    name: 'Project One',
+    deployStrategy: {
+      strategy: 'feature_branch' as const,
+      default_branch: 'main',
+      auto_pr: false,
+      commit_on_review: true,
+      squash_merge: false,
+      ...overrides,
+    },
+  };
+}
+
+function renderPanel(project = buildProject()) {
+  return render(
+    <MantineProvider>
+      <DeploySettingsPanel
+        action={vi.fn(async () => null)}
+        singleProject
+        defaultProjectId={project.id}
+        projects={[project]}
+      />
+    </MantineProvider>,
+  );
+}
+
 describe('app/components/panels/deploy-settings-panel', () => {
   afterEach(() => {
     cleanup();
@@ -205,5 +241,73 @@ describe('app/components/panels/deploy-settings-panel', () => {
     expect(html).toContain('Requires GitHub access on the coding agent');
     expect(html).toContain('gh auth');
     expect(html).toContain('GitHub MCP');
+  });
+
+  it('explains the selected strategy before raw deploy controls', () => {
+    renderPanel(buildProject({ strategy: 'feature_branch', auto_pr: true }));
+
+    expect(screen.getByText(/Push a task branch and review work in a PR/i)).toBeTruthy();
+    expect(
+      screen.getByText(/A pull request can be opened automatically before review/i),
+    ).toBeTruthy();
+
+    fireEvent.change(screen.getByRole('combobox', { name: /Strategy/i }), {
+      target: { value: 'none' },
+    });
+
+    expect(screen.getByText(/Keep PREQ out of git and PR automation/i)).toBeTruthy();
+    expect(screen.getByText(/Tasks stop after local code changes and task updates/i)).toBeTruthy();
+  });
+
+  it('shows only controls that apply to the selected strategy', () => {
+    renderPanel(buildProject({ strategy: 'direct_commit', squash_merge: true }));
+
+    expect(screen.getByRole('textbox', { name: /Default Branch/i })).toBeTruthy();
+    expect(
+      screen.getByRole('checkbox', { name: /Enable squash merge to default branch/i }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('checkbox', { name: /Auto-create PR on push/i })).toBeNull();
+
+    fireEvent.change(screen.getByRole('combobox', { name: /Strategy/i }), {
+      target: { value: 'none' },
+    });
+
+    expect(screen.queryByRole('textbox', { name: /Default Branch/i })).toBeNull();
+    expect(
+      screen.queryByRole('checkbox', { name: /Enable squash merge to default branch/i }),
+    ).toBeNull();
+    expect(
+      screen.queryByRole('checkbox', { name: /Commit required before In Review/i }),
+    ).toBeNull();
+  });
+
+  it('explains guardrails and operator risk in plain language', () => {
+    renderPanel(
+      buildProject({
+        strategy: 'feature_branch',
+        auto_pr: true,
+        commit_on_review: true,
+      }),
+    );
+
+    expect(
+      screen.getAllByText(/Requires GitHub access on the coding agent/i).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getByText(/If review requires a push, missing GitHub auth will block the run/i),
+    ).toBeTruthy();
+
+    fireEvent.change(screen.getByRole('combobox', { name: /Strategy/i }), {
+      target: { value: 'direct_commit' },
+    });
+
+    expect(
+      screen.getByText(/Squash merge combines worktree commits into one default-branch commit/i),
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        /Disable this only when operators need the full merge history on the default branch/i,
+      ),
+    ).toBeTruthy();
   });
 });

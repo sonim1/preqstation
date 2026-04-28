@@ -3,7 +3,10 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-const panelsCss = fs.readFileSync(path.join(process.cwd(), 'app/components/panels.module.css'), 'utf8');
+const panelsCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/panels.module.css'),
+  'utf8',
+);
 
 describe('project section anchor offset styles', () => {
   it('uses the measured sticky nav height in the anchor scroll margin', () => {

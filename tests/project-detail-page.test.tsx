@@ -76,13 +76,9 @@ vi.mock('@mantine/core', () => ({
   SimpleGrid: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Text: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  ThemeIcon: ({
-    children,
-    color,
-  }: {
-    children: React.ReactNode;
-    color?: string;
-  }) => <div data-color={color ?? ''}>{children}</div>,
+  ThemeIcon: ({ children, color }: { children: React.ReactNode; color?: string }) => (
+    <div data-color={color ?? ''}>{children}</div>
+  ),
   Title: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 

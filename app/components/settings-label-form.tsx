@@ -144,12 +144,7 @@ export function SettingsLabelForm({
     <SettingsLabelFormStateContext.Provider
       value={{ colorError, feedbackId, hasError, isPending, markDirty, nameError, state }}
     >
-      <form
-        id={id}
-        onSubmit={handleSubmit}
-        onChangeCapture={markDirty}
-        onInputCapture={markDirty}
-      >
+      <form id={id} onSubmit={handleSubmit} onChangeCapture={markDirty} onInputCapture={markDirty}>
         <fieldset disabled={isPending} style={disabledFieldsetStyle}>
           {children}
         </fieldset>

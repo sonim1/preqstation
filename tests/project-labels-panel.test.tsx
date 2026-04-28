@@ -121,10 +121,10 @@ describe('app/components/panels/project-labels-panel', () => {
   });
 
   it('uses custom singular terminology for one-item usage and delete confirmation copy', () => {
-    const html = renderPanel(
-      [{ id: 'label-1', name: 'Bug', color: 'red', usageCount: 1 }],
-      { taskPluralLower: 'tickets', taskSingularLower: 'ticket' },
-    );
+    const html = renderPanel([{ id: 'label-1', name: 'Bug', color: 'red', usageCount: 1 }], {
+      taskPluralLower: 'tickets',
+      taskSingularLower: 'ticket',
+    });
 
     expect(html).toContain('Used by 1 ticket');
     expect(html).toContain(
