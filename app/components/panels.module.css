@@ -41,6 +41,35 @@
   backdrop-filter: blur(var(--ui-panel-blur));
 }
 
+.sectionNav {
+  position: sticky;
+  top: calc(var(--app-shell-header-offset, 0px) + var(--mantine-spacing-sm));
+  z-index: 3;
+}
+
+.sectionNavLayout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-sm);
+}
+
+.sectionNavLinks,
+.sectionNavActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--mantine-spacing-xs);
+}
+
+.sectionAnchor {
+  scroll-margin-top: calc(
+    var(--app-shell-header-offset, 0px) + var(--mantine-spacing-sm) +
+      var(--project-section-nav-height, calc(8rem - var(--mantine-spacing-sm)))
+  );
+}
+
 /* Dark mode */
 :global(html[data-mantine-color-scheme='dark']) .heroPanel,
 :global(html[data-mantine-color-scheme='dark']) .sectionPanel {

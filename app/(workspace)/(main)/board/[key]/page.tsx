@@ -15,6 +15,7 @@ import {
   projectSettingsToRecord,
 } from '@/lib/project-settings';
 import { listProjectQaRuns } from '@/lib/qa-runs';
+import { normalizeTaskDispatchTarget } from '@/lib/task-dispatch';
 import { normalizeTaskIdentifier, taskWhereByIdentifier } from '@/lib/task-keys';
 import { extractTaskLabels } from '@/lib/task-labels';
 import { coerceTaskRunState, taskPriorityOptionData } from '@/lib/task-meta';
@@ -139,6 +140,7 @@ export default async function ProjectBoardPage({ params, searchParams }: Project
               taskPriority: true,
               status: true,
               engine: true,
+              dispatchTarget: true,
               runState: true,
               runStateUpdatedAt: true,
             },
@@ -217,6 +219,7 @@ export default async function ProjectBoardPage({ params, searchParams }: Project
                 name: label.name,
                 color: label.color ?? null,
               })),
+              dispatchTarget: normalizeTaskDispatchTarget(editableTodo.dispatchTarget),
               runState: coerceTaskRunState(editableTodo.runState),
               runStateUpdatedAt: editableTodo.runStateUpdatedAt
                 ? editableTodo.runStateUpdatedAt.toISOString()

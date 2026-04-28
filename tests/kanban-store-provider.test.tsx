@@ -72,6 +72,7 @@ function buildFocusedTask(overrides: Partial<EditableBoardTask> = {}): EditableB
     taskPriority: 'none',
     status: 'todo',
     engine: null,
+    dispatchTarget: null,
     runState: null,
     runStateUpdatedAt: null,
     workLogs: [],

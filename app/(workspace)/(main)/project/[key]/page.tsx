@@ -12,13 +12,7 @@ import {
   ThemeIcon,
   Title,
 } from '@mantine/core';
-import {
-  IconClipboardList,
-  IconCloud,
-  IconFlag,
-  IconLink,
-  IconListCheck,
-} from '@tabler/icons-react';
+import { IconClipboardList, IconCloud, IconFlag, IconLink } from '@tabler/icons-react';
 import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { notFound, redirect } from 'next/navigation';
@@ -45,20 +39,29 @@ import { TODO_LABEL_NAME_MAX_LENGTH } from '@/lib/content-limits';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, taskLabels, tasks } from '@/lib/db/schema';
 import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
+import { getProjectActivityStatus } from '@/lib/project-activity';
 import { isProjectStatus, PROJECT_STATUS_COLORS, PROJECT_STATUS_LABELS } from '@/lib/project-meta';
 import { resolveProjectByKey } from '@/lib/project-resolve';
 import { resolveAgentInstructions, resolveDeployStrategyConfig } from '@/lib/project-settings';
-import { listProjectTaskLabels } from '@/lib/task-labels';
+import { listProjectTaskLabels, listProjectTaskLabelUsageCounts } from '@/lib/task-labels';
 import { normalizeTaskLabelColor, parseTaskLabelColor } from '@/lib/task-meta';
 import { resolveTerminology } from '@/lib/terminology';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 import { listWorkLogsPage } from '@/lib/work-log-list';
 import { PROJECT_WORK_LOG_PAGE_SIZE } from '@/lib/work-log-pagination';
 
+import { ProjectSectionAnchorOffset } from './project-section-anchor-offset';
+
 type ProjectDetailPageProps = {
   params: Promise<{ key: string }>;
   searchParams?: Promise<{ panel?: string }>;
 };
+
+const DEPLOY_STRATEGY_LABELS = {
+  direct_commit: 'Direct Commit',
+  feature_branch: 'Feature Branch',
+  none: 'None',
+} as const;
 
 function projectStatusBadge(status: string) {
   if (!isProjectStatus(status)) {
@@ -69,6 +72,44 @@ function projectStatusBadge(status: string) {
     color: PROJECT_STATUS_COLORS[status],
     label: PROJECT_STATUS_LABELS[status],
   };
+}
+
+function toValidDate(value: Date | string | null | undefined) {
+  if (!value) return null;
+  const parsed = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatUtcDate(value: Date | string | null | undefined) {
+  const parsed = toValidDate(value);
+  return parsed ? parsed.toISOString().slice(0, 10) : null;
+}
+
+function joinWithAnd(values: string[]) {
+  if (values.length === 0) return '';
+  if (values.length === 1) return values[0];
+  if (values.length === 2) return `${values[0]} and ${values[1]}`;
+  return `${values.slice(0, -1).join(', ')}, and ${values.at(-1)}`;
+}
+
+function describeDeployStrategy(config: ReturnType<typeof resolveDeployStrategyConfig>) {
+  const strategyLabel = DEPLOY_STRATEGY_LABELS[config.strategy];
+  if (config.strategy === 'none') {
+    return 'Choose a deployment strategy in Configuration before dispatching work.';
+  }
+
+  if (config.strategy === 'feature_branch') {
+    const reviewNote = config.commit_on_review
+      ? 'Push before review.'
+      : 'Review can happen before push.';
+    return config.auto_pr
+      ? `${strategyLabel} to ${config.default_branch}. Auto-create a PR and ${reviewNote.toLowerCase()}`
+      : `${strategyLabel} to ${config.default_branch}. ${reviewNote}`;
+  }
+
+  return config.commit_on_review
+    ? `${strategyLabel} to ${config.default_branch}. Push before review.`
+    : `${strategyLabel} to ${config.default_branch}. Review can happen before push.`;
 }
 
 export default async function ProjectDetailPage({ params, searchParams }: ProjectDetailPageProps) {
@@ -82,9 +123,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   );
   if (!resolved) notFound();
 
-  const [project, kitchenMode, todos, labels, projectWorkLogPage] = await withOwnerDb(
-    owner.id,
-    async (client) =>
+  const [project, kitchenMode, todos, rawLabels, labelUsageCounts, projectWorkLogPage] =
+    await withOwnerDb(owner.id, async (client) =>
       Promise.all([
         client.query.projects.findFirst({
           where: and(
@@ -109,6 +149,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           },
         }),
         listProjectTaskLabels(owner.id, resolved.id, client),
+        listProjectTaskLabelUsageCounts(owner.id, resolved.id, client),
         listWorkLogsPage({
           ownerId: owner.id,
           projectId: resolved.id,
@@ -116,7 +157,15 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           client,
         }),
       ]),
+    );
+
+  const labelUsageCountById = new Map(
+    labelUsageCounts.map((row) => [row.labelId, row.usageCount] as const),
   );
+  const labels = rawLabels.map((label) => ({
+    ...label,
+    usageCount: labelUsageCountById.get(label.id) ?? 0,
+  }));
 
   if (!project) notFound();
   const projectId = project.id;
@@ -126,14 +175,70 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   const projectStatus = projectStatusBadge(project.status);
   const dashboardClassName = 'dashboard-root';
   const terminology = resolveTerminology(kitchenMode === 'true');
+  const boardHref = `/board/${projectKey}`;
+  const newTaskHref = `/dashboard?panel=task&projectId=${projectId}`;
+  const newWorkLogHref = `/dashboard?panel=worklog&projectId=${projectId}`;
+  const editProjectHref = `/project/${projectKey}?panel=project-edit`;
 
   const openTaskCount = todos.filter(
     (t) =>
       t.status === 'inbox' || t.status === 'todo' || t.status === 'hold' || t.status === 'ready',
   ).length;
+  const openTaskLabel = openTaskCount === 1 ? terminology.task.singular : terminology.task.plural;
 
   const agentInstructions = resolveAgentInstructions(project.projectSettings);
   const deployStrategy = resolveDeployStrategyConfig(project.projectSettings);
+  const trimmedAgentInstructions = agentInstructions?.trim() ?? '';
+  const hasAgentInstructions = trimmedAgentInstructions.length > 0;
+  const hasRepo = Boolean(project.repoUrl);
+  const hasDeployStrategy = deployStrategy.strategy !== 'none';
+  const latestWorkLog = projectWorkLogPage.workLogs[0] ?? null;
+  const lastWorkedAt = toValidDate(latestWorkLog?.workedAt);
+  const lastProjectUpdate = toValidDate(project.updatedAt);
+  const activityStatus = getProjectActivityStatus({
+    projectStatus: project.status,
+    lastWorkedAt,
+  });
+  const hasRecentActivity =
+    lastWorkedAt !== null &&
+    (activityStatus.status === 'healthy' || activityStatus.status === 'warning');
+  const setupReadyCount = [
+    hasRepo,
+    hasDeployStrategy,
+    hasAgentInstructions,
+    hasRecentActivity,
+  ].filter(Boolean).length;
+  const missingSetupItems = [
+    hasRepo ? null : 'repository',
+    hasDeployStrategy ? null : 'deployment strategy',
+    hasAgentInstructions ? null : 'agent instructions',
+    hasRecentActivity ? null : 'recent activity',
+  ].filter((value): value is string => Boolean(value));
+  const setupBadgeColor =
+    setupReadyCount === 4 ? 'green' : setupReadyCount === 0 ? 'red' : 'yellow';
+  const setupBadgeLabel =
+    setupReadyCount === 4
+      ? 'Dispatch-ready'
+      : setupReadyCount === 0
+        ? 'Setup missing'
+        : 'Needs attention';
+  const recentActivityBadgeColor =
+    !lastWorkedAt || activityStatus.status === 'inactive'
+      ? 'gray'
+      : activityStatus.status === 'healthy'
+        ? 'green'
+        : activityStatus.status === 'warning'
+          ? 'yellow'
+          : 'red';
+  const setupSummary =
+    setupReadyCount === 4
+      ? '4 of 4 setup checks are ready. Repo, deploy rules, agent instructions, and recent activity are all visible.'
+      : `${setupReadyCount} of 4 setup checks are ready. Next: ${joinWithAnd(missingSetupItems)}.`;
+  const recentActivityDescription = !lastWorkedAt
+    ? `No work logs yet. Last project update ${formatUtcDate(lastProjectUpdate) ?? 'unknown'}.`
+    : activityStatus.status === 'critical'
+      ? `No work log update in over 7 days. Last recorded work on ${formatUtcDate(lastWorkedAt)}.`
+      : `Last recorded work on ${formatUtcDate(lastWorkedAt)}.`;
 
   async function createLabel(_prevState: unknown, formData: FormData) {
     'use server';
@@ -484,77 +589,62 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 </Text>
               </div>
               <Group gap="xs" wrap="wrap">
-                <LinkButton href={`/board/${projectKey}`} variant="default">
+                <LinkButton href={boardHref} variant="default">
                   Open Kanban
                 </LinkButton>
-                <LinkButton href={`/dashboard?panel=task&projectId=${projectId}`}>
-                  {`New ${terminology.task.singular}`}
+                <LinkButton href={newTaskHref}>{`New ${terminology.task.singular}`}</LinkButton>
+                <LinkButton href={editProjectHref} variant="default">
+                  Edit Details
                 </LinkButton>
-                <ProjectHeroMenu
-                  workLogHref={`/dashboard?panel=worklog&projectId=${projectId}`}
-                  editProjectHref={`/project/${projectKey}?panel=project-edit`}
-                />
+                <ProjectHeroMenu workLogHref={newWorkLogHref} editProjectHref={editProjectHref} />
               </Group>
             </Group>
 
-            <SimpleGrid cols={{ base: 1, md: 2, lg: 4 }} spacing="sm">
-              <Paper
-                withBorder
-                p="sm"
-                radius="md"
-                className={metricStyles.metricTile}
-                style={{ borderLeft: `3px solid var(--mantine-color-${projectStatus.color}-6)` }}
-              >
-                <Group gap="xs" align="flex-start" mb={6}>
-                  <ThemeIcon variant="light" color={projectStatus.color} size="sm" radius="xl">
-                    <IconFlag size={14} />
-                  </ThemeIcon>
-                  <Text fw={600} size="sm">
-                    Status
-                  </Text>
-                </Group>
-                <Badge color={projectStatus.color} variant="light">
-                  {projectStatus.label}
-                </Badge>
-              </Paper>
-              <Paper
-                withBorder
-                p="sm"
-                radius="md"
-                className={metricStyles.metricTile}
-                style={{
-                  borderLeft:
-                    openTaskCount === 0
-                      ? '3px solid var(--mantine-color-gray-4)'
-                      : '3px solid var(--mantine-color-blue-6)',
-                }}
-              >
-                <Group gap="xs" align="flex-start">
-                  <ThemeIcon
-                    variant="light"
-                    color={openTaskCount === 0 ? 'gray' : 'blue'}
-                    size="sm"
-                    radius="xl"
-                  >
-                    <IconListCheck size={14} />
-                  </ThemeIcon>
+            <Paper
+              withBorder
+              p="md"
+              radius="md"
+              className={metricStyles.metricTile}
+              style={{
+                borderLeft: `4px solid var(--mantine-color-${setupBadgeColor}-6)`,
+              }}
+            >
+              <Stack gap="xs">
+                <Group justify="space-between" align="flex-start" wrap="wrap" gap="xs">
                   <div>
-                    <Text fw={700} fz="xl" c={openTaskCount === 0 ? 'dimmed' : undefined}>
-                      {openTaskCount}
+                    <Text fw={700} size="xs" c="dimmed" tt="uppercase">
+                      Setup health
                     </Text>
-                    <Text fw={600} size="sm" c="dimmed">
-                      {`Open ${terminology.task.plural}`}
-                    </Text>
+                    <Title order={3} size="h5">
+                      {setupReadyCount === 4 ? 'Ready to dispatch work' : 'Finish project setup'}
+                    </Title>
                   </div>
+                  <Badge color={setupBadgeColor} variant="light">
+                    {setupBadgeLabel}
+                  </Badge>
                 </Group>
-              </Paper>
+                <Text size="sm" c="dimmed">
+                  {setupSummary}
+                </Text>
+                <Group gap="xs" wrap="wrap">
+                  <Badge color={projectStatus.color} variant="light">
+                    {projectStatus.label}
+                  </Badge>
+                  <Badge color={openTaskCount === 0 ? 'gray' : 'blue'} variant="light">
+                    {`${openTaskCount} open ${openTaskLabel}`}
+                  </Badge>
+                </Group>
+              </Stack>
+            </Paper>
+
+            <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }} spacing="sm">
               <Paper
                 withBorder
                 p="sm"
                 radius="md"
                 className={metricStyles.metricTile}
                 style={{
-                  borderLeft: project.repoUrl
+                  borderLeft: hasRepo
                     ? '3px solid var(--mantine-color-blue-6)'
                     : '3px solid var(--mantine-color-gray-4)',
                 }}
@@ -562,33 +652,36 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 <Group gap="xs" align="flex-start" mb={6}>
                   <ThemeIcon
                     variant="light"
-                    color={project.repoUrl ? 'blue' : 'gray'}
+                    color={hasRepo ? 'blue' : 'gray'}
                     size="sm"
                     radius="xl"
                   >
                     <IconLink size={14} />
                   </ThemeIcon>
                   <Text fw={600} size="sm">
-                    Repo
+                    Repository
                   </Text>
                 </Group>
-                <Group gap="xs" wrap="wrap">
-                  <Badge color={project.repoUrl ? 'blue' : 'gray'} variant="light">
-                    {project.repoUrl ? 'Linked' : 'Not linked'}
+                <Stack gap={8} align="flex-start">
+                  <Badge color={hasRepo ? 'blue' : 'gray'} variant="light">
+                    {hasRepo ? 'Connected' : 'Missing'}
                   </Badge>
-                  {project.repoUrl ? (
-                    <Button
-                      component="a"
-                      href={project.repoUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      variant="subtle"
-                      size="compact-xs"
-                    >
-                      Open
-                    </Button>
-                  ) : null}
-                </Group>
+                  <Text size="sm" c="dimmed">
+                    {hasRepo
+                      ? 'Repository linked for branch and PR work.'
+                      : 'Add the repository URL in Edit Details before dispatching coding work.'}
+                  </Text>
+                  <Button
+                    component="a"
+                    href={hasRepo ? (project.repoUrl ?? editProjectHref) : editProjectHref}
+                    target={hasRepo ? '_blank' : undefined}
+                    rel={hasRepo ? 'noopener noreferrer' : undefined}
+                    variant="subtle"
+                    size="compact-xs"
+                  >
+                    {hasRepo ? 'Open' : 'Edit Details'}
+                  </Button>
+                </Stack>
               </Paper>
               <Paper
                 withBorder
@@ -596,7 +689,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 radius="md"
                 className={metricStyles.metricTile}
                 style={{
-                  borderLeft: project.vercelUrl
+                  borderLeft: hasDeployStrategy
                     ? '3px solid var(--mantine-color-blue-6)'
                     : '3px solid var(--mantine-color-gray-4)',
                 }}
@@ -604,165 +697,318 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 <Group gap="xs" align="flex-start" mb={6}>
                   <ThemeIcon
                     variant="light"
-                    color={project.vercelUrl ? 'blue' : 'gray'}
+                    color={hasDeployStrategy ? 'blue' : 'gray'}
                     size="sm"
                     radius="xl"
                   >
                     <IconCloud size={14} />
                   </ThemeIcon>
                   <Text fw={600} size="sm">
-                    Vercel
+                    Deployment
                   </Text>
                 </Group>
-                <Group gap="xs" wrap="wrap">
-                  <Badge color={project.vercelUrl ? 'blue' : 'gray'} variant="light">
-                    {project.vercelUrl ? 'Linked' : 'Not linked'}
+                <Stack gap={8} align="flex-start">
+                  <Badge color={hasDeployStrategy ? 'blue' : 'gray'} variant="light">
+                    {hasDeployStrategy
+                      ? DEPLOY_STRATEGY_LABELS[deployStrategy.strategy]
+                      : 'Missing'}
                   </Badge>
-                  {project.vercelUrl ? (
+                  <Text size="sm" c="dimmed">
+                    {describeDeployStrategy(deployStrategy)}
+                  </Text>
+                  {!hasDeployStrategy ? (
                     <Button
                       component="a"
-                      href={project.vercelUrl}
-                      target="_blank"
-                      rel="noreferrer"
+                      href="#project-configuration"
                       variant="subtle"
                       size="compact-xs"
                     >
-                      Open
+                      Review settings
                     </Button>
                   ) : null}
+                </Stack>
+              </Paper>
+              <Paper
+                withBorder
+                p="sm"
+                radius="md"
+                className={metricStyles.metricTile}
+                style={{
+                  borderLeft: hasAgentInstructions
+                    ? '3px solid var(--mantine-color-blue-6)'
+                    : '3px solid var(--mantine-color-gray-4)',
+                }}
+              >
+                <Group gap="xs" align="flex-start" mb={6}>
+                  <ThemeIcon
+                    variant="light"
+                    color={hasAgentInstructions ? 'blue' : 'gray'}
+                    size="sm"
+                    radius="xl"
+                  >
+                    <IconClipboardList size={14} />
+                  </ThemeIcon>
+                  <Text fw={600} size="sm">
+                    Agent instructions
+                  </Text>
                 </Group>
+                <Stack gap={8} align="flex-start">
+                  <Badge color={hasAgentInstructions ? 'blue' : 'gray'} variant="light">
+                    {hasAgentInstructions ? 'Configured' : 'Missing'}
+                  </Badge>
+                  <Text size="sm" c="dimmed">
+                    {hasAgentInstructions
+                      ? 'Instructions saved for dispatched agents.'
+                      : 'Add agent instructions so workers inherit project-specific rules.'}
+                  </Text>
+                  {!hasAgentInstructions ? (
+                    <Button
+                      component="a"
+                      href="#project-configuration"
+                      variant="subtle"
+                      size="compact-xs"
+                    >
+                      Add instructions
+                    </Button>
+                  ) : null}
+                </Stack>
+              </Paper>
+              <Paper
+                withBorder
+                p="sm"
+                radius="md"
+                className={metricStyles.metricTile}
+                style={{
+                  borderLeft: lastWorkedAt
+                    ? `3px solid ${activityStatus.color}`
+                    : '3px solid var(--mantine-color-gray-4)',
+                }}
+              >
+                <Group gap="xs" align="flex-start" mb={6}>
+                  <ThemeIcon variant="light" color={recentActivityBadgeColor} size="sm" radius="xl">
+                    <IconFlag size={14} />
+                  </ThemeIcon>
+                  <Text fw={600} size="sm">
+                    Recent activity
+                  </Text>
+                </Group>
+                <Stack gap={8} align="flex-start">
+                  <Badge color={recentActivityBadgeColor} variant="light">
+                    {lastWorkedAt ? activityStatus.label : 'No work logs'}
+                  </Badge>
+                  <Text size="sm" c="dimmed">
+                    {recentActivityDescription}
+                  </Text>
+                  {!hasRecentActivity ? (
+                    <Button component="a" href={newWorkLogHref} variant="subtle" size="compact-xs">
+                      New Work Log
+                    </Button>
+                  ) : null}
+                </Stack>
               </Paper>
             </SimpleGrid>
           </Stack>
         </Paper>
 
-        <Paper
-          withBorder
-          radius="lg"
-          p={{ base: 'md', sm: 'lg' }}
-          className={panelStyles.sectionPanel}
-        >
-          <Title order={3}>Overview</Title>
-          <MarkdownViewer
-            markdown={project.description}
-            persistence={{ endpoint: `/api/projects/${project.id}`, field: 'description' }}
-          />
-        </Paper>
+        <ProjectSectionAnchorOffset />
 
-        <Paper
-          withBorder
-          radius="lg"
-          p={{ base: 'md', sm: 'lg' }}
-          className={panelStyles.sectionPanel}
-        >
-          <Title order={3} mb="sm">
-            Labels
-          </Title>
-          <Text c="dimmed" size="sm" mb="md">
-            Keep labels close to the work they belong to in this project.
-          </Text>
-          <ProjectLabelsPanel
-            labels={labels}
-            taskPluralLower={terminology.task.plural.toLowerCase()}
-            createLabelAction={createLabel}
-            updateLabelAction={updateLabel}
-            deleteLabelAction={deleteLabel}
-          />
-        </Paper>
+        <nav aria-label="Project sections" data-project-section-nav="true">
+          <Paper
+            withBorder
+            radius="lg"
+            p={{ base: 'sm', sm: 'md' }}
+            className={`${panelStyles.sectionPanel} ${panelStyles.sectionNav}`}
+          >
+            <div className={panelStyles.sectionNavLayout}>
+              <div className={panelStyles.sectionNavLinks}>
+                <Anchor href="#project-overview" size="sm">
+                  Overview
+                </Anchor>
+                <Anchor href="#project-configuration" size="sm">
+                  Configuration
+                </Anchor>
+                <Anchor href="#project-activity" size="sm">
+                  Activity
+                </Anchor>
+              </div>
+              <div className={panelStyles.sectionNavActions}>
+                <LinkButton href={boardHref} size="compact-sm" variant="default">
+                  Open Kanban
+                </LinkButton>
+                <LinkButton href={newTaskHref} size="compact-sm">
+                  {`New ${terminology.task.singular}`}
+                </LinkButton>
+                <LinkButton href={newWorkLogHref} size="compact-sm" variant="default">
+                  New Work Log
+                </LinkButton>
+              </div>
+            </div>
+          </Paper>
+        </nav>
 
-        <Paper
-          withBorder
-          radius="lg"
-          p={{ base: 'md', sm: 'lg' }}
-          className={panelStyles.sectionPanel}
-        >
-          <Title order={3} mb="sm">
-            Agent Instructions
-          </Title>
-          <Text c="dimmed" size="sm" mb="md">
-            Add short project guidance that PREQ agents can read after `preq_get_task`.
-          </Text>
-          <AgentInstructionsPanel
-            action={updateAgentInstructions}
-            projectId={projectId}
-            value={agentInstructions}
-          />
-        </Paper>
+        <section id="project-overview" className={panelStyles.sectionAnchor}>
+          <Stack gap="md">
+            <Group justify="space-between" align="flex-end" wrap="wrap" gap="xs">
+              <div>
+                <Title order={3}>Overview</Title>
+                <Text c="dimmed" size="sm">
+                  Keep the current goal and project context in one place.
+                </Text>
+              </div>
+            </Group>
+            <Paper
+              withBorder
+              radius="lg"
+              p={{ base: 'md', sm: 'lg' }}
+              className={panelStyles.sectionPanel}
+            >
+              <MarkdownViewer
+                markdown={project.description}
+                persistence={{ endpoint: `/api/projects/${project.id}`, field: 'description' }}
+              />
+            </Paper>
+          </Stack>
+        </section>
 
-        <Paper
-          withBorder
-          radius="lg"
-          p={{ base: 'md', sm: 'lg' }}
-          className={panelStyles.sectionPanel}
-        >
-          <Title order={3} mb="sm">
-            Deployment Strategy
-          </Title>
-          <Text c="dimmed" size="sm" mb="md">
-            Configure deployment behavior for external PREQSTATION skills.
-          </Text>
-          <DeploySettingsPanel
-            action={updateDeploySettings}
-            singleProject
-            defaultProjectId={projectId}
-            projects={[
-              {
-                id: projectId,
-                name: project.name,
-                deployStrategy,
-              },
-            ]}
-          />
-        </Paper>
+        <section id="project-configuration" className={panelStyles.sectionAnchor}>
+          <Stack gap="md">
+            <Group justify="space-between" align="flex-end" wrap="wrap" gap="xs">
+              <div>
+                <Title order={3}>Configuration</Title>
+                <Text c="dimmed" size="sm">
+                  Manage project metadata, labels, and agent behavior together.
+                </Text>
+              </div>
+              <LinkButton href={editProjectHref} variant="default" size="compact-sm">
+                Edit Details
+              </LinkButton>
+            </Group>
 
-        <Paper
-          withBorder
-          radius="lg"
-          p={{ base: 'md', sm: 'lg' }}
-          className={panelStyles.sectionPanel}
-        >
-          <Title order={3} mb="sm">
-            {`${terminology.task.singular} Pipeline`}
-          </Title>
-          <TaskStatusBar
-            tasks={todos}
-            boardHref={`/board/${projectKey}`}
-            newTaskHref={`/dashboard?panel=task&projectId=${projectId}`}
-          />
-        </Paper>
+            <Paper
+              withBorder
+              radius="lg"
+              p={{ base: 'md', sm: 'lg' }}
+              className={panelStyles.sectionPanel}
+            >
+              <Title order={4} mb="sm">
+                Labels
+              </Title>
+              <Text c="dimmed" size="sm" mb="md">
+                Keep labels close to the work they belong to in this project. Each label change
+                stays local until you save it.
+              </Text>
+              <ProjectLabelsPanel
+                labels={labels}
+                taskSingularLower={terminology.task.singularLower}
+                taskPluralLower={terminology.task.pluralLower}
+                createLabelAction={createLabel}
+                updateLabelAction={updateLabel}
+                deleteLabelAction={deleteLabel}
+              />
+            </Paper>
 
-        <Paper
-          withBorder
-          radius="lg"
-          p={{ base: 'md', sm: 'lg' }}
-          className={panelStyles.sectionPanel}
-        >
-          <Title order={3} mb="sm">
-            Work Logs
-          </Title>
-          <ProjectWorkLogTimeline
-            projectId={projectId}
-            initialLogs={projectWorkLogPage.workLogs}
-            initialNextOffset={projectWorkLogPage.nextOffset}
-            emptyText="No work logs in this project."
-            emptyState={
-              <EmptyState
-                icon={<IconClipboardList size={24} />}
-                title="No work logs in this project"
-                description="Record your progress by logging work."
-                action={
-                  <LinkButton
-                    href={`/dashboard?panel=worklog&projectId=${projectId}`}
-                    size="compact-xs"
-                    variant="default"
-                  >
-                    New Work Log
-                  </LinkButton>
+            <Paper
+              withBorder
+              radius="lg"
+              p={{ base: 'md', sm: 'lg' }}
+              className={panelStyles.sectionPanel}
+            >
+              <Title order={4} mb="sm">
+                Agent Instructions
+              </Title>
+              <Text c="dimmed" size="sm" mb="md">
+                Add short project guidance that PREQ agents can read after `preq_get_task`. Changes
+                stay local until you save them to the project.
+              </Text>
+              <AgentInstructionsPanel
+                action={updateAgentInstructions}
+                projectId={projectId}
+                value={agentInstructions}
+              />
+            </Paper>
+
+            <Paper
+              withBorder
+              radius="lg"
+              p={{ base: 'md', sm: 'lg' }}
+              className={panelStyles.sectionPanel}
+            >
+              <Title order={4} mb="sm">
+                Deployment Strategy
+              </Title>
+              <Text c="dimmed" size="sm" mb="md">
+                Configure deployment behavior for external PREQSTATION skills. Changes stay local
+                until you save them to the project.
+              </Text>
+              <DeploySettingsPanel
+                action={updateDeploySettings}
+                singleProject
+                defaultProjectId={projectId}
+                projects={[
+                  {
+                    id: projectId,
+                    name: project.name,
+                    deployStrategy,
+                  },
+                ]}
+              />
+            </Paper>
+          </Stack>
+        </section>
+
+        <section id="project-activity" className={panelStyles.sectionAnchor}>
+          <Stack gap="md">
+            <Group align="flex-end" gap="xs">
+              <div>
+                <Title order={3}>Activity</Title>
+                <Text c="dimmed" size="sm">
+                  Jump into the board, capture work, and review recent progress.
+                </Text>
+              </div>
+            </Group>
+
+            <Paper
+              withBorder
+              radius="lg"
+              p={{ base: 'md', sm: 'lg' }}
+              className={panelStyles.sectionPanel}
+            >
+              <Title order={4} mb="sm">
+                {`${terminology.task.singular} Pipeline`}
+              </Title>
+              <TaskStatusBar tasks={todos} boardHref={boardHref} newTaskHref={newTaskHref} />
+            </Paper>
+
+            <Paper
+              withBorder
+              radius="lg"
+              p={{ base: 'md', sm: 'lg' }}
+              className={panelStyles.sectionPanel}
+            >
+              <Title order={4} mb="sm">
+                Work Logs
+              </Title>
+              <ProjectWorkLogTimeline
+                projectId={projectId}
+                initialLogs={projectWorkLogPage.workLogs}
+                initialNextOffset={projectWorkLogPage.nextOffset}
+                emptyText="No work logs in this project."
+                emptyState={
+                  <EmptyState
+                    icon={<IconClipboardList size={24} />}
+                    title="No work logs in this project"
+                    description="Record your progress by logging work."
+                    action={
+                      <LinkButton href={newWorkLogHref} size="compact-xs" variant="default">
+                        New Work Log
+                      </LinkButton>
+                    }
+                  />
                 }
               />
-            }
-          />
-        </Paper>
+            </Paper>
+          </Stack>
+        </section>
 
         {activePanel === 'project-edit' ? (
           <ProjectEditModal

@@ -79,6 +79,7 @@ export type TaskEditFormProps = {
     taskPriority: string;
     status: string;
     engine?: string | null;
+    dispatchTarget?: EditableBoardTask['dispatchTarget'];
     runState?: 'queued' | 'running' | null;
     runStateUpdatedAt?: string | null;
     workLogs?: Array<{
@@ -823,7 +824,9 @@ function TaskEditFormContent({
                     <Alert
                       color={noteConflict ? 'yellow' : 'blue'}
                       variant="light"
-                      icon={noteConflict ? <IconAlertCircle size={16} /> : <IconInfoCircle size={16} />}
+                      icon={
+                        noteConflict ? <IconAlertCircle size={16} /> : <IconInfoCircle size={16} />
+                      }
                     >
                       <Group justify="space-between" align="center" gap="sm" wrap="wrap">
                         <Text size="sm">
@@ -925,6 +928,7 @@ function TaskEditFormContent({
                   branchName={branchName}
                   status={status}
                   engine={engine}
+                  dispatchTarget={editableTodo.dispatchTarget ?? null}
                   noteMarkdown={noteMarkdown}
                   telegramEnabled={telegramEnabled ?? false}
                   hermesTelegramEnabled={hermesTelegramEnabled}

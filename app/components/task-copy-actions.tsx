@@ -23,6 +23,7 @@ import {
 import { showErrorNotification } from '@/lib/notifications';
 import type { TaskDispatchObjective } from '@/lib/openclaw-command';
 import { extractTaskAskPrompt } from '@/lib/task-ask';
+import type { TaskDispatchTarget } from '@/lib/task-dispatch';
 import {
   buildHermesTaskTelegramMessage,
   buildTaskTelegramMessage,
@@ -63,6 +64,7 @@ type TaskCopyActionsProps = {
   branchName?: string | null;
   status: string;
   engine?: string | null;
+  dispatchTarget?: TaskDispatchTarget | null;
   noteMarkdown?: string | null;
   telegramEnabled?: boolean;
   hermesTelegramEnabled?: boolean;
@@ -145,9 +147,20 @@ function resolveTaskEditDispatchActions(
 
 function resolveInitialAction(
   availableActions: TaskEditDispatchAction[],
-  action: TaskDispatchPreferenceAction | TaskEditDispatchAction | null | undefined,
+  taskDispatchTarget: TaskDispatchTarget | null | undefined,
+  storedAction: TaskDispatchPreferenceAction | TaskEditDispatchAction | null | undefined,
 ) {
-  if (isTaskEditDispatchAction(action) && availableActions.includes(action)) return action;
+  const taskAction =
+    taskDispatchTarget === 'hermes-telegram'
+      ? 'send-hermes-telegram'
+      : taskDispatchTarget === 'telegram'
+        ? 'send-telegram'
+        : null;
+
+  if (taskAction && availableActions.includes(taskAction)) return taskAction;
+  if (isTaskEditDispatchAction(storedAction) && availableActions.includes(storedAction)) {
+    return storedAction;
+  }
   return availableActions[0] ?? 'send-telegram';
 }
 
@@ -193,6 +206,7 @@ export function TaskCopyActions({
   branchName,
   status,
   engine,
+  dispatchTarget,
   noteMarkdown,
   telegramEnabled = false,
   hermesTelegramEnabled,
@@ -210,6 +224,7 @@ export function TaskCopyActions({
   const [selectedAction, setSelectedAction] = useState<TaskEditDispatchAction>(() =>
     resolveInitialAction(
       resolveTaskEditDispatchActions(telegramEnabled, resolvedHermesTelegramEnabled),
+      dispatchTarget,
       storedPreference?.action,
     ),
   );
@@ -228,7 +243,7 @@ export function TaskCopyActions({
     : resolveInitialMode(availableModes, storedPreference?.objective);
   const effectiveAction = availableActions.includes(selectedAction)
     ? selectedAction
-    : resolveInitialAction(availableActions, selectedAction);
+    : resolveInitialAction(availableActions, null, selectedAction);
   const visibleModeOptions = dispatchModeOptions.filter((mode) =>
     availableModes.includes(mode.key),
   );
@@ -272,6 +287,7 @@ export function TaskCopyActions({
   const selectEngine = (nextEngine: EngineConfig) => {
     const nextAction = resolveInitialAction(
       resolveTaskEditDispatchActions(telegramEnabled, resolvedHermesTelegramEnabled),
+      null,
       effectiveAction,
     );
     setSelectedEngine(nextEngine);
