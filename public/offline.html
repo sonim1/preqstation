@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Offline | PREQSTATION</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f3efe6;
+        --panel: rgba(255, 252, 246, 0.9);
+        --border: rgba(46, 37, 28, 0.14);
+        --text: #201913;
+        --muted: #66584d;
+        --accent: #245d52;
+        --accent-strong: #173b34;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family:
+          "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+        background:
+          radial-gradient(circle at top, rgba(36, 93, 82, 0.12), transparent 36%),
+          linear-gradient(180deg, #fcfaf5 0%, var(--bg) 100%);
+        color: var(--text);
+      }
+
+      main {
+        display: grid;
+        place-items: center;
+        min-height: 100vh;
+        padding: 24px;
+      }
+
+      .panel {
+        width: min(100%, 640px);
+        padding: 32px;
+        border: 1px solid var(--border);
+        border-radius: 28px;
+        background: var(--panel);
+        box-shadow: 0 28px 80px rgba(32, 25, 19, 0.12);
+      }
+
+      .eyebrow {
+        margin: 0 0 12px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.25rem, 5vw, 3.5rem);
+        line-height: 0.95;
+      }
+
+      p {
+        margin: 0;
+        font-size: 1.05rem;
+        line-height: 1.6;
+        color: var(--muted);
+      }
+
+      .copy {
+        display: grid;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 28px;
+      }
+
+      .button,
+      button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 48px;
+        padding: 0 18px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        font: inherit;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+        transition:
+          transform 120ms ease,
+          background-color 120ms ease,
+          border-color 120ms ease;
+      }
+
+      button {
+        background: var(--accent);
+        color: #f7f2eb;
+      }
+
+      .button {
+        border-color: var(--border);
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.65);
+      }
+
+      .button:hover,
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      button:hover {
+        background: var(--accent-strong);
+      }
+
+      .button:hover {
+        border-color: rgba(36, 93, 82, 0.24);
+      }
+
+      @media (max-width: 640px) {
+        .panel {
+          padding: 24px;
+          border-radius: 22px;
+        }
+
+        .actions {
+          flex-direction: column;
+        }
+
+        .button,
+        button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="panel" aria-labelledby="offline-title">
+        <p class="eyebrow">Offline</p>
+        <h1 id="offline-title">You are offline</h1>
+        <div class="copy">
+          <p id="offline-message">Projects are unavailable while you are offline.</p>
+          <p id="offline-detail">
+            Reconnect to refresh this page. Boards stay available offline only after you open them
+            once while online.
+          </p>
+        </div>
+        <div class="actions">
+          <button id="retry-action" type="button">Retry</button>
+          <a class="button" id="secondary-action" href="/board">Back to Board</a>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const variants = {
+        board: {
+          detail:
+            'Open the board online once, then try again when you need the cached version offline.',
+          href: '/projects',
+          label: 'Back to Main',
+          message: 'This board has not been saved for offline use yet.',
+        },
+        default: {
+          detail:
+            'Reconnect to refresh this page. Boards stay available offline only after you open them once while online.',
+          href: '/projects',
+          label: 'Back to Main',
+          message: 'This page is unavailable while you are offline.',
+        },
+        projects: {
+          detail:
+            'Reconnect and refresh to load the latest workspace data. You can still reopen cached boards from the board view.',
+          href: '/board',
+          label: 'Back to Board',
+          message: 'Projects are unavailable while you are offline.',
+        },
+      };
+
+      const pathname = location.pathname;
+      const variant =
+        pathname === '/projects'
+          ? variants.projects
+          : pathname === '/board' || pathname.startsWith('/board/')
+            ? variants.board
+            : variants.default;
+
+      document.getElementById('offline-message').textContent = variant.message;
+      document.getElementById('offline-detail').textContent = variant.detail;
+
+      const secondaryAction = document.getElementById('secondary-action');
+      secondaryAction.href = variant.href;
+      secondaryAction.textContent = variant.label;
+
+      document.getElementById('retry-action').addEventListener('click', () => {
+        location.reload();
+      });
+    </script>
+  </body>
+</html>
