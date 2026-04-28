@@ -135,6 +135,7 @@ export function SettingsLabelForm({
   }
 
   function markDirty() {
+    syncDirtyState();
     if (dirtyTimerRef.current) {
       clearTimeout(dirtyTimerRef.current);
     }
@@ -154,6 +155,10 @@ export function SettingsLabelForm({
     if (savedTimerRef.current) {
       clearTimeout(savedTimerRef.current);
       savedTimerRef.current = null;
+    }
+    if (dirtyTimerRef.current) {
+      clearTimeout(dirtyTimerRef.current);
+      dirtyTimerRef.current = null;
     }
     setState(null);
     setSaveState('saving');
