@@ -99,6 +99,37 @@ describe('app/hooks/use-task-offline-draft', () => {
     expect(result.current.canRestoreDraft).toBe(false);
   });
 
+  it('exposes restore preview metadata for an online stale local draft', async () => {
+    mocked.getDraft.mockResolvedValue({
+      updatedAt: '2026-04-28T15:00:00.000Z',
+      fields: {
+        title: '로컬 초안 제목',
+        note: '## Local rewrite\n\nSaved from browser draft.',
+        baseNoteFingerprint: buildTaskNoteFingerprint('## Old plan'),
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note', true),
+    );
+
+    await waitFor(() => {
+      expect(result.current.canRestoreDraft).toBe(true);
+    });
+
+    expect(result.current.restoreDraftPreview).toEqual({
+      title: '로컬 초안 제목',
+      note: '## Local rewrite\n\nSaved from browser draft.',
+      updatedAt: '2026-04-28T15:00:00.000Z',
+    });
+
+    act(() => {
+      result.current.restoreDraft();
+    });
+
+    expect(result.current.restoreDraftPreview).toBeNull();
+  });
+
   it('keeps an unsaved local note draft and surfaces a conflict while offline when the server note changed', async () => {
     mocked.getDraft.mockResolvedValue({
       fields: {
