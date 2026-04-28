@@ -552,6 +552,28 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectsPageSource).not.toContain('getTrendHeights');
   });
 
+  it('keeps project metrics as a single mobile ribbon instead of stacking status cards', () => {
+    expect(projectPortfolioCardSource).toContain('<div className={styles.metricStrip}>');
+    expect(projectPortfolioCardSource).toMatch(
+      /card\.openLabel[\s\S]*card\.openTaskCount[\s\S]*card\.readyLabel[\s\S]*card\.readyCount[\s\S]*card\.holdLabel[\s\S]*card\.holdCount/,
+    );
+    expect(projectsPageCss).toMatch(
+      /\.metricStrip\s*\{[\s\S]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/,
+    );
+    expect(projectsPageCss).toMatch(
+      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metricStrip\s*\{[\s\S]*gap:\s*0\.4rem;/,
+    );
+    expect(projectsPageCss).toMatch(
+      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metric\s*\{[\s\S]*padding:\s*0\.5rem 0\.55rem;/,
+    );
+    expect(projectsPageCss).toMatch(
+      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metricValue\s*\{[\s\S]*font-size:\s*0\.95rem;/,
+    );
+    expect(projectsPageCss).not.toMatch(
+      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metricStrip\s*\{[\s\S]*grid-template-columns:/,
+    );
+  });
+
   it('pauses a project in place from the projects route', async () => {
     mocked.updateProject.mockResolvedValue({
       ok: true,
