@@ -133,7 +133,7 @@ describe('KanbanBoardMobile swipe wiring', () => {
     );
 
     expect(useMobileTabSwipeMock).toHaveBeenCalledWith(
-      ['inbox', 'todo', 'ready', 'done', 'hold'],
+      ['inbox', 'todo', 'hold', 'ready', 'done'],
       'hold',
       onTabChange,
     );

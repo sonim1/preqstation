@@ -1308,38 +1308,6 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   align-items: stretch;
 }
 
-.kanban-hold-rail {
-  height: 100%;
-  min-height: 0;
-  display: flex;
-  position: relative;
-}
-
-.kanban-hold-rail--compact {
-  padding-left: 0;
-}
-
-.kanban-hold-rail--fixed-width {
-  flex: 0 0 380px;
-  width: 380px;
-}
-
-.kanban-hold-rail--compact::before {
-  content: '';
-  position: absolute;
-  left: -7px;
-  top: 18px;
-  bottom: 18px;
-  width: 1px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--ui-warning), transparent 54%),
-    color-mix(in srgb, var(--ui-warning), transparent 12%),
-    color-mix(in srgb, var(--ui-warning), transparent 42%)
-  );
-  opacity: 0.92;
-}
-
 .kanban-column,
 .kanban-mobile-panel {
   --kanban-bottom-gradient-surface: transparent;
@@ -1360,14 +1328,18 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   transition: background-color 140ms ease;
 }
 
-.kanban-column--hold-rail {
-  --kanban-bottom-gradient-surface: transparent;
-  flex: 1 1 auto;
-  width: 100%;
-  border-style: none;
-  border-color: transparent;
-  background: transparent;
-  box-shadow: none;
+.kanban-column--hold {
+  --kanban-bottom-gradient-surface: color-mix(
+    in srgb,
+    var(--ui-warning-soft),
+    var(--ui-surface-strong) 48%
+  );
+  border-color: color-mix(in srgb, var(--ui-warning), transparent 72%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-warning-soft), var(--ui-surface-soft) 34%),
+    color-mix(in srgb, var(--ui-warning-soft), var(--ui-surface-strong) 52%)
+  );
 }
 
 .kanban-column-header {
@@ -2287,8 +2259,18 @@ html[data-mantine-color-scheme='dark'] .kanban-column {
   background: transparent;
 }
 
-html[data-mantine-color-scheme='dark'] .kanban-column--hold-rail {
-  background: transparent;
+html[data-mantine-color-scheme='dark'] .kanban-column--hold {
+  --kanban-bottom-gradient-surface: color-mix(
+    in srgb,
+    var(--ui-warning-soft),
+    var(--ui-surface-strong) 56%
+  );
+  border-color: color-mix(in srgb, var(--ui-warning), transparent 76%);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-warning-soft), var(--ui-surface-soft) 28%),
+    color-mix(in srgb, var(--ui-warning-soft), var(--ui-surface-strong) 58%)
+  );
 }
 
 html[data-mantine-color-scheme='dark'] .kanban-column,
@@ -2406,11 +2388,6 @@ html[data-mantine-color-scheme='dark'] .live-editor-input [data-live-editor-empt
   .kanban-column {
     flex-basis: min(78vw, 320px);
     width: min(78vw, 320px);
-  }
-
-  .kanban-hold-rail {
-    flex-basis: min(72vw, 280px);
-    width: min(72vw, 280px);
   }
 
   .workspace-divider-rail {

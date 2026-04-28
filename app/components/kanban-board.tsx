@@ -31,10 +31,10 @@ import {
   findTaskLocation,
   getBoardFlowStatuses,
   getMobileBoardStatuses,
+  getVisibleBoardStatuses,
   type KanbanColumns,
   type KanbanStatus,
   type KanbanTask,
-  shouldShowHoldLane,
 } from '@/lib/kanban-helpers';
 import {
   drainKanbanMutationQueue,
@@ -481,12 +481,12 @@ export function KanbanBoard({
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('inbox');
   const boardFlowStatuses = useMemo(() => getBoardFlowStatuses(), []);
+  const visibleBoardStatuses = useMemo(() => getVisibleBoardStatuses(columns), [columns]);
   const isBoardInteractionDisabled = isPending;
   const mobileStatuses = useMemo(
     () => getMobileBoardStatuses(columns, activeTab),
     [activeTab, columns],
   );
-  const showHoldLane = shouldShowHoldLane(columns);
   const actionIslandControlSize = isMobile ? 42 : 'lg';
   const actionIslandPrimaryIconSize = isMobile ? 16 : 18;
   const actionIslandSecondaryIconSize = isMobile ? 14 : 16;
@@ -1275,9 +1275,9 @@ export function KanbanBoard({
           />
         ) : (
           <div className="kanban-scroll kanban-fullscreen" ref={scrollRef}>
-            <div className={`kanban-board-shell${showHoldLane ? ' has-hold-rail' : ''}`}>
+            <div className="kanban-board-shell">
               <div className="kanban-grid">
-                {boardFlowStatuses.map((status) => {
+                {visibleBoardStatuses.map((status) => {
                   const headerActions =
                     status === 'ready'
                       ? selectedProject && columns.ready.length > 0
@@ -1327,31 +1327,6 @@ export function KanbanBoard({
                   );
                 })}
               </div>
-              {showHoldLane ? (
-                <div className="kanban-hold-rail kanban-hold-rail--compact kanban-hold-rail--fixed-width">
-                  <KanbanColumn
-                    status="hold"
-                    statusLabel={boardStatusLabel('hold', terminology)}
-                    tasks={columns.hold}
-                    isPending={isBoardInteractionDisabled}
-                    isMobile={isMobile}
-                    editHrefBase={editHrefBase}
-                    editHrefJoiner={editHrefJoiner}
-                    telegramEnabled={telegramEnabled}
-                    router={router}
-                    onTaskQueued={applyOptimisticQueuedTask}
-                    onQuickMoveTask={quickMoveTask}
-                    onDeleteTask={requestDeleteTask}
-                    labelOptions={labelOptions}
-                    resolveTaskLabelOptions={resolveTaskLabelOptions}
-                    onUpdateTaskLabels={updateTaskLabels}
-                    onProjectLabelOptionsChange={onProjectLabelOptionsChange}
-                    enginePresets={enginePresets}
-                    className="kanban-column--hold-rail"
-                    onOpenTaskEditor={openTaskEditor}
-                  />
-                </div>
-              ) : null}
             </div>
             {saveError ? (
               <Text c="red" size="sm" mt="sm">
