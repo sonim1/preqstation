@@ -31,6 +31,10 @@ describe('app/components/board-loading-shell', () => {
     expect(html).toContain('kanban-mobile-tabs');
     expect(html).toContain('kanban-mobile-panels');
     expect(html).toContain('kanban-mobile-panel-body');
+    expect(html).toContain('kanban-mobile-tab-bar');
+    expect(html.indexOf('kanban-mobile-panels')).toBeLessThan(
+      html.indexOf('kanban-mobile-tab-bar'),
+    );
     expect(html.match(/data-board-loading-mobile-tab="true"/g)?.length).toBeGreaterThan(1);
     expect(html.match(/data-board-loading-mobile-card="true"/g)?.length).toBeGreaterThan(1);
     expect(html).not.toMatch(/class="[^"]*mantine-hidden-from-sm/);

@@ -122,6 +122,14 @@ describe('kanban bottom clearance hooks', () => {
     expect(loadingHtml).toContain(
       'kanban-mobile-panel-list kanban-fill-height kanban-bottom-clearance',
     );
+    expect(mobileHtml).toContain('kanban-mobile-tab-bar');
+    expect(loadingHtml).toContain('kanban-mobile-tab-bar');
+    expect(mobileHtml.indexOf('kanban-mobile-panels')).toBeLessThan(
+      mobileHtml.indexOf('kanban-mobile-tab-bar'),
+    );
+    expect(loadingHtml.indexOf('kanban-mobile-panels')).toBeLessThan(
+      loadingHtml.indexOf('kanban-mobile-tab-bar'),
+    );
     expect(mobileHtml).toContain(
       'kanban-mobile-panel-list kanban-fill-height kanban-bottom-clearance',
     );
@@ -269,7 +277,7 @@ describe('kanban bottom clearance hooks', () => {
       /\.kanban-mobile-panel-list\s*\{[\s\S]*gap:\s*var\(--mantine-spacing-sm\);[\s\S]*padding:\s*6px 6px 0;/,
     );
     expect(globalsCss).toMatch(
-      /\.kanban-mobile-panel-list\.kanban-bottom-clearance\s*\{[\s\S]*--kanban-bottom-fade-height:\s*var\(--kanban-action-island-clearance\);[\s\S]*--kanban-bottom-clearance-height:\s*var\(--kanban-action-island-clearance\);/,
+      /\.kanban-mobile-panel-list\.kanban-bottom-clearance\s*\{[\s\S]*--kanban-bottom-fade-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);[\s\S]*--kanban-bottom-clearance-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);/,
     );
     expect(globalsCss).not.toMatch(/\.kanban-bottom-gradient--empty/);
   });
@@ -301,6 +309,7 @@ describe('kanban bottom clearance hooks', () => {
     expect(globalsCss).toMatch(
       /\.kanban-stage\s*\{[\s\S]*--kanban-action-island-clearance:\s*calc\(80px \+ env\(safe-area-inset-bottom\)\);/,
     );
+    expect(globalsCss).toMatch(/\.kanban-stage\s*\{[\s\S]*--kanban-mobile-tab-bar-height:\s*0px;/);
   });
 
   it('anchors the action island to the board region instead of the viewport center', () => {
@@ -313,7 +322,19 @@ describe('kanban bottom clearance hooks', () => {
     expect(globalsCss).toMatch(/\.kanban-action-island\s*\{[\s\S]*pointer-events:\s*auto;/);
     expect(globalsCss).not.toMatch(/\.kanban-action-island\s*\{[\s\S]*position:\s*fixed;/);
     expect(globalsCss).toMatch(
-      /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanban-action-island-anchor\s*\{[\s\S]*bottom:\s*calc\(12px \+ env\(safe-area-inset-bottom\)\);/,
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanban-action-island-anchor\s*\{[\s\S]*bottom:\s*calc\(12px \+ var\(--kanban-mobile-tab-bar-height\)\);/,
+    );
+  });
+
+  it('uses a bottom mobile tab bar shell and folds that height into the mobile clearance contract', () => {
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-tab-bar\s*\{[\s\S]*flex:\s*0 0 auto;[\s\S]*padding:\s*8px 6px 0;[\s\S]*padding-bottom:\s*calc\(8px \+ env\(safe-area-inset-bottom\)\);/,
+    );
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-panel-list\.kanban-bottom-clearance\s*\{[\s\S]*--kanban-bottom-fade-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);[\s\S]*--kanban-bottom-clearance-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);/,
+    );
+    expect(globalsCss).toMatch(
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanban-stage\s*\{[\s\S]*--kanban-mobile-tab-bar-height:\s*calc\(64px \+ env\(safe-area-inset-bottom\)\);/,
     );
   });
 

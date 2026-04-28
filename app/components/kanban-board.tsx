@@ -856,11 +856,47 @@ export function KanbanBoard({
   const updateTaskLabels = useCallback(
     async (taskKey: string, labelIds: string[]) => {
       const currentState = kanbanStore.getState();
+      const boardTask = currentState.tasksByKey[taskKey];
+      const availableLabels = boardTask
+        ? [
+            ...resolveKanbanTaskLabelOptions({
+              task: boardTask,
+              selectedProject,
+              labelOptions,
+              projectLabelOptionsByProjectId,
+            }),
+            ...boardTask.labels,
+          ]
+        : [];
+      const queueOfflineUpdate =
+        boardOfflineSync && boardTask
+          ? () =>
+              boardOfflineSync.queueTaskPatch({
+                taskKey,
+                labelIds,
+                labels: labelIds
+                  .map((labelId) => {
+                    const resolvedLabel = availableLabels.find((label) => label.id === labelId);
+
+                    if (!resolvedLabel) {
+                      return null;
+                    }
+
+                    return {
+                      id: resolvedLabel.id,
+                      name: resolvedLabel.name,
+                      color: resolvedLabel.color,
+                    };
+                  })
+                  .filter((label): label is LabelOption => label !== null),
+              })
+          : undefined;
       const didUpdate = await updateKanbanTaskLabelsFromBoard({
         taskKey,
         labelIds,
         currentFocusedTaskKey: currentState.focusedTaskKey,
         fetchImpl: fetch,
+        queueOfflineUpdate,
         upsertSnapshots: currentState.upsertSnapshots,
         setFocusedTask: currentState.setFocusedTask,
         setSaveError,
@@ -871,7 +907,14 @@ export function KanbanBoard({
         columnsRef.current = readColumnsFromStore();
       }
     },
-    [kanbanStore, readColumnsFromStore],
+    [
+      boardOfflineSync,
+      kanbanStore,
+      labelOptions,
+      projectLabelOptionsByProjectId,
+      readColumnsFromStore,
+      selectedProject,
+    ],
   );
 
   const resolveTaskLabelOptions = useCallback(

@@ -193,28 +193,6 @@ export function KanbanBoardMobile({
 
   return (
     <Tabs value={activeTab} onChange={(v) => v && onTabChange(v)} className="kanban-mobile-tabs">
-      <Tabs.List>
-        {mobileStatuses.map((status) => {
-          const StatusIcon = mobileStatusIcons[status];
-          return (
-            <Tabs.Tab key={status} value={status} className="kanban-mobile-tab">
-              <span className="kanban-mobile-tab-shell">
-                <span className="kanban-mobile-tab-copy">
-                  {StatusIcon ? (
-                    <span className="kanban-mobile-tab-icon" aria-hidden="true">
-                      <StatusIcon size={13} />
-                    </span>
-                  ) : null}
-                  <span className="kanban-mobile-tab-label">
-                    {boardStatusLabel(status, terminology)}
-                  </span>
-                </span>
-                <span className="kanban-mobile-tab-count">{columns[status].length}</span>
-              </span>
-            </Tabs.Tab>
-          );
-        })}
-      </Tabs.List>
       <div {...swipeHandlers} className="kanban-mobile-panels" style={{ touchAction: 'pan-y' }}>
         {mobileStatuses.map((status) => {
           const isActivePanel = status === activeTab;
@@ -259,6 +237,11 @@ export function KanbanBoardMobile({
                   </div>
                 ) : null}
                 <div className="kanban-mobile-panel-list kanban-fill-height kanban-bottom-clearance">
+                  {isActivePanel && saveError ? (
+                    <Text c="red" size="sm" className="kanban-mobile-save-error">
+                      {saveError}
+                    </Text>
+                  ) : null}
                   {tasks.length === 0 ? (
                     <KanbanEmptyLane className="kanban-empty-state--compact kanban-fill-height" />
                   ) : (
@@ -322,11 +305,30 @@ export function KanbanBoardMobile({
           );
         })}
       </div>
-      {saveError ? (
-        <Text c="red" size="sm" mt="sm">
-          {saveError}
-        </Text>
-      ) : null}
+      <div className="kanban-mobile-tab-bar">
+        <Tabs.List>
+          {mobileStatuses.map((status) => {
+            const StatusIcon = mobileStatusIcons[status];
+            return (
+              <Tabs.Tab key={status} value={status} className="kanban-mobile-tab">
+                <span className="kanban-mobile-tab-shell">
+                  <span className="kanban-mobile-tab-copy">
+                    {StatusIcon ? (
+                      <span className="kanban-mobile-tab-icon" aria-hidden="true">
+                        <StatusIcon size={13} />
+                      </span>
+                    ) : null}
+                    <span className="kanban-mobile-tab-label">
+                      {boardStatusLabel(status, terminology)}
+                    </span>
+                  </span>
+                  <span className="kanban-mobile-tab-count">{columns[status].length}</span>
+                </span>
+              </Tabs.Tab>
+            );
+          })}
+        </Tabs.List>
+      </div>
     </Tabs>
   );
 }

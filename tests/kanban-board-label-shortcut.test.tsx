@@ -327,4 +327,56 @@ describe('updateKanbanTaskLabelsFromBoard', () => {
     expect(setSaveError).toHaveBeenCalledWith('Failed to save labels.');
     expect(notifyError).toHaveBeenCalledWith('Failed to save labels.');
   });
+
+  it('falls back to the offline task patch queue when label persistence fails', async () => {
+    const boardTask = buildTask({
+      labels: [{ id: 'label-b', name: 'UI', color: 'cyan' }],
+    });
+    const focusedTask: EditableBoardTask = {
+      id: 'focused-1',
+      taskKey: 'PROJ-330',
+      title: 'Add the label shortcut',
+      branch: 'task/proj-330/add-the-label-shortcut',
+      note: null,
+      projectId: null,
+      labelIds: ['label-b'],
+      labels: [{ id: 'label-b', name: 'UI', color: 'cyan' }],
+      taskPriority: 'none',
+      status: 'todo',
+      engine: null,
+      dispatchTarget: null,
+      runState: null,
+      runStateUpdatedAt: null,
+      workLogs: [],
+    };
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: vi.fn().mockResolvedValue({ error: 'Failed to save labels.' }),
+    });
+    const queueOfflineUpdate = vi.fn().mockResolvedValue({ boardTask, focusedTask });
+    const upsertSnapshots = vi.fn();
+    const setFocusedTask = vi.fn();
+    const setSaveError = vi.fn();
+    const notifyError = vi.fn();
+
+    const didUpdate = await updateKanbanTaskLabelsFromBoard({
+      taskKey: 'PROJ-330',
+      labelIds: ['label-b'],
+      currentFocusedTaskKey: 'PROJ-330',
+      fetchImpl,
+      queueOfflineUpdate,
+      upsertSnapshots,
+      setFocusedTask,
+      setSaveError,
+      notifyError,
+    });
+
+    expect(didUpdate).toBe(true);
+    expect(queueOfflineUpdate).toHaveBeenCalledTimes(1);
+    expect(upsertSnapshots).toHaveBeenCalledWith([boardTask]);
+    expect(setFocusedTask).toHaveBeenCalledWith(focusedTask);
+    expect(setSaveError).toHaveBeenCalledWith(null);
+    expect(notifyError).not.toHaveBeenCalled();
+  });
 });

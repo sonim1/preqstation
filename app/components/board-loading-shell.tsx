@@ -44,29 +44,6 @@ export function BoardLoadingShell() {
                   className="kanban-mobile-tabs"
                   data-board-loading-mobile-shell="true"
                 >
-                  <TabsList>
-                    {BOARD_LOADING_MOBILE_TABS.map((tab) => (
-                      <TabsTab
-                        key={tab.value}
-                        value={tab.value}
-                        disabled
-                        className="kanban-mobile-tab"
-                        data-board-loading-mobile-tab="true"
-                      >
-                        <span className="kanban-mobile-tab-shell">
-                          <span className="kanban-mobile-tab-copy">
-                            <span className="kanban-mobile-tab-label">
-                              <Skeleton h={10} w={tab.labelWidth} radius="sm" />
-                            </span>
-                          </span>
-                          <span className="kanban-mobile-tab-count">
-                            <Skeleton h={16} w={tab.countWidth} radius="xl" />
-                          </span>
-                        </span>
-                      </TabsTab>
-                    ))}
-                  </TabsList>
-
                   <Box className="kanban-mobile-panels">
                     <TabsPanel value="inbox" className="kanban-mobile-panel">
                       <Box className="kanban-mobile-panel-body kanban-fill-height">
@@ -96,6 +73,31 @@ export function BoardLoadingShell() {
                         </Box>
                       </Box>
                     </TabsPanel>
+                  </Box>
+
+                  <Box className="kanban-mobile-tab-bar">
+                    <TabsList>
+                      {BOARD_LOADING_MOBILE_TABS.map((tab) => (
+                        <TabsTab
+                          key={tab.value}
+                          value={tab.value}
+                          disabled
+                          className="kanban-mobile-tab"
+                          data-board-loading-mobile-tab="true"
+                        >
+                          <span className="kanban-mobile-tab-shell">
+                            <span className="kanban-mobile-tab-copy">
+                              <span className="kanban-mobile-tab-label">
+                                <Skeleton h={10} w={tab.labelWidth} radius="sm" />
+                              </span>
+                            </span>
+                            <span className="kanban-mobile-tab-count">
+                              <Skeleton h={16} w={tab.countWidth} radius="xl" />
+                            </span>
+                          </span>
+                        </TabsTab>
+                      ))}
+                    </TabsList>
                   </Box>
                 </Tabs>
               </Box>
