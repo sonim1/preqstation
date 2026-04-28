@@ -842,8 +842,7 @@ function TaskEditFormContent({
                             </summary>
                             <Stack gap="xs" className={classes.restoreDraftPreviewBody}>
                               <Text size="xs" c="dimmed">
-                                {formatRestoreDraftUpdatedAt(restoreDraftPreview.updatedAt)} ·
-                                Restores into {taskKey}
+                                {formatRestoreDraftUpdatedAt(restoreDraftPreview.updatedAt)}
                               </Text>
                               {restoreDraftPreview.title.trim() ? (
                                 <Text size="sm" fw={600}>

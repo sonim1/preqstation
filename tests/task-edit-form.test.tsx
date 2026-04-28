@@ -248,7 +248,8 @@ describe('app/components/task-edit-form', () => {
     expect(html).toContain('Server notes changed while this draft was open.');
     expect(html).toContain('Restore draft');
     expect(html).toContain('Restore preview · PROJ-187');
-    expect(html).toContain('Restores into PROJ-187');
+    expect(html).toContain('Saved ');
+    expect(html).not.toContain('Restores into PROJ-187');
     expect(html).toContain('복구될 브라우저 초안');
     expect(html).toContain('Saved from browser draft.');
   });
