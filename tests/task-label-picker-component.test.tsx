@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -8,19 +8,24 @@ const popoverPropsMock = vi.hoisted(() => vi.fn());
 const stackPropsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@mantine/core', () => {
-  const PopoverContext = React.createContext({ opened: false });
+  const PopoverContext = React.createContext({
+    onChange: undefined as ((opened: boolean) => void) | undefined,
+    opened: false,
+  });
 
   const PopoverRoot = ({
     children,
+    onChange,
     opened = false,
     withinPortal,
   }: {
     children: React.ReactNode;
+    onChange?: (opened: boolean) => void;
     opened?: boolean;
     withinPortal?: boolean;
   }) => {
-    popoverPropsMock({ opened, withinPortal });
-    return <PopoverContext.Provider value={{ opened }}>{children}</PopoverContext.Provider>;
+    popoverPropsMock({ onChange, opened, withinPortal });
+    return <PopoverContext.Provider value={{ onChange, opened }}>{children}</PopoverContext.Provider>;
   };
 
   const Popover = Object.assign(PopoverRoot, {
@@ -210,6 +215,32 @@ describe('app/components/task-label-picker UI behavior', () => {
 
     expect(onTriggerClick).toHaveBeenCalledTimes(1);
     expect(screen.getByPlaceholderText('Search labels')).toBeTruthy();
+  });
+
+  it('closes the dropdown when the controlled popover requests a state change', () => {
+    render(
+      <TaskLabelPicker
+        labelOptions={labelOptions}
+        onChange={vi.fn()}
+        projectId="project-1"
+        selectedLabelIds={[]}
+        triggerAriaLabel="Edit labels"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit labels' }));
+
+    const lastPopoverProps = popoverPropsMock.mock.lastCall?.[0] as
+      | { onChange?: (opened: boolean) => void }
+      | undefined;
+
+    expect(lastPopoverProps?.onChange).toEqual(expect.any(Function));
+
+    act(() => {
+      lastPopoverProps?.onChange?.(false);
+    });
+
+    expect(screen.queryByPlaceholderText('Search labels')).toBeNull();
   });
 
   it('creates a new label when Enter is pressed in the search input', async () => {

@@ -252,7 +252,7 @@ export function TaskLabelPicker({
   return (
     <Popover
       opened={opened}
-      onDismiss={() => setOpened(false)}
+      onChange={setOpened}
       position="bottom-start"
       shadow="md"
       withinPortal={true}
