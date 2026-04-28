@@ -1,11 +1,10 @@
 'use client';
 
 import { Code, Stack, Text, Textarea } from '@mantine/core';
-import { useRouter } from 'next/navigation';
-import { useActionState, useEffect } from 'react';
+import { type FormEvent, useEffect, useRef, useState, useTransition } from 'react';
 
+import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setting-save-status';
 import { SubmitButton } from '@/app/components/submit-button';
-import { showErrorNotification, showSuccessNotification } from '@/lib/notifications';
 
 type ActionState = { ok: true; message?: string } | { ok: false; message: string } | null;
 
@@ -22,29 +21,68 @@ type AgentInstructionsPanelProps = {
 };
 
 export function AgentInstructionsPanel({ action, projectId, value }: AgentInstructionsPanelProps) {
-  const router = useRouter();
-  const [state, formAction] = useActionState(action, null);
+  const [draft, setDraft] = useState(value || '');
+  const [savedValue, setSavedValue] = useState(value || '');
+  const [saveState, setSaveState] = useState<SettingSaveState>('idle');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const draftRef = useRef(value || '');
+  const submittedValueRef = useRef(value || '');
 
   useEffect(() => {
-    if (!state) return;
-    if (state.ok) {
-      if (state.message) showSuccessNotification(state.message);
-      router.refresh();
-      return;
-    }
-    showErrorNotification(state.message);
-  }, [router, state]);
+    const nextValue = value || '';
+    draftRef.current = nextValue;
+    submittedValueRef.current = nextValue;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- local draft state must resync when saved defaults change
+    setDraft(nextValue);
+    setSavedValue(nextValue);
+    setSaveState('idle');
+    setErrorMessage(null);
+  }, [projectId, value]);
+
+  const currentState = isPending ? 'saving' : saveState;
+  const isDirty = draft !== savedValue;
+
+  function handleChange(nextValue: string) {
+    draftRef.current = nextValue;
+    setDraft(nextValue);
+    setErrorMessage(null);
+    setSaveState(nextValue === savedValue ? 'idle' : 'dirty');
+  }
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+
+    submittedValueRef.current = draft;
+    setErrorMessage(null);
+    setSaveState('saving');
+
+    startTransition(async () => {
+      const result = await action(null, new FormData(form));
+      if (result?.ok) {
+        const submittedValue = submittedValueRef.current;
+        setSavedValue(submittedValue);
+        setSaveState(draftRef.current === submittedValue ? 'saved' : 'dirty');
+        return;
+      }
+
+      setErrorMessage(result?.message || 'Failed to save agent instructions.');
+      setSaveState('error');
+    });
+  }
 
   return (
-    <form action={formAction}>
+    <form onSubmit={handleSubmit}>
       <Stack gap="md">
+        <SettingSaveStatus mode="manual" state={currentState} errorMessage={errorMessage} />
         <input type="hidden" name="projectId" value={projectId} />
         <Textarea
-          key={`${projectId}:${value || ''}`}
           name="agent_instructions"
           label="Agent instructions"
           description="Saved with the project and attached to PREQ task payloads for coding agents."
-          defaultValue={value || ''}
+          value={draft}
+          onChange={(event) => handleChange(event.currentTarget.value)}
           placeholder="Always answer in Korean unless the user explicitly asks for another language."
           autosize
           minRows={4}
@@ -57,7 +95,9 @@ export function AgentInstructionsPanel({ action, projectId, value }: AgentInstru
             Always answer in Korean unless the user explicitly asks for another language.
           </Code>
         </div>
-        <SubmitButton w="fit-content">Save Instructions</SubmitButton>
+        <SubmitButton w="fit-content" disabled={!isDirty || isPending}>
+          Save Instructions
+        </SubmitButton>
       </Stack>
     </form>
   );

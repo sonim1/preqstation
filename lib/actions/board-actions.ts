@@ -15,6 +15,7 @@ import { type KanbanTask, toKanbanTask } from '@/lib/kanban-helpers';
 import type { EditableBoardTask } from '@/lib/kanban-store';
 import { isNextRedirectError } from '@/lib/next-utils';
 import { requireOwnerUser } from '@/lib/owner';
+import { normalizeTaskDispatchTarget } from '@/lib/task-dispatch';
 import { taskWhereByIdentifier } from '@/lib/task-keys';
 import { extractTaskLabels, getTaskLabelIdsFromFormData } from '@/lib/task-labels';
 import { coerceTaskRunState } from '@/lib/task-meta';
@@ -90,6 +91,7 @@ function toEditableBoardTask(task: NonNullable<Awaited<ReturnType<typeof loadBoa
     taskPriority: task.taskPriority,
     status: task.status,
     engine: task.engine,
+    dispatchTarget: normalizeTaskDispatchTarget(task.dispatchTarget),
     runState: coerceTaskRunState(task.runState),
     runStateUpdatedAt: task.runStateUpdatedAt ? task.runStateUpdatedAt.toISOString() : null,
     workLogs: task.workLogs.map((log) => ({

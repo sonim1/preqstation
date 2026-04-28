@@ -268,6 +268,16 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Channels');
   });
 
+  it('initializes the selected target from the task dispatch target when it is available', () => {
+    const html = renderTaskCopyActions({
+      dispatchTarget: 'hermes-telegram',
+      engine: 'codex',
+    });
+
+    expect(html).toContain('aria-label="Selected target: H Telegram"');
+    expect(html).toContain('/preq_dispatch@PreqHermesBot');
+  });
+
   it('falls back to OpenClaw Telegram when the stored target is a legacy Claude action', () => {
     localStorage.setItem(
       TASK_DISPATCH_PREFERENCES_STORAGE,
@@ -284,6 +294,17 @@ describe('app/components/task-copy-actions', () => {
 
     expect(html).toContain('aria-label="Selected engine: Codex"');
     expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
+  });
+
+  it('falls back to OpenClaw Telegram when the task target is unavailable in the current UI', () => {
+    const html = renderTaskCopyActions({
+      dispatchTarget: 'hermes-telegram',
+      telegramEnabled: true,
+      hermesTelegramEnabled: false,
+    });
+
+    expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
+    expect(html).not.toContain('aria-label="Selected target: H Telegram"');
   });
 
   it('falls back to Hermes when OpenClaw Telegram is unavailable, including legacy preferences', () => {

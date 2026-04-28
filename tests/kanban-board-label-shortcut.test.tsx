@@ -263,6 +263,7 @@ describe('updateKanbanTaskLabelsFromBoard', () => {
       taskPriority: 'none',
       status: 'todo',
       engine: null,
+      dispatchTarget: null,
       runState: null,
       runStateUpdatedAt: null,
       workLogs: [],

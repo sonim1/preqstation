@@ -694,6 +694,10 @@
     padding-inline: var(--mantine-spacing-md);
   }
 
+  .portfolioActivityColumn::before {
+    content: none;
+  }
+
   .portfolioLead,
   .portfolioMatrixCard,
   .portfolioActivityCard {

@@ -107,6 +107,7 @@ function renderTaskEditForm(
             taskPriority: 'none',
             status: 'todo',
             engine: 'codex',
+            dispatchTarget: null,
             runState: null,
             runStateUpdatedAt: null,
             workLogs: [],
@@ -282,6 +283,7 @@ describe('app/components/task-edit-form', () => {
               taskPriority: 'none',
               status: 'todo',
               engine: 'codex',
+              dispatchTarget: null,
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
@@ -447,6 +449,45 @@ describe('app/components/task-edit-form', () => {
     expect(onDispatchQueued).toHaveBeenCalled();
   });
 
+  it('passes the saved task dispatch target into the dispatch actions', () => {
+    renderToStaticMarkup(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'OpenClaw 기능 UI수정',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: [],
+              labels: [],
+              taskPriority: 'none',
+              status: 'todo',
+              engine: 'codex',
+              dispatchTarget: 'hermes-telegram',
+              runState: null,
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
+            updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
+            branchName="task/proj-187/openclaw-gineung-uisujeong"
+            telegramEnabled
+          />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    expect(taskCopyActionsPropsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dispatchTarget: 'hermes-telegram',
+      }),
+    );
+  });
+
   it('refreshes the current route after a successful save when board reconciliation is unavailable', () => {
     const effects: Array<() => void | (() => void)> = [];
     useActionStateMock.mockReturnValue([{ ok: true }, formAction]);
@@ -485,6 +526,7 @@ describe('app/components/task-edit-form', () => {
               taskPriority: 'none',
               status: 'todo',
               engine: 'codex',
+              dispatchTarget: null,
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],

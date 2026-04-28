@@ -33,7 +33,9 @@ function getRuleBody(selector: string) {
 
 function getMediaBlockBody(query: string, cssSource = operatorDeskCss) {
   const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = cssSource.match(new RegExp(`@media\\s+${escapedQuery}\\s*\\{([\\s\\S]*?)^\\}`, 'm'));
+  const match = cssSource.match(
+    new RegExp(`@media\\s+${escapedQuery}\\s*\\{([\\s\\S]*?)^\\}`, 'm'),
+  );
 
   expect(match?.[1]).toBeTruthy();
   return match?.[1] ?? '';
@@ -154,5 +156,11 @@ describe('portfolio overview visual refinement', () => {
     expect(mobileCss).toMatch(
       /\.portfolioOverview\s*\{[^}]*padding-inline:\s*var\(--mantine-spacing-md\);/,
     );
+  });
+
+  it('removes the mobile activity-column seam gradient', () => {
+    const mobileCss = getMediaBlockBody('(max-width: 48rem)');
+
+    expect(mobileCss).toMatch(/\.portfolioActivityColumn::before\s*\{[^}]*content:\s*none;/);
   });
 });

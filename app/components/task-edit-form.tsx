@@ -80,6 +80,7 @@ export type TaskEditFormProps = {
     taskPriority: string;
     status: string;
     engine?: string | null;
+    dispatchTarget?: EditableBoardTask['dispatchTarget'];
     runState?: 'queued' | 'running' | null;
     runStateUpdatedAt?: string | null;
     workLogs?: Array<{
@@ -903,6 +904,7 @@ function TaskEditFormContent({
                   branchName={branchName}
                   status={status}
                   engine={engine}
+                  dispatchTarget={editableTodo.dispatchTarget ?? null}
                   noteMarkdown={noteMarkdown}
                   telegramEnabled={telegramEnabled ?? false}
                   hermesTelegramEnabled={hermesTelegramEnabled}

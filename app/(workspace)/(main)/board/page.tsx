@@ -7,6 +7,7 @@ import { withOwnerDb } from '@/lib/db/rls';
 import { projects, taskLabelAssignments, taskLabels, tasks, workLogs } from '@/lib/db/schema';
 import { groupTasksByStatus } from '@/lib/kanban-helpers';
 import { getOwnerUserOrNull } from '@/lib/owner';
+import { normalizeTaskDispatchTarget } from '@/lib/task-dispatch';
 import { normalizeTaskIdentifier, taskWhereByIdentifier } from '@/lib/task-keys';
 import { extractTaskLabels, groupTaskLabelsByProjectId } from '@/lib/task-labels';
 import { coerceTaskRunState, taskPriorityOptionData } from '@/lib/task-meta';
@@ -85,6 +86,7 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
               taskPriority: true,
               status: true,
               engine: true,
+              dispatchTarget: true,
               runState: true,
               runStateUpdatedAt: true,
             },
@@ -161,6 +163,7 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
                 name: label.name,
                 color: label.color ?? null,
               })),
+              dispatchTarget: normalizeTaskDispatchTarget(editableTodo.dispatchTarget),
               runState: coerceTaskRunState(editableTodo.runState),
               runStateUpdatedAt: editableTodo.runStateUpdatedAt
                 ? editableTodo.runStateUpdatedAt.toISOString()

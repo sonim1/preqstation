@@ -24,6 +24,7 @@ export type EditableBoardTask = {
   taskPriority: string;
   status: string;
   engine: string | null;
+  dispatchTarget: KanbanTask['dispatchTarget'] | null;
   runState: 'queued' | 'running' | null;
   runStateUpdatedAt: string | null;
   workLogs: Array<{
@@ -154,6 +155,7 @@ export function buildEditableBoardTaskPreview(task: KanbanTask): EditableBoardTa
     taskPriority: task.taskPriority,
     status: task.status,
     engine: task.engine,
+    dispatchTarget: task.dispatchTarget ?? null,
     runState: task.runState,
     runStateUpdatedAt: task.runStateUpdatedAt,
     workLogs: [],

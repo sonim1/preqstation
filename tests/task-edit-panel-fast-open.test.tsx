@@ -46,6 +46,7 @@ function buildFocusedTask(overrides: Partial<EditableBoardTask> = {}): EditableB
     taskPriority: 'none',
     status: 'todo',
     engine: 'codex',
+    dispatchTarget: null,
     runState: null,
     runStateUpdatedAt: null,
     workLogs: [],
@@ -59,6 +60,7 @@ describe('task edit panel fast open', () => {
       buildBoardTask({
         id: 'task-1',
         taskKey: 'PROJ-300',
+        dispatchTarget: 'hermes-telegram',
         sortOrder: 'a0',
       }),
     );
@@ -68,6 +70,7 @@ describe('task edit panel fast open', () => {
         id: 'task-1',
         taskKey: 'PROJ-300',
         projectId: 'project-1',
+        dispatchTarget: 'hermes-telegram',
         labelIds: ['label-1'],
       }),
     );

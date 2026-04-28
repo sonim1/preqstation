@@ -175,6 +175,7 @@ describe('BoardContent background image handling', () => {
             taskPriority: 'none',
             status: 'todo',
             engine: null,
+            dispatchTarget: null,
             runState: null,
             runStateUpdatedAt: null,
             workLogs: [],
