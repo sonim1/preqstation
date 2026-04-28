@@ -523,6 +523,25 @@
   }
 
   .metricStrip {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .metric {
+    gap: 0.2rem;
+    padding: 0.5rem 0.55rem;
+    border-color: color-mix(in srgb, var(--ui-border), transparent 34%);
+    border-radius: 0.4rem;
+    background: color-mix(in srgb, rgba(8, 14, 26, 0.72), transparent 28%);
+  }
+
+  .metricLabel {
+    gap: 0.25rem;
+    font-size: 0.63rem;
+    line-height: 1.15;
+  }
+
+  .metricValue {
+    font-size: 0.95rem;
   }
 }
