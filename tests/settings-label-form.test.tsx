@@ -35,6 +35,31 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
+function ControlledHiddenValueField({
+  defaultValue,
+  label,
+  name,
+}: {
+  defaultValue: string;
+  label: string;
+  name: string;
+}) {
+  const [value, setValue] = React.useState(defaultValue);
+
+  return (
+    <>
+      <input
+        aria-label={label}
+        value={value}
+        onChange={(event) => {
+          setValue(event.currentTarget.value);
+        }}
+      />
+      <input type="hidden" name={name} value={value} />
+    </>
+  );
+}
+
 describe('app/components/settings-label-form', () => {
   afterEach(() => {
     cleanup();
@@ -189,6 +214,34 @@ describe('app/components/settings-label-form', () => {
     });
     await waitFor(() => {
       expect(button.matches(':disabled')).toBe(true);
+    });
+  });
+
+  it('enables the shared submit helper after a controlled field updates the submitted form value', async () => {
+    render(
+      <MantineProvider>
+        <SettingsLabelForm action={vi.fn(async () => ({ ok: true as const }))}>
+          <ControlledHiddenValueField
+            defaultValue="Bug"
+            label="Label name"
+            name="name"
+          />
+          <SettingsLabelSubmitButton>Save label</SettingsLabelSubmitButton>
+        </SettingsLabelForm>
+      </MantineProvider>,
+    );
+
+    const input = screen.getByLabelText('Label name');
+    const button = screen.getByRole('button', { name: 'Save label' });
+
+    expect(button.matches(':disabled')).toBe(true);
+
+    fireEvent.change(input, {
+      target: { value: 'Defect' },
+    });
+
+    await waitFor(() => {
+      expect(button.matches(':disabled')).toBe(false);
     });
   });
 

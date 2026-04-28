@@ -188,8 +188,8 @@ export function SettingsLabelForm({
         id={id}
         ref={formRef}
         onSubmit={handleSubmit}
-        onChangeCapture={syncDirtyState}
-        onInputCapture={syncDirtyState}
+        onChangeCapture={markDirty}
+        onInputCapture={markDirty}
       >
         <fieldset disabled={isPending} style={disabledFieldsetStyle}>
           {children}
