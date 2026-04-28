@@ -4,6 +4,7 @@ import { Tooltip } from '@mantine/core';
 import { type CSSProperties, type ReactNode, type SyntheticEvent, useState } from 'react';
 
 import type { KanbanTask } from '@/lib/kanban-helpers';
+import { showErrorNotification } from '@/lib/notifications';
 
 import styles from './cards.module.css';
 import { TaskLabelPicker } from './task-label-picker';
@@ -55,6 +56,10 @@ export function KanbanCardLabelShortcut({
     setIsSaving(true);
     try {
       await onUpdateTaskLabels(task.taskKey, nextLabelIds);
+    } catch (error) {
+      showErrorNotification(
+        error instanceof Error && error.message ? error.message : 'Failed to save labels.',
+      );
     } finally {
       setIsSaving(false);
     }

@@ -1,7 +1,10 @@
+// @vitest-environment jsdom
+
 import { MantineProvider } from '@mantine/core';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resolveKanbanTaskLabelOptions } from '@/app/components/kanban-board';
 import { KanbanBoardMobile } from '@/app/components/kanban-board-mobile';
@@ -75,7 +78,31 @@ vi.mock('@/app/components/kanban-card', () => ({
 vi.mock('@/app/components/task-label-picker', () => ({
   TaskLabelPicker: (props: Record<string, unknown>) => {
     taskLabelPickerPropsMock(props);
-    return <div data-component="TaskLabelPicker" />;
+    return (
+      <button
+        type="button"
+        aria-label={String(props.triggerAriaLabel ?? 'Task label picker')}
+        disabled={Boolean(props.disabled)}
+        onClick={() => {
+          const onChange = props.onChange as ((labelIds: string[]) => void) | undefined;
+          const selectedLabelIds = Array.isArray(props.selectedLabelIds)
+            ? (props.selectedLabelIds as string[])
+            : [];
+          const nextLabelId =
+            Array.isArray(props.labelOptions) &&
+            props.labelOptions[0] &&
+            typeof props.labelOptions[0] === 'object' &&
+            props.labelOptions[0] !== null &&
+            'id' in props.labelOptions[0]
+              ? String((props.labelOptions[0] as { id: string }).id)
+              : 'label-a';
+
+          onChange?.(selectedLabelIds.length > 0 ? selectedLabelIds : [nextLabelId]);
+        }}
+      >
+        TaskLabelPicker
+      </button>
+    );
   },
 }));
 
@@ -136,7 +163,24 @@ const labelOptions = [
 ];
 
 describe('kanban label shortcut wiring', () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
     capturedCardProps.length = 0;
     taskLabelPickerPropsMock.mockReset();
   });
@@ -243,6 +287,58 @@ describe('kanban label shortcut wiring', () => {
         labelOptions,
       }),
     );
+  });
+
+  it('recovers from inline label save rejections without leaking unhandled rejections', async () => {
+    const onUpdateTaskLabels = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Failed to save labels.'))
+      .mockResolvedValueOnce(undefined);
+    const unhandledRejection = vi.fn();
+
+    process.on('unhandledRejection', unhandledRejection);
+
+    try {
+      render(
+        <MantineProvider>
+          <KanbanCardLabelShortcut
+            task={buildTask({
+              project: { id: 'project-1', name: 'Alpha', projectKey: 'ALPHA' },
+              labels: [{ id: 'label-a', name: 'Feature', color: 'blue' }],
+            })}
+            labelOptions={labelOptions}
+            isPending={false}
+            onUpdateTaskLabels={onUpdateTaskLabels}
+            renderLabelInline={(label) => <span>{label.name}</span>}
+            renderLabelTooltipItem={(label) => <span>{label.name}</span>}
+            labelTooltipStyles={{ arrow: {}, tooltip: {} }}
+          />
+        </MantineProvider>,
+      );
+
+      const trigger = screen.getByRole('button', { name: 'Edit labels for Add the label shortcut' });
+
+      fireEvent.click(trigger);
+
+      await waitFor(() => {
+        expect(onUpdateTaskLabels).toHaveBeenCalledTimes(1);
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(unhandledRejection).not.toHaveBeenCalled();
+
+      await waitFor(() => {
+        expect(trigger.hasAttribute('disabled')).toBe(false);
+      });
+
+      fireEvent.click(trigger);
+
+      await waitFor(() => {
+        expect(onUpdateTaskLabels).toHaveBeenCalledTimes(2);
+      });
+    } finally {
+      process.off('unhandledRejection', unhandledRejection);
+    }
   });
 });
 
