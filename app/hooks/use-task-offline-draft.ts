@@ -88,6 +88,7 @@ export function useTaskOfflineDraft(
         !!storedBaseNoteFingerprint && storedNoteFingerprint !== storedBaseNoteFingerprint;
       const hasLegacyConflict =
         !storedBaseNoteFingerprint && storedNoteFingerprint !== serverDraft.baseNoteFingerprint;
+      const noteMatchesServer = storedNoteFingerprint === serverDraft.baseNoteFingerprint;
       const shouldApplyStoredNote =
         storedBaseNoteFingerprint === serverDraft.baseNoteFingerprint ||
         (!storedBaseNoteFingerprint && storedNoteFingerprint === serverDraft.baseNoteFingerprint) ||
@@ -96,7 +97,7 @@ export function useTaskOfflineDraft(
       const resolvedDraft = {
         title: record.fields.title ?? serverDraft.title,
         note: shouldApplyStoredNote ? storedNote : serverDraft.note,
-        baseNoteFingerprint: !shouldApplyStoredNote
+        baseNoteFingerprint: !shouldApplyStoredNote || noteMatchesServer
           ? serverDraft.baseNoteFingerprint
           : storedBaseNoteFingerprint
             ? storedBaseNoteFingerprint
@@ -104,20 +105,26 @@ export function useTaskOfflineDraft(
               ? legacyConflictBaseNoteFingerprint
               : serverDraft.baseNoteFingerprint,
       };
-      const hasConflict = (hasStaleBase && hasLocalNoteEdits) || hasLegacyConflict;
+      const hasConflict = ((hasStaleBase && hasLocalNoteEdits) || hasLegacyConflict) && !noteMatchesServer;
+      const nextRestorableDraft = {
+        title: resolvedDraft.title,
+        note: resolvedDraft.note,
+        baseNoteFingerprint: serverDraft.baseNoteFingerprint,
+        updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : null,
+      };
+      const hasRestorableDraft = hasDraftChanges(nextRestorableDraft, serverDraft);
 
       setHasNoteConflict(hasConflict);
 
+      if (!hasConflict && !hasRestorableDraft) {
+        void Promise.resolve()
+          .then(() => deleteDraft(buildTaskOfflineDraftId(taskKey)))
+          .catch(() => undefined);
+        return;
+      }
+
       if (online) {
-        const nextRestorableDraft = {
-          title: resolvedDraft.title,
-          note: resolvedDraft.note,
-          baseNoteFingerprint: serverDraft.baseNoteFingerprint,
-          updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : null,
-        };
-        setRestorableDraft(
-          hasDraftChanges(nextRestorableDraft, serverDraft) ? nextRestorableDraft : null,
-        );
+        setRestorableDraft(hasRestorableDraft ? nextRestorableDraft : null);
         return;
       }
 
