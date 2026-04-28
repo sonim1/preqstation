@@ -272,6 +272,25 @@ describe('public/sw.js', () => {
     expect(await response.text()).toBe('<html>offline fallback</html>');
   });
 
+  it('serves the offline fallback shell for an uncached /projects/ navigation when the network is offline', async () => {
+    const sw = await loadServiceWorker({
+      fetchMock: vi.fn().mockRejectedValue(new TypeError('offline')),
+      seedCaches: [
+        {
+          name: 'preq-static-v2',
+          entries: [['/offline.html', new Response('<html>offline fallback</html>')]],
+        },
+      ],
+    });
+
+    const response = await dispatchFetch(
+      sw.handlers.get('fetch') as Parameters<typeof dispatchFetch>[0],
+      { mode: 'navigate', url: 'https://example.com/projects/' },
+    );
+
+    expect(await response.text()).toBe('<html>offline fallback</html>');
+  });
+
   it('caches a successful /projects navigation for future offline reloads', async () => {
     const sw = await loadServiceWorker({
       fetchMock: vi

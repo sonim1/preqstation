@@ -14,7 +14,7 @@ function isBoardNavigation(url) {
 }
 
 function isProjectsNavigation(url) {
-  return url.pathname === '/projects';
+  return url.pathname === '/projects' || url.pathname === '/projects/';
 }
 
 function isManagedNavigation(url) {
