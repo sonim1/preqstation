@@ -200,6 +200,14 @@ export function TaskLabelPicker({
     onChange(nextLabelIds);
   };
 
+  const handleTriggerClick: MouseEventHandler<HTMLButtonElement> = (event) => {
+    if (!disabled) {
+      setOpened((currentOpened) => !currentOpened);
+    }
+
+    onTriggerClick?.(event);
+  };
+
   const handleCreateLabel = async () => {
     if (!projectId || !canCreate || isCreating) {
       return;
@@ -255,7 +263,7 @@ export function TaskLabelPicker({
           aria-label={triggerAriaLabel}
           disabled={disabled}
           onPointerDown={onTriggerPointerDown}
-          onClick={onTriggerClick}
+          onClick={handleTriggerClick}
         >
           {renderTrigger
             ? renderTrigger({

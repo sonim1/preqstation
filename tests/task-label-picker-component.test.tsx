@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -8,20 +8,32 @@ const popoverPropsMock = vi.hoisted(() => vi.fn());
 const stackPropsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@mantine/core', () => {
+  const PopoverContext = React.createContext({
+    onChange: undefined as ((opened: boolean) => void) | undefined,
+    opened: false,
+  });
+
   const PopoverRoot = ({
     children,
+    onChange,
+    opened = false,
     withinPortal,
   }: {
     children: React.ReactNode;
+    onChange?: (opened: boolean) => void;
+    opened?: boolean;
     withinPortal?: boolean;
   }) => {
-    popoverPropsMock({ withinPortal });
-    return <div>{children}</div>;
+    popoverPropsMock({ onChange, opened, withinPortal });
+    return <PopoverContext.Provider value={{ onChange, opened }}>{children}</PopoverContext.Provider>;
   };
 
   const Popover = Object.assign(PopoverRoot, {
     Target: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Dropdown: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Dropdown: ({ children }: { children: React.ReactNode }) => {
+      const { opened } = React.useContext(PopoverContext);
+      return opened ? <div>{children}</div> : null;
+    },
   });
 
   return {
@@ -67,13 +79,13 @@ vi.mock('@mantine/core', () => {
     },
     Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
     TextInput: ({
-      ariaLabel,
+      'aria-label': ariaLabel,
       onChange,
       onKeyDown,
       placeholder,
       value,
     }: {
-      ariaLabel?: string;
+      'aria-label'?: string;
       onChange?: React.ChangeEventHandler<HTMLInputElement>;
       onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
       placeholder?: string;
@@ -88,14 +100,14 @@ vi.mock('@mantine/core', () => {
       />
     ),
     UnstyledButton: ({
-      ariaLabel,
+      'aria-label': ariaLabel,
       children,
       disabled,
       onClick,
       onPointerDown,
       type = 'button',
     }: {
-      ariaLabel?: string;
+      'aria-label'?: string;
       children?: React.ReactNode;
       disabled?: boolean;
       onClick?: React.MouseEventHandler<HTMLButtonElement>;
@@ -152,10 +164,9 @@ describe('app/components/task-label-picker UI behavior', () => {
     vi.mocked(createProjectLabelWithRecovery).mockReset();
   });
 
-  it('renders the dropdown in a portal, constrains the label list, and disables label actions', () => {
+  it('renders the dropdown in a portal and constrains the label list', () => {
     render(
       <TaskLabelPicker
-        disabled
         labelOptions={labelOptions}
         onChange={vi.fn()}
         projectId="project-1"
@@ -163,6 +174,8 @@ describe('app/components/task-label-picker UI behavior', () => {
         triggerAriaLabel="Edit labels"
       />,
     );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit labels' }));
 
     expect(popoverPropsMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -176,8 +189,58 @@ describe('app/components/task-label-picker UI behavior', () => {
         style: { overflowY: 'auto' },
       }),
     );
-    expect((screen.getByRole('button', { name: 'Bug' }) as HTMLButtonElement).disabled).toBe(true);
-    expect((screen.getByRole('button', { name: 'Ops' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: 'Bug' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Ops' })).toBeTruthy();
+  });
+
+  it('opens the dropdown when the trigger is clicked, even when the caller stops propagation', () => {
+    const onTriggerClick = vi.fn((event: React.MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+    });
+
+    render(
+      <TaskLabelPicker
+        labelOptions={labelOptions}
+        onChange={vi.fn()}
+        onTriggerClick={onTriggerClick}
+        projectId="project-1"
+        selectedLabelIds={[]}
+        triggerAriaLabel="Edit labels"
+      />,
+    );
+
+    expect(screen.queryByPlaceholderText('Search labels')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit labels' }));
+
+    expect(onTriggerClick).toHaveBeenCalledTimes(1);
+    expect(screen.getByPlaceholderText('Search labels')).toBeTruthy();
+  });
+
+  it('closes the dropdown when the controlled popover requests a state change', () => {
+    render(
+      <TaskLabelPicker
+        labelOptions={labelOptions}
+        onChange={vi.fn()}
+        projectId="project-1"
+        selectedLabelIds={[]}
+        triggerAriaLabel="Edit labels"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit labels' }));
+
+    const lastPopoverProps = popoverPropsMock.mock.lastCall?.[0] as
+      | { onChange?: (opened: boolean) => void }
+      | undefined;
+
+    expect(lastPopoverProps?.onChange).toEqual(expect.any(Function));
+
+    act(() => {
+      lastPopoverProps?.onChange?.(false);
+    });
+
+    expect(screen.queryByPlaceholderText('Search labels')).toBeNull();
   });
 
   it('creates a new label when Enter is pressed in the search input', async () => {
@@ -196,6 +259,8 @@ describe('app/components/task-label-picker UI behavior', () => {
         triggerAriaLabel="Edit labels"
       />,
     );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit labels' }));
 
     const searchInput = screen.getByPlaceholderText('Search labels');
 
