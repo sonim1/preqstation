@@ -105,6 +105,29 @@
   min-height: 0;
 }
 
+.restoreDraftDetails {
+  padding: 0.75rem 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--ui-surface), transparent 12%);
+}
+
+.restoreDraftSummary {
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.restoreDraftPreviewBody {
+  margin-top: 0.625rem;
+}
+
+.restoreDraftPreviewMarkdown {
+  max-height: 14rem;
+  overflow: auto;
+}
+
 .activityCard {
   min-width: 0;
   padding: 0;

@@ -374,6 +374,7 @@ export function useTaskEditFormController({
     draftTitle,
     hasNoteConflict,
     restoreDraft,
+    restoreDraftPreview,
     updateNoteDraft,
     updateTitleDraft,
   } = useTaskOfflineDraft(editableTodo.taskKey, editableTodo.title, editableTodo.note, online);
@@ -584,6 +585,7 @@ export function useTaskEditFormController({
     noteRenderKey: fieldRevisions.note,
     noteConflict: hasNoteConflict,
     restoreNoteDraft: restoreDraft,
+    restoreDraftPreview,
     projectName,
     priorityRenderKey: fieldRevisions.taskPriority,
     saveStatus,
@@ -644,6 +646,17 @@ function shouldSurfaceLatestPreqResult(status: string, detail: string | null | u
   return status === 'ready' && detail.includes('**PR:**');
 }
 
+function formatRestoreDraftUpdatedAt(updatedAt: string | null) {
+  if (!updatedAt) return 'Saved in this browser';
+
+  const parsed = new Date(updatedAt);
+  if (Number.isNaN(parsed.getTime())) {
+    return 'Saved in this browser';
+  }
+
+  return `Saved ${parsed.toLocaleString()}`;
+}
+
 export function resolveTaskEditNotesMode(
   currentState: TaskEditNotesModeState,
   activeTaskKey: string,
@@ -694,6 +707,7 @@ function TaskEditFormContent({
     noteRenderKey,
     noteConflict,
     restoreNoteDraft,
+    restoreDraftPreview,
     projectName,
     priorityRenderKey,
     saveStatus,
@@ -729,6 +743,9 @@ function TaskEditFormContent({
     markDirty();
   };
   const showLatestPreqResult = shouldSurfaceLatestPreqResult(status, latestPreqResultLog?.detail);
+  const restorePreviewMarkdown = restoreDraftPreview?.note.trim()
+    ? restoreDraftPreview.note
+    : '_Empty_';
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       setNoteMarkdown(draftNote);
@@ -804,18 +821,43 @@ function TaskEditFormContent({
                         noteConflict ? <IconAlertCircle size={16} /> : <IconInfoCircle size={16} />
                       }
                     >
-                      <Group justify="space-between" align="center" gap="sm" wrap="wrap">
-                        <Text size="sm">
-                          {noteConflict
-                            ? 'Server notes changed while this draft was open. Review the latest task notes before restoring so PREQ updates do not get overwritten.'
-                            : 'A saved local draft is available. Restore it if you want to continue from your browser draft instead of the latest server notes.'}
-                        </Text>
-                        {canRestoreNoteDraft ? (
-                          <Button size="xs" variant="light" onClick={handleRestoreDraft}>
-                            Restore draft
-                          </Button>
+                      <Stack gap="xs">
+                        <Group justify="space-between" align="center" gap="sm" wrap="wrap">
+                          <Text size="sm">
+                            {noteConflict
+                              ? 'Server notes changed while this draft was open. Review the latest task notes before restoring so PREQ updates do not get overwritten.'
+                              : 'A saved local draft is available. Restore it if you want to continue from your browser draft instead of the latest server notes.'}
+                          </Text>
+                          {canRestoreNoteDraft ? (
+                            <Button size="xs" variant="light" onClick={handleRestoreDraft}>
+                              Restore draft
+                            </Button>
+                          ) : null}
+                        </Group>
+
+                        {restoreDraftPreview ? (
+                          <details className={classes.restoreDraftDetails}>
+                            <summary className={classes.restoreDraftSummary}>
+                              Restore preview · {taskKey}
+                            </summary>
+                            <Stack gap="xs" className={classes.restoreDraftPreviewBody}>
+                              <Text size="xs" c="dimmed">
+                                {formatRestoreDraftUpdatedAt(restoreDraftPreview.updatedAt)}
+                              </Text>
+                              {restoreDraftPreview.title.trim() ? (
+                                <Text size="sm" fw={600}>
+                                  {restoreDraftPreview.title}
+                                </Text>
+                              ) : null}
+                              <MarkdownViewer
+                                markdown={restorePreviewMarkdown}
+                                className={`markdown-output ${classes.restoreDraftPreviewMarkdown}`}
+                                mode="body"
+                              />
+                            </Stack>
+                          </details>
                         ) : null}
-                      </Group>
+                      </Stack>
                     </Alert>
                   ) : null}
                   <LiveMarkdownEditor

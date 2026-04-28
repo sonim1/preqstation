@@ -13,6 +13,10 @@ type TaskOfflineDraftState = {
   title: string;
 };
 
+type RestorableTaskOfflineDraft = TaskOfflineDraftState & {
+  updatedAt: string | null;
+};
+
 function hasDraftChanges(nextDraft: TaskOfflineDraftState, serverDraft: TaskOfflineDraftState) {
   return nextDraft.title !== serverDraft.title || nextDraft.note !== serverDraft.note;
 }
@@ -30,10 +34,11 @@ export function useTaskOfflineDraft(
   const serverBaseNoteFingerprint = buildTaskNoteFingerprint(serverNote);
   const [draftTitle, setDraftTitle] = useState(serverTitle);
   const [draftNote, setDraftNote] = useState(serverNote ?? '');
-  const [draftBaseNoteFingerprint, setDraftBaseNoteFingerprint] = useState(serverBaseNoteFingerprint);
+  const [draftBaseNoteFingerprint, setDraftBaseNoteFingerprint] =
+    useState(serverBaseNoteFingerprint);
   const [draftRevision, setDraftRevision] = useState(0);
   const [hasNoteConflict, setHasNoteConflict] = useState(false);
-  const [restorableDraft, setRestorableDraft] = useState<TaskOfflineDraftState | null>(null);
+  const [restorableDraft, setRestorableDraft] = useState<RestorableTaskOfflineDraft | null>(null);
   const draftRef = useRef<TaskOfflineDraftState>({
     baseNoteFingerprint: serverBaseNoteFingerprint,
     title: serverTitle,
@@ -77,7 +82,8 @@ export function useTaskOfflineDraft(
       const storedBaseNoteFingerprint = record.fields.baseNoteFingerprint?.trim() || null;
       const legacyConflictBaseNoteFingerprint = `${LEGACY_NOTE_CONFLICT_BASE_FINGERPRINT_PREFIX}${storedNoteFingerprint}`;
       const hasStaleBase =
-        !!storedBaseNoteFingerprint && storedBaseNoteFingerprint !== serverDraft.baseNoteFingerprint;
+        !!storedBaseNoteFingerprint &&
+        storedBaseNoteFingerprint !== serverDraft.baseNoteFingerprint;
       const hasLocalNoteEdits =
         !!storedBaseNoteFingerprint && storedNoteFingerprint !== storedBaseNoteFingerprint;
       const hasLegacyConflict =
@@ -90,14 +96,13 @@ export function useTaskOfflineDraft(
       const resolvedDraft = {
         title: record.fields.title ?? serverDraft.title,
         note: shouldApplyStoredNote ? storedNote : serverDraft.note,
-        baseNoteFingerprint:
-          !shouldApplyStoredNote
-            ? serverDraft.baseNoteFingerprint
-            : storedBaseNoteFingerprint
-              ? storedBaseNoteFingerprint
-              : hasLegacyConflict
-                ? legacyConflictBaseNoteFingerprint
-                : serverDraft.baseNoteFingerprint,
+        baseNoteFingerprint: !shouldApplyStoredNote
+          ? serverDraft.baseNoteFingerprint
+          : storedBaseNoteFingerprint
+            ? storedBaseNoteFingerprint
+            : hasLegacyConflict
+              ? legacyConflictBaseNoteFingerprint
+              : serverDraft.baseNoteFingerprint,
       };
       const hasConflict = (hasStaleBase && hasLocalNoteEdits) || hasLegacyConflict;
 
@@ -108,8 +113,11 @@ export function useTaskOfflineDraft(
           title: resolvedDraft.title,
           note: resolvedDraft.note,
           baseNoteFingerprint: serverDraft.baseNoteFingerprint,
+          updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : null,
         };
-        setRestorableDraft(hasDraftChanges(nextRestorableDraft, serverDraft) ? nextRestorableDraft : null);
+        setRestorableDraft(
+          hasDraftChanges(nextRestorableDraft, serverDraft) ? nextRestorableDraft : null,
+        );
         return;
       }
 
@@ -175,10 +183,11 @@ export function useTaskOfflineDraft(
     }
 
     loadTokenRef.current += 1;
-    draftRef.current = restorableDraft;
-    setDraftBaseNoteFingerprint(restorableDraft.baseNoteFingerprint);
-    setDraftTitle(restorableDraft.title);
-    setDraftNote(restorableDraft.note);
+    const { updatedAt: _updatedAt, ...nextDraft } = restorableDraft;
+    draftRef.current = nextDraft;
+    setDraftBaseNoteFingerprint(nextDraft.baseNoteFingerprint);
+    setDraftTitle(nextDraft.title);
+    setDraftNote(nextDraft.note);
     setDraftRevision((currentRevision) => currentRevision + 1);
     setHasNoteConflict(false);
     setRestorableDraft(null);
@@ -193,6 +202,13 @@ export function useTaskOfflineDraft(
     draftTitle,
     hasNoteConflict,
     restoreDraft,
+    restoreDraftPreview: restorableDraft
+      ? {
+          title: restorableDraft.title,
+          note: restorableDraft.note,
+          updatedAt: restorableDraft.updatedAt,
+        }
+      : null,
     updateNoteDraft,
     updateTitleDraft,
   };

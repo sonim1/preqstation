@@ -178,6 +178,7 @@ describe('app/components/task-edit-form', () => {
       draftTitle: 'OpenClaw 기능 UI수정',
       hasNoteConflict: false,
       restoreDraft: vi.fn(),
+      restoreDraftPreview: null,
       updateNoteDraft: vi.fn(),
       updateTitleDraft: vi.fn(),
     });
@@ -231,6 +232,11 @@ describe('app/components/task-edit-form', () => {
       draftTitle: 'OpenClaw 기능 UI수정',
       hasNoteConflict: true,
       restoreDraft: vi.fn(),
+      restoreDraftPreview: {
+        title: '복구될 브라우저 초안',
+        note: '## Local rewrite\n\nSaved from browser draft.',
+        updatedAt: '2026-04-28T15:00:00.000Z',
+      },
       updateNoteDraft: vi.fn(),
       updateTitleDraft: vi.fn(),
     });
@@ -241,6 +247,11 @@ describe('app/components/task-edit-form', () => {
     expect(html).toContain('value="task-note:v1:42:deadbeef"');
     expect(html).toContain('Server notes changed while this draft was open.');
     expect(html).toContain('Restore draft');
+    expect(html).toContain('Restore preview · PROJ-187');
+    expect(html).toContain('Saved ');
+    expect(html).not.toContain('Restores into PROJ-187');
+    expect(html).toContain('복구될 브라우저 초안');
+    expect(html).toContain('Saved from browser draft.');
   });
 
   it('wires the restore draft action to the draft hook and marks the form dirty', () => {
@@ -264,6 +275,7 @@ describe('app/components/task-edit-form', () => {
       draftTitle: 'OpenClaw 기능 UI수정',
       hasNoteConflict: true,
       restoreDraft,
+      restoreDraftPreview: null,
       updateNoteDraft: vi.fn(),
       updateTitleDraft: vi.fn(),
     });
