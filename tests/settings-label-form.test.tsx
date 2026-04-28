@@ -22,6 +22,7 @@ vi.mock('react', async (importOriginal) => {
 import {
   SettingsLabelForm,
   SettingsLabelNameInput,
+  SettingsLabelSubmitButton,
   TaskLabelColorField,
   TaskLabelColorPicker,
 } from '@/app/components/settings-label-form';
@@ -133,6 +134,61 @@ describe('app/components/settings-label-form', () => {
     });
     await waitFor(() => {
       expect(screen.getByText('Saved.')).toBeTruthy();
+    });
+  });
+
+  it('keeps the shared submit helper disabled until the form diverges from its last saved values', async () => {
+    const action = vi.fn(async () => ({ ok: true as const }));
+
+    render(
+      <MantineProvider>
+        <SettingsLabelForm action={action}>
+          <SettingsLabelNameInput label="Label name" name="name" defaultValue="Bug" />
+          <SettingsLabelSubmitButton>Save label</SettingsLabelSubmitButton>
+        </SettingsLabelForm>
+      </MantineProvider>,
+    );
+
+    const form = screen.getByRole('button', { name: 'Save label' }).closest('form');
+    const input = screen.getByLabelText('Label name');
+    const button = screen.getByRole('button', { name: 'Save label' });
+
+    expect(button.matches(':disabled')).toBe(true);
+
+    fireEvent.change(input, {
+      target: { value: 'Defect' },
+    });
+
+    await waitFor(() => {
+      expect(button.matches(':disabled')).toBe(false);
+    });
+
+    fireEvent.change(input, {
+      target: { value: 'Bug' },
+    });
+
+    await waitFor(() => {
+      expect(button.matches(':disabled')).toBe(true);
+    });
+
+    fireEvent.change(input, {
+      target: { value: 'Feature' },
+    });
+
+    await waitFor(() => {
+      expect(button.matches(':disabled')).toBe(false);
+    });
+
+    fireEvent.submit(form as HTMLFormElement);
+
+    await waitFor(() => {
+      expect(action).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(screen.getByText('Saved.')).toBeTruthy();
+    });
+    await waitFor(() => {
+      expect(button.matches(':disabled')).toBe(true);
     });
   });
 

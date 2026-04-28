@@ -48,11 +48,31 @@ vi.mock('@/app/components/settings-label-form', () => ({
     children: React.ReactNode;
     id?: string;
   }) => <form id={id}>{children}</form>,
-  SettingsLabelNameInput: (props: React.InputHTMLAttributes<HTMLInputElement>) => (
-    <input {...props} />
+  SettingsLabelNameInput: ({
+    label,
+    ...props
+  }: React.InputHTMLAttributes<HTMLInputElement> & { label?: React.ReactNode }) => (
+    <label>
+      {label}
+      <input {...props} />
+    </label>
   ),
-  TaskLabelColorField: ({ defaultColor }: { defaultColor?: string }) => (
-    <div data-color-field={defaultColor ?? ''} />
+  TaskLabelColorField: ({
+    defaultColor,
+    label,
+    showLabel,
+  }: {
+    defaultColor?: string;
+    label?: React.ReactNode;
+    showLabel?: boolean;
+  }) => <div data-color-field={defaultColor ?? ''}>{showLabel === false ? null : label}</div>,
+  SettingsLabelSubmitButton: ({
+    children,
+    ...props
+  }: React.ButtonHTMLAttributes<HTMLButtonElement> & { children: React.ReactNode }) => (
+    <button type="submit" {...props}>
+      {children}
+    </button>
   ),
 }));
 
@@ -130,5 +150,16 @@ describe('app/components/panels/project-labels-panel', () => {
     expect(html).toContain(
       'data-confirm-message="Deleting this label will remove it from 1 ticket. This cannot be undone."',
     );
+  });
+
+  it('renders subsection headings, visible field labels, and specific row action copy', () => {
+    const html = renderPanel([{ id: 'label-1', name: 'Bug', color: 'red', usageCount: 1 }]);
+
+    expect(html).toMatch(/<h[1-6][^>]*>Create label<\/h[1-6]>/);
+    expect(html).toMatch(/<h[1-6][^>]*>Manage labels<\/h[1-6]>/);
+    expect(html).toMatch(/<label[^>]*>Name<input/);
+    expect(html).toContain('>Color<');
+    expect(html).toMatch(/<button[^>]*>Save label<\/button>/);
+    expect(html).toMatch(/<button[^>]*>Delete label<\/button>/);
   });
 });
