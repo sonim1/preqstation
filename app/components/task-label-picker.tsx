@@ -192,12 +192,16 @@ export function TaskLabelPicker({
   });
   const hasSelectedLabels = resolvedSelectedLabels.length > 0;
 
+  const commitLabelChange = (nextLabelIds: string[]) => {
+    Promise.resolve(onChange(nextLabelIds)).catch(() => undefined);
+  };
+
   const toggleLabel = (labelId: string) => {
     const nextLabelIds = selectedLabelIds.includes(labelId)
       ? selectedLabelIds.filter((currentLabelId) => currentLabelId !== labelId)
       : [...selectedLabelIds, labelId];
 
-    onChange(nextLabelIds);
+    commitLabelChange(nextLabelIds);
   };
 
   const handleTriggerClick: MouseEventHandler<HTMLButtonElement> = (event) => {
@@ -237,7 +241,7 @@ export function TaskLabelPicker({
       setLocalLabelOptions(nextLabelOptions);
       onOptionsChange?.(nextLabelOptions);
       onLabelCreated?.(result.label, nextLabelOptions);
-      onChange(nextLabelIds);
+      commitLabelChange(nextLabelIds);
       setSearch('');
       setCreateColor('blue');
     } catch (error) {

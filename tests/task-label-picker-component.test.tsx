@@ -243,6 +243,39 @@ describe('app/components/task-label-picker UI behavior', () => {
     expect(screen.queryByPlaceholderText('Search labels')).toBeNull();
   });
 
+  it('does not leak unhandled rejections when async label updates fail', async () => {
+    const onChange = vi.fn().mockRejectedValue(new Error('Failed to save labels.'));
+    const unhandledRejection = vi.fn();
+
+    process.on('unhandledRejection', unhandledRejection);
+
+    try {
+      render(
+        <TaskLabelPicker
+          labelOptions={labelOptions}
+          onChange={onChange}
+          projectId="project-1"
+          selectedLabelIds={[]}
+          triggerAriaLabel="Edit labels"
+        />,
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: 'Edit labels' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Bug' }));
+
+      await waitFor(() => {
+        expect(onChange).toHaveBeenCalledWith(['label-1']);
+      });
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(unhandledRejection).not.toHaveBeenCalled();
+    } finally {
+      process.off('unhandledRejection', unhandledRejection);
+    }
+  });
+
   it('creates a new label when Enter is pressed in the search input', async () => {
     const onChange = vi.fn();
 
