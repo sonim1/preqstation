@@ -74,7 +74,7 @@ export function KanbanColumn({
   const columnClassName = [
     'kanban-column',
     status === 'hold' ? 'kanban-column--hold' : null,
-    className ?? null,
+    className,
   ]
     .filter(Boolean)
     .join(' ');
