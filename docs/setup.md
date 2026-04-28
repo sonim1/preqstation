@@ -172,9 +172,13 @@ Recommended validation from the settings screen:
 Run this after any deploy that changes board shell code, `/sw.js`, or the offline mutation flow.
 
 - Visit `/board` and `/projects` online at least once so the browser registers `/sw.js` and warms
-  the workspace navigation cache.
+  the workspace navigation cache. Also open each `/board/:projectKey` route you expect to use
+  offline once while online so `OfflineBoardRouteWarmer` stores that board document in
+  `preq-board-v2`.
 - Disable network in the browser/devtools, reload `/board`, and confirm the offline banner appears
   and the most recent board snapshot renders.
+- While still offline, reload a `/board/:projectKey` route that was visited online earlier and
+  confirm the same offline banner and latest snapshot render there too.
 - While still offline, open `/projects` and confirm the app shows the English offline fallback page
   instead of the browser's localized network error screen.
 - While still offline, open a board path that has not been cached yet and confirm the app shows the
@@ -184,10 +188,13 @@ Run this after any deploy that changes board shell code, `/sw.js`, or the offlin
 - Re-enable network and confirm the queued create/edit/move mutations replay automatically, the
   optimistic `OFFLINE-*` task key is replaced with the server task key, and the task remains in the
   expected lane.
-- If replay hits a permanent validation/not-found/conflict error (`400`, `404`, `409`, `410`,
-  `422`), confirm that mutation is dropped, later queued mutations continue syncing, and the user
-  still sees the returned error message. Transient failures should still halt replay with the
-  remaining queue left in place for retry.
+- If replay hits a note-conflict `409`, confirm the conflicting patch is removed from the queue,
+  the latest server task title/notes are restored in the board/task editor, and the inline draft
+  warning still offers `Restore draft` so the user can reconcile their offline notes manually.
+- If replay hits another permanent validation/not-found/conflict error (`400`, `404`, `410`,
+  `422`, or a `409` without refreshed task payloads), confirm that mutation is dropped, later
+  queued mutations continue syncing, and the user still sees the returned error message. Transient
+  failures should still halt replay with the remaining queue left in place for retry.
 
 ## 9) Least-Privilege DB Access
 
@@ -232,8 +239,9 @@ npx skills add sonim1/preqstation-skill -g
 - Enable Vercel Access Logs and error alerting (e.g., Sentry).
 - Enable Dependabot and patch dependencies at least monthly.
 - Separate Vercel env vars for Production and Preview environments.
-- Treat service worker changes as deploy-sensitive: load the updated `/board` and `/projects`
-  online once before relying on offline fallback for that browser profile.
+- Treat service worker changes as deploy-sensitive: load the updated `/board`, representative
+  `/board/:key` routes, and `/projects` online once before relying on offline fallback for that
+  browser profile.
 - Offline workspace support depends on browser service worker + IndexedDB availability. Private
   browsing policies, cleared site storage, or corporate browser restrictions can disable the cached
   board path or custom offline fallback even when the server is healthy.

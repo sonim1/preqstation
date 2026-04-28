@@ -224,15 +224,21 @@ The workspace keeps a browser-local offline path layered on top of the normal in
   records.
 - `OfflineBoardHydrator` writes the latest board snapshot per project key and rehydrates the Kanban
   store from that snapshot when the browser is offline.
+- `OfflineBoardRouteWarmer` issues a no-store fetch for the current `/board` or `/board/:key`
+  document while the browser is online and writes the HTML response into `preq-board-v2`, so board
+  routes the user actually visits are proactively available offline.
 - `BoardOfflineSyncProvider` owns optimistic offline board mutations. Offline creates get temporary
   `OFFLINE-*` task keys, edits and moves merge into per-task queued records, and replay runs again
   once the connectivity check against `/api/ping` succeeds.
 - Offline mutation replay preserves queue order. Create replay posts to `/api/todos`, patch replay
   uses `PATCH /api/todos/:taskKey`, and any queued patch for an offline-created task is rekeyed to
-  the server-issued task key after the create succeeds. Permanent validation/not-found/conflict
-  failures (`400`, `404`, `409`, `410`, `422`) are dropped so later queued mutations can continue,
-  while transient failures still halt replay and leave the remaining queue intact for the next
-  retry.
+  the server-issued task key after the create succeeds. Note-fingerprint conflicts are treated as a
+  handled `409`: the conflicting patch is removed from the queue, the latest `boardTask` and
+  `focusedTask` payloads from the server are pushed back into the board UI, and the local draft is
+  left intact so the user can decide whether to restore it. Other permanent
+  validation/not-found/conflict failures (`400`, `404`, `410`, `422`, plus `409` responses without
+  refreshed task payloads) are dropped so later queued mutations can continue, while transient
+  failures still halt replay and leave the remaining queue intact for the next retry.
 
 ### Task Lifecycle
 
