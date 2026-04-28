@@ -26,6 +26,10 @@ type UpdateKanbanTaskLabelsFromBoardParams = {
   labelIds: string[];
   currentFocusedTaskKey: string | null;
   fetchImpl: FetchLike;
+  queueOfflineUpdate?: () => Promise<{
+    boardTask: KanbanTask;
+    focusedTask: EditableBoardTask | null;
+  }>;
   upsertSnapshots: (tasks: KanbanTask[]) => void;
   setFocusedTask: (task: EditableBoardTask | null) => void;
   setSaveError: (message: string | null) => void;
@@ -48,11 +52,59 @@ async function readLabelUpdateError(
   return response.status ? `Failed to save labels (${response.status}).` : fallbackMessage;
 }
 
+function applyLabelUpdateResult(params: {
+  taskKey: string;
+  currentFocusedTaskKey: string | null;
+  boardTask: KanbanTask | null | undefined;
+  focusedTask?: EditableBoardTask | null;
+  upsertSnapshots: (tasks: KanbanTask[]) => void;
+  setFocusedTask: (task: EditableBoardTask | null) => void;
+}) {
+  if (params.boardTask) {
+    params.upsertSnapshots([params.boardTask]);
+  }
+
+  if (params.currentFocusedTaskKey === params.taskKey && 'focusedTask' in params) {
+    params.setFocusedTask(params.focusedTask ?? null);
+  }
+}
+
+async function tryQueueOfflineLabelUpdate(params: {
+  taskKey: string;
+  currentFocusedTaskKey: string | null;
+  queueOfflineUpdate?: () => Promise<{
+    boardTask: KanbanTask;
+    focusedTask: EditableBoardTask | null;
+  }>;
+  upsertSnapshots: (tasks: KanbanTask[]) => void;
+  setFocusedTask: (task: EditableBoardTask | null) => void;
+}) {
+  if (!params.queueOfflineUpdate) {
+    return false;
+  }
+
+  try {
+    const payload = await params.queueOfflineUpdate();
+    applyLabelUpdateResult({
+      taskKey: params.taskKey,
+      currentFocusedTaskKey: params.currentFocusedTaskKey,
+      boardTask: payload.boardTask,
+      focusedTask: payload.focusedTask,
+      upsertSnapshots: params.upsertSnapshots,
+      setFocusedTask: params.setFocusedTask,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function updateKanbanTaskLabelsFromBoard({
   taskKey,
   labelIds,
   currentFocusedTaskKey,
   fetchImpl,
+  queueOfflineUpdate,
   upsertSnapshots,
   setFocusedTask,
   setSaveError,
@@ -71,22 +123,46 @@ export async function updateKanbanTaskLabelsFromBoard({
 
     if (!response.ok) {
       const message = await readLabelUpdateError(response, fallbackMessage);
+      if (
+        await tryQueueOfflineLabelUpdate({
+          taskKey,
+          currentFocusedTaskKey,
+          queueOfflineUpdate,
+          upsertSnapshots,
+          setFocusedTask,
+        })
+      ) {
+        return true;
+      }
       setSaveError(message);
       notifyError(message);
       return false;
     }
 
     const payload = (await response.json()) as LabelUpdateResponse;
-    if (payload.boardTask) {
-      upsertSnapshots([payload.boardTask]);
-    }
-
-    if (currentFocusedTaskKey === taskKey && 'focusedTask' in payload) {
-      setFocusedTask(payload.focusedTask ?? null);
-    }
+    applyLabelUpdateResult({
+      taskKey,
+      currentFocusedTaskKey,
+      boardTask: payload.boardTask,
+      focusedTask: payload.focusedTask,
+      upsertSnapshots,
+      setFocusedTask,
+    });
 
     return true;
   } catch (error) {
+    if (
+      await tryQueueOfflineLabelUpdate({
+        taskKey,
+        currentFocusedTaskKey,
+        queueOfflineUpdate,
+        upsertSnapshots,
+        setFocusedTask,
+      })
+    ) {
+      return true;
+    }
+
     const message = error instanceof Error && error.message ? error.message : fallbackMessage;
     setSaveError(message);
     notifyError(message);

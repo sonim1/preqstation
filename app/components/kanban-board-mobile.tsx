@@ -237,6 +237,11 @@ export function KanbanBoardMobile({
                   </div>
                 ) : null}
                 <div className="kanban-mobile-panel-list kanban-fill-height kanban-bottom-clearance">
+                  {isActivePanel && saveError ? (
+                    <Text c="red" size="sm" className="kanban-mobile-save-error">
+                      {saveError}
+                    </Text>
+                  ) : null}
                   {tasks.length === 0 ? (
                     <KanbanEmptyLane className="kanban-empty-state--compact kanban-fill-height" />
                   ) : (
@@ -301,11 +306,6 @@ export function KanbanBoardMobile({
         })}
       </div>
       <div className="kanban-mobile-tab-bar">
-        {saveError ? (
-          <Text c="red" size="sm" mb={6}>
-            {saveError}
-          </Text>
-        ) : null}
         <Tabs.List>
           {mobileStatuses.map((status) => {
             const StatusIcon = mobileStatusIcons[status];

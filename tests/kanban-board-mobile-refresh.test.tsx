@@ -288,4 +288,28 @@ describe('KanbanBoardMobile refresh wiring', () => {
     expect(renderResult.html).not.toContain('data-state="refreshing"');
     expect(notifications.showSuccessNotification).not.toHaveBeenCalled();
   });
+
+  it('renders save errors above the fixed tab bar instead of inside it', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <KanbanBoardMobile
+          columns={{ inbox: [], todo: [], hold: [], ready: [], done: [], archived: [] }}
+          activeTab="inbox"
+          onTabChange={() => {}}
+          isPending={false}
+          editHrefBase="/board"
+          editHrefJoiner="?"
+          router={{ push: vi.fn(), refresh: vi.fn() } as never}
+          onRefresh={vi.fn()}
+          onQuickMoveTask={vi.fn()}
+          onDeleteTask={vi.fn()}
+          saveError="Queued for sync."
+          enginePresets={null}
+        />
+      </MantineProvider>,
+    );
+
+    expect(html).toMatch(/kanban-mobile-save-error[\s\S]*Queued for sync\.[\s\S]*kanban-mobile-tab-bar/);
+    expect(html).not.toMatch(/kanban-mobile-tab-bar[\s\S]*Queued for sync\./);
+  });
 });

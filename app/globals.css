@@ -2702,6 +2702,10 @@ html[data-mantine-color-scheme='dark'] .live-editor-input [data-live-editor-empt
     );
   }
 
+  .kanban-mobile-save-error {
+    flex: 0 0 auto;
+  }
+
   .kanban-mobile-card {
     cursor: pointer;
     touch-action: manipulation;
