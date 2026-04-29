@@ -1,4 +1,4 @@
-import { Container, Group, Paper, Stack, Text, Title } from '@mantine/core';
+import { Container, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
 import { IconFolderPlus } from '@tabler/icons-react';
 import { and, desc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -518,7 +518,11 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
           <>
             {resumeCards.length > 0 ? (
               <section className={styles.portfolioSection} data-project-section="resume">
-                <div className={styles.mosaic}>
+                <SimpleGrid
+                  cols={{ base: 1, sm: 2, xl: 3 }}
+                  spacing="md"
+                  className={styles.resumeGrid}
+                >
                   {resumeCards.map((card) => (
                     <ProjectPortfolioCard
                       key={card.id}
@@ -527,7 +531,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
                       pauseAction={pauseProject}
                     />
                   ))}
-                </div>
+                </SimpleGrid>
               </section>
             ) : null}
 
@@ -545,7 +549,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
               </div>
 
               {quietCards.length > 0 ? (
-                <div className={styles.quietLane}>
+                <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" className={styles.quietGrid}>
                   {quietCards.map((card) => (
                     <ProjectPortfolioCard
                       key={card.id}
@@ -554,7 +558,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
                       pauseAction={pauseProject}
                     />
                   ))}
-                </div>
+                </SimpleGrid>
               ) : (
                 <p className={styles.sectionEmpty}>No paused projects right now.</p>
               )}

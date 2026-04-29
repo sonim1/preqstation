@@ -552,6 +552,17 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectsPageSource).not.toContain('getTrendHeights');
   });
 
+  it('renders resume and quiet sections through Mantine SimpleGrid wrappers', () => {
+    expect(projectsPageSource).toMatch(
+      /data-project-section="resume"[\s\S]*<SimpleGrid[\s\S]*cols=\{\{ base: 1, sm: 2, xl: 3 \}\}[\s\S]*className=\{styles\.resumeGrid\}/,
+    );
+    expect(projectsPageSource).toMatch(
+      /data-project-section="quiet"[\s\S]*<SimpleGrid[\s\S]*cols=\{\{ base: 1, md: 2 \}\}[\s\S]*className=\{styles\.quietGrid\}/,
+    );
+    expect(projectsPageSource).not.toContain('className={styles.mosaic}');
+    expect(projectsPageSource).not.toContain('className={styles.quietLane}');
+  });
+
   it('keeps project metrics as a single mobile ribbon instead of stacking status cards', () => {
     expect(projectPortfolioCardSource).toContain('<div className={styles.metricStrip}>');
     expect(projectPortfolioCardSource).toMatch(
@@ -594,20 +605,17 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectsPageSource).toContain("action: 'project.updated'");
   });
 
-  it('keeps /projects wrappers shrink-safe so mobile content cannot widen the page column', () => {
+  it('keeps /projects wrappers shrink-safe after the SimpleGrid swap', () => {
     expect(projectsPageCss).toMatch(/\.topGrid\s*\{[^}]*min-width:\s*0;/);
     expect(projectsPageCss).toMatch(/\.topSection\s*\{[^}]*min-width:\s*0;/);
     expect(projectsPageCss).toMatch(/\.portfolioSection\s*\{[^}]*min-width:\s*0;/);
-    expect(projectsPageCss).toMatch(/\.mosaic\s*\{[^}]*min-width:\s*0;/);
-    expect(projectsPageCss).toMatch(/\.quietLane\s*\{[^}]*min-width:\s*0;/);
+    expect(projectsPageCss).toMatch(/\.resumeGrid\s*\{[^}]*min-width:\s*0;/);
+    expect(projectsPageCss).toMatch(/\.quietGrid\s*\{[^}]*min-width:\s*0;/);
     expect(projectsPageCss).toContain('--card-image');
     expect(projectsPageCss).toMatch(/\.projectCard::before\s*\{[\s\S]*linear-gradient\(/);
-    expect(projectsPageCss).toMatch(
-      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.mosaic\s*\{[\s\S]*flex-direction:\s*column;/,
-    );
-    expect(projectsPageCss).toMatch(
-      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.quietLane\s*\{[\s\S]*grid-template-columns:\s*1fr;/,
-    );
+    expect(projectsPageCss).not.toMatch(/\.mosaic\s*\{/);
+    expect(projectsPageCss).not.toMatch(/\.quietLane\s*\{/);
+    expect(projectsPageCss).not.toMatch(/grid-column:\s*span\s+(7|5|4);/);
   });
 
   it('deletes project-owned labels alongside tasks and work logs', () => {
