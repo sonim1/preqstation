@@ -175,6 +175,10 @@ function toEditableTodo(task: {
   };
 }
 
+function serializePatchFocusedTask(task: EditableBoardTask) {
+  return serializeEditableBoardTask(task);
+}
+
 function toPatchedBoardTask(params: {
   existing: {
     id: string;
@@ -458,8 +462,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
                       : null,
                     labels: existingLabels,
                   }),
-                  focusedTask: {
-                    ...toEditableTodo({
+                  focusedTask: serializePatchFocusedTask(
+                    toEditableTodo({
                       ...existing,
                       labelAssignments: existingLabels.map((label, index) => ({
                         position: index,
@@ -475,7 +479,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
                       note: existing.note ?? null,
                       workLogs: existing.workLogs ?? [],
                     }),
-                  },
+                  ),
                 },
                 { status: 409 },
               );
@@ -566,8 +570,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           return NextResponse.json({
             ok: true,
             boardTask: movedTask,
-            focusedTask: {
-              ...toEditableTodo({
+            focusedTask: serializePatchFocusedTask(
+              toEditableTodo({
                 ...existing,
                 title: nextTitle,
                 note: nextNote,
@@ -590,7 +594,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
                   : null,
                 workLogs: existing.workLogs ?? [],
               }),
-            },
+            ),
           });
         }
 
@@ -728,8 +732,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
               : null,
             labels: resolvedLabels,
           }),
-          focusedTask: {
-            ...toEditableTodo({
+          focusedTask: serializePatchFocusedTask(
+            toEditableTodo({
               ...existing,
               title: nextTitle,
               note: nextNote,
@@ -752,7 +756,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
                 : null,
               workLogs: existing.workLogs ?? [],
             }),
-          },
+          ),
         });
       });
 

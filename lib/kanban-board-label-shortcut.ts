@@ -1,9 +1,13 @@
+import {
+  hydrateEditableBoardTask,
+  type SerializedEditableBoardTask,
+} from '@/lib/editable-board-task';
 import type { KanbanTask } from '@/lib/kanban-helpers';
 import type { EditableBoardTask } from '@/lib/kanban-store';
 
 type LabelUpdateResponse = {
   boardTask?: KanbanTask | null;
-  focusedTask?: EditableBoardTask | null;
+  focusedTask?: SerializedEditableBoardTask | null;
   error?: unknown;
 };
 
@@ -36,6 +40,19 @@ type UpdateKanbanTaskLabelsFromBoardParams = {
   notifyError: (message: string) => void;
 };
 
+function normalizeFocusedTask(
+  task: EditableBoardTask | SerializedEditableBoardTask | null | undefined,
+) {
+  if (!task) {
+    return null;
+  }
+
+  const firstWorkLog = task.workLogs[0];
+  return typeof firstWorkLog?.workedAt === 'string'
+    ? hydrateEditableBoardTask(task as SerializedEditableBoardTask)
+    : (task as EditableBoardTask);
+}
+
 async function readLabelUpdateError(
   response: Awaited<ReturnType<FetchLike>>,
   fallbackMessage: string,
@@ -56,7 +73,7 @@ function applyLabelUpdateResult(params: {
   taskKey: string;
   currentFocusedTaskKey: string | null;
   boardTask: KanbanTask | null | undefined;
-  focusedTask?: EditableBoardTask | null;
+  focusedTask?: EditableBoardTask | SerializedEditableBoardTask | null;
   upsertSnapshots: (tasks: KanbanTask[]) => void;
   setFocusedTask: (task: EditableBoardTask | null) => void;
 }) {
@@ -65,7 +82,7 @@ function applyLabelUpdateResult(params: {
   }
 
   if (params.currentFocusedTaskKey === params.taskKey && 'focusedTask' in params) {
-    params.setFocusedTask(params.focusedTask ?? null);
+    params.setFocusedTask(normalizeFocusedTask(params.focusedTask));
   }
 }
 

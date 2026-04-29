@@ -316,7 +316,9 @@ describe('kanban label shortcut wiring', () => {
         </MantineProvider>,
       );
 
-      const trigger = screen.getByRole('button', { name: 'Edit labels for Add the label shortcut' });
+      const trigger = screen.getByRole('button', {
+        name: 'Edit labels for Add the label shortcut',
+      });
 
       fireEvent.click(trigger);
 
@@ -394,6 +396,71 @@ describe('updateKanbanTaskLabelsFromBoard', () => {
     expect(setFocusedTask).toHaveBeenCalledWith(focusedTask);
     expect(setSaveError).toHaveBeenCalledWith(null);
     expect(notifyError).not.toHaveBeenCalled();
+  });
+
+  it('hydrates focused task work logs from the label PATCH response before updating the store', async () => {
+    const boardTask = buildTask({
+      labels: [{ id: 'label-a', name: 'Feature', color: 'blue' }],
+    });
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        boardTask,
+        focusedTask: {
+          id: 'focused-1',
+          taskKey: 'PROJ-330',
+          title: 'Add the label shortcut',
+          branch: 'task/proj-330/add-the-label-shortcut',
+          note: null,
+          projectId: null,
+          labelIds: ['label-a'],
+          labels: [{ id: 'label-a', name: 'Feature', color: 'blue' }],
+          taskPriority: 'none',
+          status: 'todo',
+          engine: null,
+          dispatchTarget: null,
+          runState: null,
+          runStateUpdatedAt: null,
+          workLogs: [
+            {
+              id: 'log-1',
+              title: 'PREQSTATION Result · label refresh',
+              detail: '**PR:** none',
+              engine: null,
+              workedAt: '2026-03-24T00:00:00.000Z',
+              createdAt: '2026-03-24T01:00:00.000Z',
+              todo: { engine: null },
+            },
+          ],
+        },
+      }),
+    });
+    const upsertSnapshots = vi.fn();
+    const setFocusedTask = vi.fn();
+    const setSaveError = vi.fn();
+    const notifyError = vi.fn();
+
+    await updateKanbanTaskLabelsFromBoard({
+      taskKey: 'PROJ-330',
+      labelIds: ['label-a'],
+      currentFocusedTaskKey: 'PROJ-330',
+      fetchImpl,
+      upsertSnapshots,
+      setFocusedTask,
+      setSaveError,
+      notifyError,
+    });
+
+    expect(setFocusedTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workLogs: [
+          expect.objectContaining({
+            workedAt: expect.any(Date),
+            createdAt: expect.any(Date),
+          }),
+        ],
+      }),
+    );
   });
 
   it('surfaces request failures without mutating board snapshots', async () => {
