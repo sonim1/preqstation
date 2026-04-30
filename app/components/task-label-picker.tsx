@@ -4,7 +4,6 @@ import {
   Button,
   ColorSwatch,
   Popover,
-  Stack,
   Text,
   TextInput,
   UnstyledButton,
@@ -303,7 +302,7 @@ export function TaskLabelPicker({
             aria-label={`${triggerLabel} search`}
           />
 
-          <Stack gap={4} className={styles.optionList}>
+          <div className={styles.optionList}>
             {filteredLabelOptions.map((label) => {
               const isSelected = selectedLabelIds.includes(label.id);
               const swatchColor = resolveTaskLabelSwatchColor(label.color);
@@ -333,10 +332,10 @@ export function TaskLabelPicker({
                 No matching labels.
               </Text>
             ) : null}
-          </Stack>
+          </div>
 
           {canCreate ? (
-            <Stack gap="xs">
+            <div className={styles.createControls}>
               <TaskLabelColorPicker
                 value={createColor}
                 onChange={setCreateColor}
@@ -356,7 +355,7 @@ export function TaskLabelPicker({
               >
                 {`Add "${search.trim()}"`}
               </Button>
-            </Stack>
+            </div>
           ) : null}
 
           {createError ? (

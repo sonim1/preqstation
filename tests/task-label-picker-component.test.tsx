@@ -9,7 +9,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const popoverPropsMock = vi.hoisted(() => vi.fn());
 const popoverDropdownPropsMock = vi.hoisted(() => vi.fn());
-const stackPropsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@mantine/core', () => {
   const PopoverContext = React.createContext({
@@ -76,23 +75,6 @@ vi.mock('@mantine/core', () => {
     ColorSwatch: ({ color }: { color: string }) => <span data-color={color} />,
     Group: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     Popover,
-    Stack: ({
-      children,
-      gap,
-      mah,
-      miw,
-      style,
-      ...props
-    }: {
-      children: React.ReactNode;
-      gap?: number | string;
-      mah?: number;
-      miw?: number | string;
-      style?: React.CSSProperties;
-    } & React.HTMLAttributes<HTMLDivElement>) => {
-      stackPropsMock({ gap, mah, miw, style });
-      return <div {...props}>{children}</div>;
-    },
     Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
     TextInput: ({
       'aria-label': ariaLabel,
@@ -191,7 +173,6 @@ describe('app/components/task-label-picker UI behavior', () => {
   beforeEach(() => {
     popoverPropsMock.mockReset();
     popoverDropdownPropsMock.mockReset();
-    stackPropsMock.mockReset();
     vi.mocked(createProjectLabelWithRecovery).mockReset();
   });
 
@@ -221,11 +202,6 @@ describe('app/components/task-label-picker UI behavior', () => {
     expect(
       screen.getByPlaceholderText('Search labels').closest('[data-task-label-dropdown="true"]'),
     ).toBeTruthy();
-    expect(stackPropsMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        gap: 4,
-      }),
-    );
     expect(screen.getByRole('button', { name: 'Bug' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Ops' })).toBeTruthy();
 
@@ -234,6 +210,8 @@ describe('app/components/task-label-picker UI behavior', () => {
     expect(css ?? '').toContain('padding: 0.5rem 0.75rem;');
     expect(css ?? '').toContain('min-width: clamp(13.75rem, 28vw, 15.75rem);');
     expect(css ?? '').toContain('max-width: min(18rem, calc(100vw - 2rem));');
+    expect(css ?? '').toContain('gap: 0.25rem;');
+    expect(css ?? '').toContain('gap: var(--mantine-spacing-xs);');
     expect(css ?? '').toContain('background: var(--ui-surface-soft);');
     expect(css ?? '').toContain(
       'border: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);',

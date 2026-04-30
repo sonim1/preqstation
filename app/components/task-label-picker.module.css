@@ -64,6 +64,9 @@
 }
 
 .optionList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
   max-height: 18rem;
   overflow-y: auto;
 }
@@ -134,4 +137,10 @@
 .emptyState {
   padding: 0.125rem 0.25rem;
   color: var(--ui-muted-text);
+}
+
+.createControls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
 }
