@@ -81,7 +81,7 @@ function applyLabelUpdateResult(params: {
     params.upsertSnapshots([params.boardTask]);
   }
 
-  if (params.currentFocusedTaskKey === params.taskKey && 'focusedTask' in params) {
+  if (params.currentFocusedTaskKey === params.taskKey && params.focusedTask !== undefined) {
     params.setFocusedTask(normalizeFocusedTask(params.focusedTask));
   }
 }

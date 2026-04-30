@@ -463,6 +463,34 @@ describe('updateKanbanTaskLabelsFromBoard', () => {
     );
   });
 
+  it('does not clear the focused task when the label PATCH response omits focusedTask', async () => {
+    const boardTask = buildTask({
+      labels: [{ id: 'label-a', name: 'Feature', color: 'blue' }],
+    });
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ ok: true, boardTask }),
+    });
+    const upsertSnapshots = vi.fn();
+    const setFocusedTask = vi.fn();
+    const setSaveError = vi.fn();
+    const notifyError = vi.fn();
+
+    await updateKanbanTaskLabelsFromBoard({
+      taskKey: 'PROJ-330',
+      labelIds: ['label-a'],
+      currentFocusedTaskKey: 'PROJ-330',
+      fetchImpl,
+      upsertSnapshots,
+      setFocusedTask,
+      setSaveError,
+      notifyError,
+    });
+
+    expect(upsertSnapshots).toHaveBeenCalledWith([boardTask]);
+    expect(setFocusedTask).not.toHaveBeenCalled();
+  });
+
   it('surfaces request failures without mutating board snapshots', async () => {
     const fetchImpl = vi.fn().mockResolvedValue({
       ok: false,
