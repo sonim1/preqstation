@@ -23,6 +23,7 @@ type BuildTaskTelegramMessageParams = {
   branchName?: string | null;
   objective?: TaskDispatchObjective | null;
   askHint?: string | null;
+  commentId?: string | null;
 };
 
 export function buildTaskTelegramMessage({
@@ -32,6 +33,7 @@ export function buildTaskTelegramMessage({
   branchName,
   objective,
   askHint,
+  commentId,
 }: BuildTaskTelegramMessageParams) {
   return buildOpenClawTaskCommand({
     taskKey,
@@ -40,6 +42,7 @@ export function buildTaskTelegramMessage({
     branchName,
     objective,
     askHint,
+    commentId,
   });
 }
 
@@ -50,6 +53,7 @@ export function buildHermesTaskTelegramMessage({
   branchName,
   objective,
   askHint,
+  commentId,
 }: BuildTaskTelegramMessageParams) {
   return buildHermesTaskCommand({
     taskKey,
@@ -58,6 +62,25 @@ export function buildHermesTaskTelegramMessage({
     branchName,
     objective,
     askHint,
+    commentId,
+  });
+}
+
+export function buildTaskCommentDispatchMessage(
+  params: BuildTaskTelegramMessageParams & { dispatchTarget?: TelegramTaskDispatchTarget | null },
+) {
+  const buildMessage =
+    params.dispatchTarget === 'hermes-telegram'
+      ? buildHermesTaskTelegramMessage
+      : buildTaskTelegramMessage;
+
+  return buildMessage({
+    taskKey: params.taskKey,
+    status: params.status,
+    engine: params.engine,
+    branchName: params.branchName,
+    objective: 'comment',
+    commentId: params.commentId,
   });
 }
 

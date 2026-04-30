@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   buildProjectInsightDispatchMessage,
   buildProjectQaDispatchMessage,
+  buildTaskCommentDispatchMessage,
   buildTaskTelegramMessage,
   sendProjectInsightTelegramMessage,
   sendTaskTelegramMessage,
@@ -31,6 +32,32 @@ describe('lib/task-telegram-client', () => {
       }),
     ).toContain(
       '!/skill preqstation-dispatch ask PROJ-328 using claude-code branch_name="task/proj-328/edit-note" ask_hint="Acceptance criteria 중심으로 정리해줘"',
+    );
+  });
+
+  it('builds OpenClaw comment dispatch messages with comment metadata', () => {
+    expect(
+      buildTaskCommentDispatchMessage({
+        taskKey: 'PROJ-328',
+        status: 'todo',
+        engine: 'codex',
+        commentId: 'comment-123',
+        dispatchTarget: 'telegram',
+      }),
+    ).toBe('!/skill preqstation-dispatch comment PROJ-328 using codex comment_id="comment-123"');
+  });
+
+  it('builds Hermes comment dispatch messages with comment metadata', () => {
+    expect(
+      buildTaskCommentDispatchMessage({
+        taskKey: 'PROJ-328',
+        status: 'todo',
+        engine: 'claude-code',
+        commentId: 'comment-123',
+        dispatchTarget: 'hermes-telegram',
+      }),
+    ).toBe(
+      '/preq_dispatch@PreqHermesBot\nproject_key=PROJ\ntask_key=PROJ-328\nobjective=comment\nengine=claude-code\ncomment_id=comment-123',
     );
   });
 
