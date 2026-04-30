@@ -1,0 +1,137 @@
+.defaultTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+  border-radius: 0.625rem;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.defaultTrigger[data-opened='true'] {
+  border-color: color-mix(in srgb, var(--ui-accent), var(--ui-border) 56%);
+  background: color-mix(in srgb, var(--ui-accent-soft), var(--ui-surface) 78%);
+}
+
+.defaultTrigger[data-disabled='true'] {
+  opacity: 0.6;
+}
+
+.defaultTriggerLabel {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.defaultTriggerMeta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--ui-muted-text);
+}
+
+.defaultTriggerHint {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.dropdownPanel {
+  min-width: clamp(13.75rem, 28vw, 15.75rem);
+  max-width: min(18rem, calc(100vw - 2rem));
+  padding: 0.75rem;
+}
+
+.dropdownBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.optionList {
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.optionButton {
+  --task-label-accent: var(--ui-accent);
+
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+  border-radius: 0.625rem;
+  background: var(--ui-surface-soft);
+  color: var(--ui-text);
+  text-align: left;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.optionButton:hover,
+.optionButton:focus-visible {
+  border-color: color-mix(in srgb, var(--ui-accent), var(--ui-border) 62%);
+  background: color-mix(in srgb, var(--ui-accent-soft), var(--ui-surface-soft) 72%);
+}
+
+.optionButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-focus-ring), transparent 18%);
+}
+
+.optionButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.optionButton[data-selected='true'] {
+  background: color-mix(in srgb, var(--task-label-accent) 10%, var(--ui-accent-soft));
+  border-color: color-mix(in srgb, var(--task-label-accent) 28%, var(--ui-border));
+}
+
+.optionContent {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.optionLabel {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.optionCheck {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--task-label-accent) 68%, var(--ui-text));
+}
+
+.emptyState {
+  padding: 0.125rem 0.25rem;
+  color: var(--ui-muted-text);
+}

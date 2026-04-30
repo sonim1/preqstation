@@ -1,10 +1,14 @@
 // @vitest-environment jsdom
 
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const popoverPropsMock = vi.hoisted(() => vi.fn());
+const popoverDropdownPropsMock = vi.hoisted(() => vi.fn());
 const stackPropsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@mantine/core', () => {
@@ -25,14 +29,22 @@ vi.mock('@mantine/core', () => {
     withinPortal?: boolean;
   }) => {
     popoverPropsMock({ onChange, opened, withinPortal });
-    return <PopoverContext.Provider value={{ onChange, opened }}>{children}</PopoverContext.Provider>;
+    return (
+      <PopoverContext.Provider value={{ onChange, opened }}>{children}</PopoverContext.Provider>
+    );
   };
 
   const Popover = Object.assign(PopoverRoot, {
     Target: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-    Dropdown: ({ children }: { children: React.ReactNode }) => {
+    Dropdown: ({
+      children,
+      ...props
+    }: React.HTMLAttributes<HTMLDivElement> & {
+      children: React.ReactNode;
+    }) => {
       const { opened } = React.useContext(PopoverContext);
-      return opened ? <div>{children}</div> : null;
+      popoverDropdownPropsMock(props);
+      return opened ? <div {...props}>{children}</div> : null;
     },
   });
 
@@ -41,18 +53,21 @@ vi.mock('@mantine/core', () => {
       children,
       disabled,
       leftSection,
+      loading: _loading,
       onClick,
       rightSection,
       type = 'button',
-    }: {
+      ...props
+    }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
       children?: React.ReactNode;
       disabled?: boolean;
       leftSection?: React.ReactNode;
+      loading?: boolean;
       onClick?: React.MouseEventHandler<HTMLButtonElement>;
       rightSection?: React.ReactNode;
       type?: 'button' | 'submit' | 'reset';
     }) => (
-      <button disabled={disabled} onClick={onClick} type={type}>
+      <button disabled={disabled} onClick={onClick} type={type} {...props}>
         {leftSection}
         {children}
         {rightSection}
@@ -67,15 +82,16 @@ vi.mock('@mantine/core', () => {
       mah,
       miw,
       style,
+      ...props
     }: {
       children: React.ReactNode;
       gap?: number | string;
       mah?: number;
-      miw?: number;
+      miw?: number | string;
       style?: React.CSSProperties;
-    }) => {
+    } & React.HTMLAttributes<HTMLDivElement>) => {
       stackPropsMock({ gap, mah, miw, style });
-      return <div>{children}</div>;
+      return <div {...props}>{children}</div>;
     },
     Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
     TextInput: ({
@@ -106,7 +122,8 @@ vi.mock('@mantine/core', () => {
       onClick,
       onPointerDown,
       type = 'button',
-    }: {
+      ...props
+    }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
       'aria-label'?: string;
       children?: React.ReactNode;
       disabled?: boolean;
@@ -120,6 +137,7 @@ vi.mock('@mantine/core', () => {
         onClick={onClick}
         onPointerDown={onPointerDown}
         type={type}
+        {...props}
       >
         {children}
       </button>
@@ -152,6 +170,18 @@ const labelOptions = [
   { id: 'label-1', name: 'Bug', color: 'red' },
   { id: 'label-2', name: 'Ops', color: 'green' },
 ];
+const taskLabelPickerCssPath = path.join(
+  process.cwd(),
+  'app/components/task-label-picker.module.css',
+);
+
+function readTaskLabelPickerCss() {
+  if (!fs.existsSync(taskLabelPickerCssPath)) {
+    return null;
+  }
+
+  return fs.readFileSync(taskLabelPickerCssPath, 'utf8');
+}
 
 describe('app/components/task-label-picker UI behavior', () => {
   afterEach(() => {
@@ -160,11 +190,12 @@ describe('app/components/task-label-picker UI behavior', () => {
 
   beforeEach(() => {
     popoverPropsMock.mockReset();
+    popoverDropdownPropsMock.mockReset();
     stackPropsMock.mockReset();
     vi.mocked(createProjectLabelWithRecovery).mockReset();
   });
 
-  it('renders the dropdown in a portal and constrains the label list', () => {
+  it('renders the dropdown in a portal and uses the compact token-based dropdown shell', () => {
     render(
       <TaskLabelPicker
         labelOptions={labelOptions}
@@ -182,15 +213,34 @@ describe('app/components/task-label-picker UI behavior', () => {
         withinPortal: true,
       }),
     );
+    expect(popoverDropdownPropsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        'data-task-label-dropdown': 'true',
+      }),
+    );
+    expect(
+      screen.getByPlaceholderText('Search labels').closest('[data-task-label-dropdown="true"]'),
+    ).toBeTruthy();
     expect(stackPropsMock).toHaveBeenCalledWith(
       expect.objectContaining({
         gap: 4,
-        mah: 300,
-        style: { overflowY: 'auto' },
       }),
     );
     expect(screen.getByRole('button', { name: 'Bug' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Ops' })).toBeTruthy();
+
+    const css = readTaskLabelPickerCss();
+    expect(css).not.toBeNull();
+    expect(css ?? '').toContain('padding: 0.5rem 0.75rem;');
+    expect(css ?? '').toContain('min-width: clamp(13.75rem, 28vw, 15.75rem);');
+    expect(css ?? '').toContain('max-width: min(18rem, calc(100vw - 2rem));');
+    expect(css ?? '').toContain('background: var(--ui-surface-soft);');
+    expect(css ?? '').toContain(
+      'border: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);',
+    );
+    expect(css ?? '').toContain(
+      'background: color-mix(in srgb, var(--task-label-accent) 10%, var(--ui-accent-soft));',
+    );
   });
 
   it('opens the dropdown when the trigger is clicked, even when the caller stops propagation', () => {

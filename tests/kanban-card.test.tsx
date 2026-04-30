@@ -542,6 +542,16 @@ describe('app/components/kanban-card', () => {
     expect(html).toContain('>#</span>');
   });
 
+  it('keeps the card label shortcut shell compact instead of stretching like a form control', () => {
+    expect(cardsCss).toMatch(
+      /\.kanbanLabelShortcutButton\s*\{[\s\S]*max-width:\s*100%;[\s\S]*padding:\s*2px 6px;[\s\S]*border-radius:\s*999px;[\s\S]*background:\s*color-mix\(in srgb, var\(--ui-surface-elevated\), transparent 6%\);/,
+    );
+    expect(cardsCss).toMatch(
+      /\.kanbanLabelShortcutButton\[data-kanban-label-shortcut='empty'\]\s*\{[\s\S]*width:\s*1\.75rem;[\s\S]*height:\s*1\.75rem;/,
+    );
+    expect(cardsCss).toMatch(/\.kanbanLabelShortcutSurface\s*\{[\s\S]*gap:\s*4px;/);
+  });
+
   it('keeps the card menu trigger hidden until hover on pointer devices while leaving it visible for focus and touch', () => {
     expect(cardsCss).toMatch(
       /\.kanbanCardMenuTrigger\s*\{[\s\S]*opacity:\s*0;[\s\S]*transition:[\s\S]*opacity 140ms ease/,
