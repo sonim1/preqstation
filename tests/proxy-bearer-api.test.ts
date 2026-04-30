@@ -120,6 +120,7 @@ describe('proxy bearer API allowlist', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get('location')).toBeNull();
+    expect(mocked.checkRateLimit).not.toHaveBeenCalled();
     expect(mocked.verifySessionToken).not.toHaveBeenCalled();
   });
 });

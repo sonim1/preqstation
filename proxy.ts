@@ -40,7 +40,11 @@ export default async function proxy(req: NextRequest) {
   pathHeaders.set('x-pathname', pathname);
   const isServerAction = isServerActionRequest(req);
 
-  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/health')) {
+  if (
+    pathname.startsWith('/api/') &&
+    !pathname.startsWith('/api/health') &&
+    !pathname.startsWith('/api/ping')
+  ) {
     const rate = checkRateLimit(`api:${ip}`, 120, 60_000);
     if (!rate.allowed) {
       return setSecurityHeaders(
