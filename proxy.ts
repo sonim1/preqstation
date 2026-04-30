@@ -14,6 +14,7 @@ function isPublicPath(pathname: string) {
     pathname === '/api/oauth/register' ||
     pathname === '/api/oauth/token' ||
     pathname === '/api/health' ||
+    pathname === '/api/ping' ||
     pathname === '/favicon.ico'
   );
 }
