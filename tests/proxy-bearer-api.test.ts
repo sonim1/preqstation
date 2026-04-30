@@ -99,6 +99,21 @@ describe('proxy bearer API allowlist', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
+  it('does not classify browser todo comment APIs as bearer-only', async () => {
+    mocked.verifySessionToken.mockResolvedValue({ email: 'owner@example.com' });
+    mocked.isOwnerEmail.mockReturnValue(true);
+
+    const response = await proxy(
+      makeRequest('/api/todos/PROJ-123/comments', {
+        method: 'GET',
+        cookieValue: 'session-token',
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('location')).toBeNull();
+  });
+
   it('allows oauth discovery and exchange routes without owner session cookies', async () => {
     const discoveryResponse = await proxy(makeRequest('/.well-known/oauth-authorization-server'));
     const authorizeResponse = await proxy(makeRequest('/api/oauth/authorize'));

@@ -682,7 +682,7 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/tasks/${encodeURIComponent(taskKey)}/comments`, {
+      const response = await fetch(`/api/todos/${encodeURIComponent(taskKey)}/comments`, {
         cache: 'no-store',
       });
       const body = (await response.json().catch(() => null)) as {
@@ -712,7 +712,7 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
     setIsSubmitting(true);
     setError(null);
     try {
-      const response = await fetch(`/api/tasks/${encodeURIComponent(taskKey)}/comments`, {
+      const response = await fetch(`/api/todos/${encodeURIComponent(taskKey)}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body, dispatch: true }),
