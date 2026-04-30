@@ -408,6 +408,49 @@ export const tasks = pgTable(
   ],
 ).enableRLS();
 
+// ─── Task Comments ───────────────────────────────────────────────────
+export const taskComments = pgTable(
+  'task_comments',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    taskId: uuid('task_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    parentCommentId: uuid('parent_comment_id'),
+    authorType: text('author_type').notNull().default('user'),
+    authorName: text('author_name'),
+    body: text('body').notNull(),
+    runState: text('run_state'),
+    runStateUpdatedAt: timestamp('run_state_updated_at', { withTimezone: true, precision: 6 }),
+    engine: text('engine'),
+    dispatchTarget: text('dispatch_target'),
+    errorMessage: text('error_message'),
+    metadata: jsonb('metadata').$type<Record<string, unknown> | null>(),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    pgPolicy('task_comments_owner_all', {
+      for: 'all',
+      using: appUserMatches(table.ownerId),
+      withCheck: appUserMatches(table.ownerId),
+    }),
+    index('task_comments_owner_id_idx').on(table.ownerId),
+    index('task_comments_task_id_created_at_idx').on(table.taskId, table.createdAt),
+    index('task_comments_owner_id_run_state_idx').on(table.ownerId, table.runState),
+    index('task_comments_parent_comment_id_idx').on(table.parentCommentId),
+  ],
+).enableRLS();
+
 // ─── Work Logs ───────────────────────────────────────────────────────
 export const workLogs = pgTable(
   'work_logs',

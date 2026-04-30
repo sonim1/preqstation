@@ -11,6 +11,7 @@ import {
   projectSettings,
   qaRuns,
   securityEvents,
+  taskComments,
   taskLabelAssignments,
   taskLabels,
   tasks,
@@ -28,6 +29,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   oauthCodes: many(oauthCodes),
   projects: many(projects),
   taskLabels: many(taskLabels),
+  taskComments: many(taskComments),
   tasks: many(tasks),
   workLogs: many(workLogs),
   auditLogs: many(auditLogs),
@@ -94,6 +96,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   }),
   taskLabels: many(taskLabels),
   tasks: many(tasks),
+  taskComments: many(taskComments),
   workLogs: many(workLogs),
   projectSettings: many(projectSettings),
   qaRuns: many(qaRuns),
@@ -128,7 +131,27 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
     references: [taskLabels.id],
   }),
   labelAssignments: many(taskLabelAssignments),
+  comments: many(taskComments),
   workLogs: many(workLogs),
+}));
+
+export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
+  owner: one(users, {
+    fields: [taskComments.ownerId],
+    references: [users.id],
+  }),
+  project: one(projects, {
+    fields: [taskComments.projectId],
+    references: [projects.id],
+  }),
+  task: one(tasks, {
+    fields: [taskComments.taskId],
+    references: [tasks.id],
+  }),
+  parent: one(taskComments, {
+    fields: [taskComments.parentCommentId],
+    references: [taskComments.id],
+  }),
 }));
 
 export const taskLabelAssignmentsRelations = relations(taskLabelAssignments, ({ one }) => ({

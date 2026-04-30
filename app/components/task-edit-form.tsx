@@ -3,6 +3,7 @@
 import {
   ActionIcon,
   Alert,
+  Badge,
   Button,
   Group,
   Loader,
@@ -10,6 +11,7 @@ import {
   SegmentedControl,
   Stack,
   Text,
+  Textarea,
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
@@ -124,6 +126,16 @@ type TaskEditLabelOption = {
   color: string | null;
 };
 
+type TaskComment = {
+  id: string;
+  body: string;
+  author_type: 'user' | 'agent' | 'system';
+  author_name?: string | null;
+  run_state?: 'queued' | 'working' | 'done' | 'failed' | null;
+  parent_comment_id?: string | null;
+  created_at: string;
+};
+
 const TASK_PRIORITY_DETAIL: Record<TaskPriority, string> = {
   highest: 'Escalated, unblock first',
   high: 'Important, visible on card',
@@ -132,6 +144,35 @@ const TASK_PRIORITY_DETAIL: Record<TaskPriority, string> = {
   low: 'Defer if needed',
   lowest: 'Parking lot',
 };
+
+function formatTaskCommentTimestamp(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(date);
+}
+
+function getTaskCommentBadgeColor(comment: TaskComment) {
+  if (comment.author_type === 'agent') {
+    return 'blue';
+  }
+  if (comment.run_state === 'failed') {
+    return 'red';
+  }
+  if (comment.run_state === 'working') {
+    return 'yellow';
+  }
+  if (comment.run_state === 'done') {
+    return 'green';
+  }
+  return 'gray';
+}
 
 function SectionHeading({ title, helpText, aside }: SectionHeadingProps) {
   return (
@@ -630,6 +671,159 @@ export function applyTaskEditNotesModeChange(
   };
 }
 
+function TaskCommentsSection({ taskKey }: { taskKey: string }) {
+  const [comments, setComments] = useState<TaskComment[]>([]);
+  const [draft, setDraft] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadComments = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/tasks/${encodeURIComponent(taskKey)}/comments`, {
+        cache: 'no-store',
+      });
+      const body = (await response.json().catch(() => null)) as {
+        comments?: TaskComment[];
+        error?: string;
+      } | null;
+      if (!response.ok) {
+        throw new Error(body?.error ?? 'Failed to load comments.');
+      }
+      setComments(body?.comments ?? []);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Failed to load comments.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [taskKey]);
+
+  useEffect(() => {
+    void loadComments();
+  }, [loadComments]);
+
+  async function handleSubmit() {
+    const body = draft.trim();
+    if (!body) {
+      return;
+    }
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/tasks/${encodeURIComponent(taskKey)}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body, dispatch: true }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        comment?: TaskComment;
+        error?: string;
+      } | null;
+      if (!response.ok || !payload?.comment) {
+        throw new Error(payload?.error ?? 'Failed to add comment.');
+      }
+      setDraft('');
+      setComments((current) => [...current, payload.comment as TaskComment]);
+    } catch (submitError) {
+      const message = submitError instanceof Error ? submitError.message : 'Failed to add comment.';
+      setError(message);
+      showErrorNotification(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <section className={classes.activityCard} data-panel="task-edit-comments">
+      <Stack gap="md">
+        <SectionHeading
+          title="Comments"
+          helpText="Ask follow-up questions or queue extra agent requests without rewriting canonical notes."
+          aside={
+            <Button
+              type="button"
+              size="xs"
+              variant="light"
+              onClick={() => void loadComments()}
+              loading={isLoading}
+            >
+              Refresh
+            </Button>
+          }
+        />
+
+        <Stack gap="xs">
+          <Textarea
+            aria-label="Add task comment"
+            placeholder="Ask a follow-up or request a small note update..."
+            minRows={3}
+            value={draft}
+            onChange={(event) => setDraft(event.currentTarget.value)}
+          />
+          <Group justify="space-between" gap="sm">
+            <Text size="xs" c="dimmed">
+              New comments queue agent handling; task status stays unchanged.
+            </Text>
+            <Button
+              type="button"
+              size="xs"
+              onClick={handleSubmit}
+              loading={isSubmitting}
+              disabled={!draft.trim()}
+            >
+              Add comment
+            </Button>
+          </Group>
+        </Stack>
+
+        {error ? (
+          <Alert color="red" variant="light" icon={<IconAlertCircle size={16} />}>
+            {error}
+          </Alert>
+        ) : null}
+
+        {isLoading && comments.length === 0 ? (
+          <Group gap="xs">
+            <Loader size={16} />
+            <Text size="sm" c="dimmed">
+              Loading comments…
+            </Text>
+          </Group>
+        ) : comments.length > 0 ? (
+          <Stack gap="sm">
+            {comments.map((comment) => (
+              <Stack key={comment.id} gap="xs" className={classes.commentCard}>
+                <Group justify="space-between" gap="xs" align="center">
+                  <Group gap="xs">
+                    <Badge size="sm" variant="light" color={getTaskCommentBadgeColor(comment)}>
+                      {comment.author_type}
+                    </Badge>
+                    {comment.run_state ? (
+                      <Badge size="sm" variant="dot" color={getTaskCommentBadgeColor(comment)}>
+                        {comment.run_state}
+                      </Badge>
+                    ) : null}
+                  </Group>
+                  <Text size="xs" c="dimmed">
+                    {formatTaskCommentTimestamp(comment.created_at)}
+                  </Text>
+                </Group>
+                <MarkdownViewer markdown={comment.body} className="markdown-output" />
+              </Stack>
+            ))}
+          </Stack>
+        ) : (
+          <Text size="sm" c="dimmed">
+            No comments yet.
+          </Text>
+        )}
+      </Stack>
+    </section>
+  );
+}
+
 function selectLatestPreqResultLog(
   workLogs: NonNullable<TaskEditFormProps['editableTodo']['workLogs']> | undefined,
 ) {
@@ -885,6 +1079,8 @@ function TaskEditFormContent({
                 <MarkdownViewer markdown={noteMarkdown} mode="artifacts" />
               </Stack>
             </section>
+
+            <TaskCommentsSection taskKey={taskKey} />
 
             <section className={classes.activityCard} data-panel="task-edit-activity">
               <Stack gap="md">
