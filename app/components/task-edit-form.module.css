@@ -134,6 +134,13 @@
   display: block;
 }
 
+.commentCard {
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 20%);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--ui-surface), transparent 8%);
+}
+
 .sectionSurface {
   min-width: 0;
   padding: clamp(0.875rem, 1.4vw, 1rem);

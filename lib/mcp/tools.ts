@@ -4,6 +4,12 @@ import { z } from 'zod';
 import { GET as getProjectSettingsRoute } from '@/app/api/projects/[id]/settings/route';
 import { GET as listProjectsRoute } from '@/app/api/projects/route';
 import { PATCH as patchQaRunRoute } from '@/app/api/qa-runs/[id]/route';
+import { POST as replyTaskCommentRoute } from '@/app/api/task-comments/[id]/reply/route';
+import {
+  GET as getTaskCommentRoute,
+  PATCH as patchTaskCommentRoute,
+} from '@/app/api/task-comments/[id]/route';
+import { GET as listTaskCommentsRoute } from '@/app/api/tasks/[id]/comments/route';
 import {
   DELETE as deleteTaskRoute,
   GET as getTaskRoute,
@@ -313,6 +319,63 @@ async function callPatchQaRun(
   return readJsonResponse(response, `/api/qa-runs/${encodeTaskId(runId)}`);
 }
 
+async function callListTaskComments(context: McpToolContext, taskId: string) {
+  const request = await createInternalRequest(
+    context,
+    `/api/tasks/${encodeTaskId(taskId)}/comments`,
+  );
+  const response = await listTaskCommentsRoute(request, {
+    params: Promise.resolve({ id: taskId }),
+  });
+  return readJsonResponse(response, `/api/tasks/${encodeTaskId(taskId)}/comments`);
+}
+
+async function callGetTaskComment(context: McpToolContext, commentId: string) {
+  const request = await createInternalRequest(
+    context,
+    `/api/task-comments/${encodeTaskId(commentId)}`,
+  );
+  const response = await getTaskCommentRoute(request, {
+    params: Promise.resolve({ id: commentId }),
+  });
+  return readJsonResponse(response, `/api/task-comments/${encodeTaskId(commentId)}`);
+}
+
+async function callPatchTaskComment(
+  context: McpToolContext,
+  commentId: string,
+  payload: Record<string, unknown>,
+) {
+  const request = await createInternalRequest(
+    context,
+    `/api/task-comments/${encodeTaskId(commentId)}`,
+    {
+      method: 'PATCH',
+      body: payload,
+    },
+  );
+  const response = await patchTaskCommentRoute(request, {
+    params: Promise.resolve({ id: commentId }),
+  });
+  return readJsonResponse(response, `/api/task-comments/${encodeTaskId(commentId)}`);
+}
+
+async function callReplyTaskComment(
+  context: McpToolContext,
+  commentId: string,
+  payload: Record<string, unknown>,
+) {
+  const request = await createInternalRequest(
+    context,
+    `/api/task-comments/${encodeTaskId(commentId)}/reply`,
+    { method: 'POST', body: payload },
+  );
+  const response = await replyTaskCommentRoute(request, {
+    params: Promise.resolve({ id: commentId }),
+  });
+  return readJsonResponse(response, `/api/task-comments/${encodeTaskId(commentId)}/reply`);
+}
+
 export function registerPreqTools(server: McpServer, context: McpToolContext) {
   server.registerTool(
     'preq_list_projects',
@@ -569,6 +632,86 @@ export function registerPreqTools(server: McpServer, context: McpToolContext) {
         task: result.task || null,
         requested_status: 'inbox',
       });
+    },
+  );
+
+  server.registerTool(
+    'preq_list_task_comments',
+    {
+      title: 'List PREQSTATION task comments',
+      description: 'Read the comment thread for a PREQSTATION task.',
+      inputSchema: {
+        taskId: z.string().trim().min(1),
+      },
+    },
+    async ({ taskId }) => {
+      return contentText(await callListTaskComments(context, taskId));
+    },
+  );
+
+  server.registerTool(
+    'preq_get_task_comment',
+    {
+      title: 'Get PREQSTATION task comment',
+      description: 'Read a specific user comment plus task context for comment objective runs.',
+      inputSchema: {
+        commentId: z.string().trim().min(1),
+      },
+    },
+    async ({ commentId }) => {
+      return contentText(await callGetTaskComment(context, commentId));
+    },
+  );
+
+  server.registerTool(
+    'preq_update_task_comment_state',
+    {
+      title: 'Update PREQSTATION task comment state',
+      description:
+        'Move a task comment through queued/working/done/failed without changing the task workflow status.',
+      inputSchema: {
+        commentId: z.string().trim().min(1),
+        runState: z.enum(['queued', 'working', 'done', 'failed']),
+        errorMessage: z.string().max(4000).optional(),
+        engine: z.enum(PREQ_ENGINES).optional(),
+      },
+    },
+    async ({ commentId, runState, errorMessage, engine }) => {
+      const resolvedEngine = resolveEngine(context, engine);
+      return contentText(
+        await callPatchTaskComment(context, commentId, {
+          runState,
+          errorMessage,
+          engine: resolvedEngine,
+        }),
+      );
+    },
+  );
+
+  server.registerTool(
+    'preq_reply_task_comment',
+    {
+      title: 'Reply to PREQSTATION task comment',
+      description:
+        'Add an agent reply to a task comment. Backend creates the corresponding work log automatically.',
+      inputSchema: {
+        commentId: z.string().trim().min(1),
+        body: z.string().trim().min(1).max(50000),
+        noteUpdated: z.boolean().optional(),
+        engine: z.enum(PREQ_ENGINES).optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
+      },
+    },
+    async ({ commentId, body, noteUpdated, engine, metadata }) => {
+      const resolvedEngine = resolveEngine(context, engine);
+      return contentText(
+        await callReplyTaskComment(context, commentId, {
+          body,
+          noteUpdated: Boolean(noteUpdated),
+          engine: resolvedEngine,
+          metadata,
+        }),
+      );
     },
   );
 
