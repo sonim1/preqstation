@@ -399,8 +399,12 @@ describe('app/components/task-edit-form answer selection', () => {
     expect(html).toContain('data-task-edit-empty-label-trigger="true"');
     expect(html).toContain('>+</span>');
     expect(taskEditFormCss).toMatch(/\.labelShortcutField\s*\{[\s\S]*align-items:\s*flex-start;/);
+    expect(taskEditFormCss).toMatch(/\.labelShortcutButton\s*\{[\s\S]*min-height:\s*2\.375rem;/);
     expect(taskEditFormCss).toMatch(
-      /\.labelShortcutButton\[data-kanban-label-shortcut='empty'\]\s*\{[\s\S]*width:\s*2\.75rem;[\s\S]*height:\s*2\.75rem;[\s\S]*border-radius:\s*999px;[\s\S]*background:\s*var\(--ui-accent\);[\s\S]*box-shadow:\s*inset 0 0 0 1px color-mix\(in srgb, white 18%, transparent\);/,
+      /\.labelShortcutButton\[data-kanban-label-shortcut='empty'\]\s*\{[\s\S]*width:\s*2\.25rem;[\s\S]*height:\s*2\.25rem;[\s\S]*border-radius:\s*999px;[\s\S]*background:\s*color-mix\(in srgb, var\(--ui-accent-soft\), white 24%\);[\s\S]*box-shadow:\s*inset 0 0 0 1px color-mix\(in srgb, var\(--ui-border\), transparent 12%\);/,
+    );
+    expect(taskEditFormCss).toMatch(
+      /\.labelShortcutPlus\s*\{[\s\S]*font-size:\s*1\.25rem;[\s\S]*font-weight:\s*600;/,
     );
   });
 });

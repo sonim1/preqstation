@@ -3,15 +3,14 @@
 import {
   Button,
   ColorSwatch,
-  Group,
   Popover,
-  Stack,
   Text,
   TextInput,
   UnstyledButton,
 } from '@mantine/core';
 import { IconCheck, IconChevronDown, IconPlus } from '@tabler/icons-react';
 import {
+  type CSSProperties,
   type MouseEventHandler,
   type PointerEventHandler,
   type ReactNode,
@@ -29,6 +28,8 @@ import {
   upsertProjectLabelOptions,
 } from '@/lib/project-label-client';
 import { resolveTaskLabelSwatchColor, type TaskLabelColorValue } from '@/lib/task-meta';
+
+import styles from './task-label-picker.module.css';
 
 type TaskLabelPickerProps = {
   labelOptions: ProjectLabelOption[];
@@ -97,30 +98,20 @@ function renderDefaultTrigger({
 }) {
   return (
     <span
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '0.75rem',
-        width: '100%',
-        padding: '0.625rem 0.875rem',
-        border: '1px solid var(--mantine-color-default-border)',
-        borderRadius: '0.5rem',
-        opacity: disabled ? 0.6 : 1,
-      }}
+      className={styles.defaultTrigger}
+      data-disabled={disabled ? 'true' : undefined}
       data-opened={opened ? 'true' : undefined}
+      data-task-label-trigger="default"
     >
-      <span>
+      <span className={styles.defaultTriggerLabel}>
         {hasSelectedLabels ? selectedLabels.map((label) => label.name).join(', ') : emptyStateLabel}
       </span>
-      <Group gap={6} wrap="nowrap">
+      <span className={styles.defaultTriggerMeta}>
         {!hasSelectedLabels ? (
-          <Text component="span" size="xs" c="dimmed">
-            {triggerLabel}
-          </Text>
+          <span className={styles.defaultTriggerHint}>{triggerLabel}</span>
         ) : null}
         <IconChevronDown size={14} />
-      </Group>
+      </span>
     </span>
   );
 }
@@ -291,8 +282,8 @@ export function TaskLabelPicker({
         </UnstyledButton>
       </Popover.Target>
 
-      <Popover.Dropdown>
-        <Stack gap="sm" miw={280}>
+      <Popover.Dropdown className={styles.dropdownPanel} data-task-label-dropdown="true">
+        <div className={styles.dropdownBody}>
           <TextInput
             value={search}
             onChange={(event) => {
@@ -311,43 +302,40 @@ export function TaskLabelPicker({
             aria-label={`${triggerLabel} search`}
           />
 
-          <Stack gap={4} mah={300} style={{ overflowY: 'auto' }}>
+          <div className={styles.optionList}>
             {filteredLabelOptions.map((label) => {
               const isSelected = selectedLabelIds.includes(label.id);
+              const swatchColor = resolveTaskLabelSwatchColor(label.color);
 
               return (
-                <Button
+                <UnstyledButton
                   key={label.id}
                   type="button"
-                  variant={isSelected ? 'light' : 'subtle'}
-                  color="gray"
-                  justify="space-between"
+                  className={styles.optionButton}
+                  data-selected={isSelected ? 'true' : undefined}
+                  data-task-label-option="true"
                   disabled={disabled}
-                  leftSection={
-                    <Group gap={8} wrap="nowrap">
-                      <ColorSwatch color={resolveTaskLabelSwatchColor(label.color)} size={14} />
-                      <Text component="span" size="sm">
-                        {label.name}
-                      </Text>
-                    </Group>
-                  }
-                  rightSection={isSelected ? <IconCheck size={14} /> : null}
+                  style={{ '--task-label-accent': swatchColor } as CSSProperties}
                   onClick={() => toggleLabel(label.id)}
                 >
-                  <span />
-                </Button>
+                  <span className={styles.optionContent}>
+                    <ColorSwatch color={swatchColor} size={14} />
+                    <span className={styles.optionLabel}>{label.name}</span>
+                  </span>
+                  {isSelected ? <IconCheck size={14} className={styles.optionCheck} /> : null}
+                </UnstyledButton>
               );
             })}
 
             {filteredLabelOptions.length === 0 ? (
-              <Text size="sm" c="dimmed">
+              <Text size="sm" c="dimmed" className={styles.emptyState}>
                 No matching labels.
               </Text>
             ) : null}
-          </Stack>
+          </div>
 
           {canCreate ? (
-            <Stack gap="xs">
+            <div className={styles.createControls}>
               <TaskLabelColorPicker
                 value={createColor}
                 onChange={setCreateColor}
@@ -367,7 +355,7 @@ export function TaskLabelPicker({
               >
                 {`Add "${search.trim()}"`}
               </Button>
-            </Stack>
+            </div>
           ) : null}
 
           {createError ? (
@@ -375,7 +363,7 @@ export function TaskLabelPicker({
               {createError}
             </Text>
           ) : null}
-        </Stack>
+        </div>
       </Popover.Dropdown>
     </Popover>
   );
