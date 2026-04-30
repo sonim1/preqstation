@@ -114,6 +114,15 @@ describe('proxy bearer API allowlist', () => {
     expect(registerResponse.headers.get('location')).toBeNull();
     expect(tokenResponse.headers.get('location')).toBeNull();
   });
+
+  it('allows unauthenticated heartbeat checks for the offline status provider', async () => {
+    const response = await proxy(makeRequest('/api/ping'));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('location')).toBeNull();
+    expect(mocked.checkRateLimit).not.toHaveBeenCalled();
+    expect(mocked.verifySessionToken).not.toHaveBeenCalled();
+  });
 });
 
 describe('proxy login server actions', () => {
