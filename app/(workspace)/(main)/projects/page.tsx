@@ -519,7 +519,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
             {resumeCards.length > 0 ? (
               <section className={styles.portfolioSection} data-project-section="resume">
                 <SimpleGrid
-                  cols={{ base: 1, sm: 2, xl: 3 }}
+                  cols={{ base: 1, sm: 2, lg: 3, xl: 4 }}
                   spacing="md"
                   className={styles.resumeGrid}
                 >
@@ -549,7 +549,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
               </div>
 
               {quietCards.length > 0 ? (
-                <SimpleGrid cols={{ base: 1, md: 2 }} spacing="md" className={styles.quietGrid}>
+                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" className={styles.quietGrid}>
                   {quietCards.map((card) => (
                     <ProjectPortfolioCard
                       key={card.id}

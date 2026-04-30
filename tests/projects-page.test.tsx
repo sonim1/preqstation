@@ -6,6 +6,40 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@mantine/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@mantine/core')>();
+
+  return {
+    ...actual,
+    SimpleGrid: ({
+      children,
+      cols,
+      spacing: _spacing,
+      ...props
+    }: React.HTMLAttributes<HTMLDivElement> & {
+      children: React.ReactNode;
+      cols?: number | Partial<Record<'base' | 'sm' | 'md' | 'lg' | 'xl', number>>;
+      spacing?: unknown;
+    }) => {
+      const colMap = typeof cols === 'number' ? { base: cols } : (cols ?? {});
+
+      return (
+        <div
+          {...props}
+          data-simple-grid="true"
+          data-cols-base={colMap.base}
+          data-cols-sm={colMap.sm}
+          data-cols-md={colMap.md}
+          data-cols-lg={colMap.lg}
+          data-cols-xl={colMap.xl}
+        >
+          {children}
+        </div>
+      );
+    },
+  };
+});
+
 const mocked = vi.hoisted(() => {
   const state = {
     projects: [] as Array<{
@@ -552,13 +586,72 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectsPageSource).not.toContain('getTrendHeights');
   });
 
-  it('renders resume and quiet sections through Mantine SimpleGrid wrappers', () => {
-    expect(projectsPageSource).toMatch(
-      /data-project-section="resume"[\s\S]*<SimpleGrid[\s\S]*cols=\{\{ base: 1, sm: 2, xl: 3 \}\}[\s\S]*className=\{styles\.resumeGrid\}/,
-    );
-    expect(projectsPageSource).toMatch(
-      /data-project-section="quiet"[\s\S]*<SimpleGrid[\s\S]*cols=\{\{ base: 1, md: 2 \}\}[\s\S]*className=\{styles\.quietGrid\}/,
-    );
+  it('renders resume and quiet sections through Mantine SimpleGrid wrappers', async () => {
+    mocked.state.projects = [
+      {
+        id: 'project-1',
+        name: 'Active Project',
+        projectKey: 'ACTV',
+        description: null,
+        status: 'active',
+        updatedAt: new Date('2026-03-14T10:00:00Z'),
+        repoUrl: null,
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+      {
+        id: 'project-2',
+        name: 'Second Active Project',
+        projectKey: 'SCND',
+        description: null,
+        status: 'active',
+        updatedAt: new Date('2026-03-13T12:00:00Z'),
+        repoUrl: null,
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+      {
+        id: 'project-3',
+        name: 'Paused Project',
+        projectKey: 'PAUS',
+        description: null,
+        status: 'paused',
+        updatedAt: new Date('2026-03-13T10:00:00Z'),
+        repoUrl: null,
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+    ];
+    mocked.state.statusCounts = [];
+    mocked.state.latestWorkLogs = [];
+    mocked.state.projectActivityRows = [];
+
+    const page = await ProjectsPage();
+    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
+    const resumeIndex = html.indexOf('data-project-section="resume"');
+    const quietIndex = html.indexOf('data-project-section="quiet"');
+    const resumeSectionHtml = html.slice(resumeIndex, quietIndex);
+    const quietSectionHtml = html.slice(quietIndex);
+
+    expect(resumeSectionHtml).toContain('data-simple-grid="true"');
+    expect(resumeSectionHtml).toContain('data-cols-base="1"');
+    expect(resumeSectionHtml).toContain('data-cols-sm="2"');
+    expect(resumeSectionHtml).toContain('data-cols-lg="3"');
+    expect(resumeSectionHtml).toContain('data-cols-xl="4"');
+    expect(resumeSectionHtml).not.toContain('data-cols-md=');
+    expect(quietSectionHtml).toContain('data-simple-grid="true"');
+    expect(quietSectionHtml).toContain('data-cols-base="1"');
+    expect(quietSectionHtml).toContain('data-cols-sm="2"');
+    expect(quietSectionHtml).not.toContain('data-cols-md=');
     expect(projectsPageSource).not.toContain('className={styles.mosaic}');
     expect(projectsPageSource).not.toContain('className={styles.quietLane}');
   });
