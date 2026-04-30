@@ -3,26 +3,36 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { authenticateApiToken } from '@/lib/api-tokens';
+import { writeAuditLog } from '@/lib/audit';
 import { TODO_NOTE_MAX_LENGTH } from '@/lib/content-limits';
 import { withOwnerDb } from '@/lib/db/rls';
 import { taskComments, tasks } from '@/lib/db/schema';
 import { ENGINE_KEYS, normalizeEngineKey } from '@/lib/engine-icons';
-import { getOwnerUserOrNull } from '@/lib/owner';
+import { requireOwnerUser } from '@/lib/owner';
+import { assertSameOrigin } from '@/lib/request-security';
 import { serializeTaskComment } from '@/lib/task-comments';
+import { normalizeTaskDispatchTarget } from '@/lib/task-dispatch';
 import { taskWhereByIdentifier } from '@/lib/task-keys';
+import { buildTaskCommentDispatchMessage } from '@/lib/task-telegram-client';
+import { sendTelegramMessage } from '@/lib/telegram';
+import { decryptTelegramToken } from '@/lib/telegram-crypto';
+import { resolveTelegramDispatchConfig } from '@/lib/telegram-dispatch-settings';
+import { getUserSettings } from '@/lib/user-settings';
 
-type CommentAuth = { ownerId: string; ownerEmail: string | null };
+type CommentAuth = { ownerId: string; ownerEmail: string | null; source: 'api-token' | 'session' };
 
 async function authenticateTaskCommentRequest(req: Request): Promise<CommentAuth | null> {
   const apiAuth = await authenticateApiToken(req);
   if (apiAuth) {
-    return { ownerId: apiAuth.ownerId, ownerEmail: apiAuth.ownerEmail };
+    return { ownerId: apiAuth.ownerId, ownerEmail: apiAuth.ownerEmail, source: 'api-token' };
   }
-  const owner = await getOwnerUserOrNull();
-  if (!owner) {
-    return null;
+  try {
+    const owner = await requireOwnerUser();
+    return { ownerId: owner.id, ownerEmail: owner.email, source: 'session' };
+  } catch (error) {
+    if (error instanceof Response && error.status === 401) return null;
+    throw error;
   }
-  return { ownerId: owner.id, ownerEmail: owner.email };
 }
 
 const createTaskCommentSchema = z.object({
@@ -32,6 +42,60 @@ const createTaskCommentSchema = z.object({
   dispatchTarget: z.string().trim().optional().or(z.literal('')),
   dispatch_target: z.string().trim().optional().or(z.literal('')),
 });
+
+async function markTaskCommentDispatchFailed(
+  ownerId: string,
+  commentId: string,
+  errorMessage: string,
+) {
+  const [comment] = await withOwnerDb(ownerId, async (client) =>
+    client
+      .update(taskComments)
+      .set({
+        runState: 'failed',
+        runStateUpdatedAt: new Date(),
+        errorMessage,
+      })
+      .where(eq(taskComments.id, commentId))
+      .returning(),
+  );
+  return comment;
+}
+
+async function buildTaskCommentDispatchFailureResponse({
+  ownerId,
+  task,
+  comment,
+  engine,
+  dispatchTarget,
+  errorMessage,
+}: {
+  ownerId: string;
+  task: { taskPrefix: string; taskKey: string };
+  comment: typeof taskComments.$inferSelect;
+  engine: string | null;
+  dispatchTarget: string | null;
+  errorMessage: string;
+}) {
+  const failedComment =
+    (await markTaskCommentDispatchFailed(ownerId, comment.id, errorMessage)) || comment;
+  return NextResponse.json(
+    {
+      comment: serializeTaskComment(failedComment),
+      dispatch: {
+        objective: 'comment',
+        project_key: task.taskPrefix,
+        task_key: task.taskKey,
+        comment_id: comment.id,
+        engine,
+        dispatch_target: dispatchTarget,
+        status: 'failed',
+        error: errorMessage,
+      },
+    },
+    { status: 201 },
+  );
+}
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -73,11 +137,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   try {
     const auth = await authenticateTaskCommentRequest(req);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (auth.source === 'session') {
+      const originError = await assertSameOrigin(req);
+      if (originError) return originError;
+    }
     const { id } = await params;
     const parsed = createTaskCommentSchema.safeParse(await req.json());
     if (!parsed.success) return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
 
-    return await withOwnerDb(auth.ownerId, async (client) => {
+    const created = await withOwnerDb(auth.ownerId, async (client) => {
       const task = await client.query.tasks.findFirst({
         where: and(
           taskWhereByIdentifier(auth.ownerId, id),
@@ -86,12 +154,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             sql`EXISTS (SELECT 1 FROM projects WHERE projects.id = ${tasks.projectId} AND projects.deleted_at IS NULL)`,
           ),
         ),
-        columns: { id: true, projectId: true, taskKey: true, taskPrefix: true },
+        columns: {
+          id: true,
+          projectId: true,
+          taskKey: true,
+          taskPrefix: true,
+          status: true,
+          branch: true,
+          engine: true,
+          dispatchTarget: true,
+        },
       });
       if (!task) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-      const engine = normalizeEngineKey(parsed.data.engine) ?? null;
-      const dispatchTarget = parsed.data.dispatch_target || parsed.data.dispatchTarget || null;
+      const engine = normalizeEngineKey(parsed.data.engine) ?? normalizeEngineKey(task.engine);
+      const dispatchTarget =
+        normalizeTaskDispatchTarget(parsed.data.dispatch_target || parsed.data.dispatchTarget) ??
+        normalizeTaskDispatchTarget(task.dispatchTarget) ??
+        'telegram';
       const runState = parsed.data.dispatch === false ? null : 'queued';
       const [comment] = await client
         .insert(taskComments)
@@ -109,23 +189,96 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         })
         .returning();
 
-      return NextResponse.json(
-        {
-          comment: serializeTaskComment(comment),
-          dispatch: runState
-            ? {
-                objective: 'comment',
-                project_key: task.taskPrefix,
-                task_key: task.taskKey,
-                comment_id: comment.id,
-                engine,
-              }
-            : null,
-        },
-        { status: 201 },
-      );
+      return { task, comment, engine, dispatchTarget, runState };
     });
+
+    if (created instanceof NextResponse) return created;
+
+    let dispatch: Record<string, unknown> | null = null;
+    if (created.runState) {
+      const settings = await getUserSettings(auth.ownerId);
+      const target = created.dispatchTarget === 'hermes-telegram' ? 'hermes' : 'openclaw';
+      const { enabled, encryptedToken, chatId } = resolveTelegramDispatchConfig(settings, target);
+      if (!enabled || !encryptedToken || !chatId) {
+        const errorMessage = 'Telegram is not fully configured or disabled';
+        return buildTaskCommentDispatchFailureResponse({
+          ownerId: auth.ownerId,
+          task: created.task,
+          comment: created.comment,
+          engine: created.engine,
+          dispatchTarget: created.dispatchTarget,
+          errorMessage,
+        });
+      }
+
+      let botToken = '';
+      try {
+        botToken = await decryptTelegramToken(encryptedToken);
+      } catch (error) {
+        console.error('[api/tasks/comments] failed to decrypt Telegram bot token:', error);
+        const errorMessage = 'Telegram bot token is invalid. Save Telegram settings again.';
+        return buildTaskCommentDispatchFailureResponse({
+          ownerId: auth.ownerId,
+          task: created.task,
+          comment: created.comment,
+          engine: created.engine,
+          dispatchTarget: created.dispatchTarget,
+          errorMessage,
+        });
+      }
+
+      const message = buildTaskCommentDispatchMessage({
+        taskKey: created.task.taskKey,
+        status: created.task.status,
+        engine: created.engine,
+        branchName: created.task.branch,
+        commentId: created.comment.id,
+        dispatchTarget: created.dispatchTarget,
+      });
+
+      const result = await sendTelegramMessage(botToken, chatId, message, {
+        normalizeCommand: created.dispatchTarget !== 'hermes-telegram',
+      });
+      if (!result.ok) {
+        const errorMessage = result.description || 'Failed to send Telegram message';
+        return buildTaskCommentDispatchFailureResponse({
+          ownerId: auth.ownerId,
+          task: created.task,
+          comment: created.comment,
+          engine: created.engine,
+          dispatchTarget: created.dispatchTarget,
+          errorMessage,
+        });
+      }
+
+      await writeAuditLog({
+        ownerId: auth.ownerId,
+        action: 'telegram.comment_dispatch_sent',
+        targetType: 'task_comment',
+        targetId: created.comment.id,
+        meta: { chatId, taskKey: created.task.taskKey, dispatchTarget: created.dispatchTarget },
+      });
+
+      dispatch = {
+        objective: 'comment',
+        project_key: created.task.taskPrefix,
+        task_key: created.task.taskKey,
+        comment_id: created.comment.id,
+        engine: created.engine,
+        dispatch_target: created.dispatchTarget,
+        message,
+      };
+    }
+
+    return NextResponse.json(
+      {
+        comment: serializeTaskComment(created.comment),
+        dispatch,
+      },
+      { status: 201 },
+    );
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error('Failed to create task comment', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

@@ -33,6 +33,7 @@ export function buildHermesTaskCommand(params: {
   branchName?: string | null;
   objective?: TaskDispatchObjective | null;
   askHint?: string | null;
+  commentId?: string | null;
   botUsername?: string | null;
 }) {
   const taskKey = params.taskKey.trim();
@@ -51,6 +52,9 @@ export function buildHermesTaskCommand(params: {
   appendField(lines, 'branch_name', params.branchName);
   if (resolvedObjective === 'ask') {
     appendField(lines, 'ask_hint', params.askHint);
+  }
+  if (resolvedObjective === 'comment') {
+    appendField(lines, 'comment_id', params.commentId);
   }
 
   return lines.join('\n');

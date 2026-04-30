@@ -7,6 +7,7 @@ export const TASK_DISPATCH_OBJECTIVES = [
   'ask',
   'review',
   'qa',
+  'comment',
 ] as const;
 export type TaskDispatchObjective = (typeof TASK_DISPATCH_OBJECTIVES)[number];
 export const PROJECT_DISPATCH_OBJECTIVES = ['insight'] as const;
@@ -86,6 +87,7 @@ export function buildOpenClawTaskCommand(params: {
   branchName?: string | null;
   objective?: TaskDispatchObjective | null;
   askHint?: string | null;
+  commentId?: string | null;
 }) {
   const taskKey = params.taskKey.trim();
   const status = params.status.trim();
@@ -95,6 +97,7 @@ export function buildOpenClawTaskCommand(params: {
   return appendCommandMetadata(command, {
     branch_name: params.branchName,
     ask_hint: objective === 'ask' ? params.askHint : null,
+    comment_id: objective === 'comment' ? params.commentId : null,
   });
 }
 
