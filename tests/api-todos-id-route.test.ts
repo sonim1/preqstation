@@ -687,6 +687,49 @@ describe('app/api/todos/[id]/route', () => {
     );
   });
 
+  it('PATCH serializes focusedTask work log timestamps for label updates', async () => {
+    mocked.db.query.taskLabels.findMany.mockResolvedValue([
+      { id: '11111111-1111-4111-8111-111111111111', name: 'Label A', color: 'red' },
+    ]);
+    mocked.db.query.tasks.findFirst.mockResolvedValue({
+      ...existingTask,
+      branch: 'task/proj-330/add-the-label-shortcut',
+      note: null,
+      dispatchTarget: null,
+      runState: null,
+      runStateUpdatedAt: null,
+      labelAssignments: [],
+      workLogs: [
+        {
+          id: 'log-1',
+          title: 'PREQSTATION Result · label refresh',
+          detail: '**PR:** none',
+          engine: null,
+          workedAt: new Date('2026-03-24T00:00:00.000Z'),
+          createdAt: new Date('2026-03-24T01:00:00.000Z'),
+          task: { engine: null },
+        },
+      ],
+    });
+
+    const response = await PATCH(
+      patchRequest({ labelIds: ['11111111-1111-4111-8111-111111111111'] }),
+      { params: Promise.resolve({ id: 'todo-1' }) },
+    );
+
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.focusedTask.workLogs).toEqual([
+      expect.objectContaining({
+        workedAt: '2026-03-24T00:00:00.000Z',
+        createdAt: '2026-03-24T01:00:00.000Z',
+      }),
+    ]);
+    expect(typeof body.focusedTask.workLogs[0]?.workedAt).toBe('string');
+    expect(typeof body.focusedTask.workLogs[0]?.createdAt).toBe('string');
+  });
+
   it('PATCH clears all labels when an empty labelIds array is submitted', async () => {
     const response = await PATCH(
       patchRequest({
