@@ -2,7 +2,14 @@
 
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { IconCheck, IconCopy } from '@tabler/icons-react';
-import { type HTMLAttributes, type KeyboardEvent, type MouseEvent, useRef, useState } from 'react';
+import {
+  type HTMLAttributes,
+  type KeyboardEvent,
+  type MouseEvent,
+  useCallback,
+  useRef,
+  useState,
+} from 'react';
 
 type PromptPreviewDivProps = HTMLAttributes<HTMLDivElement> & Record<string, unknown>;
 
@@ -43,16 +50,23 @@ export function DispatchPromptPreview({
       ? 'Copied'
       : 'Copy';
 
-  const toggleExpanded = () => {
+  const toggleExpanded = useCallback(() => {
     setExpanded((current) => !current);
-  };
+  }, []);
 
-  const handlePromptClick = (event: MouseEvent<HTMLDivElement>) => {
+  const handlePromptClick = useCallback((event: MouseEvent<HTMLDivElement>) => {
     promptOnClick?.(event);
-    if (!event.defaultPrevented && collapsible) {
-      toggleExpanded();
+    if (event.defaultPrevented || !collapsible) {
+      return;
     }
-  };
+
+    const selection = window.getSelection();
+    if (selection && selection.toString().length > 0) {
+      return;
+    }
+
+    toggleExpanded();
+  }, [promptOnClick, collapsible, toggleExpanded]);
 
   const handlePromptKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     promptOnKeyDown?.(event);
@@ -104,6 +118,7 @@ export function DispatchPromptPreview({
         className={['task-dispatch-prompt', promptClassName].filter(Boolean).join(' ')}
         aria-label={promptAriaLabel}
         role={collapsible ? 'button' : 'textbox'}
+        aria-multiline={collapsible ? undefined : 'true'}
         aria-readonly={collapsible ? undefined : 'true'}
         aria-expanded={collapsible ? expanded : undefined}
         data-collapsible={collapsible ? 'true' : undefined}
@@ -123,9 +138,7 @@ export function DispatchPromptPreview({
           disabled={copyDisabled}
           aria-label="Copy dispatch prompt"
           className="task-dispatch-copy"
-          onMouseDown={(event) => event.stopPropagation()}
-          onClick={(event) => {
-            event.stopPropagation();
+          onClick={() => {
             void copyPrompt();
           }}
         >
