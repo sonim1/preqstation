@@ -312,6 +312,30 @@ describe('kanban bottom clearance hooks', () => {
     expect(globalsCss).toMatch(/\.kanban-stage\s*\{[\s\S]*--kanban-mobile-tab-bar-height:\s*0px;/);
   });
 
+  it('styles mobile tabs with filled active pills and controlled focus feedback', () => {
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-tabs \.mantine-Tabs-tab\s*\{[\s\S]*border-radius:[\s\S]*color:\s*var\(--ui-muted-text\);[\s\S]*background:\s*transparent;[\s\S]*-webkit-tap-highlight-color:\s*transparent;[\s\S]*transition:/,
+    );
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-tabs \.mantine-Tabs-tab:hover,\s*\.kanban-mobile-tabs \.mantine-Tabs-tab:active\s*\{[\s\S]*background:\s*color-mix\(in srgb,\s*var\(--ui-surface-soft\),\s*transparent 18%\);/,
+    );
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-tabs \.mantine-Tabs-tab:focus\s*\{[\s\S]*background:\s*transparent;/,
+    );
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-tabs \.mantine-Tabs-tab:focus-visible\s*\{[\s\S]*outline:\s*2px solid color-mix\(in srgb,\s*var\(--ui-accent\),\s*transparent 34%\);[\s\S]*outline-offset:\s*2px;/,
+    );
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-tabs \.mantine-Tabs-tab\[data-active='true'\]\s*\{[\s\S]*color:\s*var\(--ui-accent-strong\);[\s\S]*background:\s*linear-gradient\([\s\S]*box-shadow:/,
+    );
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-tabs \.mantine-Tabs-tab\[data-active='true'\] \.kanban-mobile-tab-count\s*\{[\s\S]*background:\s*var\(--ui-accent-strong\);[\s\S]*color:\s*var\(--ui-surface\);/,
+    );
+    expect(globalsCss).toMatch(
+      /html\[data-mantine-color-scheme='dark'\] \.kanban-mobile-tabs \.mantine-Tabs-tab\[data-active='true'\]\s*\{[\s\S]*background:\s*linear-gradient\([\s\S]*box-shadow:\s*inset 0 0 0 1px color-mix\(in srgb,\s*var\(--ui-accent\),\s*transparent 70%\);/,
+    );
+  });
+
   it('anchors the action island to the board region instead of the viewport center', () => {
     expect(globalsCss).toMatch(
       /\.kanban-board-region\s*\{[\s\S]*position:\s*relative;[\s\S]*flex:\s*1(?: 1 auto| 1)?;[\s\S]*min-height:\s*0;/,
