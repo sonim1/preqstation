@@ -2,7 +2,7 @@
 
 import { ActionIcon, Tooltip } from '@mantine/core';
 import { IconCheck, IconCopy } from '@tabler/icons-react';
-import { type HTMLAttributes, useRef, useState } from 'react';
+import { type HTMLAttributes, type KeyboardEvent, type MouseEvent, useRef, useState } from 'react';
 
 type PromptPreviewDivProps = HTMLAttributes<HTMLDivElement> & Record<string, unknown>;
 
@@ -13,6 +13,8 @@ type DispatchPromptPreviewProps = {
   onCopy?: () => void;
   copyDisabled?: boolean;
   copyTooltipLabel?: string;
+  collapseMode?: 'single-line';
+  defaultExpanded?: boolean;
 };
 
 export function DispatchPromptPreview({
@@ -22,11 +24,47 @@ export function DispatchPromptPreview({
   onCopy,
   copyDisabled = false,
   copyTooltipLabel,
+  collapseMode,
+  defaultExpanded = false,
 }: DispatchPromptPreviewProps) {
   const promptRef = useRef<HTMLDivElement | null>(null);
   const [copied, setCopied] = useState(false);
-  const { className: promptClassName, ...restPromptProps } = promptProps ?? {};
-  const copyLabel = copyDisabled ? copyTooltipLabel ?? 'Copy unavailable' : copied ? 'Copied' : 'Copy';
+  const {
+    className: promptClassName,
+    onClick: promptOnClick,
+    onKeyDown: promptOnKeyDown,
+    ...restPromptProps
+  } = promptProps ?? {};
+  const collapsible = collapseMode === 'single-line';
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const copyLabel = copyDisabled
+    ? (copyTooltipLabel ?? 'Copy unavailable')
+    : copied
+      ? 'Copied'
+      : 'Copy';
+
+  const toggleExpanded = () => {
+    setExpanded((current) => !current);
+  };
+
+  const handlePromptClick = (event: MouseEvent<HTMLDivElement>) => {
+    promptOnClick?.(event);
+    if (!event.defaultPrevented && collapsible) {
+      toggleExpanded();
+    }
+  };
+
+  const handlePromptKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    promptOnKeyDown?.(event);
+    if (event.defaultPrevented || !collapsible) {
+      return;
+    }
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      toggleExpanded();
+    }
+  };
 
   const copyPromptFallback = () => {
     const selection = window.getSelection?.();
@@ -65,9 +103,14 @@ export function DispatchPromptPreview({
         ref={promptRef}
         className={['task-dispatch-prompt', promptClassName].filter(Boolean).join(' ')}
         aria-label={promptAriaLabel}
-        role="textbox"
-        aria-readonly="true"
+        role={collapsible ? 'button' : 'textbox'}
+        aria-readonly={collapsible ? undefined : 'true'}
+        aria-expanded={collapsible ? expanded : undefined}
+        data-collapsible={collapsible ? 'true' : undefined}
+        data-expanded={collapsible ? String(expanded) : undefined}
         tabIndex={0}
+        onClick={collapsible ? handlePromptClick : promptOnClick}
+        onKeyDown={collapsible ? handlePromptKeyDown : promptOnKeyDown}
       >
         {prompt}
       </div>
@@ -80,7 +123,11 @@ export function DispatchPromptPreview({
           disabled={copyDisabled}
           aria-label="Copy dispatch prompt"
           className="task-dispatch-copy"
-          onClick={copyPrompt}
+          onMouseDown={(event) => event.stopPropagation()}
+          onClick={(event) => {
+            event.stopPropagation();
+            void copyPrompt();
+          }}
         >
           {copied ? <IconCheck size={15} /> : <IconCopy size={15} />}
         </ActionIcon>

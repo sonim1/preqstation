@@ -502,6 +502,7 @@ export function TaskCopyActions({
         <DispatchPromptPreview
           prompt={dispatchPrompt}
           promptProps={{ 'data-task-dispatch-prompt': true }}
+          collapseMode="single-line"
           onCopy={() => persistDispatchPreference()}
         />
 

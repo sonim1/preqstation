@@ -40,14 +40,11 @@ vi.mock('@mantine/core', async (importOriginal) => {
 
   return {
     ...actual,
-    Modal: (({
-      children,
-      opened,
-    }: {
-      children?: React.ReactNode;
-      opened?: boolean;
-    }) => (opened ? <div data-modal="true">{children}</div> : null)) as unknown as typeof actual.Modal,
-    Tooltip: (({ children }: { children?: React.ReactNode }) => <>{children}</>) as unknown as typeof actual.Tooltip,
+    Modal: (({ children, opened }: { children?: React.ReactNode; opened?: boolean }) =>
+      opened ? <div data-modal="true">{children}</div> : null) as unknown as typeof actual.Modal,
+    Tooltip: (({ children }: { children?: React.ReactNode }) => (
+      <>{children}</>
+    )) as unknown as typeof actual.Tooltip,
   };
 });
 
@@ -149,8 +146,34 @@ describe('copy feedback icons', () => {
     });
   });
 
-  it('shows a checkmark after copying a QA report', async () => {
+  it('toggles a single-line dispatch prompt without toggling on copy', async () => {
+    const promptValue = '/preq_dispatch@PreqHermesBot\nproject_key=PQST\nobjective=plan';
     const view = renderWithMantine(
+      <DispatchPromptPreview prompt={promptValue} collapseMode="single-line" />,
+    );
+    const scope = within(view.container);
+
+    const prompt = scope.getByRole('button', { name: 'Dispatch prompt' });
+    const copyButton = scope.getByLabelText('Copy dispatch prompt');
+
+    expect(prompt.getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.click(copyButton);
+
+    await waitFor(() => {
+      expect(clipboardWriteTextMock).toHaveBeenCalledWith(promptValue);
+    });
+    expect(prompt.getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.click(prompt);
+    expect(prompt.getAttribute('aria-expanded')).toBe('true');
+
+    fireEvent.click(prompt);
+    expect(prompt.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('shows a checkmark after copying a QA report', async () => {
+    renderWithMantine(
       <ReadyQaActions
         projectId="project-1"
         projectKey="ALPHA"

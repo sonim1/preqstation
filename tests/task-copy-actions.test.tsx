@@ -148,8 +148,12 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Plan');
     expect(html).not.toContain('QA');
     expect(html).toContain('aria-pressed="true"');
-    expect(html).toContain('role="textbox"');
-    expect(html).toContain('aria-readonly="true"');
+    expect(html).toContain('role="button"');
+    expect(html).toContain('aria-label="Dispatch prompt"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('data-collapsible="true"');
+    expect(html).not.toContain('role="textbox"');
+    expect(html).not.toContain('aria-readonly="true"');
     expect(html).toContain('data-task-dispatch-prompt');
     expect(html).not.toContain('<textarea');
     expect(html).toContain('aria-label="Copy dispatch prompt"');
