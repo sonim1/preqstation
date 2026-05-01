@@ -334,6 +334,12 @@ describe('kanban bottom clearance hooks', () => {
     expect(globalsCss).toMatch(
       /html\[data-mantine-color-scheme='dark'\] \.kanban-mobile-tabs \.mantine-Tabs-tab\[data-active='true'\]\s*\{[\s\S]*background:\s*linear-gradient\([\s\S]*box-shadow:\s*inset 0 0 0 1px color-mix\(in srgb,\s*var\(--ui-accent\),\s*transparent 70%\);/,
     );
+    expect(globalsCss).toMatch(
+      /html\[data-mantine-color-scheme='dark'\] \.kanban-mobile-tabs \.mantine-Tabs-tab\[data-active='true'\]\s*\{[\s\S]*color:\s*var\(--ui-accent\);/,
+    );
+    expect(globalsCss).toMatch(
+      /html\[data-mantine-color-scheme='dark'\]\s*\.kanban-mobile-tabs\s*\.mantine-Tabs-tab\[data-active='true'\]\s*\.kanban-mobile-tab-count\s*\{[\s\S]*color:\s*var\(--ui-text\);/,
+    );
   });
 
   it('anchors the action island to the board region instead of the viewport center', () => {
