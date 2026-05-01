@@ -19,6 +19,7 @@ import {
   IconChevronDown,
   IconCopy,
   IconInfoCircle,
+  IconX,
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import {
@@ -728,6 +729,12 @@ function TaskEditFormContent({
     taskKey,
   });
   const [noteMarkdown, setNoteMarkdown] = useState(draftNote);
+  const draftWarningKey =
+    noteConflict || canRestoreNoteDraft
+      ? `${taskKey}:${noteConflict ? 'conflict' : 'restore'}:${canRestoreNoteDraft ? 'restorable' : 'no-restore'}:${activeNotesRevision}`
+      : null;
+  const [dismissedDraftWarningKey, setDismissedDraftWarningKey] = useState<string | null>(null);
+  const showDraftWarning = draftWarningKey !== null && dismissedDraftWarningKey !== draftWarningKey;
   const notesMode = resolveTaskEditNotesMode(notesModeState, taskKey);
   const setNotesMode = (nextMode: EditorMode) => {
     setNotesModeState((currentState) =>
@@ -813,7 +820,7 @@ function TaskEditFormContent({
                 />
 
                 <div className={classes.notesEditor}>
-                  {noteConflict || canRestoreNoteDraft ? (
+                  {showDraftWarning ? (
                     <Alert
                       color={noteConflict ? 'yellow' : 'blue'}
                       variant="light"
@@ -828,11 +835,24 @@ function TaskEditFormContent({
                               ? 'Server notes changed while this draft was open. Review the latest task notes before restoring so PREQ updates do not get overwritten.'
                               : 'A saved local draft is available. Restore it if you want to continue from your browser draft instead of the latest server notes.'}
                           </Text>
-                          {canRestoreNoteDraft ? (
-                            <Button size="xs" variant="light" onClick={handleRestoreDraft}>
-                              Restore draft
-                            </Button>
-                          ) : null}
+                          <Group gap="xs" align="center">
+                            {canRestoreNoteDraft ? (
+                              <Button size="xs" variant="light" onClick={handleRestoreDraft}>
+                                Restore draft
+                              </Button>
+                            ) : null}
+                            <ActionIcon
+                              aria-label="Dismiss draft warning"
+                              size="sm"
+                              variant="subtle"
+                              color="gray"
+                              onClick={() => {
+                                setDismissedDraftWarningKey(draftWarningKey);
+                              }}
+                            >
+                              <IconX size={14} />
+                            </ActionIcon>
+                          </Group>
                         </Group>
 
                         {restoreDraftPreview ? (

@@ -89,6 +89,28 @@ describe('app/hooks/use-task-offline-draft', () => {
     expect(mocked.deleteDraft).toHaveBeenCalledWith('task:PROJ-310');
   });
 
+  it('clears an ask-only stale draft when the saved draft matches the latest server note', async () => {
+    mocked.getDraft.mockResolvedValue({
+      updatedAt: '2026-04-28T15:00:00.000Z',
+      fields: {
+        title: '원본 제목',
+        note: '## Server note\n\n---\n\nAsk:\nAcceptance criteria 중심으로 정리해줘',
+        baseNoteFingerprint: buildTaskNoteFingerprint('## Older note'),
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note', true),
+    );
+
+    await waitFor(() => {
+      expect(result.current.draftNote).toBe('## Server note');
+    });
+    expect(result.current.hasNoteConflict).toBe(false);
+    expect(result.current.canRestoreDraft).toBe(false);
+    expect(mocked.deleteDraft).toHaveBeenCalledWith('task:PROJ-310');
+  });
+
   it('keeps a title-only stale draft restorable without surfacing a note conflict', async () => {
     mocked.getDraft.mockResolvedValue({
       fields: {

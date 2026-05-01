@@ -18,7 +18,10 @@ type RestorableTaskOfflineDraft = TaskOfflineDraftState & {
 };
 
 function hasDraftChanges(nextDraft: TaskOfflineDraftState, serverDraft: TaskOfflineDraftState) {
-  return nextDraft.title !== serverDraft.title || nextDraft.note !== serverDraft.note;
+  return (
+    nextDraft.title !== serverDraft.title ||
+    buildTaskNoteFingerprint(nextDraft.note) !== buildTaskNoteFingerprint(serverDraft.note)
+  );
 }
 
 export function buildTaskOfflineDraftId(taskKey: string) {
@@ -97,15 +100,17 @@ export function useTaskOfflineDraft(
       const resolvedDraft = {
         title: record.fields.title ?? serverDraft.title,
         note: shouldApplyStoredNote ? storedNote : serverDraft.note,
-        baseNoteFingerprint: !shouldApplyStoredNote || noteMatchesServer
-          ? serverDraft.baseNoteFingerprint
-          : storedBaseNoteFingerprint
-            ? storedBaseNoteFingerprint
-            : hasLegacyConflict
-              ? legacyConflictBaseNoteFingerprint
-              : serverDraft.baseNoteFingerprint,
+        baseNoteFingerprint:
+          !shouldApplyStoredNote || noteMatchesServer
+            ? serverDraft.baseNoteFingerprint
+            : storedBaseNoteFingerprint
+              ? storedBaseNoteFingerprint
+              : hasLegacyConflict
+                ? legacyConflictBaseNoteFingerprint
+                : serverDraft.baseNoteFingerprint,
       };
-      const hasConflict = ((hasStaleBase && hasLocalNoteEdits) || hasLegacyConflict) && !noteMatchesServer;
+      const hasConflict =
+        ((hasStaleBase && hasLocalNoteEdits) || hasLegacyConflict) && !noteMatchesServer;
       const nextRestorableDraft = {
         title: resolvedDraft.title,
         note: resolvedDraft.note,
