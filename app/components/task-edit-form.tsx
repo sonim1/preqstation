@@ -734,6 +734,9 @@ function TaskEditFormContent({
       ? `${taskKey}:${noteConflict ? 'conflict' : 'restore'}:${canRestoreNoteDraft ? 'restorable' : 'no-restore'}:${activeNotesRevision}`
       : null;
   const [dismissedDraftWarningKey, setDismissedDraftWarningKey] = useState<string | null>(null);
+  useEffect(() => {
+    setDismissedDraftWarningKey(null);
+  }, [taskKey]);
   const showDraftWarning = draftWarningKey !== null && dismissedDraftWarningKey !== draftWarningKey;
   const notesMode = resolveTaskEditNotesMode(notesModeState, taskKey);
   const setNotesMode = (nextMode: EditorMode) => {

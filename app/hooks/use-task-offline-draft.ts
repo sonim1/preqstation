@@ -24,6 +24,13 @@ function hasDraftChanges(nextDraft: TaskOfflineDraftState, serverDraft: TaskOffl
   );
 }
 
+function hasDraftContentChanges(
+  nextDraft: TaskOfflineDraftState,
+  serverDraft: TaskOfflineDraftState,
+) {
+  return nextDraft.title !== serverDraft.title || nextDraft.note !== serverDraft.note;
+}
+
 export function buildTaskOfflineDraftId(taskKey: string) {
   return `task:${taskKey}`;
 }
@@ -118,10 +125,11 @@ export function useTaskOfflineDraft(
         updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : null,
       };
       const hasRestorableDraft = hasDraftChanges(nextRestorableDraft, serverDraft);
+      const hasPersistedDraftChanges = hasDraftContentChanges(nextRestorableDraft, serverDraft);
 
       setHasNoteConflict(hasConflict);
 
-      if (!hasConflict && !hasRestorableDraft) {
+      if (!hasConflict && !hasRestorableDraft && !hasPersistedDraftChanges) {
         void Promise.resolve()
           .then(() => deleteDraft(buildTaskOfflineDraftId(taskKey)))
           .catch(() => undefined);

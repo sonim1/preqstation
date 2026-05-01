@@ -393,6 +393,12 @@ describe('app/components/task-edit-form', () => {
     expect(container.querySelector('[data-component="LiveMarkdownEditor"]')).not.toBeNull();
   });
 
+  it('registers the dismissed draft warning reset against the active task key', () => {
+    renderTaskEditForm();
+
+    expect(useEffectMock).toHaveBeenCalledWith(expect.any(Function), ['PROJ-187']);
+  });
+
   it('wires the notes editor save shortcut to immediate autosave only for task notes', () => {
     const flushSave = vi.fn();
     useAutoSaveMock.mockReturnValueOnce({
