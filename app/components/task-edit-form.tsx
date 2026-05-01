@@ -737,9 +737,6 @@ function TaskEditFormContent({
     key: string | null;
     taskKey: string;
   }>({ key: null, taskKey });
-  useEffect(() => {
-    setDismissedDraftWarning({ key: null, taskKey });
-  }, [taskKey]);
   const dismissedDraftWarningKey =
     dismissedDraftWarning.taskKey === taskKey ? dismissedDraftWarning.key : null;
   const showDraftWarning = draftWarningKey !== null && dismissedDraftWarningKey !== draftWarningKey;
