@@ -733,10 +733,15 @@ function TaskEditFormContent({
     noteConflict || canRestoreNoteDraft
       ? `${taskKey}:${noteConflict ? 'conflict' : 'restore'}:${canRestoreNoteDraft ? 'restorable' : 'no-restore'}:${activeNotesRevision}`
       : null;
-  const [dismissedDraftWarningKey, setDismissedDraftWarningKey] = useState<string | null>(null);
-  useEffect(() => {
-    setDismissedDraftWarningKey(null);
-  }, [taskKey]);
+  const [dismissedDraftWarning, setDismissedDraftWarning] = useState<{
+    key: string | null;
+    taskKey: string;
+  }>({ key: null, taskKey });
+  if (dismissedDraftWarning.taskKey !== taskKey) {
+    setDismissedDraftWarning({ key: null, taskKey });
+  }
+  const dismissedDraftWarningKey =
+    dismissedDraftWarning.taskKey === taskKey ? dismissedDraftWarning.key : null;
   const showDraftWarning = draftWarningKey !== null && dismissedDraftWarningKey !== draftWarningKey;
   const notesMode = resolveTaskEditNotesMode(notesModeState, taskKey);
   const setNotesMode = (nextMode: EditorMode) => {
@@ -850,7 +855,7 @@ function TaskEditFormContent({
                               variant="subtle"
                               color="gray"
                               onClick={() => {
-                                setDismissedDraftWarningKey(draftWarningKey);
+                                setDismissedDraftWarning({ key: draftWarningKey, taskKey });
                               }}
                             >
                               <IconX size={14} />
