@@ -2284,6 +2284,23 @@ html[data-mantine-color-scheme='dark'] .kanban-mobile-panel {
     background: color-mix(in srgb, var(--ui-surface-strong), var(--ui-surface) 72%);
   }
 
+  html[data-mantine-color-scheme='dark'] .kanban-mobile-tabs .mantine-Tabs-tab[data-active='true'] {
+    color: var(--ui-accent);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-accent-soft), var(--ui-surface-strong) 48%),
+      color-mix(in srgb, var(--ui-surface), var(--ui-accent-soft) 22%)
+    );
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-accent), transparent 70%);
+  }
+
+  html[data-mantine-color-scheme='dark']
+    .kanban-mobile-tabs
+    .mantine-Tabs-tab[data-active='true']
+    .kanban-mobile-tab-count {
+    color: var(--ui-text);
+  }
+
   html[data-mantine-color-scheme='dark'] .kanban-mobile-tab-bar {
     border-top-color: color-mix(in srgb, var(--ui-border), transparent 22%);
     background: linear-gradient(
@@ -2507,6 +2524,45 @@ html[data-mantine-color-scheme='dark'] .live-editor-input [data-live-editor-empt
     flex: 1;
     padding: 6px 4px;
     min-width: 0;
+    border-radius: calc(var(--mantine-radius-sm) - 1px);
+    color: var(--ui-muted-text);
+    background: transparent;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      background 140ms ease,
+      color 140ms ease,
+      box-shadow 140ms ease;
+  }
+
+  .kanban-mobile-tabs .mantine-Tabs-tab:hover,
+  .kanban-mobile-tabs .mantine-Tabs-tab:active {
+    background: color-mix(in srgb, var(--ui-surface-soft), transparent 18%);
+  }
+
+  .kanban-mobile-tabs .mantine-Tabs-tab:focus {
+    background: transparent;
+  }
+
+  .kanban-mobile-tabs .mantine-Tabs-tab:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--ui-accent), transparent 34%);
+    outline-offset: 2px;
+  }
+
+  .kanban-mobile-tabs .mantine-Tabs-tab[data-active='true'] {
+    color: var(--ui-accent-strong);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-accent-soft), var(--ui-surface-strong) 24%),
+      color-mix(in srgb, var(--ui-surface), var(--ui-accent-soft) 16%)
+    );
+    box-shadow:
+      inset 0 0 0 1px color-mix(in srgb, var(--ui-accent), transparent 68%),
+      0 8px 18px -14px rgba(21, 45, 89, 0.46);
+  }
+
+  .kanban-mobile-tabs .mantine-Tabs-tab[data-active='true'] .kanban-mobile-tab-count {
+    background: var(--ui-accent-strong);
+    color: var(--ui-surface);
   }
 
   .kanban-mobile-tabs .mantine-Tabs-tabLabel {
