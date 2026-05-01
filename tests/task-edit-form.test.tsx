@@ -331,6 +331,68 @@ describe('app/components/task-edit-form', () => {
     expect(markDirty).toHaveBeenCalledTimes(1);
   });
 
+  it('dismisses the current draft warning without restoring the draft', () => {
+    const restoreDraft = vi.fn();
+    useTaskOfflineDraftMock.mockReturnValueOnce({
+      canRestoreDraft: true,
+      clearDraft: vi.fn(),
+      draftBaseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      draftNote: 'Move the actions into the form meta header.',
+      draftRevision: 1,
+      draftTitle: 'OpenClaw 기능 UI수정',
+      hasNoteConflict: true,
+      restoreDraft,
+      restoreDraftPreview: null,
+      updateNoteDraft: vi.fn(),
+      updateTitleDraft: vi.fn(),
+    });
+
+    const { container } = render(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'OpenClaw 기능 UI수정',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: [],
+              labels: [],
+              taskPriority: 'none',
+              status: 'todo',
+              engine: 'codex',
+              dispatchTarget: null,
+              runState: null,
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
+            updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
+            branchName="task/proj-187/openclaw-gineung-uisujeong"
+            telegramEnabled
+          />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    expect(container.textContent).toContain('Server notes changed while this draft was open');
+
+    const dismissButton = container.querySelector('button[aria-label="Dismiss draft warning"]');
+    if (!dismissButton) {
+      throw new Error('Draft warning dismiss button did not render.');
+    }
+
+    fireEvent.click(dismissButton);
+
+    expect(container.textContent).not.toContain('Server notes changed while this draft was open');
+    expect(container.textContent).not.toContain('Restore draft');
+    expect(restoreDraft).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-component="LiveMarkdownEditor"]')).not.toBeNull();
+  });
+
   it('wires the notes editor save shortcut to immediate autosave only for task notes', () => {
     const flushSave = vi.fn();
     useAutoSaveMock.mockReturnValueOnce({

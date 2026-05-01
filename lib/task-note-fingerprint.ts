@@ -1,4 +1,5 @@
 import { stripPreqChoiceBlocks } from '@/lib/markdown';
+import { extractTaskAskPrompt } from '@/lib/task-ask';
 
 const CYRB53_LEFT_SEED = 0xdeadbeef;
 const CYRB53_RIGHT_SEED = 0x41c6ce57;
@@ -16,7 +17,7 @@ const UINT32_RANGE = 4294967296;
 const HASH53_HIGH_MASK = 2097151;
 
 function normalizeTaskNoteText(value: string | null | undefined) {
-  return stripPreqChoiceBlocks(value ?? '').trim();
+  return stripPreqChoiceBlocks(extractTaskAskPrompt(value).baseMarkdown).trim();
 }
 
 function hashTaskNoteText(value: string) {

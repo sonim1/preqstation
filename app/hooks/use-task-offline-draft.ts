@@ -18,6 +18,16 @@ type RestorableTaskOfflineDraft = TaskOfflineDraftState & {
 };
 
 function hasDraftChanges(nextDraft: TaskOfflineDraftState, serverDraft: TaskOfflineDraftState) {
+  return (
+    nextDraft.title !== serverDraft.title ||
+    buildTaskNoteFingerprint(nextDraft.note) !== buildTaskNoteFingerprint(serverDraft.note)
+  );
+}
+
+function hasDraftContentChanges(
+  nextDraft: TaskOfflineDraftState,
+  serverDraft: TaskOfflineDraftState,
+) {
   return nextDraft.title !== serverDraft.title || nextDraft.note !== serverDraft.note;
 }
 
@@ -97,15 +107,17 @@ export function useTaskOfflineDraft(
       const resolvedDraft = {
         title: record.fields.title ?? serverDraft.title,
         note: shouldApplyStoredNote ? storedNote : serverDraft.note,
-        baseNoteFingerprint: !shouldApplyStoredNote || noteMatchesServer
-          ? serverDraft.baseNoteFingerprint
-          : storedBaseNoteFingerprint
-            ? storedBaseNoteFingerprint
-            : hasLegacyConflict
-              ? legacyConflictBaseNoteFingerprint
-              : serverDraft.baseNoteFingerprint,
+        baseNoteFingerprint:
+          !shouldApplyStoredNote || noteMatchesServer
+            ? serverDraft.baseNoteFingerprint
+            : storedBaseNoteFingerprint
+              ? storedBaseNoteFingerprint
+              : hasLegacyConflict
+                ? legacyConflictBaseNoteFingerprint
+                : serverDraft.baseNoteFingerprint,
       };
-      const hasConflict = ((hasStaleBase && hasLocalNoteEdits) || hasLegacyConflict) && !noteMatchesServer;
+      const hasConflict =
+        ((hasStaleBase && hasLocalNoteEdits) || hasLegacyConflict) && !noteMatchesServer;
       const nextRestorableDraft = {
         title: resolvedDraft.title,
         note: resolvedDraft.note,
@@ -113,10 +125,11 @@ export function useTaskOfflineDraft(
         updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : null,
       };
       const hasRestorableDraft = hasDraftChanges(nextRestorableDraft, serverDraft);
+      const hasPersistedDraftChanges = hasDraftContentChanges(nextRestorableDraft, serverDraft);
 
       setHasNoteConflict(hasConflict);
 
-      if (!hasConflict && !hasRestorableDraft) {
+      if (!hasConflict && !hasRestorableDraft && !hasPersistedDraftChanges) {
         void Promise.resolve()
           .then(() => deleteDraft(buildTaskOfflineDraftId(taskKey)))
           .catch(() => undefined);
