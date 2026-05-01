@@ -173,6 +173,18 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     const taskDispatchTargetEmojiRule = getRuleBody(globalCss, '.task-dispatch-target-emoji');
     const taskDispatchTargetLogoRule = getRuleBody(globalCss, '.task-dispatch-target-logo');
     const taskDispatchPromptRule = getRuleBody(globalCss, '.task-dispatch-prompt');
+    const taskDispatchPromptCollapsibleRule = getRuleBody(
+      globalCss,
+      ".task-dispatch-prompt[data-collapsible='true']",
+    );
+    const taskDispatchPromptCollapsedRule = getRuleBody(
+      globalCss,
+      ".task-dispatch-prompt[data-collapsible='true'][data-expanded='false']",
+    );
+    const taskDispatchPromptExpandedRule = getRuleBody(
+      globalCss,
+      ".task-dispatch-prompt[data-collapsible='true'][data-expanded='true']",
+    );
     const taskDispatchCopyRule = getRuleBody(globalCss, '.task-dispatch-copy');
     const taskDispatchSendRule = getRuleBody(globalCss, '.task-dispatch-send');
 
@@ -232,6 +244,16 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(taskDispatchPromptRule).toContain('user-select: text;');
     expect(taskDispatchPromptRule).toContain('white-space: pre-wrap;');
     expect(taskDispatchPromptRule).toContain('overflow-wrap: anywhere;');
+    expect(taskDispatchPromptCollapsibleRule).toContain('cursor: pointer;');
+    expect(taskDispatchPromptCollapsedRule).toContain('min-height: auto;');
+    expect(taskDispatchPromptCollapsedRule).toContain('max-height: none;');
+    expect(taskDispatchPromptCollapsedRule).toContain('overflow: hidden;');
+    expect(taskDispatchPromptCollapsedRule).toContain('white-space: nowrap;');
+    expect(taskDispatchPromptCollapsedRule).toContain('text-overflow: ellipsis;');
+    expect(taskDispatchPromptExpandedRule).toContain('min-height: auto;');
+    expect(taskDispatchPromptExpandedRule).toContain('max-height: 14rem;');
+    expect(taskDispatchPromptExpandedRule).toContain('overflow: auto;');
+    expect(taskDispatchPromptExpandedRule).toContain('white-space: pre-wrap;');
     expect(taskDispatchCopyRule).toContain('position: absolute;');
     expect(taskDispatchCopyRule).toContain('opacity: 0;');
     expect(globalCss).toMatch(

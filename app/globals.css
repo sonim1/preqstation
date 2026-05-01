@@ -3170,6 +3170,25 @@ html[data-mantine-color-scheme='dark'] .live-editor-input [data-live-editor-empt
   overflow-wrap: anywhere;
 }
 
+.task-dispatch-prompt[data-collapsible='true'] {
+  cursor: pointer;
+}
+
+.task-dispatch-prompt[data-collapsible='true'][data-expanded='false'] {
+  min-height: auto;
+  max-height: none;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.task-dispatch-prompt[data-collapsible='true'][data-expanded='true'] {
+  min-height: auto;
+  max-height: 14rem;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
 .task-dispatch-copy {
   position: absolute;
   top: 0.5rem;
