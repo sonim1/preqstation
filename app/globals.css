@@ -2474,7 +2474,7 @@ html[data-mantine-color-scheme='dark'] .live-editor-input [data-live-editor-empt
   .kanban-stage {
     background: var(--kanban-stage-surface);
     --kanban-action-island-clearance: calc(80px + env(safe-area-inset-bottom));
-    --kanban-mobile-tab-bar-height: calc(54px + env(safe-area-inset-bottom));
+    --kanban-mobile-tab-bar-height: calc(56px + env(safe-area-inset-bottom));
   }
 
   .kanban-stage.has-bg-image::before {
