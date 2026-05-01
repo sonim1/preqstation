@@ -6,6 +6,7 @@ import {
 } from '@/lib/openclaw-command';
 
 const DEFAULT_HERMES_BOT_USERNAME = 'PreqHermesBot';
+const HERMES_DISPATCH_COMMAND = 'preqstation_dispatch';
 
 function normalizeFieldValue(value: string | null | undefined) {
   return value?.replace(/\r?\n/g, ' ').trim() ?? '';
@@ -42,7 +43,7 @@ export function buildHermesTaskCommand(params: {
   const resolvedObjective = resolveTaskDispatchVerb(params.status.trim(), objective);
   const engineKey = normalizeEngineKey(params.engineKey) ?? 'codex';
   const lines = [
-    `/preq_dispatch@${botUsername}`,
+    `/${HERMES_DISPATCH_COMMAND}@${botUsername}`,
     `project_key=${getProjectKeyFromTaskKey(taskKey)}`,
     `task_key=${taskKey}`,
     `objective=${resolvedObjective}`,
@@ -71,7 +72,7 @@ export function buildHermesProjectInsightCommand(params: {
   const botUsername = normalizeFieldValue(params.botUsername) || DEFAULT_HERMES_BOT_USERNAME;
   const engineKey = normalizeEngineKey(params.engineKey) ?? 'codex';
   const lines = [
-    `/preq_dispatch@${botUsername}`,
+    `/${HERMES_DISPATCH_COMMAND}@${botUsername}`,
     `project_key=${projectKey}`,
     'objective=insight',
     `engine=${engineKey}`,
@@ -105,7 +106,7 @@ export function buildHermesQaCommand(params: {
         .join(',')
     : '';
   const lines = [
-    `/preq_dispatch@${botUsername}`,
+    `/${HERMES_DISPATCH_COMMAND}@${botUsername}`,
     `project_key=${projectKey}`,
     'objective=qa',
     `engine=${engineKey}`,
