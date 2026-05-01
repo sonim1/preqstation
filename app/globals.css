@@ -178,6 +178,11 @@ select:focus-visible,
   height: 100dvh;
 }
 
+html[data-mantine-color-scheme='dark'] .workspace-shell .mantine-AppShell-main,
+html[data-mantine-color-scheme='dark'] .workspace-main {
+  background: linear-gradient(180deg, rgba(10, 17, 30, 0.9), rgba(7, 13, 23, 0.97));
+}
+
 @media (min-width: 48em) {
   .workspace-shell .mantine-AppShell-main {
     background:
@@ -189,14 +194,7 @@ select:focus-visible,
       ),
       transparent;
   }
-}
 
-html[data-mantine-color-scheme='dark'] .workspace-shell .mantine-AppShell-main,
-html[data-mantine-color-scheme='dark'] .workspace-main {
-  background: linear-gradient(180deg, rgba(10, 17, 30, 0.9), rgba(7, 13, 23, 0.97));
-}
-
-@media (min-width: 48em) {
   html[data-mantine-color-scheme='dark'] .workspace-shell .mantine-AppShell-main,
   html[data-mantine-color-scheme='dark'] .workspace-main {
     background:
