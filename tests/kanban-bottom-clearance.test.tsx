@@ -358,13 +358,13 @@ describe('kanban bottom clearance hooks', () => {
 
   it('uses a bottom mobile tab bar shell and folds that height into the mobile clearance contract', () => {
     expect(globalsCss).toMatch(
-      /\.kanban-mobile-tab-bar\s*\{[\s\S]*flex:\s*0 0 auto;[\s\S]*padding:\s*8px 6px 0;[\s\S]*padding-bottom:\s*calc\(8px \+ env\(safe-area-inset-bottom\)\);/,
+      /\.kanban-mobile-tab-bar\s*\{[\s\S]*flex:\s*0 0 auto;[\s\S]*padding:\s*2px 6px 0;[\s\S]*padding-bottom:\s*calc\(6px \+ env\(safe-area-inset-bottom\)\);/,
     );
     expect(globalsCss).toMatch(
       /\.kanban-mobile-panel-list\.kanban-bottom-clearance\s*\{[\s\S]*--kanban-bottom-fade-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);[\s\S]*--kanban-bottom-clearance-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);/,
     );
     expect(globalsCss).toMatch(
-      /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanban-stage\s*\{[\s\S]*--kanban-mobile-tab-bar-height:\s*calc\(64px \+ env\(safe-area-inset-bottom\)\);/,
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanban-stage\s*\{[\s\S]*--kanban-mobile-tab-bar-height:\s*calc\(54px \+ env\(safe-area-inset-bottom\)\);/,
     );
   });
 
