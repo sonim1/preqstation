@@ -18,7 +18,7 @@ describe('lib/hermes-command', () => {
       }),
     ).toBe(
       [
-        '/preq_dispatch@PreqHermesBot',
+        '/preqstation_dispatch@PreqHermesBot',
         'project_key=PROJ',
         'task_key=PROJ-316',
         'objective=plan',
@@ -57,7 +57,7 @@ describe('lib/hermes-command', () => {
         engineKey: 'codex',
         insightPrompt: 'Connections 페이지 개편 작업을 나눠줘',
       }),
-    ).toContain('/preq_dispatch@PreqHermesBot');
+    ).toContain('/preqstation_dispatch@PreqHermesBot');
     expect(
       buildHermesProjectInsightCommand({
         projectKey: 'proj',
@@ -85,7 +85,7 @@ describe('lib/hermes-command', () => {
       }),
     ).toBe(
       [
-        '/preq_dispatch@PreqHermesBot',
+        '/preqstation_dispatch@PreqHermesBot',
         'project_key=PROJ',
         'objective=qa',
         'engine=claude-code',

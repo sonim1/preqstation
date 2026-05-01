@@ -57,7 +57,7 @@ describe('lib/task-telegram-client', () => {
         dispatchTarget: 'hermes-telegram',
       }),
     ).toBe(
-      '/preq_dispatch@PreqHermesBot\nproject_key=PROJ\ntask_key=PROJ-328\nobjective=comment\nengine=claude-code\ncomment_id=comment-123',
+      '/preqstation_dispatch@PreqHermesBot\nproject_key=PROJ\ntask_key=PROJ-328\nobjective=comment\nengine=claude-code\ncomment_id=comment-123',
     );
   });
 
@@ -85,7 +85,11 @@ describe('lib/task-telegram-client', () => {
       json: async () => ({ ok: true }),
     });
 
-    await sendTaskTelegramMessage('PROJ-328', '/preq_dispatch@PreqHermesBot', 'hermes-telegram');
+    await sendTaskTelegramMessage(
+      'PROJ-328',
+      '/preqstation_dispatch@PreqHermesBot',
+      'hermes-telegram',
+    );
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/telegram/send',
@@ -94,7 +98,7 @@ describe('lib/task-telegram-client', () => {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           taskKey: 'PROJ-328',
-          message: '/preq_dispatch@PreqHermesBot',
+          message: '/preqstation_dispatch@PreqHermesBot',
           dispatchTarget: 'hermes-telegram',
         }),
       }),
@@ -109,7 +113,7 @@ describe('lib/task-telegram-client', () => {
         dispatchTarget: 'hermes-telegram',
         insightPrompt: 'Connections 페이지 개편 작업을 나눠줘',
       }),
-    ).toContain('/preq_dispatch@PreqHermesBot');
+    ).toContain('/preqstation_dispatch@PreqHermesBot');
     expect(
       buildProjectInsightDispatchMessage({
         projectKey: 'PROJ',
@@ -143,7 +147,7 @@ describe('lib/task-telegram-client', () => {
 
     await sendProjectInsightTelegramMessage(
       'PROJ',
-      '/preq_dispatch@PreqHermesBot',
+      '/preqstation_dispatch@PreqHermesBot',
       'hermes-telegram',
     );
 
@@ -154,7 +158,7 @@ describe('lib/task-telegram-client', () => {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           projectKey: 'PROJ',
-          message: '/preq_dispatch@PreqHermesBot',
+          message: '/preqstation_dispatch@PreqHermesBot',
           dispatchTarget: 'hermes-telegram',
         }),
       }),

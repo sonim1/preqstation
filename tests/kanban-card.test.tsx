@@ -716,7 +716,7 @@ describe('app/components/kanban-card', () => {
     });
 
     expect(dispatch.dispatchTarget).toBe('hermes-telegram');
-    expect(dispatch.message).toContain('/preq_dispatch@PreqHermesBot');
+    expect(dispatch.message).toContain('/preqstation_dispatch@PreqHermesBot');
     expect(dispatch.message).toContain('task_key=PROJ-211');
     expect(dispatch.message).toContain('engine=codex');
     expect(dispatch.message).toContain('branch_name=task/proj-211/label-color-update');

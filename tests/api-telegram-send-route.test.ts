@@ -226,7 +226,7 @@ describe('app/api/telegram/send/route', () => {
       postRequest({
         taskKey: 'PROJ-1',
         message:
-          '/preq_dispatch@PreqHermesBot\nproject_key=PROJ\ntask_key=PROJ-1\nobjective=implement\nengine=codex',
+          '/preqstation_dispatch@PreqHermesBot\nproject_key=PROJ\ntask_key=PROJ-1\nobjective=implement\nengine=codex',
         dispatchTarget: 'hermes-telegram',
       }),
     );
@@ -236,7 +236,7 @@ describe('app/api/telegram/send/route', () => {
     const [, options] = mocked.fetch.mock.calls[0] as [string, RequestInit];
     expect(JSON.parse(String(options.body))).toEqual({
       chat_id: '7654321',
-      text: '/preq_dispatch@PreqHermesBot\nproject_key=PROJ\ntask_key=PROJ-1\nobjective=implement\nengine=codex',
+      text: '/preqstation_dispatch@PreqHermesBot\nproject_key=PROJ\ntask_key=PROJ-1\nobjective=implement\nengine=codex',
     });
 
     expect(mocked.queueTaskExecutionByTaskKey).toHaveBeenCalledWith({
@@ -260,7 +260,7 @@ describe('app/api/telegram/send/route', () => {
     const response = await POST(
       postRequest({
         taskKey: 'PROJ-1',
-        message: '/preq_dispatch@PreqHermesBot',
+        message: '/preqstation_dispatch@PreqHermesBot',
         dispatchTarget: 'hermes-telegram',
       }),
     );
