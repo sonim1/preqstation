@@ -754,6 +754,9 @@ function TaskEditFormContent({
     ? restoreDraftPreview.note
     : '_Empty_';
   useEffect(() => {
+    setDismissedDraftWarningKey(null);
+  }, [taskKey]);
+  useEffect(() => {
     const frame = requestAnimationFrame(() => {
       setNoteMarkdown(draftNote);
     });
