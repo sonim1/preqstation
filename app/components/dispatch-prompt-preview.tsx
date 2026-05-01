@@ -76,22 +76,29 @@ export function DispatchPromptPreview({
 
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
+      event.stopPropagation();
       toggleExpanded();
     }
   };
 
   const copyPromptFallback = () => {
-    const selection = window.getSelection?.();
-    if (!promptRef.current || !selection) {
+    if (!promptRef.current) {
       return;
     }
 
-    const range = document.createRange();
-    range.selectNodeContents(promptRef.current);
-    selection.removeAllRanges();
-    selection.addRange(range);
-    document.execCommand('copy');
-    selection.removeAllRanges();
+    const copyTarget = document.createElement('textarea');
+    copyTarget.value = prompt;
+    copyTarget.setAttribute('readonly', '');
+    copyTarget.style.position = 'fixed';
+    copyTarget.style.top = '0';
+    copyTarget.style.left = '-9999px';
+    document.body.appendChild(copyTarget);
+    copyTarget.select();
+    try {
+      document.execCommand('copy');
+    } finally {
+      copyTarget.remove();
+    }
   };
 
   const copyPrompt = async () => {

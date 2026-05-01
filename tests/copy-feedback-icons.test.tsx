@@ -172,6 +172,62 @@ describe('copy feedback icons', () => {
     expect(prompt.getAttribute('aria-expanded')).toBe('false');
   });
 
+  it('preserves multiline prompt text when clipboard copy falls back', async () => {
+    const promptValue = '/preq_dispatch@PreqHermesBot\nproject_key=PQST\nobjective=plan';
+    const originalExecCommand = document.execCommand;
+    clipboardWriteTextMock.mockRejectedValueOnce(new Error('clipboard unavailable'));
+    let copiedValue: string | undefined;
+    let selectionStart: number | null | undefined;
+    let selectionEnd: number | null | undefined;
+    const execCommandMock = vi.fn(() => {
+      const copyTarget = document.querySelector('textarea');
+      copiedValue = copyTarget?.value;
+      selectionStart = copyTarget?.selectionStart;
+      selectionEnd = copyTarget?.selectionEnd;
+      return true;
+    });
+    Object.defineProperty(document, 'execCommand', {
+      configurable: true,
+      value: execCommandMock,
+    });
+    try {
+      const view = renderWithMantine(
+        <DispatchPromptPreview prompt={promptValue} collapseMode="single-line" />,
+      );
+      const scope = within(view.container);
+
+      fireEvent.click(scope.getByLabelText('Copy dispatch prompt'));
+
+      await waitFor(() => {
+        expect(execCommandMock).toHaveBeenCalledWith('copy');
+      });
+      expect(copiedValue).toBe(promptValue);
+      expect(selectionStart).toBe(0);
+      expect(selectionEnd).toBe(promptValue.length);
+      expect(view.container.querySelector('textarea')).toBeNull();
+    } finally {
+      Object.defineProperty(document, 'execCommand', {
+        configurable: true,
+        value: originalExecCommand,
+      });
+    }
+  });
+
+  it('does not bubble keyboard activation for a single-line dispatch prompt', () => {
+    const parentKeyDown = vi.fn();
+    const view = renderWithMantine(
+      <div onKeyDown={parentKeyDown}>
+        <DispatchPromptPreview prompt="Dispatch this prompt" collapseMode="single-line" />
+      </div>,
+    );
+    const prompt = within(view.container).getByRole('button', { name: 'Dispatch prompt' });
+
+    fireEvent.keyDown(prompt, { key: 'Enter' });
+
+    expect(parentKeyDown).not.toHaveBeenCalled();
+    expect(prompt.getAttribute('aria-expanded')).toBe('true');
+  });
+
   it('shows a checkmark after copying a QA report', async () => {
     renderWithMantine(
       <ReadyQaActions
