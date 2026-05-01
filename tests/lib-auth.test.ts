@@ -152,6 +152,8 @@ function pastExp() {
 }
 
 function buildPersistedBrowserSession(overrides: Partial<Record<string, unknown>> = {}) {
+  const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 7 * 1000);
+
   return {
     id: 'browser-session-1',
     ownerId: 'owner-1',
@@ -160,7 +162,7 @@ function buildPersistedBrowserSession(overrides: Partial<Record<string, unknown>
     browserName: 'Chrome',
     osName: 'macOS',
     lastUsedAt: new Date('2026-03-25T12:00:00.000Z'),
-    expiresAt: new Date('2026-05-01T12:00:00.000Z'),
+    expiresAt,
     revokedAt: null,
     createdAt: new Date('2026-03-25T12:00:00.000Z'),
     updatedAt: new Date('2026-03-25T12:00:00.000Z'),
