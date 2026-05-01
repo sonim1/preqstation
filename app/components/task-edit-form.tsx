@@ -740,6 +740,9 @@ function TaskEditFormContent({
   const dismissedDraftWarningKey =
     dismissedDraftWarning.taskKey === taskKey ? dismissedDraftWarning.key : null;
   const showDraftWarning = draftWarningKey !== null && dismissedDraftWarningKey !== draftWarningKey;
+  useEffect(() => {
+    setDismissedDraftWarning({ key: null, taskKey });
+  }, [taskKey]);
   const notesMode = resolveTaskEditNotesMode(notesModeState, taskKey);
   const setNotesMode = (nextMode: EditorMode) => {
     setNotesModeState((currentState) =>
