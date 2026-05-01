@@ -544,7 +544,7 @@ describe('app/components/kanban-card', () => {
 
   it('keeps the card label shortcut shell compact instead of stretching like a form control', () => {
     expect(cardsCss).toMatch(
-      /\.kanbanLabelShortcutButton\s*\{[\s\S]*max-width:\s*100%;[\s\S]*padding:\s*2px 6px;[\s\S]*border-radius:\s*999px;[\s\S]*background:\s*color-mix\(in srgb, var\(--ui-surface-elevated\), transparent 6%\);/,
+      /\.kanbanLabelShortcutButton\s*\{[\s\S]*max-width:\s*100%;[\s\S]*padding:\s*0;[\s\S]*background:\s*transparent;/,
     );
     expect(cardsCss).toMatch(
       /\.kanbanLabelShortcutButton\[data-kanban-label-shortcut='empty'\]\s*\{[\s\S]*width:\s*1\.75rem;[\s\S]*height:\s*1\.75rem;/,
