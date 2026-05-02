@@ -147,6 +147,29 @@ async function dispatchFetch(
   return await responsePromise;
 }
 
+function dispatchFetchWithoutResponse(
+  handler:
+    | ((event: {
+        request: { method: string; mode: string; url: string };
+        respondWith: (promise: Promise<Response>) => void;
+      }) => void)
+    | undefined,
+  request: { method?: string; mode: string; url: string },
+) {
+  const respondWith = vi.fn();
+
+  handler?.({
+    request: {
+      method: request.method ?? 'GET',
+      mode: request.mode,
+      url: request.url,
+    },
+    respondWith,
+  });
+
+  return respondWith;
+}
+
 describe('public/sw.js', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -163,7 +186,7 @@ describe('public/sw.js', () => {
     );
 
     expect(sw.addAllCalls).toContainEqual({
-      cacheName: 'preq-static-v2',
+      cacheName: 'preq-static-v3',
       assets: expect.arrayContaining(['/manifest.webmanifest', '/offline.html']),
     });
   });
@@ -171,8 +194,8 @@ describe('public/sw.js', () => {
   it('deletes only older board/static cache versions managed by this service worker', async () => {
     const sw = await loadServiceWorker({
       cacheNames: [
-        'preq-board-v2',
-        'preq-static-v2',
+        'preq-board-v3',
+        'preq-static-v3',
         'preq-board-v1',
         'preq-static-v1',
         'preq-preview-v1',
@@ -189,11 +212,23 @@ describe('public/sw.js', () => {
     expect(sw.deleteMock).toHaveBeenCalledTimes(2);
     expect(sw.deleteMock).toHaveBeenNthCalledWith(1, 'preq-board-v1');
     expect(sw.deleteMock).toHaveBeenNthCalledWith(2, 'preq-static-v1');
-    expect(sw.deleteMock).not.toHaveBeenCalledWith('preq-board-v2');
-    expect(sw.deleteMock).not.toHaveBeenCalledWith('preq-static-v2');
+    expect(sw.deleteMock).not.toHaveBeenCalledWith('preq-board-v3');
+    expect(sw.deleteMock).not.toHaveBeenCalledWith('preq-static-v3');
     expect(sw.deleteMock).not.toHaveBeenCalledWith('preq-preview-v1');
     expect(sw.deleteMock).not.toHaveBeenCalledWith('other-app-v1');
     expect(sw.claimMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not intercept Next.js hashed chunks so normal reloads can fetch the current build', async () => {
+    const sw = await loadServiceWorker();
+
+    const respondWith = dispatchFetchWithoutResponse(
+      sw.handlers.get('fetch') as Parameters<typeof dispatchFetchWithoutResponse>[0],
+      { mode: 'no-cors', url: 'https://example.com/_next/static/chunks/app-board.js' },
+    );
+
+    expect(respondWith).not.toHaveBeenCalled();
+    expect(sw.putCalls).toHaveLength(0);
   });
 
   it('keeps serving a cached board navigation when the network is offline', async () => {
@@ -201,7 +236,7 @@ describe('public/sw.js', () => {
       fetchMock: vi.fn().mockRejectedValue(new TypeError('offline')),
       seedCaches: [
         {
-          name: 'preq-board-v2',
+          name: 'preq-board-v3',
           entries: [['https://example.com/board/PQST', new Response('<html>cached board</html>')]],
         },
       ],
@@ -220,7 +255,7 @@ describe('public/sw.js', () => {
       fetchMock: vi.fn().mockRejectedValue(new TypeError('offline')),
       seedCaches: [
         {
-          name: 'preq-static-v2',
+          name: 'preq-static-v3',
           entries: [['/offline.html', new Response('<html>offline fallback</html>')]],
         },
       ],
@@ -239,7 +274,7 @@ describe('public/sw.js', () => {
       fetchMock: vi.fn().mockRejectedValue(new TypeError('offline')),
       seedCaches: [
         {
-          name: 'preq-board-v2',
+          name: 'preq-board-v3',
           entries: [['https://example.com/projects', new Response('<html>cached projects</html>')]],
         },
       ],
@@ -258,7 +293,7 @@ describe('public/sw.js', () => {
       fetchMock: vi.fn().mockRejectedValue(new TypeError('offline')),
       seedCaches: [
         {
-          name: 'preq-static-v2',
+          name: 'preq-static-v3',
           entries: [['/offline.html', new Response('<html>offline fallback</html>')]],
         },
       ],
@@ -277,7 +312,7 @@ describe('public/sw.js', () => {
       fetchMock: vi.fn().mockRejectedValue(new TypeError('offline')),
       seedCaches: [
         {
-          name: 'preq-static-v2',
+          name: 'preq-static-v3',
           entries: [['/offline.html', new Response('<html>offline fallback</html>')]],
         },
       ],
@@ -305,7 +340,7 @@ describe('public/sw.js', () => {
 
     expect(await response.text()).toBe('<html>fresh projects</html>');
     expect(sw.putCalls).toContainEqual({
-      cacheName: 'preq-board-v2',
+      cacheName: 'preq-board-v3',
       key: 'https://example.com/projects',
     });
   });
