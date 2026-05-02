@@ -171,14 +171,7 @@ select:focus-visible,
 }
 
 .workspace-shell .mantine-AppShell-main {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(39, 77, 196, 0.09) 0,
-      rgba(39, 77, 196, 0.04) 18px,
-      transparent 42px
-    ),
-    transparent;
+  background: transparent;
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
@@ -187,14 +180,32 @@ select:focus-visible,
 
 html[data-mantine-color-scheme='dark'] .workspace-shell .mantine-AppShell-main,
 html[data-mantine-color-scheme='dark'] .workspace-main {
-  background:
-    linear-gradient(
-      90deg,
-      rgba(86, 130, 214, 0.2) 0,
-      rgba(86, 130, 214, 0.09) 18px,
-      transparent 44px
-    ),
-    linear-gradient(180deg, rgba(10, 17, 30, 0.9), rgba(7, 13, 23, 0.97));
+  background: linear-gradient(180deg, rgba(10, 17, 30, 0.9), rgba(7, 13, 23, 0.97));
+}
+
+@media (min-width: 48em) {
+  .workspace-shell .mantine-AppShell-main {
+    background:
+      linear-gradient(
+        90deg,
+        rgba(39, 77, 196, 0.09) 0,
+        rgba(39, 77, 196, 0.04) 18px,
+        transparent 42px
+      ),
+      transparent;
+  }
+
+  html[data-mantine-color-scheme='dark'] .workspace-shell .mantine-AppShell-main,
+  html[data-mantine-color-scheme='dark'] .workspace-main {
+    background:
+      linear-gradient(
+        90deg,
+        rgba(86, 130, 214, 0.2) 0,
+        rgba(86, 130, 214, 0.09) 18px,
+        transparent 44px
+      ),
+      linear-gradient(180deg, rgba(10, 17, 30, 0.9), rgba(7, 13, 23, 0.97));
+  }
 }
 
 .workspace-header {
