@@ -20,6 +20,8 @@ tsconfig.tsbuildinfo
 .superpowers/
 dogfood-output/
 .gstack/
+.preqstation-dispatch/
+.preqstation-prompt.txt
 .husky/_
 docs/mockups/
 docs/plans/
