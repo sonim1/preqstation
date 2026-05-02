@@ -1,5 +1,5 @@
-const BOARD_CACHE = 'preq-board-v2';
-const STATIC_CACHE = 'preq-static-v2';
+const BOARD_CACHE = 'preq-board-v3';
+const STATIC_CACHE = 'preq-static-v3';
 const MANAGED_CACHES = [BOARD_CACHE, STATIC_CACHE];
 const MANAGED_CACHE_PREFIXES = ['preq-board-', 'preq-static-'];
 const OFFLINE_FALLBACK_URL = '/offline.html';
@@ -28,7 +28,6 @@ function isApiRequest(url) {
 function isStaticAsset(url) {
   return (
     url.pathname === '/manifest.webmanifest' ||
-    url.pathname.startsWith('/_next/static/') ||
     /\.(?:css|gif|ico|jpg|jpeg|js|png|svg|webp|woff|woff2)$/i.test(url.pathname)
   );
 }

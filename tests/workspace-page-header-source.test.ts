@@ -58,6 +58,15 @@ describe('workspace page header adoption', () => {
     expect(workspacePageHeaderCssSource).not.toContain('border-bottom');
   });
 
+  it('centers shared page header copy on mobile only', () => {
+    expect(workspacePageHeaderCssSource).toMatch(
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.copy\s*\{[\s\S]*justify-items:\s*center;[\s\S]*text-align:\s*center;/,
+    );
+    expect(workspacePageHeaderCssSource).toMatch(
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.description\s*\{[\s\S]*margin-inline:\s*auto;/,
+    );
+  });
+
   it('renders the shared page header with h1 semantics for top-level routes', () => {
     expect(workspacePageHeaderCssSource).not.toContain('border-bottom');
     expect(

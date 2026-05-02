@@ -18,3 +18,14 @@
   max-width: 46rem;
   color: var(--ui-muted-text);
 }
+
+@media (max-width: 48em) {
+  .copy {
+    justify-items: center;
+    text-align: center;
+  }
+
+  .description {
+    margin-inline: auto;
+  }
+}

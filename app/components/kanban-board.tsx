@@ -853,6 +853,92 @@ export function KanbanBoard({
     [onOpenTaskEditor, openFocusedTaskFromBoardTask],
   );
 
+  const renderActionIsland = (className = 'kanban-action-island-anchor') => (
+    <div className={className}>
+      <div className="kanban-action-island">
+        <Tooltip label={`New ${terminology.task.singular}`}>
+          <ActionIcon
+            size={actionIslandControlSize}
+            radius="xl"
+            variant="filled"
+            color="blue"
+            aria-label={`Add ${terminology.task.singularLower}`}
+            onClick={() => setQuickAddOpened(true)}
+          >
+            <IconPlus size={actionIslandPrimaryIconSize} />
+          </ActionIcon>
+        </Tooltip>
+
+        {readyQaConfig ? (
+          <ReadyQaActions
+            projectId={readyQaConfig.projectId}
+            projectKey={readyQaConfig.projectKey}
+            projectName={readyQaConfig.projectName}
+            branchName={readyQaConfig.branchName}
+            readyCount={columns.ready.length}
+            telegramEnabled={telegramEnabled}
+            hermesTelegramEnabled={hermesTelegramEnabled}
+            initialRuns={readyQaConfig.runs}
+            defaultEngine={enginePresets?.defaultEngine}
+            size={actionIslandControlSize}
+            iconSize={actionIslandSecondaryIconSize}
+          />
+        ) : null}
+
+        {selectedProject ? (
+          <Tooltip label="Insight">
+            <ActionIcon
+              size={actionIslandControlSize}
+              radius="xl"
+              variant="default"
+              aria-label="Open project insight"
+              onClick={() => setInsightOpened(true)}
+            >
+              <IconBulb size={actionIslandSecondaryIconSize} />
+            </ActionIcon>
+          </Tooltip>
+        ) : null}
+
+        <div className="kanban-action-island-divider" />
+
+        {selectedProject ? (
+          <Tooltip label="Settings">
+            <ActionIcon
+              component={Link}
+              href={`/project/${selectedProject.projectKey}`}
+              size={actionIslandControlSize}
+              radius="xl"
+              variant="default"
+              aria-label="Open project settings"
+            >
+              <IconSettings size={actionIslandSecondaryIconSize} />
+            </ActionIcon>
+          </Tooltip>
+        ) : null}
+
+        <Tooltip label={`Archived ${terminology.task.pluralLower}`}>
+          <div className="kanban-action-island-archive">
+            <ActionIcon
+              size={actionIslandControlSize}
+              radius="xl"
+              variant="default"
+              aria-label={`Open archived ${terminology.task.pluralLower}`}
+              onClick={() => {
+                setArchiveLoadMoreError(null);
+                setArchiveDrawerOpened(true);
+              }}
+            >
+              <IconArchive size={actionIslandSecondaryIconSize} />
+            </ActionIcon>
+            {resolvedArchivedCount > 0 ? (
+              <span className="kanban-action-island-badge">{resolvedArchivedCount}</span>
+            ) : null}
+          </div>
+        </Tooltip>
+      </div>
+    </div>
+  );
+
   const updateTaskLabels = useCallback(
     async (taskKey: string, labelIds: string[]) => {
       const currentState = kanbanStore.getState();
@@ -1272,6 +1358,9 @@ export function KanbanBoard({
             saveError={saveError}
             enginePresets={enginePresets}
             onOpenTaskEditor={openTaskEditor}
+            actionIsland={renderActionIsland(
+              'kanban-action-island-anchor kanban-mobile-action-island-anchor',
+            )}
           />
         ) : (
           <div className="kanban-scroll kanban-fullscreen" ref={scrollRef}>
@@ -1336,89 +1425,7 @@ export function KanbanBoard({
           </div>
         )}
 
-        <div className="kanban-action-island-anchor">
-          <div className="kanban-action-island">
-            <Tooltip label={`New ${terminology.task.singular}`}>
-              <ActionIcon
-                size={actionIslandControlSize}
-                radius="xl"
-                variant="filled"
-                color="blue"
-                aria-label={`Add ${terminology.task.singularLower}`}
-                onClick={() => setQuickAddOpened(true)}
-              >
-                <IconPlus size={actionIslandPrimaryIconSize} />
-              </ActionIcon>
-            </Tooltip>
-
-            {readyQaConfig ? (
-              <ReadyQaActions
-                projectId={readyQaConfig.projectId}
-                projectKey={readyQaConfig.projectKey}
-                projectName={readyQaConfig.projectName}
-                branchName={readyQaConfig.branchName}
-                readyCount={columns.ready.length}
-                telegramEnabled={telegramEnabled}
-                hermesTelegramEnabled={hermesTelegramEnabled}
-                initialRuns={readyQaConfig.runs}
-                defaultEngine={enginePresets?.defaultEngine}
-                size={actionIslandControlSize}
-                iconSize={actionIslandSecondaryIconSize}
-              />
-            ) : null}
-
-            {selectedProject ? (
-              <Tooltip label="Insight">
-                <ActionIcon
-                  size={actionIslandControlSize}
-                  radius="xl"
-                  variant="default"
-                  aria-label="Open project insight"
-                  onClick={() => setInsightOpened(true)}
-                >
-                  <IconBulb size={actionIslandSecondaryIconSize} />
-                </ActionIcon>
-              </Tooltip>
-            ) : null}
-
-            <div className="kanban-action-island-divider" />
-
-            {selectedProject ? (
-              <Tooltip label="Settings">
-                <ActionIcon
-                  component={Link}
-                  href={`/project/${selectedProject.projectKey}`}
-                  size={actionIslandControlSize}
-                  radius="xl"
-                  variant="default"
-                  aria-label="Open project settings"
-                >
-                  <IconSettings size={actionIslandSecondaryIconSize} />
-                </ActionIcon>
-              </Tooltip>
-            ) : null}
-
-            <Tooltip label={`Archived ${terminology.task.pluralLower}`}>
-              <div className="kanban-action-island-archive">
-                <ActionIcon
-                  size={actionIslandControlSize}
-                  radius="xl"
-                  variant="default"
-                  aria-label={`Open archived ${terminology.task.pluralLower}`}
-                  onClick={() => {
-                    setArchiveLoadMoreError(null);
-                    setArchiveDrawerOpened(true);
-                  }}
-                >
-                  <IconArchive size={actionIslandSecondaryIconSize} />
-                </ActionIcon>
-                {resolvedArchivedCount > 0 ? (
-                  <span className="kanban-action-island-badge">{resolvedArchivedCount}</span>
-                ) : null}
-              </div>
-            </Tooltip>
-          </div>
-        </div>
+        {!isMobile ? renderActionIsland() : null}
       </div>
 
       <Modal

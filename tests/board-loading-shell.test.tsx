@@ -21,22 +21,38 @@ describe('app/components/board-loading-shell', () => {
     const html = render(<BoardLoadingShell />);
 
     expect(html).toContain('data-board-loading-shell="true"');
+    expect(html).toContain('kanban-stage-content');
+    expect(html).toContain('kanban-board-region');
     expect(html).toContain('kanban-scroll');
     expect(html).toContain('board-loading-shell-mobile');
     expect(html).toContain('board-loading-shell-desktop');
+    expect(html).toContain('kanban-board-shell');
     expect(html).toContain('kanban-grid');
     expect(html.match(/data-board-loading-column="true"/g)).toHaveLength(5);
     expect(html.match(/data-board-loading-body="true"/g)).toHaveLength(5);
+    expect(html.match(/data-board-loading-card="true"/g)).toHaveLength(15);
     expect(html).toContain('data-board-loading-mobile-shell="true"');
     expect(html).toContain('kanban-mobile-tabs');
+    expect(html).toContain('kanban-mobile-board-wrapper');
     expect(html).toContain('kanban-mobile-panels');
     expect(html).toContain('kanban-mobile-panel-body');
+    expect(html).toContain('kanban-mobile-controls-wrapper');
+    expect(html).toContain('data-board-loading-mobile-actions="true"');
     expect(html).toContain('kanban-mobile-tab-bar');
+    expect(html.indexOf('kanban-mobile-board-wrapper')).toBeLessThan(
+      html.indexOf('kanban-mobile-controls-wrapper'),
+    );
+    expect(html.indexOf('board-loading-shell-mobile')).toBeLessThan(html.indexOf('kanban-scroll'));
     expect(html.indexOf('kanban-mobile-panels')).toBeLessThan(
+      html.indexOf('data-board-loading-mobile-actions="true"'),
+    );
+    expect(html.indexOf('data-board-loading-mobile-actions="true"')).toBeLessThan(
       html.indexOf('kanban-mobile-tab-bar'),
     );
     expect(html.match(/data-board-loading-mobile-tab="true"/g)?.length).toBeGreaterThan(1);
     expect(html.match(/data-board-loading-mobile-card="true"/g)?.length).toBeGreaterThan(1);
+    expect(html).toContain('kanbanCardFrame');
+    expect(html).toContain('kanbanCardBody');
     expect(html).not.toMatch(/class="[^"]*mantine-hidden-from-sm/);
     expect(html).not.toMatch(/class="[^"]*mantine-visible-from-sm/);
   });

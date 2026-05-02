@@ -13,6 +13,7 @@ import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.
 import {
   type ComponentType,
   type CSSProperties,
+  type ReactNode,
   useCallback,
   useEffect,
   useRef,
@@ -84,6 +85,7 @@ type KanbanBoardMobileProps = {
     projectId: string,
     labelOptions: Array<{ id: string; name: string; color: string }>,
   ) => void;
+  actionIsland?: ReactNode;
   saveError: string | null;
   enginePresets?: EnginePresets | null;
 };
@@ -106,6 +108,7 @@ export function KanbanBoardMobile({
   resolveTaskLabelOptions,
   onUpdateTaskLabels,
   onProjectLabelOptionsChange,
+  actionIsland,
   saveError,
   enginePresets,
 }: KanbanBoardMobileProps) {
@@ -193,141 +196,159 @@ export function KanbanBoardMobile({
 
   return (
     <Tabs value={activeTab} onChange={(v) => v && onTabChange(v)} className="kanban-mobile-tabs">
-      <div {...swipeHandlers} className="kanban-mobile-panels" style={{ touchAction: 'pan-y' }}>
-        {mobileStatuses.map((status) => {
-          const isActivePanel = status === activeTab;
-          const panelBodyStyle = isActivePanel
-            ? ({
-                '--kanban-mobile-refresh-offset': `${indicatorPullDistance}px`,
-                '--kanban-mobile-refresh-progress': indicatorPullProgress,
-                '--kanban-mobile-refresh-progress-percent': `${Math.round(
-                  indicatorPullProgress * 100,
-                )}%`,
-              } as CSSProperties)
-            : undefined;
-          const tasks = columns[status];
-          return (
-            <Tabs.Panel key={status} value={status} className="kanban-mobile-panel">
-              <div
-                ref={isActivePanel ? pullToRefresh.bindScrollContainer : undefined}
-                className="kanban-mobile-panel-body kanban-fill-height"
-                onTouchStart={isActivePanel ? pullToRefresh.onTouchStart : undefined}
-                onTouchMove={isActivePanel ? pullToRefresh.onTouchMove : undefined}
-                onTouchEnd={isActivePanel ? pullToRefresh.onTouchEnd : undefined}
-                onTouchCancel={isActivePanel ? pullToRefresh.onTouchCancel : undefined}
-                style={panelBodyStyle}
-              >
-                {isActivePanel ? (
-                  <div
-                    className="kanban-mobile-refresh-indicator"
-                    data-visible={indicatorPullDistance > 0 ? 'true' : undefined}
-                    data-armed={
-                      refreshFeedback.phase === 'idle' && pullToRefresh.isArmed ? 'true' : undefined
-                    }
-                    data-state={indicatorState !== 'idle' ? indicatorState : undefined}
-                    aria-hidden="true"
-                  >
-                    <span className="kanban-mobile-refresh-icon">
-                      {refreshFeedback.phase === 'success' ? (
-                        <IconCircleCheck size={22} stroke={2.1} />
-                      ) : (
-                        <IconRefresh size={22} stroke={2.1} />
-                      )}
-                    </span>
-                  </div>
-                ) : null}
-                <div className="kanban-mobile-panel-list kanban-fill-height kanban-bottom-clearance">
-                  {isActivePanel && saveError ? (
-                    <Text c="red" size="sm" className="kanban-mobile-save-error">
-                      {saveError}
-                    </Text>
-                  ) : null}
-                  {tasks.length === 0 ? (
-                    <KanbanEmptyLane className="kanban-empty-state--compact kanban-fill-height" />
-                  ) : (
-                    tasks.map((task) => {
-                      const editHref = `${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(task.taskKey)}`;
-                      return (
-                        <Paper
-                          key={task.id}
-                          p={0}
-                          radius={6}
-                          className={`${cardStyles.itemCard} ${cardStyles.kanbanCard} kanban-mobile-card`}
-                          data-run-state={task.runState ?? undefined}
-                          role="link"
-                          tabIndex={0}
-                          aria-label={`Open task ${task.taskKey} ${task.title}`}
-                          onClick={(e) => {
-                            const target = e.target as HTMLElement;
-                            if (shouldIgnoreCardSurfaceEvent(target)) return;
-                            if (onOpenTaskEditor) {
-                              onOpenTaskEditor(task);
-                              return;
-                            }
-                            router.push(editHref);
-                          }}
-                          onKeyDown={(event) => {
-                            if (event.currentTarget !== event.target) return;
-                            if (event.key !== 'Enter') return;
-                            event.preventDefault();
-                            if (onOpenTaskEditor) {
-                              onOpenTaskEditor(task);
-                              return;
-                            }
-                            router.push(editHref);
-                          }}
-                        >
-                          <KanbanCardContent
-                            task={task}
-                            isPending={isPending}
-                            isMobile
-                            editHref={editHref}
-                            telegramEnabled={telegramEnabled}
-                            onTaskQueued={onTaskQueued}
-                            onQuickMoveTask={onQuickMoveTask}
-                            onDeleteTask={onDeleteTask}
-                            enginePresets={enginePresets ?? null}
-                            labelOptions={
-                              resolveTaskLabelOptions ? resolveTaskLabelOptions(task) : labelOptions
-                            }
-                            onUpdateTaskLabels={onUpdateTaskLabels}
-                            onProjectLabelOptionsChange={onProjectLabelOptionsChange}
-                          />
-                        </Paper>
-                      );
-                    })
-                  )}
-                  <div className="kanban-column-drop-tail" aria-hidden="true" />
-                  <div className="kanban-bottom-gradient" aria-hidden="true" />
-                </div>
-              </div>
-            </Tabs.Panel>
-          );
-        })}
-      </div>
-      <div className="kanban-mobile-tab-bar">
-        <Tabs.List>
+      <div className="kanban-mobile-board-wrapper">
+        <div {...swipeHandlers} className="kanban-mobile-panels" style={{ touchAction: 'pan-y' }}>
           {mobileStatuses.map((status) => {
-            const StatusIcon = mobileStatusIcons[status];
+            const isActivePanel = status === activeTab;
+            const panelBodyStyle = isActivePanel
+              ? ({
+                  '--kanban-mobile-refresh-offset': `${indicatorPullDistance}px`,
+                  '--kanban-mobile-refresh-progress': indicatorPullProgress,
+                  '--kanban-mobile-refresh-progress-percent': `${Math.round(
+                    indicatorPullProgress * 100,
+                  )}%`,
+                } as CSSProperties)
+              : undefined;
+            const tasks = columns[status];
+            const hasTasks = tasks.length > 0;
             return (
-              <Tabs.Tab key={status} value={status} className="kanban-mobile-tab">
-                <span className="kanban-mobile-tab-shell">
-                  <span className="kanban-mobile-tab-copy">
-                    {StatusIcon ? (
-                      <span className="kanban-mobile-tab-icon" aria-hidden="true">
-                        <StatusIcon size={13} />
+              <Tabs.Panel key={status} value={status} className="kanban-mobile-panel">
+                <div
+                  ref={isActivePanel ? pullToRefresh.bindScrollContainer : undefined}
+                  className="kanban-mobile-panel-body kanban-fill-height"
+                  onTouchStart={isActivePanel ? pullToRefresh.onTouchStart : undefined}
+                  onTouchMove={isActivePanel ? pullToRefresh.onTouchMove : undefined}
+                  onTouchEnd={isActivePanel ? pullToRefresh.onTouchEnd : undefined}
+                  onTouchCancel={isActivePanel ? pullToRefresh.onTouchCancel : undefined}
+                  style={panelBodyStyle}
+                >
+                  {isActivePanel ? (
+                    <div
+                      className="kanban-mobile-refresh-indicator"
+                      data-visible={indicatorPullDistance > 0 ? 'true' : undefined}
+                      data-armed={
+                        refreshFeedback.phase === 'idle' && pullToRefresh.isArmed
+                          ? 'true'
+                          : undefined
+                      }
+                      data-state={indicatorState !== 'idle' ? indicatorState : undefined}
+                      aria-hidden="true"
+                    >
+                      <span className="kanban-mobile-refresh-icon">
+                        {refreshFeedback.phase === 'success' ? (
+                          <IconCircleCheck size={22} stroke={2.1} />
+                        ) : (
+                          <IconRefresh size={22} stroke={2.1} />
+                        )}
                       </span>
+                    </div>
+                  ) : null}
+                  <div
+                    className={`kanban-mobile-panel-list kanban-fill-height${hasTasks ? ' kanban-bottom-clearance' : ' kanban-mobile-panel-list--empty'}`}
+                  >
+                    {isActivePanel && saveError ? (
+                      <Text c="red" size="sm" className="kanban-mobile-save-error">
+                        {saveError}
+                      </Text>
                     ) : null}
-                    <span className="kanban-mobile-tab-label">
-                      {boardStatusLabel(status, terminology)}
-                    </span>
-                  </span>
-                  <span className="kanban-mobile-tab-count">{columns[status].length}</span>
-                </span>
-              </Tabs.Tab>
+                    {!hasTasks ? (
+                      <KanbanEmptyLane className="kanban-empty-state--compact kanban-fill-height kanban-mobile-empty-lane">
+                        <span className="kanban-mobile-empty-lane-text">No tasks here</span>
+                      </KanbanEmptyLane>
+                    ) : (
+                      tasks.map((task) => {
+                        const editHref = `${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(task.taskKey)}`;
+                        return (
+                          <Paper
+                            key={task.id}
+                            p={0}
+                            radius={6}
+                            className={`${cardStyles.itemCard} ${cardStyles.kanbanCard} kanban-mobile-card`}
+                            data-run-state={task.runState ?? undefined}
+                            role="link"
+                            tabIndex={0}
+                            aria-label={`Open task ${task.taskKey} ${task.title}`}
+                            onClick={(e) => {
+                              const target = e.target as HTMLElement;
+                              if (shouldIgnoreCardSurfaceEvent(target)) return;
+                              if (onOpenTaskEditor) {
+                                onOpenTaskEditor(task);
+                                return;
+                              }
+                              router.push(editHref);
+                            }}
+                            onKeyDown={(event) => {
+                              if (event.currentTarget !== event.target) return;
+                              if (event.key !== 'Enter') return;
+                              event.preventDefault();
+                              if (onOpenTaskEditor) {
+                                onOpenTaskEditor(task);
+                                return;
+                              }
+                              router.push(editHref);
+                            }}
+                          >
+                            <KanbanCardContent
+                              task={task}
+                              isPending={isPending}
+                              isMobile
+                              editHref={editHref}
+                              telegramEnabled={telegramEnabled}
+                              onTaskQueued={onTaskQueued}
+                              onQuickMoveTask={onQuickMoveTask}
+                              onDeleteTask={onDeleteTask}
+                              enginePresets={enginePresets ?? null}
+                              labelOptions={
+                                resolveTaskLabelOptions
+                                  ? resolveTaskLabelOptions(task)
+                                  : labelOptions
+                              }
+                              onUpdateTaskLabels={onUpdateTaskLabels}
+                              onProjectLabelOptionsChange={onProjectLabelOptionsChange}
+                            />
+                          </Paper>
+                        );
+                      })
+                    )}
+                    {hasTasks ? (
+                      <>
+                        <div className="kanban-column-drop-tail" aria-hidden="true" />
+                        <div className="kanban-bottom-gradient" aria-hidden="true" />
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              </Tabs.Panel>
             );
           })}
-        </Tabs.List>
+        </div>
+      </div>
+      <div className="kanban-mobile-controls-wrapper">
+        {actionIsland}
+        <div className="kanban-mobile-tab-bar">
+          <Tabs.List>
+            {mobileStatuses.map((status) => {
+              const StatusIcon = mobileStatusIcons[status];
+              return (
+                <Tabs.Tab key={status} value={status} className="kanban-mobile-tab">
+                  <span className="kanban-mobile-tab-shell">
+                    <span className="kanban-mobile-tab-copy">
+                      {StatusIcon ? (
+                        <span className="kanban-mobile-tab-icon" aria-hidden="true">
+                          <StatusIcon size={13} />
+                        </span>
+                      ) : null}
+                      <span className="kanban-mobile-tab-label">
+                        {boardStatusLabel(status, terminology)}
+                      </span>
+                    </span>
+                    <span className="kanban-mobile-tab-count">{columns[status].length}</span>
+                  </span>
+                </Tabs.Tab>
+              );
+            })}
+          </Tabs.List>
+        </div>
       </div>
     </Tabs>
   );

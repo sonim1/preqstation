@@ -97,10 +97,13 @@ describe('kanban empty lane', () => {
 
     expect(mobileHtml).toContain('data-kanban-empty-lane="true"');
     expect(mobileHtml).toContain('kanban-empty-state--compact');
+    expect(mobileHtml).toContain('kanban-mobile-empty-lane');
+    expect(mobileHtml).toContain('No tasks here');
     expect(mobileHtml).not.toContain('data-kanban-empty-lane-arc="true"');
     expect(mobileHtml).not.toContain('No inbox tasks');
     expect(desktopHtml).toContain('data-kanban-empty-lane="true"');
     expect(desktopHtml).toContain('kanban-empty-state--compact');
+    expect(desktopHtml).not.toContain('No tasks here');
     expect(desktopHtml).not.toContain('data-kanban-empty-lane-arc="true"');
     expect(desktopHtml).not.toContain('No inbox tasks');
   });
