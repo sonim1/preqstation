@@ -28,7 +28,7 @@ function isApiRequest(url) {
 function isStaticAsset(url) {
   return (
     url.pathname === '/manifest.webmanifest' ||
-    /\.(?:gif|ico|jpg|jpeg|png|svg|webp|woff|woff2)$/i.test(url.pathname)
+    /\.(?:css|gif|ico|jpg|jpeg|js|png|svg|webp|woff|woff2)$/i.test(url.pathname)
   );
 }
 

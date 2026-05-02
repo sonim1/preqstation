@@ -299,6 +299,9 @@ describe('kanban bottom clearance hooks', () => {
       /\.kanban-mobile-panel-list--empty\s*\{[\s\S]*gap:\s*0;[\s\S]*padding:\s*0;/,
     );
     expect(globalsCss).toMatch(
+      /\.kanban-mobile-save-error\s*\{[\s\S]*padding-inline:\s*var\(--mantine-spacing-md\);/,
+    );
+    expect(globalsCss).toMatch(
       /\.kanban-mobile-empty-lane\s*\{[\s\S]*justify-content:\s*center;[\s\S]*padding:\s*0 1\.25rem;/,
     );
     expect(globalsCss).toMatch(
@@ -392,7 +395,7 @@ describe('kanban bottom clearance hooks', () => {
       /\.kanban-mobile-controls-wrapper\s*\{[\s\S]*position:\s*relative;[\s\S]*flex:\s*0 0 auto;[\s\S]*flex-direction:\s*column;/,
     );
     expect(globalsCss).toMatch(
-      /\.kanban-mobile-tab-bar\s*\{[\s\S]*flex:\s*0 0 auto;[\s\S]*padding:\s*0;/,
+      /\.kanban-mobile-tab-bar\s*\{[\s\S]*flex:\s*0 0 auto;[\s\S]*padding:\s*0 0 env\(safe-area-inset-bottom\);/,
     );
     expect(globalsCss).toMatch(
       /\.kanban-mobile-action-island-anchor\s*\{[\s\S]*position:\s*absolute;[\s\S]*bottom:\s*calc\(100% \+ 10px\);[\s\S]*padding:\s*0;/,

@@ -2522,7 +2522,7 @@ html[data-mantine-color-scheme='dark'] .live-editor-input [data-live-editor-empt
     flex-direction: column;
     justify-content: flex-end;
     min-height: var(--kanban-mobile-tab-bar-height);
-    padding: 0;
+    padding: 0 0 env(safe-area-inset-bottom);
     background: linear-gradient(
       180deg,
       color-mix(in srgb, var(--ui-surface-soft), transparent 84%) 0%,
@@ -2796,6 +2796,7 @@ html[data-mantine-color-scheme='dark'] .live-editor-input [data-live-editor-empt
 
   .kanban-mobile-save-error {
     flex: 0 0 auto;
+    padding-inline: var(--mantine-spacing-md);
   }
 
   .kanban-mobile-card {

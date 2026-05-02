@@ -147,29 +147,6 @@ async function dispatchFetch(
   return await responsePromise;
 }
 
-function dispatchFetchWithoutResponse(
-  handler:
-    | ((event: {
-        request: { method: string; mode: string; url: string };
-        respondWith: (promise: Promise<Response>) => void;
-      }) => void)
-    | undefined,
-  request: { method?: string; mode: string; url: string },
-) {
-  const respondWith = vi.fn();
-
-  handler?.({
-    request: {
-      method: request.method ?? 'GET',
-      mode: request.mode,
-      url: request.url,
-    },
-    respondWith,
-  });
-
-  return respondWith;
-}
-
 describe('public/sw.js', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -219,16 +196,34 @@ describe('public/sw.js', () => {
     expect(sw.claimMock).toHaveBeenCalledTimes(1);
   });
 
-  it('does not intercept Next.js hashed chunks so normal reloads can fetch the current build', async () => {
-    const sw = await loadServiceWorker();
+  it('caches Next.js hashed JS and CSS chunks for offline board reloads', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('console.log("board")'))
+      .mockResolvedValueOnce(new Response('.board{}'));
+    const sw = await loadServiceWorker({ fetchMock });
 
-    const respondWith = dispatchFetchWithoutResponse(
-      sw.handlers.get('fetch') as Parameters<typeof dispatchFetchWithoutResponse>[0],
-      { mode: 'no-cors', url: 'https://example.com/_next/static/chunks/app-board.js' },
+    const jsResponse = await dispatchFetch(
+      sw.handlers.get('fetch') as Parameters<typeof dispatchFetch>[0],
+      { mode: 'no-cors', url: 'https://example.com/_next/static/chunks/app-board.abc123.js' },
+    );
+    const cssResponse = await dispatchFetch(
+      sw.handlers.get('fetch') as Parameters<typeof dispatchFetch>[0],
+      { mode: 'no-cors', url: 'https://example.com/_next/static/css/app-board.def456.css' },
     );
 
-    expect(respondWith).not.toHaveBeenCalled();
-    expect(sw.putCalls).toHaveLength(0);
+    expect(await jsResponse.text()).toBe('console.log("board")');
+    expect(await cssResponse.text()).toBe('.board{}');
+    expect(sw.putCalls).toEqual([
+      {
+        cacheName: 'preq-static-v3',
+        key: 'https://example.com/_next/static/chunks/app-board.abc123.js',
+      },
+      {
+        cacheName: 'preq-static-v3',
+        key: 'https://example.com/_next/static/css/app-board.def456.css',
+      },
+    ]);
   });
 
   it('keeps serving a cached board navigation when the network is offline', async () => {
