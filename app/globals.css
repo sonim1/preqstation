@@ -2474,7 +2474,7 @@ html[data-mantine-color-scheme='dark'] .live-editor-input [data-live-editor-empt
   .kanban-stage {
     background: var(--kanban-stage-surface);
     --kanban-action-island-clearance: calc(80px + env(safe-area-inset-bottom));
-    --kanban-mobile-tab-bar-height: calc(64px + env(safe-area-inset-bottom));
+    --kanban-mobile-tab-bar-height: calc(56px + env(safe-area-inset-bottom));
   }
 
   .kanban-stage.has-bg-image::before {
@@ -2497,8 +2497,8 @@ html[data-mantine-color-scheme='dark'] .live-editor-input [data-live-editor-empt
     flex-direction: column;
     justify-content: flex-end;
     min-height: var(--kanban-mobile-tab-bar-height);
-    padding: 8px 6px 0;
-    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    padding: 2px 6px 0;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
     border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
     background: linear-gradient(
       180deg,

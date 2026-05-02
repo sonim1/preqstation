@@ -160,7 +160,7 @@ function buildPersistedBrowserSession(overrides: Partial<Record<string, unknown>
     browserName: 'Chrome',
     osName: 'macOS',
     lastUsedAt: new Date('2026-03-25T12:00:00.000Z'),
-    expiresAt: new Date('2026-05-01T12:00:00.000Z'),
+    expiresAt: new Date(Date.now() + 60 * 60 * 1000),
     revokedAt: null,
     createdAt: new Date('2026-03-25T12:00:00.000Z'),
     updatedAt: new Date('2026-03-25T12:00:00.000Z'),
