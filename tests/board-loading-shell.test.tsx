@@ -29,10 +29,19 @@ describe('app/components/board-loading-shell', () => {
     expect(html.match(/data-board-loading-body="true"/g)).toHaveLength(5);
     expect(html).toContain('data-board-loading-mobile-shell="true"');
     expect(html).toContain('kanban-mobile-tabs');
+    expect(html).toContain('kanban-mobile-board-wrapper');
     expect(html).toContain('kanban-mobile-panels');
     expect(html).toContain('kanban-mobile-panel-body');
+    expect(html).toContain('kanban-mobile-controls-wrapper');
+    expect(html).toContain('data-board-loading-mobile-actions="true"');
     expect(html).toContain('kanban-mobile-tab-bar');
+    expect(html.indexOf('kanban-mobile-board-wrapper')).toBeLessThan(
+      html.indexOf('kanban-mobile-controls-wrapper'),
+    );
     expect(html.indexOf('kanban-mobile-panels')).toBeLessThan(
+      html.indexOf('data-board-loading-mobile-actions="true"'),
+    );
+    expect(html.indexOf('data-board-loading-mobile-actions="true"')).toBeLessThan(
       html.indexOf('kanban-mobile-tab-bar'),
     );
     expect(html.match(/data-board-loading-mobile-tab="true"/g)?.length).toBeGreaterThan(1);

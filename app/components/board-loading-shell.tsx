@@ -31,6 +31,8 @@ const BOARD_LOADING_MOBILE_CARDS = [
   { keyWidth: 60, titleWidth: 168, detailWidth: 118 },
 ] as const;
 
+const BOARD_LOADING_ACTIONS = [42, 42, 42, 42, 42] as const;
+
 export function BoardLoadingShell() {
   return (
     <Container className="dashboard-root is-board" fluid px={0} py={0}>
@@ -44,60 +46,75 @@ export function BoardLoadingShell() {
                   className="kanban-mobile-tabs"
                   data-board-loading-mobile-shell="true"
                 >
-                  <Box className="kanban-mobile-panels">
-                    <TabsPanel value="inbox" className="kanban-mobile-panel">
-                      <Box className="kanban-mobile-panel-body kanban-fill-height">
-                        <Box className="kanban-mobile-panel-list kanban-fill-height kanban-bottom-clearance">
-                          {BOARD_LOADING_MOBILE_CARDS.map((card, index) => (
-                            <Paper
-                              key={index}
-                              data-board-loading-mobile-card="true"
-                              radius={6}
-                              p="md"
-                              className="kanban-mobile-card"
-                              style={{
-                                background: 'var(--ui-card-bg)',
-                                boxShadow:
-                                  '0 16px 30px -24px rgba(21, 45, 89, 0.28), 0 6px 14px -10px rgba(21, 45, 89, 0.14)',
-                              }}
-                            >
-                              <Stack gap={8}>
-                                <Skeleton h={10} w={card.keyWidth} radius="sm" />
-                                <Skeleton h={14} w={card.titleWidth} radius="sm" />
-                                <Skeleton h={10} w={card.detailWidth} radius="sm" />
-                              </Stack>
-                            </Paper>
-                          ))}
-                          <Box className="kanban-column-drop-tail" aria-hidden="true" />
-                          <Box className="kanban-bottom-gradient" aria-hidden="true" />
+                  <Box className="kanban-mobile-board-wrapper">
+                    <Box className="kanban-mobile-panels">
+                      <TabsPanel value="inbox" className="kanban-mobile-panel">
+                        <Box className="kanban-mobile-panel-body kanban-fill-height">
+                          <Box className="kanban-mobile-panel-list kanban-fill-height kanban-bottom-clearance">
+                            {BOARD_LOADING_MOBILE_CARDS.map((card, index) => (
+                              <Paper
+                                key={index}
+                                data-board-loading-mobile-card="true"
+                                radius={6}
+                                p="md"
+                                className="kanban-mobile-card"
+                                style={{
+                                  background: 'var(--ui-card-bg)',
+                                  boxShadow:
+                                    '0 16px 30px -24px rgba(21, 45, 89, 0.28), 0 6px 14px -10px rgba(21, 45, 89, 0.14)',
+                                }}
+                              >
+                                <Stack gap={8}>
+                                  <Skeleton h={10} w={card.keyWidth} radius="sm" />
+                                  <Skeleton h={14} w={card.titleWidth} radius="sm" />
+                                  <Skeleton h={10} w={card.detailWidth} radius="sm" />
+                                </Stack>
+                              </Paper>
+                            ))}
+                            <Box className="kanban-column-drop-tail" aria-hidden="true" />
+                            <Box className="kanban-bottom-gradient" aria-hidden="true" />
+                          </Box>
                         </Box>
-                      </Box>
-                    </TabsPanel>
+                      </TabsPanel>
+                    </Box>
                   </Box>
 
-                  <Box className="kanban-mobile-tab-bar">
-                    <TabsList>
-                      {BOARD_LOADING_MOBILE_TABS.map((tab) => (
-                        <TabsTab
-                          key={tab.value}
-                          value={tab.value}
-                          disabled
-                          className="kanban-mobile-tab"
-                          data-board-loading-mobile-tab="true"
-                        >
-                          <span className="kanban-mobile-tab-shell">
-                            <span className="kanban-mobile-tab-copy">
-                              <span className="kanban-mobile-tab-label">
-                                <Skeleton h={10} w={tab.labelWidth} radius="sm" />
+                  <Box className="kanban-mobile-controls-wrapper">
+                    <Box
+                      className="kanban-action-island-anchor kanban-mobile-action-island-anchor"
+                      data-board-loading-mobile-actions="true"
+                    >
+                      <Box className="kanban-action-island">
+                        {BOARD_LOADING_ACTIONS.map((size, index) => (
+                          <Skeleton key={index} h={size} w={size} radius="xl" />
+                        ))}
+                      </Box>
+                    </Box>
+
+                    <Box className="kanban-mobile-tab-bar">
+                      <TabsList>
+                        {BOARD_LOADING_MOBILE_TABS.map((tab) => (
+                          <TabsTab
+                            key={tab.value}
+                            value={tab.value}
+                            disabled
+                            className="kanban-mobile-tab"
+                            data-board-loading-mobile-tab="true"
+                          >
+                            <span className="kanban-mobile-tab-shell">
+                              <span className="kanban-mobile-tab-copy">
+                                <span className="kanban-mobile-tab-label">
+                                  <Skeleton h={10} w={tab.labelWidth} radius="sm" />
+                                </span>
+                              </span>
+                              <span className="kanban-mobile-tab-count">
+                                <Skeleton h={16} w={tab.countWidth} radius="xl" />
                               </span>
                             </span>
-                            <span className="kanban-mobile-tab-count">
-                              <Skeleton h={16} w={tab.countWidth} radius="xl" />
-                            </span>
-                          </span>
-                        </TabsTab>
-                      ))}
-                    </TabsList>
+                          </TabsTab>
+                        ))}
+                      </TabsList>
+                    </Box>
                   </Box>
                 </Tabs>
               </Box>
