@@ -2766,6 +2766,11 @@ html[data-mantine-color-scheme='dark'] .live-editor-input [data-live-editor-empt
     padding: 6px 6px 0;
   }
 
+  .kanban-mobile-panel-list--empty {
+    gap: 0;
+    padding: 0;
+  }
+
   .kanban-mobile-panel-list.kanban-bottom-clearance {
     --kanban-bottom-fade-height: calc(
       var(--kanban-action-island-clearance) + var(--kanban-mobile-tab-bar-height)

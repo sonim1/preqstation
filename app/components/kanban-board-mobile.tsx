@@ -210,6 +210,7 @@ export function KanbanBoardMobile({
                 } as CSSProperties)
               : undefined;
             const tasks = columns[status];
+            const hasTasks = tasks.length > 0;
             return (
               <Tabs.Panel key={status} value={status} className="kanban-mobile-panel">
                 <div
@@ -242,13 +243,15 @@ export function KanbanBoardMobile({
                       </span>
                     </div>
                   ) : null}
-                  <div className="kanban-mobile-panel-list kanban-fill-height kanban-bottom-clearance">
+                  <div
+                    className={`kanban-mobile-panel-list kanban-fill-height${hasTasks ? ' kanban-bottom-clearance' : ' kanban-mobile-panel-list--empty'}`}
+                  >
                     {isActivePanel && saveError ? (
                       <Text c="red" size="sm" className="kanban-mobile-save-error">
                         {saveError}
                       </Text>
                     ) : null}
-                    {tasks.length === 0 ? (
+                    {!hasTasks ? (
                       <KanbanEmptyLane className="kanban-empty-state--compact kanban-fill-height" />
                     ) : (
                       tasks.map((task) => {
@@ -305,8 +308,12 @@ export function KanbanBoardMobile({
                         );
                       })
                     )}
-                    <div className="kanban-column-drop-tail" aria-hidden="true" />
-                    <div className="kanban-bottom-gradient" aria-hidden="true" />
+                    {hasTasks ? (
+                      <>
+                        <div className="kanban-column-drop-tail" aria-hidden="true" />
+                        <div className="kanban-bottom-gradient" aria-hidden="true" />
+                      </>
+                    ) : null}
                   </div>
                 </div>
               </Tabs.Panel>

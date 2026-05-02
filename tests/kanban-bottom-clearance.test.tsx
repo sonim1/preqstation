@@ -190,8 +190,16 @@ describe('kanban bottom clearance hooks', () => {
 
     expect(mobileHtml).toContain('kanban-mobile-panel-body');
     expect(mobileHtml).toContain('kanban-fill-height');
+    expect(mobileHtml).toContain(
+      'kanban-mobile-panel-list kanban-fill-height kanban-mobile-panel-list--empty',
+    );
     expect(mobileHtml).toContain('kanban-empty-state--compact');
     expect(mobileHtml).toContain('data-kanban-empty-lane="true"');
+    expect(mobileHtml).not.toContain(
+      'kanban-mobile-panel-list kanban-fill-height kanban-bottom-clearance',
+    );
+    expect(mobileHtml).not.toContain('kanban-column-drop-tail');
+    expect(mobileHtml).not.toContain('kanban-bottom-gradient');
     expect(desktopHtml).toContain('kanban-column-list kanban-fill-height');
     expect(desktopHtml).toContain('kanban-empty-state--compact');
     expect(desktopHtml).toContain('data-kanban-empty-lane="true"');
@@ -283,6 +291,9 @@ describe('kanban bottom clearance hooks', () => {
     expect(globalsCss).not.toMatch(/\.kanban-mobile-panel-body\.kanban-bottom-clearance\s*\{/);
     expect(globalsCss).toMatch(
       /\.kanban-mobile-panel-list\s*\{[\s\S]*gap:\s*var\(--mantine-spacing-sm\);[\s\S]*padding:\s*6px 6px 0;/,
+    );
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-panel-list--empty\s*\{[\s\S]*gap:\s*0;[\s\S]*padding:\s*0;/,
     );
     expect(globalsCss).toMatch(
       /\.kanban-mobile-panel-list\.kanban-bottom-clearance\s*\{[\s\S]*--kanban-bottom-fade-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);[\s\S]*--kanban-bottom-clearance-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);/,
