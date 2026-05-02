@@ -194,7 +194,10 @@ describe('kanban bottom clearance hooks', () => {
       'kanban-mobile-panel-list kanban-fill-height kanban-mobile-panel-list--empty',
     );
     expect(mobileHtml).toContain('kanban-empty-state--compact');
+    expect(mobileHtml).toContain('kanban-mobile-empty-lane');
+    expect(mobileHtml).toContain('No tasks here');
     expect(mobileHtml).toContain('data-kanban-empty-lane="true"');
+    expect(mobileHtml).toMatch(/data-kanban-empty-lane="true"[\s\S]*No tasks here[\s\S]*<\/div>/);
     expect(mobileHtml).not.toContain(
       'kanban-mobile-panel-list kanban-fill-height kanban-bottom-clearance',
     );
@@ -294,6 +297,12 @@ describe('kanban bottom clearance hooks', () => {
     );
     expect(globalsCss).toMatch(
       /\.kanban-mobile-panel-list--empty\s*\{[\s\S]*gap:\s*0;[\s\S]*padding:\s*0;/,
+    );
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-empty-lane\s*\{[\s\S]*justify-content:\s*center;[\s\S]*padding:\s*0 1\.25rem;/,
+    );
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-empty-lane-text\s*\{[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;/,
     );
     expect(globalsCss).toMatch(
       /\.kanban-mobile-panel-list\.kanban-bottom-clearance\s*\{[\s\S]*--kanban-bottom-fade-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);[\s\S]*--kanban-bottom-clearance-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);/,

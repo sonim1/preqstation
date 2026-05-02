@@ -252,7 +252,9 @@ export function KanbanBoardMobile({
                       </Text>
                     ) : null}
                     {!hasTasks ? (
-                      <KanbanEmptyLane className="kanban-empty-state--compact kanban-fill-height" />
+                      <KanbanEmptyLane className="kanban-empty-state--compact kanban-fill-height kanban-mobile-empty-lane">
+                        <span className="kanban-mobile-empty-lane-text">No tasks here</span>
+                      </KanbanEmptyLane>
                     ) : (
                       tasks.map((task) => {
                         const editHref = `${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(task.taskKey)}`;
