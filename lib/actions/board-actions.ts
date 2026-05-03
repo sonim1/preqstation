@@ -33,6 +33,7 @@ async function loadBoardTask(ownerId: string, identifier: string, client: DbClie
       branch: true,
       title: true,
       note: true,
+      artifacts: true,
       projectId: true,
       taskPriority: true,
       status: true,
@@ -81,6 +82,7 @@ function toEditableBoardTask(task: NonNullable<Awaited<ReturnType<typeof loadBoa
     title: task.title,
     branch: task.branch,
     note: task.note,
+    artifacts: task.artifacts,
     projectId: task.projectId,
     labelIds: labels.map((label) => label.id),
     labels: labels.map((label) => ({

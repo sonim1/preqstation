@@ -36,12 +36,21 @@ vi.mock('@mantine/core', async (importOriginal) => {
 
 vi.mock('@/app/components/markdown-viewer', () => ({
   MarkdownViewer: ({
+    artifacts,
     markdown,
     mode,
   }: {
+    artifacts?: Array<{ title: string }>;
     markdown?: string | null;
     mode?: 'full' | 'body' | 'artifacts';
-  }) => <div data-testid={`markdown-viewer:${mode ?? 'full'}`}>{markdown}</div>,
+  }) => (
+    <div data-testid={`markdown-viewer:${mode ?? 'full'}`}>
+      {markdown}
+      {artifacts?.map((artifact) => (
+        <span key={artifact.title}>{artifact.title}</span>
+      ))}
+    </div>
+  ),
 }));
 
 vi.mock('@/app/components/infinite-scroll-trigger', () => ({
@@ -144,6 +153,11 @@ describe('app/components/ready-qa-actions', () => {
       taskKeys: string[];
       summary: { total: number; critical: number; high: number; medium: number; low: number };
       reportMarkdown: string | null;
+      artifacts?: Array<{
+        type: 'image' | 'video' | 'document' | 'link';
+        title: string;
+        url?: string | null;
+      }>;
       createdAt: string;
       startedAt: string;
       finishedAt: string;
@@ -216,6 +230,47 @@ describe('app/components/ready-qa-actions', () => {
     expect(html.indexOf('data-testid="markdown-viewer:artifacts"')).toBeLessThan(
       html.indexOf('data-testid="markdown-viewer:body"'),
     );
+  });
+
+  it('passes structured QA artifacts to the artifact viewer without requiring markdown lines', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <ReadyQaActionsAny
+          projectId="project-1"
+          projectKey="ALPHA"
+          projectName="Project One"
+          branchName="release/mobile"
+          readyCount={1}
+          telegramEnabled
+          initialRuns={[
+            {
+              id: 'run-321',
+              projectId: 'project-1',
+              branchName: 'release/mobile',
+              status: 'failed',
+              engine: 'codex',
+              targetUrl: 'http://127.0.0.1:3000',
+              taskKeys: ['QA-1'],
+              summary: { total: 1, critical: 0, high: 1, medium: 0, low: 0 },
+              reportMarkdown: '# QA Report',
+              artifacts: [
+                {
+                  type: 'image',
+                  title: 'QA screenshot',
+                  url: 'https://fast.io/s/qa',
+                },
+              ],
+              createdAt: '2026-03-18T10:00:00.000Z',
+              startedAt: '2026-03-18T10:01:00.000Z',
+              finishedAt: '2026-03-18T10:03:00.000Z',
+            },
+          ]}
+        />
+      </MantineProvider>,
+    );
+
+    expect(html).toContain('QA screenshot');
+    expect(html).toContain('data-testid="markdown-viewer:artifacts"');
   });
 
   it('renders a direct QA trigger and scoped modal copy for the action island', () => {

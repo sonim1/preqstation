@@ -54,6 +54,7 @@ describe('app/api/qa-runs/[id]/route', () => {
       taskKeys: ['PROJ-1'],
       summary: { total: 2, critical: 0, high: 1, medium: 1, low: 0 },
       reportMarkdown: '# QA Report',
+      artifacts: [],
       createdAt: '2026-03-18T10:00:00.000Z',
       startedAt: '2026-03-18T10:01:00.000Z',
       finishedAt: '2026-03-18T10:03:00.000Z',
@@ -91,6 +92,15 @@ describe('app/api/qa-runs/[id]/route', () => {
           medium: 1,
           low: 0,
         },
+        artifacts: [
+          {
+            type: 'image',
+            title: 'QA screenshot',
+            provider: 'fastio',
+            access: 'quickshare',
+            url: 'https://fast.io/s/qa',
+          },
+        ],
       }),
       {
         params: Promise.resolve({ id: 'run-123' }),
@@ -112,6 +122,13 @@ describe('app/api/qa-runs/[id]/route', () => {
         status: 'failed',
         targetUrl: 'http://127.0.0.1:3000',
         reportMarkdown: '# QA Report',
+        artifacts: [
+          expect.objectContaining({
+            type: 'image',
+            title: 'QA screenshot',
+            url: 'https://fast.io/s/qa',
+          }),
+        ],
         summary: {
           total: 2,
           critical: 0,

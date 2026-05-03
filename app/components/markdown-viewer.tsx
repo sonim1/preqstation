@@ -8,6 +8,7 @@ import {
   renderMarkdownToHtml,
   toggleChecklistItem,
 } from '@/lib/markdown';
+import { mergeTaskArtifacts, type TaskArtifact } from '@/lib/task-artifacts';
 
 type MarkdownPersistence = {
   endpoint: string;
@@ -19,6 +20,7 @@ type MarkdownViewerProps = {
   className?: string;
   persistence?: MarkdownPersistence;
   mode?: 'artifacts' | 'body' | 'full';
+  artifacts?: TaskArtifact[] | null;
 };
 
 export function MarkdownViewer({
@@ -26,6 +28,7 @@ export function MarkdownViewer({
   className = 'markdown-output',
   persistence,
   mode = 'full',
+  artifacts: structuredArtifacts,
 }: MarkdownViewerProps) {
   const [source, setSource] = useState(markdown || '');
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -37,7 +40,10 @@ export function MarkdownViewer({
   }, [markdown]);
 
   const html = useMemo(() => renderMarkdownToHtml(source), [source]);
-  const artifacts = useMemo(() => extractMarkdownArtifacts(source), [source]);
+  const artifacts = useMemo(
+    () => mergeTaskArtifacts(structuredArtifacts, extractMarkdownArtifacts(source)),
+    [source, structuredArtifacts],
+  );
 
   async function persistChecklist(nextSource: string, previousSource: string) {
     if (!persistence) return;
@@ -119,9 +125,19 @@ export function MarkdownViewer({
                   </Text>
                 ) : null}
               </Stack>
-              <Anchor href={artifact.url} target="_blank" rel="noreferrer" size="sm">
-                Open
-              </Anchor>
+              {artifact.url ? (
+                <Anchor href={artifact.url} target="_blank" rel="noreferrer" size="sm">
+                  Open
+                </Anchor>
+              ) : artifact.localPath ? (
+                <Text size="xs" c="dimmed" ta="right">
+                  {artifact.localPath}
+                </Text>
+              ) : artifact.reason ? (
+                <Text size="xs" c="dimmed" ta="right">
+                  {artifact.reason}
+                </Text>
+              ) : null}
             </Group>
           </Paper>
         ))}

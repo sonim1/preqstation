@@ -1,4 +1,5 @@
 import { generateKeyBetween, rebalanceKeys } from '@/lib/fractional-ordering';
+import { normalizeTaskArtifacts, type TaskArtifact } from '@/lib/task-artifacts';
 import { normalizeTaskDispatchTarget, type TaskDispatchTarget } from '@/lib/task-dispatch';
 import { extractTaskLabels } from '@/lib/task-label-utils';
 import {
@@ -26,6 +27,7 @@ export type KanbanTask = {
   branch?: string | null;
   title: string;
   note: string | null;
+  artifacts?: TaskArtifact[];
   status: KanbanStatus;
   sortOrder: string;
   taskPriority: string;
@@ -74,10 +76,7 @@ export function shouldShowHoldLane(columns: Pick<KanbanColumns, 'hold'>) {
   return columns.hold.length > 0;
 }
 
-export function getVisibleBoardStatuses(
-  columns: Pick<KanbanColumns, 'hold'>,
-  activeTab?: string,
-) {
+export function getVisibleBoardStatuses(columns: Pick<KanbanColumns, 'hold'>, activeTab?: string) {
   const statuses: BoardTaskStatus[] = [...getBoardFlowStatuses()];
   if (shouldShowHoldLane(columns) || activeTab === 'hold') {
     return statuses;
@@ -275,6 +274,7 @@ export type TaskForKanban = {
   branch?: string | null;
   title: string;
   note: string | null;
+  artifacts?: TaskArtifact[] | unknown;
   sortOrder: string;
   taskPriority: string;
   dueAt: Date | null;
@@ -302,6 +302,7 @@ export function toKanbanTask(task: TaskForKanban, status: KanbanStatus): KanbanT
     branch: task.branch ?? null,
     title: task.title,
     note: task.note,
+    artifacts: normalizeTaskArtifacts(task.artifacts),
     status,
     sortOrder: task.sortOrder,
     taskPriority: task.taskPriority,

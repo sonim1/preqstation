@@ -336,6 +336,93 @@ describe('app/api/tasks/[id]/route', () => {
     );
   });
 
+  it('PATCH stores structured artifacts separately from legacy note artifact blocks', async () => {
+    mocked.db.query.tasks.findFirst
+      .mockResolvedValueOnce({
+        id: 'todo-1',
+        taskKey: 'PROJ-337',
+        taskPrefix: 'PROJ',
+        taskNumber: 337,
+        title: 'Prototype task',
+        note: '## Prototype',
+        artifacts: [],
+        status: 'todo',
+        taskPriority: 'none',
+        engine: 'codex',
+        projectId: null,
+        project: null,
+        label: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'todo-1',
+        taskKey: 'PROJ-337',
+        taskPrefix: 'PROJ',
+        taskNumber: 337,
+        title: 'Prototype task',
+        note: '## Prototype\n\nUpdated body',
+        artifacts: [
+          {
+            type: 'image',
+            title: 'Inbox screenshot',
+            provider: 'fastio',
+            access: 'private',
+            url: 'https://fast.io/s/abc',
+          },
+        ],
+        status: 'todo',
+        taskPriority: 'none',
+        engine: 'codex',
+        createdAt: new Date('2026-04-08T14:00:00.000Z'),
+        updatedAt: new Date('2026-04-08T14:05:00.000Z'),
+        projectId: null,
+        project: null,
+        label: null,
+      });
+
+    const response = await PATCH(
+      patchRequest({
+        noteMarkdown: [
+          '## Prototype',
+          '',
+          'Updated body',
+          '',
+          'Artifacts:',
+          '- [image] Inbox screenshot | provider=fastio | access=private | url=https://fast.io/s/abc',
+        ].join('\n'),
+      }),
+      { params: Promise.resolve({ id: 'PROJ-337' }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mocked.setFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        note: '## Prototype\n\nUpdated body',
+        artifacts: [
+          expect.objectContaining({
+            type: 'image',
+            title: 'Inbox screenshot',
+            provider: 'fastio',
+            access: 'private',
+            url: 'https://fast.io/s/abc',
+          }),
+        ],
+      }),
+    );
+    expect(body.task).toEqual(
+      expect.objectContaining({
+        description: '## Prototype\n\nUpdated body',
+        artifacts: [
+          expect.objectContaining({
+            type: 'image',
+            title: 'Inbox screenshot',
+            url: 'https://fast.io/s/abc',
+          }),
+        ],
+      }),
+    );
+  });
+
   it('PATCH writes note history when only the deeper note body changes', async () => {
     mocked.db.query.tasks.findFirst
       .mockResolvedValueOnce({

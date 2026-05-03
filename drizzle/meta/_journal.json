@@ -155,6 +155,13 @@
       "when": 1777564474008,
       "tag": "0021_condemned_wendigo",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1777651200000,
+      "tag": "0022_task_artifacts",
+      "breakpoints": true
     }
   ]
 }

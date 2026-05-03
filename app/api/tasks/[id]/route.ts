@@ -35,6 +35,11 @@ import {
 } from '@/lib/preq-task';
 import { resolveDeployStrategyConfig } from '@/lib/project-settings';
 import {
+  mergeTaskArtifacts,
+  normalizeTaskArtifacts,
+  splitTaskArtifactMarkdown,
+} from '@/lib/task-artifacts';
+import {
   isTaskKeyUniqueConstraintError,
   normalizeTaskIdentifier,
   taskWhereByIdentifier,
@@ -75,6 +80,7 @@ const updateTaskSchema = z.object({
   labels: z.array(z.string().trim().min(1).max(40)).optional(),
   acceptance_criteria: z.array(z.string().trim().min(1).max(200)).optional(),
   engine: z.enum(ENGINE_KEYS).optional().or(z.literal('')),
+  artifacts: z.array(z.unknown()).max(50).optional(),
   result: z.record(z.string(), z.unknown()).optional(),
 });
 
@@ -217,6 +223,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
             taskNumber: todo.taskNumber,
             title: todo.title,
             note: todo.note,
+            artifacts: todo.artifacts,
             status: todo.status,
             taskPriority: todo.taskPriority,
             branch: todo.branch ?? null,
@@ -322,10 +329,34 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           : payload.planMarkdown !== undefined
             ? payload.planMarkdown
             : existing.note || '';
+      const splitDescription = splitTaskArtifactMarkdown(nextDescription);
+      const splitPlanMarkdown = splitTaskArtifactMarkdown(
+        payload.planMarkdown !== undefined ? payload.planMarkdown : '',
+      );
+      const splitNoteMarkdown = splitTaskArtifactMarkdown(
+        payload.noteMarkdown !== undefined ? payload.noteMarkdown : '',
+      );
+      const resultArtifacts =
+        payload.result && Array.isArray(payload.result.artifacts)
+          ? normalizeTaskArtifacts(payload.result.artifacts)
+          : [];
+      const normalizedPayloadArtifacts =
+        payload.artifacts !== undefined ? normalizeTaskArtifacts(payload.artifacts) : undefined;
+      const markdownArtifacts = mergeTaskArtifacts(
+        splitDescription.artifacts,
+        splitPlanMarkdown.artifacts,
+        splitNoteMarkdown.artifacts,
+      );
+      const nextArtifacts =
+        normalizedPayloadArtifacts !== undefined
+          ? mergeTaskArtifacts(normalizedPayloadArtifacts, markdownArtifacts, resultArtifacts)
+          : markdownArtifacts.length > 0 || resultArtifacts.length > 0
+            ? mergeTaskArtifacts(markdownArtifacts, resultArtifacts)
+            : undefined;
       const planMarkdown =
         payload.planMarkdown !== undefined
-          ? payload.planMarkdown.trim()
-          : (payload.description?.trim() ?? '');
+          ? splitPlanMarkdown.markdown.trim()
+          : (splitDescription.markdown.trim() ?? '');
       const nextAcceptanceCriteria =
         payload.acceptance_criteria !== undefined
           ? payload.acceptance_criteria
@@ -409,12 +440,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const updateData: Record<string, unknown> = {
         ...(payload.title !== undefined ? { title: payload.title } : {}),
         ...(payload.noteMarkdown !== undefined
-          ? { note: payload.noteMarkdown }
+          ? { note: splitNoteMarkdown.markdown }
           : payload.description !== undefined ||
               payload.planMarkdown !== undefined ||
               payload.acceptance_criteria !== undefined
-            ? { note: buildTaskNote(nextDescription, nextAcceptanceCriteria) }
+            ? { note: buildTaskNote(splitDescription.markdown, nextAcceptanceCriteria) }
             : {}),
+        ...(nextArtifacts !== undefined ? { artifacts: nextArtifacts } : {}),
         ...(nextStatus !== undefined ? { status: nextStatus } : {}),
         ...(nextRunState !== undefined ? buildTaskRunStateUpdate(nextRunState) : {}),
         ...(payload.priority !== undefined
@@ -743,6 +775,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             taskNumber: updated.taskNumber,
             title: updated.title,
             note: updated.note,
+            artifacts: updated.artifacts,
             status: updated.status,
             taskPriority: updated.taskPriority,
             branch: updated.branch ?? null,

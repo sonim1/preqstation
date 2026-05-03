@@ -9,6 +9,7 @@ import {
   moveTask,
   queueTaskExecutionOptimistically,
 } from '@/lib/kanban-helpers';
+import type { TaskArtifact } from '@/lib/task-artifacts';
 
 export type FocusedTaskDetailStatus = 'idle' | 'loading' | 'ready';
 
@@ -18,6 +19,7 @@ export type EditableBoardTask = {
   title: string;
   branch: string | null;
   note: string | null;
+  artifacts?: TaskArtifact[];
   projectId: string | null;
   labelIds: string[];
   labels: Array<{ id: string; name: string; color: string | null }>;
@@ -145,6 +147,7 @@ export function buildEditableBoardTaskPreview(task: KanbanTask): EditableBoardTa
     title: task.title,
     branch: task.branch ?? null,
     note: task.note,
+    artifacts: task.artifacts,
     projectId: task.project?.id ?? null,
     labelIds: task.labels.map((label) => label.id),
     labels: task.labels.map((label) => ({

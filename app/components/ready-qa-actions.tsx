@@ -457,7 +457,11 @@ export function ReadyQaActions({
                         ) : null}
                         {run.reportMarkdown ? (
                           <>
-                            <MarkdownViewer markdown={run.reportMarkdown} mode="artifacts" />
+                            <MarkdownViewer
+                              markdown={run.reportMarkdown}
+                              artifacts={run.artifacts}
+                              mode="artifacts"
+                            />
                             <Group justify="space-between" align="center" gap="xs">
                               <Text size="xs" fw={700} c="dimmed" tt="uppercase">
                                 Report

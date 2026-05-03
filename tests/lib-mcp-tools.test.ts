@@ -11,6 +11,10 @@ const mocked = vi.hoisted(() => ({
   patchTaskStatusRoute: vi.fn(),
   getProjectSettingsRoute: vi.fn(),
   patchQaRunRoute: vi.fn(),
+  listTaskCommentsRoute: vi.fn(),
+  getTaskCommentRoute: vi.fn(),
+  patchTaskCommentRoute: vi.fn(),
+  replyTaskCommentRoute: vi.fn(),
 }));
 
 vi.mock('@/lib/api-tokens', () => ({
@@ -42,6 +46,19 @@ vi.mock('@/app/api/projects/[id]/settings/route', () => ({
 
 vi.mock('@/app/api/qa-runs/[id]/route', () => ({
   PATCH: mocked.patchQaRunRoute,
+}));
+
+vi.mock('@/app/api/tasks/[id]/comments/route', () => ({
+  GET: mocked.listTaskCommentsRoute,
+}));
+
+vi.mock('@/app/api/task-comments/[id]/route', () => ({
+  GET: mocked.getTaskCommentRoute,
+  PATCH: mocked.patchTaskCommentRoute,
+}));
+
+vi.mock('@/app/api/task-comments/[id]/reply/route', () => ({
+  POST: mocked.replyTaskCommentRoute,
 }));
 
 import { registerPreqTools, summarizeTask } from '@/lib/mcp/tools';
@@ -116,7 +133,7 @@ describe('registerPreqTools preq_complete_task', () => {
     );
   });
 
-  it('forwards branchName into the uploaded result and PATCH payload', async () => {
+  it('forwards branchName and artifacts into the uploaded result and PATCH payload', async () => {
     const handlers = new Map<
       string,
       (
@@ -142,12 +159,29 @@ describe('registerPreqTools preq_complete_task', () => {
       tests: 'npm run typecheck && npm run test:unit',
       notes: 'Committed directly to origin/main',
       branchName: 'task/proj-337/investigate-this-issue',
+      artifacts: [
+        {
+          type: 'image',
+          title: 'Desktop screenshot',
+          provider: 'fastio',
+          access: 'quickshare',
+          expires: '2026-05-10T00:00:00.000Z',
+          url: 'https://fast.io/s/abc',
+        },
+      ],
     });
     const payload = JSON.parse(result.content[0].text);
 
     expect(payload.uploaded_result).toMatchObject({
       branch: 'task/proj-337/investigate-this-issue',
       completed_at: expect.any(String),
+      artifacts: [
+        expect.objectContaining({
+          type: 'image',
+          title: 'Desktop screenshot',
+          url: 'https://fast.io/s/abc',
+        }),
+      ],
     });
 
     const request = mocked.patchTaskRoute.mock.calls[0][0] as Request;
@@ -159,7 +193,21 @@ describe('registerPreqTools preq_complete_task', () => {
       result: expect.objectContaining({
         branch: 'task/proj-337/investigate-this-issue',
         completed_at: expect.any(String),
+        artifacts: [
+          expect.objectContaining({
+            type: 'image',
+            title: 'Desktop screenshot',
+            url: 'https://fast.io/s/abc',
+          }),
+        ],
       }),
+      artifacts: [
+        expect.objectContaining({
+          type: 'image',
+          title: 'Desktop screenshot',
+          url: 'https://fast.io/s/abc',
+        }),
+      ],
     });
   });
 
@@ -293,7 +341,7 @@ describe('registerPreqTools preq_update_task_note', () => {
     );
   });
 
-  it('sends raw note markdown without changing workflow status', async () => {
+  it('sends raw note markdown and artifacts without changing workflow status', async () => {
     const handlers = new Map<
       string,
       (
@@ -316,6 +364,15 @@ describe('registerPreqTools preq_update_task_note', () => {
     const result = await handlers.get('preq_update_task_note')!({
       taskId: 'PROJ-337',
       noteMarkdown: '## Context\n\nTighter rewrite',
+      artifacts: [
+        {
+          type: 'document',
+          title: 'HTML prototype',
+          provider: 'fastio',
+          access: 'private-workspace',
+          url: 'https://fast.io/s/prototype',
+        },
+      ],
     });
     const payload = JSON.parse(result.content[0].text);
 
@@ -330,8 +387,96 @@ describe('registerPreqTools preq_update_task_note', () => {
     expect(requestBody).toMatchObject({
       noteMarkdown: '## Context\n\nTighter rewrite',
       engine: 'codex',
+      artifacts: [
+        expect.objectContaining({
+          type: 'document',
+          title: 'HTML prototype',
+          url: 'https://fast.io/s/prototype',
+        }),
+      ],
     });
     expect(requestBody.lifecycle_action).toBeUndefined();
     expect(requestBody.status).toBeUndefined();
+  });
+});
+
+describe('registerPreqTools preq_update_qa_run', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocked.createInternalApiToken.mockResolvedValue('preq_test_token');
+    mocked.patchQaRunRoute.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          run: {
+            id: 'run-123',
+            status: 'passed',
+            artifacts: [
+              {
+                type: 'image',
+                title: 'QA screenshot',
+                url: 'https://fast.io/s/qa',
+              },
+            ],
+          },
+        }),
+        {
+          status: 200,
+          headers: {
+            'content-type': 'application/json',
+          },
+        },
+      ),
+    );
+  });
+
+  it('forwards structured artifacts to the QA run PATCH payload', async () => {
+    const handlers = new Map<
+      string,
+      (
+        input: Record<string, unknown>,
+      ) => Promise<{ content: Array<{ type: string; text: string }> }>
+    >();
+    const server = {
+      registerTool: vi.fn((name, _config, handler) => {
+        handlers.set(name, handler);
+      }),
+    };
+
+    registerPreqTools(server as never, {
+      userId: 'owner-1',
+      userEmail: 'owner@example.com',
+      connectionId: 'conn-1',
+      getDetectedClientEngine: () => null,
+    });
+
+    await handlers.get('preq_update_qa_run')!({
+      runId: 'run-123',
+      status: 'passed',
+      reportMarkdown: '# QA Report',
+      artifacts: [
+        {
+          type: 'image',
+          title: 'QA screenshot',
+          provider: 'fastio',
+          access: 'quickshare',
+          url: 'https://fast.io/s/qa',
+        },
+      ],
+    });
+
+    const request = mocked.patchQaRunRoute.mock.calls[0][0] as Request;
+    const requestBody = JSON.parse(await request.text());
+
+    expect(requestBody).toMatchObject({
+      status: 'passed',
+      report_markdown: '# QA Report',
+      artifacts: [
+        expect.objectContaining({
+          type: 'image',
+          title: 'QA screenshot',
+          url: 'https://fast.io/s/qa',
+        }),
+      ],
+    });
   });
 });

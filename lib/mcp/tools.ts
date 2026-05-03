@@ -29,6 +29,7 @@ const PREQ_ENGINES = ['claude-code', 'codex', 'gemini-cli'] as const;
 const PREQ_ENGINE_SET = new Set(PREQ_ENGINES);
 const PREQ_DEFAULT_ENGINE: (typeof PREQ_ENGINES)[number] = 'codex';
 const INTERNAL_BASE_URL = 'https://internal.preqstation.local';
+const artifactsInputSchema = z.array(z.unknown()).max(50).optional();
 
 type McpToolContext = McpAuthContext & {
   getDetectedClientEngine: () => (typeof PREQ_ENGINES)[number] | null;
@@ -515,6 +516,7 @@ export function registerPreqTools(server: McpServer, context: McpToolContext) {
         status: z.enum(['running', 'passed', 'failed'] as const).optional(),
         targetUrl: z.string().trim().url().optional(),
         reportMarkdown: z.string().optional(),
+        artifacts: artifactsInputSchema,
         summary: z
           .object({
             total: z.number().int().min(0),
@@ -526,11 +528,12 @@ export function registerPreqTools(server: McpServer, context: McpToolContext) {
           .optional(),
       },
     },
-    async ({ runId, status, targetUrl, reportMarkdown, summary }) => {
+    async ({ runId, status, targetUrl, reportMarkdown, artifacts, summary }) => {
       const payload: Record<string, unknown> = {};
       if (status) payload.status = status;
       if (targetUrl) payload.target_url = targetUrl;
       if (typeof reportMarkdown === 'string') payload.report_markdown = reportMarkdown;
+      if (artifacts) payload.artifacts = artifacts;
       if (summary) payload.summary = summary;
       return contentText(await callPatchQaRun(context, runId, payload));
     },
@@ -754,10 +757,11 @@ export function registerPreqTools(server: McpServer, context: McpToolContext) {
       inputSchema: {
         taskId: z.string().trim().min(1),
         noteMarkdown: z.string().max(50000),
+        artifacts: artifactsInputSchema,
         engine: z.enum(PREQ_ENGINES).optional(),
       },
     },
-    async ({ taskId, noteMarkdown, engine }) => {
+    async ({ taskId, noteMarkdown, artifacts, engine }) => {
       const existing = await callGetTask(context, taskId);
       const existingTask = (existing.task || existing) as Record<string, unknown>;
       const resolvedEngine = resolveEngine(
@@ -767,6 +771,7 @@ export function registerPreqTools(server: McpServer, context: McpToolContext) {
       );
       const result = await callPatchTask(context, taskId, {
         noteMarkdown,
+        ...(artifacts ? { artifacts } : {}),
         engine: resolvedEngine,
       });
 
@@ -818,10 +823,11 @@ export function registerPreqTools(server: McpServer, context: McpToolContext) {
         prUrl: z.string().trim().url().optional(),
         notes: z.string().trim().max(8000).optional(),
         branchName: z.string().trim().max(200).optional(),
+        artifacts: artifactsInputSchema,
         engine: z.enum(PREQ_ENGINES).optional(),
       },
     },
-    async ({ taskId, summary, tests, prUrl, notes, branchName, engine }) => {
+    async ({ taskId, summary, tests, prUrl, notes, branchName, artifacts, engine }) => {
       const existing = await callGetTask(context, taskId);
       const existingTask = (existing.task || existing) as Record<string, unknown>;
       const resolvedEngine = resolveEngine(
@@ -842,11 +848,13 @@ export function registerPreqTools(server: McpServer, context: McpToolContext) {
         completed_at: new Date().toISOString(),
       };
       if (resolvedBranchName) resultPayload.branch = resolvedBranchName;
+      if (artifacts) resultPayload.artifacts = artifacts;
 
       const result = await callPatchTask(context, taskId, {
         lifecycle_action: 'complete',
         result: resultPayload,
         branch: resolvedBranchName || undefined,
+        ...(artifacts ? { artifacts } : {}),
         engine: resolvedEngine,
       });
 

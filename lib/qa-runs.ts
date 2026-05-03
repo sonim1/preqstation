@@ -3,6 +3,12 @@ import { and, desc, eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { qaRuns } from '@/lib/db/schema';
 import type { DbClientOrTx, SelectQaRun } from '@/lib/db/types';
+import {
+  mergeTaskArtifacts,
+  normalizeTaskArtifacts,
+  splitTaskArtifactMarkdown,
+  type TaskArtifact,
+} from '@/lib/task-artifacts';
 
 export const QA_RUN_STATUSES = ['queued', 'running', 'passed', 'failed'] as const;
 export type QaRunStatus = (typeof QA_RUN_STATUSES)[number];
@@ -27,6 +33,7 @@ export type QaRunView = {
   taskKeys: string[];
   summary: QaRunSummary;
   reportMarkdown: string | null;
+  artifacts?: TaskArtifact[];
   createdAt: string;
   startedAt: string | null;
   finishedAt: string | null;
@@ -68,6 +75,7 @@ export function serializeQaRun(record: SelectQaRun): QaRunView {
     taskKeys: Array.isArray(record.taskKeys) ? record.taskKeys : [],
     summary: normalizeQaSummary(record.summary),
     reportMarkdown: record.reportMarkdown ?? null,
+    artifacts: normalizeTaskArtifacts(record.artifacts),
     createdAt: record.createdAt.toISOString(),
     startedAt: record.startedAt ? record.startedAt.toISOString() : null,
     finishedAt: record.finishedAt ? record.finishedAt.toISOString() : null,
@@ -163,6 +171,7 @@ export async function updateQaRun(
     status?: QaRunStatus;
     targetUrl?: string | null;
     reportMarkdown?: string | null;
+    artifacts?: unknown;
     summary?: QaRunSummary;
   },
   client: DbClientOrTx = db,
@@ -186,6 +195,16 @@ export async function updateQaRun(
       : nextStatus === 'running'
         ? null
         : existing.finishedAt;
+  const splitReport =
+    typeof params.reportMarkdown === 'string'
+      ? splitTaskArtifactMarkdown(params.reportMarkdown)
+      : null;
+  const nextArtifacts =
+    params.artifacts !== undefined
+      ? mergeTaskArtifacts(params.artifacts, splitReport?.artifacts ?? [])
+      : splitReport && splitReport.artifacts.length > 0
+        ? mergeTaskArtifacts(existing.artifacts, splitReport.artifacts)
+        : normalizeTaskArtifacts(existing.artifacts);
 
   const [updated] = await client
     .update(qaRuns)
@@ -193,7 +212,12 @@ export async function updateQaRun(
       status: nextStatus,
       targetUrl: params.targetUrl === undefined ? existing.targetUrl : params.targetUrl,
       reportMarkdown:
-        params.reportMarkdown === undefined ? existing.reportMarkdown : params.reportMarkdown,
+        params.reportMarkdown === undefined
+          ? existing.reportMarkdown
+          : splitReport
+            ? splitReport.markdown || null
+            : params.reportMarkdown,
+      artifacts: nextArtifacts,
       summary: params.summary ?? normalizeQaSummary(existing.summary),
       startedAt: nextStartedAt,
       finishedAt: nextFinishedAt,

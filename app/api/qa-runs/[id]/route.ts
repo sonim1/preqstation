@@ -17,6 +17,7 @@ const updateSchema = z.object({
   status: z.enum(['running', 'passed', 'failed']).optional(),
   target_url: z.string().trim().url().optional().or(z.literal('')),
   report_markdown: z.string().optional().or(z.literal('')),
+  artifacts: z.array(z.unknown()).max(50).optional(),
   summary: summarySchema.optional(),
 });
 
@@ -46,6 +47,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
               : payload.report_markdown
                 ? payload.report_markdown
                 : null,
+          artifacts: payload.artifacts,
           summary: payload.summary,
         },
         client,

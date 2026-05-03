@@ -171,6 +171,17 @@ function renderTaskEditForm(
     taskPriority: string;
     taskPriorityOptions: Array<{ value: string; label: string }>;
     runState: 'queued' | 'running' | null;
+    artifacts: Array<{
+      type: 'image' | 'video' | 'document' | 'link';
+      title: string;
+      url?: string | null;
+      provider?: string | null;
+      access?: string | null;
+      expires?: string | null;
+      localPath?: string | null;
+      reason?: string | null;
+      metadata?: Record<string, unknown> | null;
+    }>;
   }> = {},
 ) {
   useAutoSaveMock.mockReturnValue({
@@ -204,6 +215,7 @@ function renderTaskEditForm(
           taskPriority: overrides.taskPriority ?? 'none',
           status: 'hold',
           engine: null,
+          artifacts: overrides.artifacts ?? [],
           runState: overrides.runState ?? null,
           runStateUpdatedAt: null,
           workLogs: [],
@@ -266,6 +278,25 @@ describe('app/components/task-edit-form answer selection', () => {
     expect(html.indexOf('data-slot="live-markdown-editor"')).toBeLessThan(
       html.indexOf('Artifacts'),
     );
+  });
+
+  it('renders structured artifacts below notes without requiring an artifact markdown block', () => {
+    const html = renderTaskEditForm('## Prototype\nClean note body', {
+      artifacts: [
+        {
+          type: 'document',
+          title: 'HTML prototype',
+          provider: 'fastio',
+          access: 'private-workspace',
+          url: 'https://fast.io/s/prototype',
+        },
+      ],
+    });
+
+    expect(html).toContain('Artifacts');
+    expect(html).toContain('HTML prototype');
+    expect(html).toContain('private-workspace');
+    expect(html).not.toContain('Artifacts:');
   });
 
   it('preserves task priority and run state in hidden inputs without rendering a priority select', () => {
