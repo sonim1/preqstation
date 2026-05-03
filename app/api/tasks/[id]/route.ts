@@ -351,7 +351,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         normalizedPayloadArtifacts !== undefined
           ? mergeTaskArtifacts(normalizedPayloadArtifacts, markdownArtifacts, resultArtifacts)
           : markdownArtifacts.length > 0 || resultArtifacts.length > 0
-            ? mergeTaskArtifacts(markdownArtifacts, resultArtifacts)
+            ? mergeTaskArtifacts(existing.artifacts, markdownArtifacts, resultArtifacts)
             : undefined;
       const planMarkdown =
         payload.planMarkdown !== undefined

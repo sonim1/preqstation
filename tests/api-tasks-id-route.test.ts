@@ -336,7 +336,7 @@ describe('app/api/tasks/[id]/route', () => {
     );
   });
 
-  it('PATCH stores structured artifacts separately from legacy note artifact blocks', async () => {
+  it('PATCH preserves existing structured artifacts when extracting legacy note artifact blocks', async () => {
     mocked.db.query.tasks.findFirst
       .mockResolvedValueOnce({
         id: 'todo-1',
@@ -345,7 +345,15 @@ describe('app/api/tasks/[id]/route', () => {
         taskNumber: 337,
         title: 'Prototype task',
         note: '## Prototype',
-        artifacts: [],
+        artifacts: [
+          {
+            type: 'document',
+            title: 'Existing brief',
+            provider: 'fastio',
+            access: 'private',
+            url: 'https://fast.io/s/brief',
+          },
+        ],
         status: 'todo',
         taskPriority: 'none',
         engine: 'codex',
@@ -361,6 +369,13 @@ describe('app/api/tasks/[id]/route', () => {
         title: 'Prototype task',
         note: '## Prototype\n\nUpdated body',
         artifacts: [
+          {
+            type: 'document',
+            title: 'Existing brief',
+            provider: 'fastio',
+            access: 'private',
+            url: 'https://fast.io/s/brief',
+          },
           {
             type: 'image',
             title: 'Inbox screenshot',
@@ -400,6 +415,13 @@ describe('app/api/tasks/[id]/route', () => {
         note: '## Prototype\n\nUpdated body',
         artifacts: [
           expect.objectContaining({
+            type: 'document',
+            title: 'Existing brief',
+            provider: 'fastio',
+            access: 'private',
+            url: 'https://fast.io/s/brief',
+          }),
+          expect.objectContaining({
             type: 'image',
             title: 'Inbox screenshot',
             provider: 'fastio',
@@ -413,6 +435,11 @@ describe('app/api/tasks/[id]/route', () => {
       expect.objectContaining({
         description: '## Prototype\n\nUpdated body',
         artifacts: [
+          expect.objectContaining({
+            type: 'document',
+            title: 'Existing brief',
+            url: 'https://fast.io/s/brief',
+          }),
           expect.objectContaining({
             type: 'image',
             title: 'Inbox screenshot',
