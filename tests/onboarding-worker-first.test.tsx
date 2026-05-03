@@ -9,7 +9,9 @@ vi.mock('@mantine/core', () => {
   }
   List.Item = ListItem;
 
-  const Stepper = ({ children }: { children?: React.ReactNode }) => <nav>{children}</nav>;
+  const Stepper = ({ active, children }: { active?: number; children?: React.ReactNode }) => (
+    <nav data-active={active}>{children}</nav>
+  );
   function StepperStep({ label }: { label?: React.ReactNode }) {
     return <span>{label}</span>;
   }
@@ -123,6 +125,31 @@ describe('OnboardingWizard', () => {
     expect(html).toContain('Worker not connected');
     expect(html).toContain('Connect a worker through MCP or an API token.');
     expect(html).toContain('Create Project');
+    expect(html).toContain('Task setup locked');
+    expect(html).not.toContain('Create your first task');
+    expect(html).toContain('data-active="1"');
+  });
+
+  it('shows the task form only after a project is confirmed', () => {
+    const html = renderToStaticMarkup(
+      <OnboardingWizard
+        createProjectAction={createProjectAction}
+        createTaskAction={createTaskAction}
+        initialProject={{ id: 'project-1', name: 'Launch Ops', projectKey: 'OPS' }}
+        initialTask={null}
+        workerReadiness={{
+          status: 'missing',
+          label: 'Worker not connected',
+          detail: 'Connect a worker through MCP or an API token.',
+        }}
+      />,
+    );
+
+    expect(html).toContain('Project confirmed');
+    expect(html).toContain('Create your first task');
+    expect(html).toContain('name="projectId"');
+    expect(html).toContain('value="project-1"');
+    expect(html).toContain('data-active="2"');
   });
 
   it('shows existing project and task as confirmed before worker readiness', () => {
@@ -146,5 +173,6 @@ describe('OnboardingWizard', () => {
     expect(html).toContain('OPS-1');
     expect(html).toContain('Worker connected');
     expect(html).toContain('Go to Dashboard');
+    expect(html).toContain('data-active="3"');
   });
 });

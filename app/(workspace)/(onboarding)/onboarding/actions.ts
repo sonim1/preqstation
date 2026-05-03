@@ -13,7 +13,7 @@ export type OnboardingProjectResult =
   | { ok: false; message: string };
 
 export type OnboardingTaskResult =
-  | { ok: true; taskKey: string; taskTitle: string; taskStatus: string }
+  | { ok: true; taskId: string; taskKey: string; taskTitle: string; taskStatus: string }
   | { ok: false; message: string };
 
 export async function createOnboardingProject(
@@ -75,6 +75,7 @@ export async function createOnboardingTask(
     revalidatePath('/');
     return {
       ok: true as const,
+      taskId: result.data.id,
       taskKey: result.data.taskKey,
       taskTitle: String(formData.get('title') || ''),
       taskStatus: 'inbox',

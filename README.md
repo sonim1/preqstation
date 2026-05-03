@@ -80,6 +80,18 @@ npm run dev
 The app runs at `http://localhost:3000` by default. Set `PORT=` in `.env.local` to change it.
 `drizzle-kit` reads `DATABASE_URL` from `.env.local`.
 
+### First-Run Onboarding
+
+After the owner logs in for the first time, an empty workspace routes to `/onboarding`. The wizard
+uses a worker-first sequence:
+
+1. Create or confirm the first project.
+2. Create the first task inside that project.
+3. Connect a worker through MCP or an API token.
+
+Dispatcher automation is optional. Use the dispatcher after the project, task, and worker path is
+working; it is not required for the first successful setup.
+
 ---
 
 ## Environment Variables

@@ -158,6 +158,8 @@ Recommended validation from the settings screen:
 - Cross-origin requests to protected APIs return `403 Invalid origin`
 - Burst abuse returns `429 Too many requests`
 - `/api/projects` and `/api/todos` are owner-only
+- An owner with no projects lands on `/onboarding`, creates a project first, then creates the first
+  task for that project before connecting a worker
 - Dashboard integration URL save, log creation, and status updates work
 - Board columns show `Hold` and `Ready`
 - OpenClaw Telegram test, OpenClaw `/status`, and Hermes Telegram test succeed for the channels you enabled
@@ -166,6 +168,7 @@ Recommended validation from the settings screen:
 - QA runs can queue through `🦞 Telegram` and/or `H Telegram`, and project insight dispatch uses
   the enabled Telegram target chips shown in the modal
 - `claude mcp add --transport http .../mcp` or `codex mcp add ... --url .../mcp` completes browser login successfully
+- Dispatcher setup is optional and can wait until the project/task/worker path is already working
 
 ## 8) Offline Workspace Validation
 

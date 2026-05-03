@@ -67,12 +67,16 @@ export function OnboardingWizard({
       }
     : initialProject;
   const createdTask = taskState?.ok
-    ? { taskKey: taskState.taskKey, title: taskState.taskTitle, status: taskState.taskStatus }
+    ? {
+        id: taskState.taskId,
+        taskKey: taskState.taskKey,
+        title: taskState.taskTitle,
+        status: taskState.taskStatus,
+      }
     : initialTask;
   const projectDone = Boolean(createdProject);
   const taskDone = Boolean(createdTask);
-  const workerDone = workerReadiness.status === 'ready';
-  const active = workerDone && taskDone ? 3 : taskDone ? 2 : projectDone ? 1 : 0;
+  const active = taskDone ? 3 : projectDone ? 2 : 1;
 
   // Show error notifications (same pattern as existing panels)
   useEffect(() => {
@@ -155,7 +159,19 @@ export function OnboardingWizard({
       </Paper>
 
       <Paper withBorder radius="lg" p="lg">
-        {taskDone ? (
+        {!projectDone ? (
+          <Stack gap="xs">
+            <Group gap="sm">
+              <ThemeIcon variant="light" color="gray" radius="xl">
+                <IconCircleDashed size={16} />
+              </ThemeIcon>
+              <Title order={3}>{`${terminology.task.singular} setup locked`}</Title>
+            </Group>
+            <Text c="dimmed" size="sm">
+              Create a project first so the first worker task has a confirmed home.
+            </Text>
+          </Stack>
+        ) : taskDone ? (
           <Stack gap="xs">
             <Group gap="sm">
               <ThemeIcon variant="light" color="green" radius="xl">
