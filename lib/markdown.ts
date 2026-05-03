@@ -200,6 +200,8 @@ export function preserveTightMarkdownSpacing(currentMarkdown: string, nextMarkdo
   return reconciledLines.join(nextLineEnding);
 }
 
+export const preserveTightHeadingParagraphSpacing = preserveTightMarkdownSpacing;
+
 function parseMarkdownBlocks(source: string) {
   const blocks: MarkdownBlock[] = [];
   const listStack: MarkdownList[] = [];

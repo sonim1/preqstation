@@ -47,8 +47,8 @@ import {
   COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_LOW,
   type EditorState,
-  INDENT_COMMAND,
-  OUTDENT_COMMAND,
+  INDENT_CONTENT_COMMAND,
+  OUTDENT_CONTENT_COMMAND,
   PASTE_COMMAND,
   type RangeSelection,
 } from 'lexical';
@@ -672,14 +672,17 @@ function LiveTabPlugin() {
         const listItemNode = getSelectedListItemNode(selection);
         if (listItemNode) {
           return editor.dispatchCommand(
-            event.shiftKey ? OUTDENT_COMMAND : INDENT_COMMAND,
+            event.shiftKey ? OUTDENT_CONTENT_COMMAND : INDENT_CONTENT_COMMAND,
             undefined,
           );
         }
 
-        // For non-list items, just insert 4 spaces (or 2 if you prefer, but user wants 4)
+        // Insert 4 spaces for non-list contexts.
         editor.update(() => {
-          selection.insertRawText('    ');
+          const currentSelection = $getSelection();
+          if ($isRangeSelection(currentSelection)) {
+            currentSelection.insertRawText('    ');
+          }
         });
 
         return true;
