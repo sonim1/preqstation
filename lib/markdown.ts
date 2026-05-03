@@ -340,7 +340,7 @@ function parseArtifactLine(line: string): MarkdownArtifact | null {
   };
 }
 
-function splitMarkdownArtifacts(markdown?: string | null) {
+export function splitMarkdownArtifacts(markdown?: string | null) {
   const source = markdown ?? '';
   if (!source) {
     return { artifacts: [] as MarkdownArtifact[], markdown: '' };

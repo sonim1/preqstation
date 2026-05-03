@@ -24,6 +24,11 @@ import {
   toPreqTaskRunState,
   toPreqTaskStatus,
 } from '@/lib/preq-task';
+import {
+  mergeTaskArtifacts,
+  normalizeTaskArtifacts,
+  splitTaskArtifactMarkdown,
+} from '@/lib/task-artifacts';
 import { normalizeTaskDispatchTarget } from '@/lib/task-dispatch';
 import { isTaskKeyUniqueConstraintError, resolveNextTaskKey } from '@/lib/task-keys';
 import { extractTaskLabels } from '@/lib/task-labels';
@@ -42,6 +47,7 @@ const createTaskSchema = z.object({
   labels: z.array(z.string().trim().min(1).max(40)).optional(),
   acceptance_criteria: z.array(z.string().trim().min(1).max(200)).optional(),
   engine: z.enum(ENGINE_KEYS).optional().or(z.literal('')),
+  artifacts: z.array(z.unknown()).max(50).optional(),
 });
 
 function parseProjectKeyFilter(raw: string | null) {
@@ -218,6 +224,7 @@ export async function GET(req: Request) {
             taskNumber: todo.taskNumber,
             title: todo.title,
             note: todo.note,
+            artifacts: todo.artifacts,
             status: todo.status,
             taskPriority: todo.taskPriority,
             branch: todo.branch ?? null,
@@ -299,6 +306,11 @@ export async function POST(req: Request) {
       });
 
       const todoStatus = toInternalTaskStatus(payload.status) || 'inbox';
+      const splitDescription = splitTaskArtifactMarkdown(payload.description || '');
+      const nextArtifacts = mergeTaskArtifacts(
+        payload.artifacts !== undefined ? normalizeTaskArtifacts(payload.artifacts) : [],
+        splitDescription.artifacts,
+      );
       const branch =
         payload.branch?.trim() || generateBranchName(taskKeyParts.taskKey, payload.title);
       const engine = payload.engine || null;
@@ -316,7 +328,8 @@ export async function POST(req: Request) {
           taskPrefix: taskKeyParts.taskPrefix,
           taskNumber: taskKeyParts.taskNumber,
           title: payload.title,
-          note: buildTaskNote(payload.description || '', payload.acceptance_criteria),
+          note: buildTaskNote(splitDescription.markdown, payload.acceptance_criteria),
+          artifacts: nextArtifacts,
           status: todoStatus,
           taskPriority: normalizeTaskPriority(payload.priority),
           branch,
@@ -395,6 +408,7 @@ export async function POST(req: Request) {
               taskNumber: todo.taskNumber,
               title: todo.title,
               note: todo.note,
+              artifacts: todo.artifacts,
               status: todo.status,
               taskPriority: todo.taskPriority,
               branch: todo.branch ?? null,

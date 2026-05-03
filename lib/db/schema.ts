@@ -19,6 +19,7 @@ import {
 
 import { tsvector } from '@/lib/db/pg-types';
 import type { ProjectBackgroundCredit } from '@/lib/project-backgrounds';
+import type { TaskArtifact } from '@/lib/task-artifacts';
 
 const currentAppUserId = sql`nullif(current_setting('app.user_id', true), '')`;
 
@@ -362,6 +363,7 @@ export const tasks = pgTable(
     taskNumber: integer('task_number').notNull(),
     title: text('title').notNull(),
     note: text('note'),
+    artifacts: jsonb('artifacts').$type<TaskArtifact[]>().notNull().default([]),
     status: text('status').notNull().default('inbox'),
     taskPriority: text('task_priority').notNull().default('none'),
     branch: text('branch'),
@@ -651,6 +653,7 @@ export const qaRuns = pgTable(
       low: number;
     }>(),
     reportMarkdown: text('report_markdown'),
+    artifacts: jsonb('artifacts').$type<TaskArtifact[]>().notNull().default([]),
     startedAt: timestamp('started_at', { withTimezone: true, precision: 6 }),
     finishedAt: timestamp('finished_at', { withTimezone: true, precision: 6 }),
     createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),

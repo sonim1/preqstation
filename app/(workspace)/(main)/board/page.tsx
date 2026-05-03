@@ -82,6 +82,7 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
               title: true,
               branch: true,
               note: true,
+              artifacts: true,
               projectId: true,
               taskPriority: true,
               status: true,

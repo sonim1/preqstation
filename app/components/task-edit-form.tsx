@@ -47,6 +47,7 @@ import { useTaskOfflineDraft } from '@/app/hooks/use-task-offline-draft';
 import { type KanbanStatus, type KanbanTask } from '@/lib/kanban-helpers';
 import type { EditableBoardTask } from '@/lib/kanban-store';
 import { showErrorNotification } from '@/lib/notifications';
+import type { TaskArtifact } from '@/lib/task-artifacts';
 import { setTaskEditRefreshBlocked } from '@/lib/task-edit-refresh-guard';
 import {
   buildTaskEditFieldRevisions,
@@ -77,6 +78,7 @@ export type TaskEditFormProps = {
     taskKey: string;
     title: string;
     note: string | null;
+    artifacts?: TaskArtifact[] | null;
     projectId: string | null;
     labelIds: string[];
     labels: Array<{ id: string; name: string; color: string | null }>;
@@ -1096,7 +1098,11 @@ function TaskEditFormContent({
                   />
                 </div>
 
-                <MarkdownViewer markdown={noteMarkdown} mode="artifacts" />
+                <MarkdownViewer
+                  markdown={noteMarkdown}
+                  artifacts={editableTodo.artifacts}
+                  mode="artifacts"
+                />
               </Stack>
             </section>
 

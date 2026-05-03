@@ -179,6 +179,36 @@ Coding agent checks task status via preq_get_task, then:
 
 Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `archived`. External task payloads can also include `run_state` (`queued` / `running` / `null`) plus `run_state_updated_at`. Task APIs reject legacy status aliases, and internal todo APIs accept `labelIds` only.
 
+#### Artifacts
+
+Tasks and QA runs persist structured artifacts in a JSON `artifacts` field. Full task responses include `artifacts`; compact task lists omit it. `POST /api/tasks`, `PATCH /api/tasks/:id`, and `PATCH /api/qa-runs/:id` accept up to 50 artifacts, and MCP tools forward artifacts through `preq_update_task_note`, `preq_complete_task`, and `preq_update_qa_run`.
+
+Accepted artifact objects are normalized to:
+
+| Field       | Type   | Notes                                                                                             |
+| ----------- | ------ | ------------------------------------------------------------------------------------------------- |
+| `type`      | string | One of `image`, `video`, `document`, or `link`; URL-only entries default to `link`                |
+| `title`     | string | Trimmed display title; defaults to `Artifact`, `Local artifact`, or `Artifact publishing skipped` |
+| `url`       | string | Optional `http` or `https` URL                                                                    |
+| `localPath` | string | Optional local artifact path; `local_path` is also accepted                                       |
+| `reason`    | string | Optional explanation when publishing is skipped or unavailable                                    |
+| `provider`  | string | Optional storage or publishing provider                                                           |
+| `access`    | string | Optional access scope or visibility                                                               |
+| `expires`   | string | Optional expiry text; `expiration` is also accepted                                               |
+| `metadata`  | object | Optional object metadata; arrays and scalar values are ignored                                    |
+
+Each text field is trimmed and capped at 2,000 characters. Invalid artifact entries are ignored, duplicate entries are collapsed by `type`, `url`, `localPath`, and title, and accepted arrays are capped at 50 artifacts. A valid artifact needs a supported type and at least one of `url`, `localPath`, or `reason`.
+
+Legacy markdown artifact blocks are still accepted in task notes and QA reports:
+
+```markdown
+Artifacts:
+
+- [image] Screenshot title | provider=fastio | access=private | url=https://example.com/screenshot.png
+```
+
+When such a block is parsed, supported entries (`image`, `video`, or `document` with a safe URL) move into the structured `artifacts` field and are removed from the stored markdown body. The `0022_task_artifacts` migration adds non-null JSONB `artifacts` columns to `tasks` and `qa_runs` with `[]` defaults, so existing rows migrate without backfill work and begin returning an empty artifacts array until new artifacts are stored.
+
 Authenticated REST handlers await the scoped DB call inside their route `try` blocks so PostgreSQL constraint/RLS errors are translated into HTTP responses instead of escaping the handler promise.
 
 #### Internal APIs (Session cookie)

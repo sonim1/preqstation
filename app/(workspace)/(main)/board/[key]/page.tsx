@@ -136,6 +136,7 @@ export default async function ProjectBoardPage({ params, searchParams }: Project
               title: true,
               branch: true,
               note: true,
+              artifacts: true,
               projectId: true,
               taskPriority: true,
               status: true,

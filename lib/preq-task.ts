@@ -10,6 +10,7 @@ import {
   resolveAgentInstructions,
   resolveDeployStrategyConfig,
 } from '@/lib/project-settings';
+import { normalizeTaskArtifacts, type TaskArtifact } from '@/lib/task-artifacts';
 import { normalizeTaskDispatchTarget } from '@/lib/task-dispatch';
 import { isTaskStatus, parseTaskPriority, TASK_STATUSES, type TaskRunState } from '@/lib/task-meta';
 
@@ -24,6 +25,7 @@ export type PreqSerializableTask = {
   taskNumber: number;
   title: string;
   note: string | null;
+  artifacts?: TaskArtifact[] | null;
   status: string;
   taskPriority: string;
   branch: string | null;
@@ -191,6 +193,7 @@ export function serializePreqTask(task: PreqSerializableTask, ownerEmail: string
     task_number: task.taskNumber,
     title: task.title,
     description: task.note,
+    artifacts: normalizeTaskArtifacts(task.artifacts),
     status: toPreqTaskStatus(task.status),
     priority: parseTaskPriority(task.taskPriority),
     assignee: ownerEmail.split('@')[0] || ownerEmail,
