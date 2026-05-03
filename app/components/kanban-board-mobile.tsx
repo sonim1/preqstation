@@ -263,7 +263,14 @@ export function KanbanBoardMobile({
                             key={task.id}
                             p={0}
                             radius={6}
-                            className={`${cardStyles.itemCard} ${cardStyles.kanbanCard}${task.status === 'hold' ? ` ${cardStyles.kanbanCardHold}` : ''} kanban-mobile-card`}
+                            className={[
+                              cardStyles.itemCard,
+                              cardStyles.kanbanCard,
+                              task.status === 'hold' ? cardStyles.kanbanCardHold : null,
+                              'kanban-mobile-card',
+                            ]
+                              .filter(Boolean)
+                              .join(' ')}
                             data-run-state={task.runState ?? undefined}
                             role="link"
                             tabIndex={0}

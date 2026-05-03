@@ -1340,10 +1340,6 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   transition: background-color 140ms ease;
 }
 
-.kanban-column--hold {
-  --kanban-bottom-gradient-surface: transparent;
-}
-
 .kanban-column--hold .kanban-column-title {
   color: color-mix(in srgb, var(--ui-warning), #6b4500 22%);
 }
@@ -2263,10 +2259,6 @@ html[data-mantine-color-scheme='dark'] .workspace-navbar {
 
 html[data-mantine-color-scheme='dark'] .kanban-column {
   background: transparent;
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-column--hold {
-  --kanban-bottom-gradient-surface: transparent;
 }
 
 html[data-mantine-color-scheme='dark'] .kanban-column--hold .kanban-column-title {
