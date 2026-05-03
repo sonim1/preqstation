@@ -127,6 +127,6 @@ export function mergeTaskArtifacts(...artifactLists: unknown[]) {
   return normalizeTaskArtifacts(artifactLists.flatMap((list) => (Array.isArray(list) ? list : [])));
 }
 
-export function legacyMarkdownArtifactToTaskArtifact(artifact: MarkdownArtifact): TaskArtifact {
-  return normalizeTaskArtifact(artifact) as TaskArtifact;
+export function legacyMarkdownArtifactToTaskArtifact(artifact: MarkdownArtifact): TaskArtifact | null {
+  return normalizeTaskArtifact(artifact);
 }

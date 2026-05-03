@@ -274,7 +274,7 @@ export type TaskForKanban = {
   branch?: string | null;
   title: string;
   note: string | null;
-  artifacts?: TaskArtifact[] | unknown;
+  artifacts?: TaskArtifact[] | null;
   sortOrder: string;
   taskPriority: string;
   dueAt: Date | null;

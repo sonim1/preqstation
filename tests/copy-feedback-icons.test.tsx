@@ -83,6 +83,7 @@ function createRun() {
     taskKeys: ['QA-1'],
     summary: { total: 1, critical: 0, high: 1, medium: 0, low: 0 },
     reportMarkdown: '# QA Report',
+    artifacts: [],
     createdAt: '2026-03-18T10:00:00.000Z',
     startedAt: '2026-03-18T10:01:00.000Z',
     finishedAt: '2026-03-18T10:03:00.000Z',

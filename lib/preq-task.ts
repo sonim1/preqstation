@@ -25,7 +25,7 @@ export type PreqSerializableTask = {
   taskNumber: number;
   title: string;
   note: string | null;
-  artifacts?: TaskArtifact[] | unknown;
+  artifacts?: TaskArtifact[] | null;
   status: string;
   taskPriority: string;
   branch: string | null;

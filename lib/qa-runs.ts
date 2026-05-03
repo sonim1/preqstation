@@ -33,7 +33,7 @@ export type QaRunView = {
   taskKeys: string[];
   summary: QaRunSummary;
   reportMarkdown: string | null;
-  artifacts?: TaskArtifact[];
+  artifacts: TaskArtifact[];
   createdAt: string;
   startedAt: string | null;
   finishedAt: string | null;
