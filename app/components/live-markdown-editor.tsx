@@ -29,12 +29,7 @@ import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { $isHeadingNode, HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { Box, Group, SegmentedControl, Text } from '@mantine/core';
-import {
-  KEY_ARROW_RIGHT_COMMAND,
-  KEY_BACKSPACE_COMMAND,
-  KEY_SPACE_COMMAND,
-  KEY_TAB_COMMAND,
-} from 'lexical';
+import { KEY_ARROW_RIGHT_COMMAND, KEY_BACKSPACE_COMMAND, KEY_SPACE_COMMAND, KEY_TAB_COMMAND } from 'lexical';
 import {
   $createParagraphNode,
   $getNodeByKey,

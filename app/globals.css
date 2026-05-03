@@ -1748,7 +1748,7 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   min-height: 1.7rem;
 }
 
-.live-editor-input [data-live-editor-empty='true'][data-live-editor-active='true']::after {
+.live-editor-input [data-live-editor-empty='true']::after {
   content: '';
   position: absolute;
   inset: 0.15rem 0 0.15rem -0.35rem;
