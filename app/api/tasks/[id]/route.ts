@@ -343,7 +343,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const normalizedPayloadArtifacts =
         payload.artifacts !== undefined ? normalizeTaskArtifacts(payload.artifacts) : undefined;
       const markdownArtifacts = mergeTaskArtifacts(
-        splitDescription.artifacts,
+        payload.description !== undefined ? splitDescription.artifacts : [],
         splitPlanMarkdown.artifacts,
         splitNoteMarkdown.artifacts,
       );
@@ -357,6 +357,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         payload.planMarkdown !== undefined
           ? splitPlanMarkdown.markdown.trim()
           : (splitDescription.markdown.trim() ?? '');
+      const lifecyclePlanMarkdown =
+        payload.planMarkdown !== undefined ? splitPlanMarkdown.markdown.trim() : '';
       const nextAcceptanceCriteria =
         payload.acceptance_criteria !== undefined
           ? payload.acceptance_criteria
@@ -417,7 +419,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           { status: 409 },
         );
       }
-      if (lifecycleAction === 'plan' && planMarkdown.length === 0) {
+      if (lifecycleAction === 'plan' && lifecyclePlanMarkdown.length === 0) {
         return NextResponse.json(
           { error: 'PREQ lifecycle action "plan" requires non-empty plan content.' },
           { status: 400 },

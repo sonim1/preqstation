@@ -423,6 +423,80 @@ describe('app/api/tasks/[id]/route', () => {
     );
   });
 
+  it('PATCH respects explicit artifact replacement when old note has legacy artifacts', async () => {
+    mocked.db.query.tasks.findFirst
+      .mockResolvedValueOnce({
+        id: 'todo-1',
+        taskKey: 'PROJ-338',
+        taskPrefix: 'PROJ',
+        taskNumber: 338,
+        title: 'Prototype task',
+        note: [
+          '## Prototype',
+          '',
+          'Previous body',
+          '',
+          'Artifacts:',
+          '- [image] Old screenshot | provider=fastio | access=private | url=https://fast.io/s/old',
+        ].join('\n'),
+        artifacts: [
+          {
+            type: 'image',
+            title: 'Old screenshot',
+            provider: 'fastio',
+            access: 'private',
+            url: 'https://fast.io/s/old',
+          },
+        ],
+        status: 'todo',
+        taskPriority: 'none',
+        engine: 'codex',
+        projectId: null,
+        project: null,
+        label: null,
+      })
+      .mockResolvedValueOnce({
+        id: 'todo-1',
+        taskKey: 'PROJ-338',
+        taskPrefix: 'PROJ',
+        taskNumber: 338,
+        title: 'Prototype task',
+        note: '## Prototype\n\nUpdated body',
+        artifacts: [],
+        status: 'todo',
+        taskPriority: 'none',
+        engine: 'codex',
+        createdAt: new Date('2026-04-08T14:00:00.000Z'),
+        updatedAt: new Date('2026-04-08T14:05:00.000Z'),
+        projectId: null,
+        project: null,
+        label: null,
+      });
+
+    const response = await PATCH(
+      patchRequest({
+        noteMarkdown: '## Prototype\n\nUpdated body',
+        artifacts: [],
+      }),
+      { params: Promise.resolve({ id: 'PROJ-338' }) },
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mocked.setFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        note: '## Prototype\n\nUpdated body',
+        artifacts: [],
+      }),
+    );
+    expect(body.task).toEqual(
+      expect.objectContaining({
+        description: '## Prototype\n\nUpdated body',
+        artifacts: [],
+      }),
+    );
+  });
+
   it('PATCH writes note history when only the deeper note body changes', async () => {
     mocked.db.query.tasks.findFirst
       .mockResolvedValueOnce({
@@ -1524,38 +1598,21 @@ describe('app/api/tasks/[id]/route', () => {
     );
   });
 
-  it('PATCH lifecycle_action plan with description writes PREQSTATION plan work log', async () => {
-    mocked.db.query.tasks.findFirst
-      .mockResolvedValueOnce({
-        id: 'todo-1',
-        taskKey: 'NONE-1',
-        taskPrefix: 'NONE',
-        taskNumber: 1,
-        title: 'Task A',
-        note: null,
-        status: 'inbox',
-        taskPriority: 'none',
-        engine: 'codex',
-        projectId: null,
-        project: null,
-        label: null,
-      })
-      .mockResolvedValueOnce({
-        id: 'todo-1',
-        taskKey: 'NONE-1',
-        taskPrefix: 'NONE',
-        taskNumber: 1,
-        title: 'Task A',
-        note: '## Plan\n\n- [ ] verify work log behavior',
-        status: 'todo',
-        taskPriority: 'none',
-        engine: 'codex',
-        createdAt: new Date('2026-02-18T00:00:00.000Z'),
-        updatedAt: new Date('2026-02-18T00:00:00.000Z'),
-        projectId: null,
-        project: null,
-        label: null,
-      });
+  it('PATCH lifecycle_action plan rejects description without explicit planMarkdown', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValueOnce({
+      id: 'todo-1',
+      taskKey: 'NONE-1',
+      taskPrefix: 'NONE',
+      taskNumber: 1,
+      title: 'Task A',
+      note: 'Existing plan',
+      status: 'inbox',
+      taskPriority: 'none',
+      engine: 'codex',
+      projectId: null,
+      project: null,
+      label: null,
+    });
 
     const response = await PATCH(
       patchRequest({
@@ -1566,11 +1623,14 @@ describe('app/api/tasks/[id]/route', () => {
       { params: Promise.resolve({ id: 'NONE-1' }) },
     );
 
-    expect(response.status).toBe(200);
-    expect(mocked.valuesFn).toHaveBeenCalledWith(
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: 'PREQ lifecycle action "plan" requires non-empty plan content.',
+    });
+    expect(mocked.db.update).not.toHaveBeenCalled();
+    expect(mocked.valuesFn).not.toHaveBeenCalledWith(
       expect.objectContaining({
         title: expect.stringContaining('PREQSTATION Plan'),
-        engine: 'codex',
       }),
     );
   });
