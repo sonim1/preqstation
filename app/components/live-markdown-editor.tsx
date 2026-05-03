@@ -667,15 +667,20 @@ function LiveTabPlugin() {
           return false;
         }
 
-        event.preventDefault();
-
         const listItemNode = getSelectedListItemNode(selection);
         if (listItemNode) {
+          event.preventDefault();
           return editor.dispatchCommand(
             event.shiftKey ? OUTDENT_CONTENT_COMMAND : INDENT_CONTENT_COMMAND,
             undefined,
           );
         }
+
+        if (event.shiftKey) {
+          return false;
+        }
+
+        event.preventDefault();
 
         // Insert 4 spaces for non-list contexts.
         editor.update(() => {
