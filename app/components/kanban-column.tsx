@@ -82,7 +82,9 @@ export function KanbanColumn({
   return (
     <Paper p="sm" className={columnClassName}>
       <Group justify="space-between" mb="sm" className="kanban-column-header">
-        <Title order={4}>{label}</Title>
+        <Title order={4} className="kanban-column-title">
+          {label}
+        </Title>
         <Group gap={6} align="center">
           <Badge color={statusColors[status]} variant="light">
             {tasks.length}
@@ -121,7 +123,14 @@ export function KanbanColumn({
                       }}
                       p={0}
                       radius={6}
-                      className={`${cardStyles.itemCard} ${cardStyles.kanbanCard}${snapshot.isDragging ? ` ${cardStyles.isDragging}` : ''}`}
+                      className={[
+                        cardStyles.itemCard,
+                        cardStyles.kanbanCard,
+                        task.status === 'hold' ? cardStyles.kanbanCardHold : null,
+                        snapshot.isDragging ? cardStyles.isDragging : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
                       data-run-state={task.runState ?? undefined}
                       role="link"
                       tabIndex={snapshot.isDragging ? -1 : 0}

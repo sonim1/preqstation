@@ -32,6 +32,14 @@ const dashboardOperatorDeskCss = fs.readFileSync(
   path.join(process.cwd(), 'app/components/dashboard-operator-desk.module.css'),
   'utf8',
 );
+const kanbanColumnSource = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/kanban-column.tsx'),
+  'utf8',
+);
+const kanbanBoardMobileSource = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/kanban-board-mobile.tsx'),
+  'utf8',
+);
 const projectCardMenuSource = fs.readFileSync(
   path.join(process.cwd(), 'app/components/project-card-menu.tsx'),
   'utf8',
@@ -78,14 +86,27 @@ describe('responsive density audit fixes', () => {
     expect(globalsCss).not.toContain('width: 360px;');
     expect(globalsCss).not.toContain('flex-basis: 300px;');
     expect(globalsCss).not.toContain('width: 300px;');
+    expect(globalsCss).toMatch(/\.kanban-board-shell\s*\{[\s\S]*gap:\s*0;/);
+    expect(globalsCss).toMatch(/\.kanban-grid\s*\{[\s\S]*gap:\s*0;/);
     expect(globalsCss).toMatch(
       /@media \(max-width: 62em\)\s*\{[\s\S]*\.kanban-column\s*\{[\s\S]*flex-basis:\s*min\(78vw,\s*320px\);[\s\S]*width:\s*min\(78vw,\s*320px\);/,
     );
     expect(globalsCss).not.toContain('.kanban-hold-rail');
-    expect(globalsCss).toMatch(/\.kanban-column--hold\s*\{[\s\S]*background:/);
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\]\s+\.kanban-column--hold\s*\{[\s\S]*background:/,
+      /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;/,
     );
+    expect(globalsCss).toMatch(
+      /\.kanban-column--hold \.kanban-column-title\s*\{[\s\S]*color:\s*color-mix\(in srgb,\s*var\(--ui-warning\),\s*#6b4500 22%\);/,
+    );
+    expect(globalsCss).toMatch(
+      /html\[data-mantine-color-scheme='dark'\]\s+\.kanban-column,\s*html\[data-mantine-color-scheme='dark'\]\s+\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;/,
+    );
+    expect(globalsCss).toMatch(
+      /html\[data-mantine-color-scheme='dark'\]\s+\.kanban-column--hold \.kanban-column-title\s*\{[\s\S]*color:\s*#f4c64d;/,
+    );
+    expect(kanbanColumnSource).toContain('kanban-column-title');
+    expect(kanbanColumnSource).toContain('cardStyles.kanbanCardHold');
+    expect(kanbanBoardMobileSource).toContain('cardStyles.kanbanCardHold');
   });
 
   it('keeps the archived drawer scroll region full-height on mobile', () => {

@@ -205,6 +205,15 @@ describe('app/components/kanban-card', () => {
     expect(cardsCss).toMatch(/\.kanbanCard::after\s*\{[\s\S]*content:\s*none;/);
   });
 
+  it('marks hold cards with a left warning accent instead of coloring the whole lane', () => {
+    expect(cardsCss).toMatch(
+      /\.kanbanCardHold::before\s*\{[\s\S]*position:\s*absolute;[\s\S]*left:\s*0;[\s\S]*width:\s*4px;[\s\S]*background:\s*linear-gradient\(/,
+    );
+    expect(cardsCss).toMatch(
+      /\.kanbanCardHold::before\s*\{[\s\S]*box-shadow:\s*0 0 16px color-mix\(in srgb,\s*var\(--ui-warning\),\s*transparent 42%\);/,
+    );
+  });
+
   it('renders empty columns with a top-only aurora seam instead of a bordered panel', () => {
     const emptyStateRule = getCssRuleBody(globalsCss, '.kanban-empty-state--compact');
     const emptyStateAuroraRule = getCssRuleBody(globalsCss, '.kanban-empty-state--compact::before');
