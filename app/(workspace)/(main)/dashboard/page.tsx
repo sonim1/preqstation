@@ -163,6 +163,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     ? (projectLabelOptionsByProjectId[editableTodo.projectId] ?? [])
     : [];
 
+  if (projects.length === 0 && !activePanel) {
+    redirect('/onboarding');
+  }
+
   return (
     <Container
       className={dashboardClassName}

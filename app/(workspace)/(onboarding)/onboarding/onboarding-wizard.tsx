@@ -1,18 +1,29 @@
 'use client';
 
 import {
+  Alert,
+  Badge,
   Button,
   Code,
   CopyButton,
+  Divider,
   Group,
+  List,
   Paper,
   Stack,
   Stepper,
   Text,
   TextInput,
+  ThemeIcon,
   Title,
 } from '@mantine/core';
-import { IconCheck, IconClipboard } from '@tabler/icons-react';
+import {
+  IconCheck,
+  IconCircleCheck,
+  IconCircleDashed,
+  IconClipboard,
+  IconPlugConnected,
+} from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useActionState, useEffect } from 'react';
 
@@ -23,11 +34,24 @@ import { showErrorNotification } from '@/lib/notifications';
 import type { OnboardingProjectResult, OnboardingTaskResult } from './actions';
 
 type OnboardingWizardProps = {
+  initialProject: { id: string; name: string; projectKey: string } | null;
+  initialTask: { id: string; taskKey: string; title: string; status: string } | null;
+  workerReadiness: {
+    status: 'ready' | 'missing' | 'unknown';
+    label: string;
+    detail: string;
+  };
   createProjectAction: (prevState: unknown, formData: FormData) => Promise<OnboardingProjectResult>;
   createTaskAction: (prevState: unknown, formData: FormData) => Promise<OnboardingTaskResult>;
 };
 
-export function OnboardingWizard({ createProjectAction, createTaskAction }: OnboardingWizardProps) {
+export function OnboardingWizard({
+  initialProject,
+  initialTask,
+  workerReadiness,
+  createProjectAction,
+  createTaskAction,
+}: OnboardingWizardProps) {
   const router = useRouter();
   const terminology = useTerminology();
 
@@ -36,11 +60,19 @@ export function OnboardingWizard({ createProjectAction, createTaskAction }: Onbo
 
   // Derive step and project info from action states (no setState needed)
   const createdProject = projectState?.ok
-    ? { id: projectState.projectId, name: projectState.projectName }
-    : null;
-  const projectDone = projectState?.ok === true;
-  const taskDone = taskState?.ok === true;
-  const active = taskDone ? 2 : projectDone ? 1 : 0;
+    ? {
+        id: projectState.projectId,
+        name: projectState.projectName,
+        projectKey: projectState.projectKey,
+      }
+    : initialProject;
+  const createdTask = taskState?.ok
+    ? { taskKey: taskState.taskKey, title: taskState.taskTitle, status: taskState.taskStatus }
+    : initialTask;
+  const projectDone = Boolean(createdProject);
+  const taskDone = Boolean(createdTask);
+  const workerDone = workerReadiness.status === 'ready';
+  const active = workerDone && taskDone ? 3 : taskDone ? 2 : projectDone ? 1 : 0;
 
   // Show error notifications (same pattern as existing panels)
   useEffect(() => {
@@ -62,16 +94,46 @@ export function OnboardingWizard({ createProjectAction, createTaskAction }: Onbo
   return (
     <Stack gap="xl">
       <Stepper active={active} size="sm">
-        <Stepper.Step label="Create Project" />
-        <Stepper.Step label={`Create ${terminology.task.singular}`} />
-        <Stepper.Step label="Setup" />
+        <Stepper.Step label="Model" />
+        <Stepper.Step label="Project" />
+        <Stepper.Step label={terminology.task.singular} />
+        <Stepper.Step label="Worker" />
       </Stepper>
 
-      {active === 0 && (
-        <Paper withBorder radius="lg" p="lg">
+      <Paper withBorder radius="lg" p="lg">
+        <Stack gap="md">
+          <Title order={3}>Start with a worker-first system.</Title>
+          <Text c="dimmed" size="sm">
+            Preqstation is the control plane: it stores projects, tasks, state, and work logs. A
+            worker is the execution path that gets tasks done. The dispatcher is optional advanced
+            automation after the worker path is clear.
+          </Text>
+          <List size="sm" spacing="xs">
+            <List.Item>Control plane: source of truth for project and task state.</List.Item>
+            <List.Item>Worker: execution path for completing assigned tasks.</List.Item>
+            <List.Item>Dispatcher: optional queue automation for later scale.</List.Item>
+          </List>
+        </Stack>
+      </Paper>
+
+      <Paper withBorder radius="lg" p="lg">
+        {projectDone ? (
+          <Stack gap="xs">
+            <Group gap="sm">
+              <ThemeIcon variant="light" color="green" radius="xl">
+                <IconCircleCheck size={16} />
+              </ThemeIcon>
+              <Title order={3}>Project confirmed</Title>
+              <Badge variant="light">{createdProject?.projectKey}</Badge>
+            </Group>
+            <Text c="dimmed" size="sm">
+              {createdProject?.name} is ready to hold the first worker task.
+            </Text>
+          </Stack>
+        ) : (
           <form action={projectFormAction}>
             <Stack gap="md">
-              <Title order={3}>Welcome! Let&apos;s set up your first project.</Title>
+              <Title order={3}>Create Project</Title>
               <Text c="dimmed" size="sm">
                 {`A project groups your ${terminology.task.pluralLower} together. You can create more projects later.`}
               </Text>
@@ -89,11 +151,24 @@ export function OnboardingWizard({ createProjectAction, createTaskAction }: Onbo
               </Group>
             </Stack>
           </form>
-        </Paper>
-      )}
+        )}
+      </Paper>
 
-      {active === 1 && (
-        <Paper withBorder radius="lg" p="lg">
+      <Paper withBorder radius="lg" p="lg">
+        {taskDone ? (
+          <Stack gap="xs">
+            <Group gap="sm">
+              <ThemeIcon variant="light" color="green" radius="xl">
+                <IconCircleCheck size={16} />
+              </ThemeIcon>
+              <Title order={3}>Task confirmed</Title>
+              <Badge variant="light">{createdTask?.taskKey}</Badge>
+            </Group>
+            <Text c="dimmed" size="sm">
+              {createdTask?.title} is the first concrete unit a worker can execute.
+            </Text>
+          </Stack>
+        ) : (
           <form action={taskFormAction}>
             <Stack gap="md">
               <Title order={3}>{`Create your first ${terminology.task.singularLower}`}</Title>
@@ -114,25 +189,42 @@ export function OnboardingWizard({ createProjectAction, createTaskAction }: Onbo
               </Group>
             </Stack>
           </form>
-        </Paper>
-      )}
+        )}
+      </Paper>
 
-      {active === 2 && (
-        <Paper withBorder radius="lg" p="lg">
-          <Stack gap="lg">
-            <Title order={3}>You&apos;re all set!</Title>
-            <Text c="dimmed" size="sm">
-              Here are some optional setup steps to get the most out of Preq Station.
-            </Text>
+      <Paper withBorder radius="lg" p="lg">
+        <Stack gap="lg">
+          <Group gap="sm">
+            <ThemeIcon
+              variant="light"
+              color={workerReadiness.status === 'ready' ? 'green' : 'yellow'}
+              radius="xl"
+            >
+              {workerReadiness.status === 'ready' ? (
+                <IconPlugConnected size={16} />
+              ) : (
+                <IconCircleDashed size={16} />
+              )}
+            </ThemeIcon>
+            <Title order={3}>Worker readiness</Title>
+            <Badge color={workerReadiness.status === 'ready' ? 'green' : 'yellow'} variant="light">
+              {workerReadiness.label}
+            </Badge>
+          </Group>
 
+          <Alert color={workerReadiness.status === 'ready' ? 'green' : 'yellow'} variant="light">
+            {workerReadiness.detail}
+          </Alert>
+
+          {workerReadiness.status !== 'ready' ? (
             <Paper withBorder radius="md" p="md">
               <Stack gap="xs">
                 <Text fw={600} size="sm">
-                  Install PREQ agent skill for Claude Code
+                  Connect a worker
                 </Text>
                 <Text c="dimmed" size="xs">
-                  Install the core `preqstation` skill without relying on a shared bare-name
-                  registry lookup.
+                  Install the Preqstation skill in your worker runtime, then connect through MCP or
+                  create an API token from Connections.
                 </Text>
                 <Group gap="xs">
                   <Code block style={{ flex: 1 }}>
@@ -153,30 +245,28 @@ export function OnboardingWizard({ createProjectAction, createTaskAction }: Onbo
                 </Group>
               </Stack>
             </Paper>
+          ) : null}
 
-            <Paper withBorder radius="md" p="md">
-              <Stack gap="xs">
-                <Text fw={600} size="sm">
-                  Configure openclaw
-                </Text>
-                <Text c="dimmed" size="xs">
-                  {`Set up your local development environment with openclaw for worktree-based ${terminology.task.singularLower} execution.`}
-                </Text>
-                <Text c="dimmed" size="xs">
-                  More details coming soon.
-                </Text>
-              </Stack>
-            </Paper>
+          <Divider />
 
-            <Group justify="flex-end">
-              <Button variant="subtle" onClick={handleFinish}>
-                Skip
-              </Button>
-              <Button onClick={handleFinish}>Go to Dashboard</Button>
-            </Group>
+          <Stack gap="xs">
+            <Text fw={600} size="sm">
+              Dispatcher is optional
+            </Text>
+            <Text c="dimmed" size="xs">
+              Use dispatcher automation after project, task, and worker state are understandable. It
+              is not required for first success.
+            </Text>
           </Stack>
-        </Paper>
-      )}
+
+          <Group justify="flex-end">
+            <Button variant="subtle" onClick={handleFinish}>
+              Skip
+            </Button>
+            <Button onClick={handleFinish}>Go to Dashboard</Button>
+          </Group>
+        </Stack>
+      </Paper>
     </Stack>
   );
 }

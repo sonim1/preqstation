@@ -9,10 +9,12 @@ import { isNextRedirectError } from '@/lib/next-utils';
 import { requireOwnerUser } from '@/lib/owner';
 
 export type OnboardingProjectResult =
-  | { ok: true; projectId: string; projectName: string }
+  | { ok: true; projectId: string; projectName: string; projectKey: string }
   | { ok: false; message: string };
 
-export type OnboardingTaskResult = { ok: true } | { ok: false; message: string };
+export type OnboardingTaskResult =
+  | { ok: true; taskKey: string; taskTitle: string; taskStatus: string }
+  | { ok: false; message: string };
 
 export async function createOnboardingProject(
   _prevState: unknown,
@@ -38,7 +40,12 @@ export async function createOnboardingProject(
   });
 
   revalidatePath('/');
-  return { ok: true as const, projectId: result.data.id, projectName: result.data.projectKey };
+  return {
+    ok: true as const,
+    projectId: result.data.id,
+    projectName: String(formData.get('name') || ''),
+    projectKey: result.data.projectKey,
+  };
 }
 
 export async function createOnboardingTask(
@@ -66,7 +73,12 @@ export async function createOnboardingTask(
     });
 
     revalidatePath('/');
-    return { ok: true as const };
+    return {
+      ok: true as const,
+      taskKey: result.data.taskKey,
+      taskTitle: String(formData.get('title') || ''),
+      taskStatus: 'inbox',
+    };
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
     console.error('[createOnboardingTask] failed:', error);
