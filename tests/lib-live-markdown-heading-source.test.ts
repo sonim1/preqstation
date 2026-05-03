@@ -160,14 +160,52 @@ describe('lib/live-markdown-heading-source', () => {
         $getRoot().append(source);
 
         expect(
-          shouldPreserveLiveHeadingSourceOnBackspace({
-            cursor: 0,
-            selectionLength: 0,
-          }),
+          shouldPreserveLiveHeadingSourceOnBackspace(
+            {
+              cursor: 0,
+              selectionLength: 0,
+            },
+            source,
+          ),
         ).toBe(true);
         expect($isLiveHeadingSourceNode($getRoot().getFirstChild())).toBe(true);
         expect(source.getHeadingTag()).toBe('h3');
         expect(source.getTextContent()).toBe('### Eat rice');
+      },
+      { discrete: true },
+    );
+  });
+
+  it('allows reverting heading style on backspace if node only contains marker', () => {
+    const editor = createEditor({ nodes: [HeadingNode, LiveHeadingSourceNode] });
+
+    editor.update(
+      () => {
+        const source = $createLiveHeadingSourceNode('h3');
+        source.append($createTextNode('###'));
+        $getRoot().append(source);
+
+        expect(
+          shouldPreserveLiveHeadingSourceOnBackspace(
+            {
+              cursor: 0,
+              selectionLength: 0,
+            },
+            source,
+          ),
+        ).toBe(false);
+
+        const sourceWithSpace = $createLiveHeadingSourceNode('h3');
+        sourceWithSpace.append($createTextNode('### '));
+        expect(
+          shouldPreserveLiveHeadingSourceOnBackspace(
+            {
+              cursor: 0,
+              selectionLength: 0,
+            },
+            sourceWithSpace,
+          ),
+        ).toBe(false);
       },
       { discrete: true },
     );

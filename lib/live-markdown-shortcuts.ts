@@ -14,7 +14,7 @@ const BULLET_LINE_REGEX = /^(\s*- )(.*)$/;
 const LIST_LINE_REGEX = /^(\s*)(- (?:\[[ xX]\] )?)(.*)$/;
 const LEADING_INDENT_REGEX = /^( +)(.*)$/;
 const STRUCTURED_LIST_INDENT = '    ';
-const PLAIN_TEXT_INDENT = '  ';
+const PLAIN_TEXT_INDENT = '    ';
 
 function getCurrentLineInfo(markdown: string, cursor: number): CurrentLineInfo {
   const lineStart = markdown.lastIndexOf('\n', Math.max(cursor - 1, 0)) + 1;
@@ -95,17 +95,12 @@ export function applyMarkdownTabShortcut(
   if (!listMatch) return null;
 
   const [, indent, marker, content] = listMatch;
-  const previousLine = findPreviousNonEmptyLine(markdown, lineStart);
-  const previousListMatch = previousLine?.match(LIST_LINE_REGEX) ?? null;
 
-  const nextIndent =
-    previousListMatch && previousListMatch[1] === indent
-      ? `${indent}${STRUCTURED_LIST_INDENT}`
-      : `${indent}${PLAIN_TEXT_INDENT}`;
+  const nextIndent = `${indent}${STRUCTURED_LIST_INDENT}`;
   const nextLine = `${nextIndent}${marker}${content}`;
 
   return {
-    nextCursor: cursor + (nextIndent.length - indent.length),
+    nextCursor: cursor + nextIndent.length - indent.length,
     nextMarkdown: `${markdown.slice(0, lineStart)}${nextLine}${markdown.slice(lineEnd)}`,
   };
 }

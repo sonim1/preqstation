@@ -29,7 +29,12 @@ import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { $isHeadingNode, HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { Box, Group, SegmentedControl, Text } from '@mantine/core';
-import { KEY_ARROW_RIGHT_COMMAND, KEY_BACKSPACE_COMMAND, KEY_SPACE_COMMAND } from 'lexical';
+import {
+  KEY_ARROW_RIGHT_COMMAND,
+  KEY_BACKSPACE_COMMAND,
+  KEY_SPACE_COMMAND,
+  KEY_TAB_COMMAND,
+} from 'lexical';
 import {
   $createParagraphNode,
   $getNodeByKey,
@@ -42,6 +47,8 @@ import {
   COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_LOW,
   type EditorState,
+  INDENT_COMMAND,
+  OUTDENT_COMMAND,
   PASTE_COMMAND,
   type RangeSelection,
 } from 'lexical';
@@ -81,7 +88,7 @@ import {
 } from '@/lib/live-markdown-shortcuts';
 import {
   getOrderedListBlocksForImport,
-  preserveTightHeadingParagraphSpacing,
+  preserveTightMarkdownSpacing,
   stripPreqChoiceBlocks,
 } from '@/lib/markdown';
 
@@ -624,6 +631,7 @@ function LiveBackspacePlugin() {
           if (
             !shouldPreserveLiveHeadingSourceOnBackspace(
               resolveLiveHeadingSourceCursor(selection, blockNode),
+              blockNode,
             )
           ) {
             return false;
@@ -639,6 +647,42 @@ function LiveBackspacePlugin() {
 
         event?.preventDefault();
         return exitListItemAtStart(listItemNode);
+      },
+      COMMAND_PRIORITY_HIGH,
+    );
+  }, [editor]);
+
+  return null;
+}
+
+function LiveTabPlugin() {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    return editor.registerCommand<KeyboardEvent>(
+      KEY_TAB_COMMAND,
+      (event) => {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection)) {
+          return false;
+        }
+
+        event.preventDefault();
+
+        const listItemNode = getSelectedListItemNode(selection);
+        if (listItemNode) {
+          return editor.dispatchCommand(
+            event.shiftKey ? OUTDENT_COMMAND : INDENT_COMMAND,
+            undefined,
+          );
+        }
+
+        // For non-list items, just insert 4 spaces (or 2 if you prefer, but user wants 4)
+        editor.update(() => {
+          selection.insertRawText('    ');
+        });
+
+        return true;
       },
       COMMAND_PRIORITY_HIGH,
     );
@@ -684,7 +728,7 @@ export function LiveMarkdownEditor({
 
   const reconcileLiveMarkdown = useCallback(
     (nextMarkdown: string) =>
-      preserveTightHeadingParagraphSpacing(markdown, stripPreqChoiceBlocks(nextMarkdown)),
+      preserveTightMarkdownSpacing(markdown, stripPreqChoiceBlocks(nextMarkdown)),
     [markdown],
   );
 
@@ -995,6 +1039,7 @@ export function LiveMarkdownEditor({
             <LinkPlugin attributes={LIVE_MARKDOWN_LINK_ATTRIBUTES} />
             <ClickableLinkPlugin newTab />
             <AutoLinkPlugin matchers={URL_MATCHERS} />
+            <LiveTabPlugin />
             <LiveHeadingShortcutPlugin />
             <LiveBackspacePlugin />
             <MarkdownShortcutPlugin transformers={MARKDOWN_SHORTCUT_TRANSFORMERS} />

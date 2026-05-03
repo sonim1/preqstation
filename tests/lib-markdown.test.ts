@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import * as markdownHelpers from '@/lib/markdown';
 import {
   extractMarkdownArtifacts,
-  preserveTightHeadingParagraphSpacing,
+  preserveTightMarkdownSpacing,
   renderMarkdownToHtml,
   toggleChecklistItem,
 } from '@/lib/markdown';
@@ -34,7 +34,7 @@ describe('lib/markdown', () => {
 
   it('preserves tight heading-to-paragraph spacing when live export adds a formatter-only blank line', () => {
     expect(
-      preserveTightHeadingParagraphSpacing(
+      preserveTightMarkdownSpacing(
         '## Hardware history\nIt used to be common to build PCs by hand.',
         '## Hardware history\n\nIt used to be common to build PCs by hand.',
       ),
@@ -43,16 +43,25 @@ describe('lib/markdown', () => {
 
   it('preserves tight heading-to-paragraph spacing after the heading text changes', () => {
     expect(
-      preserveTightHeadingParagraphSpacing('## Old title\nParagraph', '## New title\n\nParagraph'),
+      preserveTightMarkdownSpacing('## Old title\nParagraph', '## New title\n\nParagraph'),
     ).toBe('## New title\nParagraph');
   });
 
+  it('preserves tight list-to-paragraph spacing', () => {
+    expect(preserveTightMarkdownSpacing('- item\nParagraph', '- item\n\nParagraph')).toBe(
+      '- item\nParagraph',
+    );
+    expect(preserveTightMarkdownSpacing('1. item\nParagraph', '1. item\n\nParagraph')).toBe(
+      '1. item\nParagraph',
+    );
+  });
+
   it('does not collapse heading spacing before lists or code fences', () => {
-    expect(preserveTightHeadingParagraphSpacing('## Title\n\n- item', '## Title\n\n- item')).toBe(
+    expect(preserveTightMarkdownSpacing('## Title\n\n- item', '## Title\n\n- item')).toBe(
       '## Title\n\n- item',
     );
     expect(
-      preserveTightHeadingParagraphSpacing(
+      preserveTightMarkdownSpacing(
         '## Title\n\n```ts\nconst value = 1;\n```',
         '## Title\n\n```ts\nconst value = 1;\n```',
       ),

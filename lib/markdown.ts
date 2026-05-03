@@ -109,12 +109,25 @@ function isMarkdownParagraphBoundaryLine(line: string) {
   return true;
 }
 
-function getHeadingParagraphBoundaries(source: string) {
+function isMarkdownListItemLine(line: string) {
+  const trimmed = line.trimStart();
+  return (
+    checklistItemRegex.test(trimmed) ||
+    bulletListItemRegex.test(trimmed) ||
+    orderedListItemRegex.test(trimmed)
+  );
+}
+
+function isMarkdownTightBoundaryLine(line: string) {
+  return isMarkdownHeadingLine(line) || isMarkdownListItemLine(line);
+}
+
+function getMarkdownTightBoundaries(source: string) {
   const boundaries: HeadingParagraphBoundary[] = [];
   const lines = source.split('\n');
 
   for (let index = 0; index < lines.length; index += 1) {
-    if (!isMarkdownHeadingLine(lines[index])) continue;
+    if (!isMarkdownTightBoundaryLine(lines[index])) continue;
 
     let cursor = index + 1;
     let blankLineCount = 0;
@@ -132,15 +145,12 @@ function getHeadingParagraphBoundaries(source: string) {
   return boundaries;
 }
 
-export function preserveTightHeadingParagraphSpacing(
-  currentMarkdown: string,
-  nextMarkdown: string,
-) {
+export function preserveTightMarkdownSpacing(currentMarkdown: string, nextMarkdown: string) {
   if (!currentMarkdown || !nextMarkdown) return nextMarkdown;
 
   const normalizedCurrent = currentMarkdown.replace(/\r\n/g, '\n');
   const normalizedNext = nextMarkdown.replace(/\r\n/g, '\n');
-  const currentBoundaries = getHeadingParagraphBoundaries(normalizedCurrent);
+  const currentBoundaries = getMarkdownTightBoundaries(normalizedCurrent);
 
   if (currentBoundaries.length === 0) {
     return nextMarkdown;
@@ -156,7 +166,7 @@ export function preserveTightHeadingParagraphSpacing(
     const line = nextLines[index];
     reconciledLines.push(line);
 
-    if (!isMarkdownHeadingLine(line)) {
+    if (!isMarkdownTightBoundaryLine(line)) {
       continue;
     }
 

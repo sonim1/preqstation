@@ -203,11 +203,24 @@ export function shouldExitLiveHeadingSourceOnArrowRight(params: {
   return params.selectionLength === 0 && params.cursor === params.textLength;
 }
 
-export function shouldPreserveLiveHeadingSourceOnBackspace(params: {
-  cursor: number;
-  selectionLength: number;
-}) {
-  return params.selectionLength === 0 && params.cursor === 0;
+export function shouldPreserveLiveHeadingSourceOnBackspace(
+  params: {
+    cursor: number;
+    selectionLength: number;
+  },
+  sourceNode: LiveHeadingSourceNode,
+) {
+  if (params.selectionLength !== 0) return false;
+
+  const textContent = sourceNode.getTextContent();
+  const marker = getMarkdownHeadingMarker(sourceNode.getHeadingTag());
+
+  // If we only have the marker and space (or just marker), don't preserve - let it be deleted/reverted
+  if (textContent === marker || textContent === `${marker} `) {
+    return false;
+  }
+
+  return params.cursor === 0;
 }
 
 export function $applyLiveHeadingShortcut(
@@ -237,7 +250,7 @@ export function $applyLiveHeadingShortcut(
 
   heading.append(...nextSiblings);
   parentNode.replace(heading);
-  heading.selectStart();
+  heading.selectEnd();
 
   return true;
 }
