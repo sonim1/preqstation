@@ -227,6 +227,56 @@ function toPatchedBoardTask(params: {
   };
 }
 
+function buildTaskConflictResponse(params: {
+  existing: Parameters<typeof toEditableTodo>[0] & {
+    sortOrder: string;
+    dueAt: Date | null;
+  };
+  error: string;
+  labels: Array<{ id: string; name: string; color?: string | null }>;
+  project: {
+    id: string;
+    name: string;
+    projectKey: string | null;
+  } | null;
+}) {
+  return NextResponse.json(
+    {
+      error: params.error,
+      boardTask: toPatchedBoardTask({
+        existing: params.existing,
+        title: params.existing.title,
+        note: params.existing.note ?? null,
+        status: params.existing.status,
+        sortOrder: params.existing.sortOrder,
+        taskPriority: params.existing.taskPriority,
+        dueAt: params.existing.dueAt,
+        project: params.project,
+        labels: params.labels,
+      }),
+      focusedTask: serializeEditableBoardTask(
+        toEditableTodo({
+          ...params.existing,
+          labelAssignments: params.labels.map((label, index) => ({
+            position: index,
+            label: { id: label.id, name: label.name, color: label.color ?? null },
+          })),
+          label: params.labels[0]
+            ? {
+                id: params.labels[0].id,
+                name: params.labels[0].name,
+                color: params.labels[0].color ?? null,
+              }
+            : null,
+          note: params.existing.note ?? null,
+          workLogs: params.existing.workLogs ?? [],
+        }),
+      ),
+    },
+    { status: 409 },
+  );
+}
+
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const owner = await requireOwnerUser();
@@ -439,48 +489,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             if (submittedTitleFingerprint === baseTitleFingerprint) {
               nextTitle = existing.title;
             } else {
-              return NextResponse.json(
-                {
-                  error:
-                    'Task title changed in another session. Reload the latest title and try again.',
-                  boardTask: toPatchedBoardTask({
-                    existing,
-                    title: existing.title,
-                    note: existing.note ?? null,
-                    status: existing.status,
-                    sortOrder: existing.sortOrder,
-                    taskPriority: existing.taskPriority,
-                    dueAt: existing.dueAt,
-                    project: nextProjectId
-                      ? {
-                          id: nextProjectId,
-                          name: nextProjectName,
-                          projectKey: nextProjectKey,
-                        }
-                      : null,
-                    labels: existingLabels,
-                  }),
-                  focusedTask: serializeEditableBoardTask(
-                    toEditableTodo({
-                      ...existing,
-                      labelAssignments: existingLabels.map((label, index) => ({
-                        position: index,
-                        label: { id: label.id, name: label.name, color: label.color ?? null },
-                      })),
-                      label: existingLabels[0]
-                        ? {
-                            id: existingLabels[0].id,
-                            name: existingLabels[0].name,
-                            color: existingLabels[0].color ?? null,
-                          }
-                        : null,
-                      note: existing.note ?? null,
-                      workLogs: existing.workLogs ?? [],
-                    }),
-                  ),
-                },
-                { status: 409 },
-              );
+              return buildTaskConflictResponse({
+                existing,
+                error:
+                  'Task title changed in another session. Reload the latest title and try again.',
+                labels: existingLabels,
+                project: nextProjectId
+                  ? {
+                      id: nextProjectId,
+                      name: nextProjectName,
+                      projectKey: nextProjectKey,
+                    }
+                  : null,
+              });
             }
           }
         }
@@ -493,48 +514,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             if (submittedNoteFingerprint === baseNoteFingerprint) {
               nextNote = existing.note ?? null;
             } else {
-              return NextResponse.json(
-                {
-                  error:
-                    'Task notes changed in another session. Reload the latest notes and try again.',
-                  boardTask: toPatchedBoardTask({
-                    existing,
-                    title: existing.title,
-                    note: existing.note ?? null,
-                    status: existing.status,
-                    sortOrder: existing.sortOrder,
-                    taskPriority: existing.taskPriority,
-                    dueAt: existing.dueAt,
-                    project: nextProjectId
-                      ? {
-                          id: nextProjectId,
-                          name: nextProjectName,
-                          projectKey: nextProjectKey,
-                        }
-                      : null,
-                    labels: existingLabels,
-                  }),
-                  focusedTask: serializeEditableBoardTask(
-                    toEditableTodo({
-                      ...existing,
-                      labelAssignments: existingLabels.map((label, index) => ({
-                        position: index,
-                        label: { id: label.id, name: label.name, color: label.color ?? null },
-                      })),
-                      label: existingLabels[0]
-                        ? {
-                            id: existingLabels[0].id,
-                            name: existingLabels[0].name,
-                            color: existingLabels[0].color ?? null,
-                          }
-                        : null,
-                      note: existing.note ?? null,
-                      workLogs: existing.workLogs ?? [],
-                    }),
-                  ),
-                },
-                { status: 409 },
-              );
+              return buildTaskConflictResponse({
+                existing,
+                error:
+                  'Task notes changed in another session. Reload the latest notes and try again.',
+                labels: existingLabels,
+                project: nextProjectId
+                  ? {
+                      id: nextProjectId,
+                      name: nextProjectName,
+                      projectKey: nextProjectKey,
+                    }
+                  : null,
+              });
             }
           }
         }

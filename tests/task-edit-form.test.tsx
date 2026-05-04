@@ -193,6 +193,7 @@ describe('app/components/task-edit-form', () => {
       draftRevision: 0,
       draftTitle: 'OpenClaw 기능 UI수정',
       hasNoteConflict: false,
+      hasTitleConflict: false,
       markAutoSaveDraftFailed: vi.fn(),
       restoreDraft: vi.fn(),
       restoreDraftPreview: null,
@@ -512,6 +513,7 @@ describe('app/components/task-edit-form', () => {
       draftRevision: 0,
       draftTitle: 'OpenClaw 기능 UI수정',
       hasNoteConflict: false,
+      hasTitleConflict: false,
       markAutoSaveDraftFailed: vi.fn(),
       restoreDraft: vi.fn(),
       restoreDraftPreview: null,
@@ -645,6 +647,7 @@ describe('app/components/task-edit-form', () => {
       draftRevision: 0,
       draftTitle: 'OpenClaw 기능 UI수정',
       hasNoteConflict: false,
+      hasTitleConflict: false,
       markAutoSaveDraftFailed: vi.fn(),
       restoreDraft: vi.fn(),
       restoreDraftPreview: null,
@@ -663,19 +666,28 @@ describe('app/components/task-edit-form', () => {
               title: 'OpenClaw 기능 UI수정',
               note: 'Move the actions into the form meta header.',
               projectId: 'project-1',
-              labelIds: [],
-              labels: [],
-              taskPriority: 'none',
+              labelIds: ['11111111-1111-4111-8111-111111111111'],
+              labels: [
+                {
+                  id: '11111111-1111-4111-8111-111111111111',
+                  name: 'Stale label',
+                  color: null,
+                },
+              ],
+              taskPriority: 'high',
               status: 'todo',
               engine: 'codex',
               dispatchTarget: null,
-              runState: null,
+              runState: 'queued',
               runStateUpdatedAt: null,
               workLogs: [],
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}
-            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
+            taskPriorityOptions={[
+              { value: 'none', label: 'None' },
+              { value: 'high', label: 'High' },
+            ]}
             updateTodoAction={updateTodoAction}
             onTaskUpdated={onTaskUpdated}
           />
@@ -702,6 +714,10 @@ describe('app/components/task-edit-form', () => {
     expect(submittedFormData.get('noteMd')).toBe('## Offline note');
     expect(submittedFormData.get('baseTitleFingerprint')).toBe('task-title:v1:18:feedface');
     expect(submittedFormData.get('baseNoteFingerprint')).toBe('task-note:v1:42:deadbeef');
+    expect(submittedFormData.getAll('labelIds')).toEqual([]);
+    expect(submittedFormData.get('projectId')).toBeNull();
+    expect(submittedFormData.get('runState')).toBeNull();
+    expect(submittedFormData.get('taskPriority')).toBeNull();
     expect(clearDraft).toHaveBeenCalledTimes(1);
     expect(onTaskUpdated).toHaveBeenCalledWith({
       boardTask: expect.objectContaining({ title: 'Offline rename' }),

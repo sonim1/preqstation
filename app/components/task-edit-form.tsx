@@ -61,6 +61,7 @@ import {
   TASK_PRIORITY_LABEL,
   type TaskPriority,
 } from '@/lib/task-meta';
+import { buildTaskNoteFingerprint } from '@/lib/task-note-fingerprint';
 
 import cardStyles from './cards.module.css';
 import classes from './task-edit-form.module.css';
@@ -419,6 +420,7 @@ export function useTaskEditFormController({
     draftRevision,
     draftTitle,
     hasNoteConflict,
+    hasTitleConflict,
     markAutoSaveDraftFailed,
     restoreDraft,
     restoreDraftPreview,
@@ -516,7 +518,7 @@ export function useTaskEditFormController({
       return;
     }
 
-    const autoSaveDraftKey = `${editableTodo.taskKey}:${autoSaveDraft.baseTitleFingerprint}:${autoSaveDraft.baseNoteFingerprint}:${autoSaveDraft.title}:${autoSaveDraft.note}`;
+    const autoSaveDraftKey = `${editableTodo.taskKey}:${autoSaveDraft.baseTitleFingerprint}:${autoSaveDraft.baseNoteFingerprint}:${autoSaveDraft.title}:${buildTaskNoteFingerprint(autoSaveDraft.note)}`;
     if (autoSavingDraftKeyRef.current === autoSaveDraftKey) {
       return;
     }
@@ -529,7 +531,7 @@ export function useTaskEditFormController({
     autoSavingDraftKeyRef.current = autoSaveDraftKey;
     void Promise.resolve()
       .then(async () => {
-        const formData = new FormData(form);
+        const formData = new FormData();
         formData.set('id', editableTodo.taskKey);
         formData.set('title', autoSaveDraft.title);
         formData.set('noteMd', autoSaveDraft.note);
@@ -707,6 +709,7 @@ export function useTaskEditFormController({
     selectedLabelIds,
     selectedLabels,
     setSelectedLabelIds,
+    titleConflict: hasTitleConflict,
     titleRenderKey: fieldRevisions.title,
     triggerSave,
     updateFormAction,

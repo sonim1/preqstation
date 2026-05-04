@@ -53,6 +53,7 @@ export function useTaskOfflineDraft(
   );
   const [draftRevision, setDraftRevision] = useState(0);
   const [hasNoteConflict, setHasNoteConflict] = useState(false);
+  const [hasTitleConflict, setHasTitleConflict] = useState(false);
   const [restorableDraft, setRestorableDraft] = useState<RestorableTaskOfflineDraft | null>(null);
   const [autoSaveDraft, setAutoSaveDraft] = useState<RestorableTaskOfflineDraft | null>(null);
   const [failedAutoSaveDraftKey, setFailedAutoSaveDraftKey] = useState<string | null>(null);
@@ -90,6 +91,7 @@ export function useTaskOfflineDraft(
 
       applyDraft(serverDraft);
       setHasNoteConflict(false);
+      setHasTitleConflict(false);
       setRestorableDraft(null);
       setAutoSaveDraft(null);
 
@@ -140,9 +142,10 @@ export function useTaskOfflineDraft(
                 ? legacyConflictBaseNoteFingerprint
                 : serverDraft.baseNoteFingerprint,
       };
-      const hasConflict =
-        (((hasStaleBase && hasLocalNoteEdits) || hasLegacyConflict) && !noteMatchesServer) ||
-        (hasStaleTitleBase && hasLocalTitleEdits && !titleMatchesServer);
+      const hasNoteConflict =
+        ((hasStaleBase && hasLocalNoteEdits) || hasLegacyConflict) && !noteMatchesServer;
+      const hasTitleConflict = hasStaleTitleBase && hasLocalTitleEdits && !titleMatchesServer;
+      const hasConflict = hasNoteConflict || hasTitleConflict;
       const nextRestorableDraft = {
         title: resolvedDraft.title,
         note: resolvedDraft.note,
@@ -179,7 +182,8 @@ export function useTaskOfflineDraft(
         ? `${taskKey}:${nextAutoSaveDraft.baseTitleFingerprint}:${nextAutoSaveDraft.baseNoteFingerprint}:${nextAutoSaveDraft.title}:${buildTaskNoteFingerprint(nextAutoSaveDraft.note)}`
         : null;
 
-      setHasNoteConflict(hasConflict);
+      setHasNoteConflict(hasNoteConflict);
+      setHasTitleConflict(hasTitleConflict);
 
       if (!hasConflict && !hasRestorableDraft && !hasPersistedDraftChanges && !nextAutoSaveDraft) {
         void Promise.resolve()
@@ -230,6 +234,7 @@ export function useTaskOfflineDraft(
       setDraftTitle(nextDraft.title);
       setDraftNote(nextDraft.note);
       setHasNoteConflict(false);
+      setHasTitleConflict(false);
       setRestorableDraft(null);
       setAutoSaveDraft(null);
 
@@ -281,6 +286,7 @@ export function useTaskOfflineDraft(
     setDraftNote(nextDraft.note);
     setDraftRevision((currentRevision) => currentRevision + 1);
     setHasNoteConflict(false);
+    setHasTitleConflict(false);
     setRestorableDraft(null);
   }, [restorableDraft]);
 
@@ -306,6 +312,7 @@ export function useTaskOfflineDraft(
     draftRevision,
     draftTitle,
     hasNoteConflict,
+    hasTitleConflict,
     markAutoSaveDraftFailed,
     restoreDraft,
     restoreDraftPreview: restorableDraft
