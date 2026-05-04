@@ -105,4 +105,13 @@ describe('TaskFormPanel layout', () => {
       }),
     );
   });
+
+  it('renders priority as a custom picker while preserving the taskPriority form field', () => {
+    const html = renderTaskFormPanel();
+
+    expect(html).toContain('name="taskPriority"');
+    expect(html).toContain('type="hidden"');
+    expect(html).toContain('data-task-priority-value="none"');
+    expect(html).not.toContain('<select name="taskPriority"');
+  });
 });
