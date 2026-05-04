@@ -138,4 +138,60 @@ describe('lib/kanban-store', () => {
 
     expect(selectKanbanColumns(state)).toBe(selectKanbanColumns(state));
   });
+
+  it('keeps optimistic queued run state when hydrating a stale server snapshot', () => {
+    const store = createKanbanStore({
+      columns: buildColumns(),
+      focusedTask: buildFocusedTask(),
+    });
+
+    store.getState().applyOptimisticRunState('PROJ-255', '2026-03-30T13:10:00.000Z');
+    store.getState().hydrate({
+      columns: buildColumns(),
+      focusedTask: buildFocusedTask(),
+    });
+
+    expect(store.getState().tasksByKey['PROJ-255']?.runState).toBe('queued');
+    expect(store.getState().tasksByKey['PROJ-255']?.runStateUpdatedAt).toBe(
+      '2026-03-30T13:10:00.000Z',
+    );
+    expect(selectKanbanColumns(store.getState()).todo[0]?.runState).toBe('queued');
+    expect(store.getState().focusedTask?.runState).toBe('queued');
+    expect(store.getState().focusedTask?.runStateUpdatedAt).toBe('2026-03-30T13:10:00.000Z');
+  });
+
+  it('uses newer server run state when hydrating after optimistic queued state', () => {
+    const store = createKanbanStore({
+      columns: buildColumns(),
+      focusedTask: buildFocusedTask(),
+    });
+
+    store.getState().applyOptimisticRunState('PROJ-255', '2026-03-30T13:10:00.000Z');
+    store.getState().hydrate({
+      columns: {
+        ...buildColumns(),
+        todo: [
+          buildTask({
+            id: 'task-1',
+            taskKey: 'PROJ-255',
+            sortOrder: 'a0',
+            runState: 'running',
+            runStateUpdatedAt: '2026-03-30T13:11:00.000Z',
+          }),
+          buildTask({ id: 'task-2', taskKey: 'PROJ-256', sortOrder: 'b0' }),
+        ],
+      },
+      focusedTask: buildFocusedTask({
+        runState: 'running',
+        runStateUpdatedAt: '2026-03-30T13:11:00.000Z',
+      }),
+    });
+
+    expect(store.getState().tasksByKey['PROJ-255']?.runState).toBe('running');
+    expect(store.getState().tasksByKey['PROJ-255']?.runStateUpdatedAt).toBe(
+      '2026-03-30T13:11:00.000Z',
+    );
+    expect(store.getState().focusedTask?.runState).toBe('running');
+    expect(store.getState().focusedTask?.runStateUpdatedAt).toBe('2026-03-30T13:11:00.000Z');
+  });
 });
