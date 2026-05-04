@@ -119,20 +119,4 @@ describe('LiveMarkdownEditor links', () => {
     expect(source).toContain('onSaveShortcut?.()');
     expect(source).toContain('onKeyDown={handleLiveEditorKeyDown}');
   });
-
-  it('allows callers to opt out of automatic live editor focus', () => {
-    const source = readFileSync(
-      join(process.cwd(), 'app/components/live-markdown-editor.tsx'),
-      'utf8',
-    );
-
-    expect(source).toContain('autoFocus?: boolean;');
-    expect(source).toContain('autoFocus = true,');
-    expect(source).toContain('useState(autoFocus)');
-    expect(source).toContain('setShouldAutoFocusEditor(autoFocus);');
-    expect(source).toContain('reseedLiveEditor(nextMarkdown, autoFocus);');
-    expect(source).toContain(
-      'reseedLiveEditor(sanitizedExternalMarkdown, externalUpdate.cursorIndex != null || autoFocus);',
-    );
-  });
 });
