@@ -514,7 +514,12 @@ export function useTaskEditFormController({
   }, []);
 
   useEffect(() => {
-    if (!online || !autoSaveDraft || saveStatus === 'saving' || isDirtyRef.current) {
+    if (!autoSaveDraft) {
+      autoSavingDraftKeyRef.current = null;
+      return;
+    }
+
+    if (!online || saveStatus === 'saving' || isDirtyRef.current) {
       return;
     }
 
@@ -557,11 +562,6 @@ export function useTaskEditFormController({
       })
       .catch(() => {
         markAutoSaveDraftFailed();
-      })
-      .finally(() => {
-        if (autoSavingDraftKeyRef.current === autoSaveDraftKey) {
-          autoSavingDraftKeyRef.current = null;
-        }
       });
   }, [
     autoSaveDraft,
