@@ -92,9 +92,11 @@ export function AgentInstructionsPanel({ action, projectId, value }: AgentInstru
             Project-wide examples
           </Text>
           <Code block style={exampleCodeStyle}>
-            Follow the existing component patterns before adding new abstractions.
-            {'\n'}Update focused tests for behavior changes.
-            {'\n'}Call out security or data-loss risks in review notes.
+            {[
+              'Follow the existing component patterns before adding new abstractions.',
+              'Update focused tests for behavior changes.',
+              'Call out security or data-loss risks in review notes.',
+            ].join('\n')}
           </Code>
         </div>
         <SubmitButton w="fit-content" disabled={!isDirty || isPending}>
