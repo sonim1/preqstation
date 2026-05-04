@@ -321,6 +321,24 @@ describe('TaskPanelModal', () => {
     expect(resizableMock).not.toHaveBeenCalled();
   });
 
+  it('does not activate resize while the mobile media query is unresolved', () => {
+    useMediaQueryMock.mockReturnValue(null);
+
+    renderToStaticMarkup(
+      <TaskPanelModal
+        opened={true}
+        title="Edit Task"
+        closeHref="/board"
+        size="80rem"
+        resizableStorageKey="preqstation:task-edit-panel:size:v1"
+      >
+        <div>Panel content</div>
+      </TaskPanelModal>,
+    );
+
+    expect(resizableMock).not.toHaveBeenCalled();
+  });
+
   it('ignores invalid stored panel sizes and clamps valid sizes to the viewport', () => {
     const storage = new Map<string, string>();
     const localStorageLike = {
@@ -409,6 +427,51 @@ describe('TaskPanelModal', () => {
       );
 
       expect(resizableMock.mock.calls[0]?.[0].size).toEqual({ width: 1280, height: 720 });
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].size).toEqual({ width: 900, height: 650 });
+      });
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
+  it('hydrates stored size when resize becomes enabled after a fullscreen mount', async () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    window.localStorage.setItem(
+      'preqstation:task-edit-panel:size:v1',
+      JSON.stringify({ width: 900, height: 650 }),
+    );
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('fullscreen=1'));
+
+    try {
+      const { rerender } = render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      expect(resizableMock).not.toHaveBeenCalled();
+
+      useSearchParamsMock.mockReturnValue(new URLSearchParams());
+      rerender(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
       await waitFor(() => {
         expect(resizableMock.mock.calls.at(-1)?.[0].size).toEqual({ width: 900, height: 650 });
       });

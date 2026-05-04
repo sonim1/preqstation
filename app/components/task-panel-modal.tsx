@@ -208,7 +208,7 @@ export function TaskPanelModal({
     ? `Exit full screen for ${title} dialog`
     : `Enter full screen for ${title} dialog`;
   const completeClose = onClose ?? (() => router.replace(closeHref));
-  const isResizeEnabled = Boolean(resizableStorageKey) && !isMobile && !modalFullScreen;
+  const isResizeEnabled = Boolean(resizableStorageKey) && isMobile === false && !modalFullScreen;
   const [viewport, setViewport] = useState<TaskPanelViewport>(TASK_PANEL_RESIZE_FALLBACK_VIEWPORT);
   const resizeBounds = {
     minWidth: TASK_PANEL_RESIZE_MIN_WIDTH,
