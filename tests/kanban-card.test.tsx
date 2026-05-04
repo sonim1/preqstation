@@ -35,6 +35,7 @@ vi.mock('next/navigation', () => ({
 import {
   buildKanbanCardTelegramDispatch,
   getRunStateWaveConfig,
+  isStaleQueuedTask,
   KanbanCardContent,
   KanbanCardMenuDropdown,
   renderTelegramDispatchTarget,
@@ -111,6 +112,16 @@ describe('app/components/kanban-card', () => {
     expect(resolveLabelHashStyle('#228be6')).toEqual({
       color: '#228be6',
     });
+  });
+
+  it('marks only queued tasks at least one hour old as stale', () => {
+    const now = Date.parse('2026-05-04T14:00:00.000Z');
+
+    expect(isStaleQueuedTask('queued', '2026-05-04T13:00:01.000Z', now)).toBe(false);
+    expect(isStaleQueuedTask('queued', '2026-05-04T13:00:00.000Z', now)).toBe(true);
+    expect(isStaleQueuedTask('running', '2026-05-04T12:00:00.000Z', now)).toBe(false);
+    expect(isStaleQueuedTask('queued', null, now)).toBe(false);
+    expect(isStaleQueuedTask('queued', 'not-a-date', now)).toBe(false);
   });
 
   it('prefers opening the kanban card menu to the right when the viewport has room', () => {
@@ -212,6 +223,23 @@ describe('app/components/kanban-card', () => {
     expect(cardsCss).toMatch(
       /\.kanbanCardHold::before\s*\{[\s\S]*box-shadow:\s*0 0 16px color-mix\(in srgb,\s*var\(--ui-warning\),\s*transparent 42%\);/,
     );
+    expect(cardsCss).toMatch(/\.kanbanQueuedWarningIcon\s*\{/);
+
+    const kanbanColumnSource = fs.readFileSync(
+      path.join(process.cwd(), 'app/components/kanban-column.tsx'),
+      'utf8',
+    );
+    const kanbanBoardMobileSource = fs.readFileSync(
+      path.join(process.cwd(), 'app/components/kanban-board-mobile.tsx'),
+      'utf8',
+    );
+
+    expect(kanbanColumnSource).toContain(
+      'isStaleQueuedTask(task.runState, task.runStateUpdatedAt)',
+    );
+    expect(kanbanBoardMobileSource).toContain(
+      'isStaleQueuedTask(task.runState, task.runStateUpdatedAt)',
+    );
   });
 
   it('renders empty columns with a top-only aurora seam instead of a bordered panel', () => {
@@ -310,6 +338,31 @@ describe('app/components/kanban-card', () => {
     expect(html).toContain('data-run-state-chip="queued"');
     expect(html).toContain('Queued');
     expect(html).toContain('data-run-state-decor="queued"');
+  });
+
+  it('renders stale queued cards with warning status affordance while keeping queued chrome', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <KanbanCardContent
+          task={{
+            ...BASE_TASK,
+            runState: 'queued',
+            runStateUpdatedAt: '2026-05-04T12:00:00.000Z',
+          }}
+          isPending={false}
+          editHref="/board?panel=task-edit&taskId=PROJ-211"
+          onQuickMoveTask={vi.fn()}
+          onDeleteTask={vi.fn()}
+          enginePresets={null}
+        />
+      </MantineProvider>,
+    );
+
+    expect(html).toContain('data-run-state-stale="queued"');
+    expect(html).toContain('data-run-state-chip="queued"');
+    expect(html).toContain('Queued for more than 1 hour');
+    expect(html).toContain('aria-label="Queued for more than 1 hour');
+    expect(html).toContain('data-kanban-queued-warning="true"');
   });
 
   it('renders running card chrome with run-state chip and decorative backdrop', () => {

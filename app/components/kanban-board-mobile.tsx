@@ -35,7 +35,7 @@ import {
 } from '@/lib/kanban-helpers';
 
 import cardStyles from './cards.module.css';
-import { KanbanCardContent } from './kanban-card';
+import { isStaleQueuedTask, KanbanCardContent } from './kanban-card';
 import { KanbanEmptyLane } from './kanban-empty-lane';
 import { useTerminology } from './terminology-provider';
 
@@ -266,7 +266,10 @@ export function KanbanBoardMobile({
                             className={[
                               cardStyles.itemCard,
                               cardStyles.kanbanCard,
-                              task.status === 'hold' ? cardStyles.kanbanCardHold : null,
+                              task.status === 'hold' ||
+                              isStaleQueuedTask(task.runState, task.runStateUpdatedAt)
+                                ? cardStyles.kanbanCardHold
+                                : null,
                               'kanban-mobile-card',
                             ]
                               .filter(Boolean)

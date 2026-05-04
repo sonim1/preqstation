@@ -10,7 +10,7 @@ import type { EnginePresets, KanbanStatus, KanbanTask } from '@/lib/kanban-helpe
 import { boardStatusLabel, statusColors } from '@/lib/kanban-helpers';
 
 import cardStyles from './cards.module.css';
-import { KanbanCardContent } from './kanban-card';
+import { isStaleQueuedTask, KanbanCardContent } from './kanban-card';
 import { useTerminology } from './terminology-provider';
 
 function shouldIgnoreCardSurfaceEvent(target: HTMLElement) {
@@ -126,7 +126,10 @@ export function KanbanColumn({
                       className={[
                         cardStyles.itemCard,
                         cardStyles.kanbanCard,
-                        task.status === 'hold' ? cardStyles.kanbanCardHold : null,
+                        task.status === 'hold' ||
+                        isStaleQueuedTask(task.runState, task.runStateUpdatedAt)
+                          ? cardStyles.kanbanCardHold
+                          : null,
                         snapshot.isDragging ? cardStyles.isDragging : null,
                       ]
                         .filter(Boolean)
