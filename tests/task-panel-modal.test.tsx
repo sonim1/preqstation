@@ -1,9 +1,14 @@
+import { createRequire } from 'node:module';
+
+import { act, cleanup, render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const actionIconMock = vi.hoisted(() => vi.fn());
 const modalMock = vi.hoisted(() => vi.fn());
+const modalOverlayMock = vi.hoisted(() => vi.fn());
+const resizableMock = vi.hoisted(() => vi.fn());
 const useMediaQueryMock = vi.hoisted(() => vi.fn());
 const usePathnameMock = vi.hoisted(() => vi.fn());
 const useSearchParamsMock = vi.hoisted(() => vi.fn());
@@ -19,44 +24,128 @@ vi.mock('@mantine/core', () => ({
     );
   },
   Group: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Modal: (props: {
-    classNames?: {
-      body?: string;
-      content?: string;
-      header?: string;
-      inner?: string;
-      title?: string;
-    };
-    centered?: boolean;
+  Modal: Object.assign(
+    (props: {
+      classNames?: {
+        inner?: string;
+      };
+      centered?: boolean;
+      children?: React.ReactNode;
+      closeOnEscape?: boolean;
+      fullScreen?: boolean;
+      onClose?: () => void;
+      onExitTransitionEnd?: () => void;
+      size?: string;
+    }) => {
+      modalMock(props);
+
+      return (
+        <div
+          data-testid="task-panel-modal"
+          data-centered={String(Boolean(props.centered))}
+          data-full-screen={String(Boolean(props.fullScreen))}
+          data-size={props.size ?? ''}
+          data-close-on-escape={String(Boolean(props.closeOnEscape))}
+        >
+          {props.children}
+        </div>
+      );
+    },
+    {
+      Root: (props: {
+        classNames?: { inner?: string };
+        centered?: boolean;
+        children?: React.ReactNode;
+        closeOnEscape?: boolean;
+        fullScreen?: boolean;
+        onClose?: () => void;
+        onExitTransitionEnd?: () => void;
+        size?: string;
+      }) => {
+        modalMock(props);
+
+        return (
+          <div
+            data-testid="task-panel-modal"
+            data-centered={String(Boolean(props.centered))}
+            data-full-screen={String(Boolean(props.fullScreen))}
+            data-size={props.size ?? ''}
+            data-close-on-escape={String(Boolean(props.closeOnEscape))}
+          >
+            {props.children}
+          </div>
+        );
+      },
+      Overlay: (props: { blur?: number; opacity?: number }) => {
+        modalOverlayMock(props);
+
+        return (
+          <div
+            data-testid="task-panel-modal-overlay"
+            data-overlay-blur={String(props.blur ?? '')}
+            data-overlay-opacity={String(props.opacity ?? '')}
+          />
+        );
+      },
+      Content: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+        <div data-testid="task-panel-modal-content" {...props}>
+          {children}
+        </div>
+      ),
+      Header: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+        <div data-testid="task-panel-modal-header" {...props}>
+          {children}
+        </div>
+      ),
+      Title: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+        <div data-testid="task-panel-modal-title" {...props}>
+          {children}
+        </div>
+      ),
+      CloseButton: (props: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+        <button type="button" data-close-label={props['aria-label'] ?? ''} {...props} />
+      ),
+      Body: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+        <div data-testid="task-panel-modal-body" {...props}>
+          {children}
+        </div>
+      ),
+    },
+  ),
+  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+vi.mock('re-resizable', () => ({
+  Resizable: (props: {
     children?: React.ReactNode;
-    closeButtonProps?: { 'aria-label'?: string };
-    closeOnEscape?: boolean;
-    fullScreen?: boolean;
-    onClose?: () => void;
-    onExitTransitionEnd?: () => void;
-    overlayProps?: { blur?: number; opacity?: number };
-    size?: string;
-    title?: React.ReactNode;
+    enable?: Record<string, boolean>;
+    maxHeight?: number;
+    maxWidth?: number;
+    minHeight?: number;
+    minWidth?: number;
+    onResizeStop?: (
+      event: unknown,
+      direction: unknown,
+      ref: { offsetWidth: number; offsetHeight: number },
+    ) => void;
+    size?: { width: number; height: number };
   }) => {
-    modalMock(props);
+    resizableMock(props);
 
     return (
       <div
-        data-testid="task-panel-modal"
-        data-centered={String(Boolean(props.centered))}
-        data-full-screen={String(Boolean(props.fullScreen))}
-        data-size={props.size ?? ''}
-        data-overlay-blur={String(props.overlayProps?.blur ?? '')}
-        data-overlay-opacity={String(props.overlayProps?.opacity ?? '')}
-        data-close-label={props.closeButtonProps?.['aria-label'] ?? ''}
-        data-close-on-escape={String(Boolean(props.closeOnEscape))}
+        data-testid="resizable-panel"
+        data-width={String(props.size?.width ?? '')}
+        data-height={String(props.size?.height ?? '')}
+        data-min-width={String(props.minWidth ?? '')}
+        data-min-height={String(props.minHeight ?? '')}
+        data-max-width={String(props.maxWidth ?? '')}
+        data-max-height={String(props.maxHeight ?? '')}
       >
-        <div data-testid="task-panel-modal-title">{props.title}</div>
         {props.children}
       </div>
     );
   },
-  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 vi.mock('@mantine/hooks', () => ({
@@ -71,12 +160,96 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => useSearchParamsMock(),
 }));
 
-import { resolveTaskPanelFullscreenState, TaskPanelModal } from '@/app/components/task-panel-modal';
+import {
+  clampTaskPanelSize,
+  readTaskPanelStoredSize,
+  resolveTaskPanelFullscreenState,
+  TaskPanelModal,
+} from '@/app/components/task-panel-modal';
+
+const require = createRequire(import.meta.url);
+const { JSDOM } = require('jsdom') as {
+  JSDOM: new (
+    html?: string,
+    options?: { url?: string },
+  ) => {
+    window: Window & typeof globalThis;
+  };
+};
+
+function installDom({ width, height }: { width: number; height: number }) {
+  const originalWindow = globalThis.window;
+  const originalDocument = globalThis.document;
+  const originalHTMLElement = globalThis.HTMLElement;
+  const originalEvent = globalThis.Event;
+  const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+    url: 'https://preqstation.test/dashboard',
+  });
+
+  Object.defineProperty(dom.window, 'innerWidth', {
+    configurable: true,
+    value: width,
+  });
+  Object.defineProperty(dom.window, 'innerHeight', {
+    configurable: true,
+    value: height,
+  });
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: dom.window,
+  });
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: dom.window.document,
+  });
+  Object.defineProperty(globalThis, 'HTMLElement', {
+    configurable: true,
+    value: dom.window.HTMLElement,
+  });
+  Object.defineProperty(globalThis, 'Event', {
+    configurable: true,
+    value: dom.window.Event,
+  });
+
+  return {
+    resizeTo(width: number, height: number) {
+      Object.defineProperty(dom.window, 'innerWidth', {
+        configurable: true,
+        value: width,
+      });
+      Object.defineProperty(dom.window, 'innerHeight', {
+        configurable: true,
+        value: height,
+      });
+    },
+    restore() {
+      dom.window.close();
+      Object.defineProperty(globalThis, 'window', {
+        configurable: true,
+        value: originalWindow,
+      });
+      Object.defineProperty(globalThis, 'document', {
+        configurable: true,
+        value: originalDocument,
+      });
+      Object.defineProperty(globalThis, 'HTMLElement', {
+        configurable: true,
+        value: originalHTMLElement,
+      });
+      Object.defineProperty(globalThis, 'Event', {
+        configurable: true,
+        value: originalEvent,
+      });
+    },
+  };
+}
 
 describe('TaskPanelModal', () => {
   beforeEach(() => {
     actionIconMock.mockReset();
     modalMock.mockReset();
+    modalOverlayMock.mockReset();
+    resizableMock.mockReset();
     replaceMock.mockReset();
     useMediaQueryMock.mockReset();
     usePathnameMock.mockReset();
@@ -85,6 +258,260 @@ describe('TaskPanelModal', () => {
     useMediaQueryMock.mockReturnValue(false);
     usePathnameMock.mockReturnValue('/dashboard');
     useSearchParamsMock.mockReturnValue(new URLSearchParams());
+  });
+
+  it('activates all edge and corner resize handles for desktop edit panels with a storage key', () => {
+    const html = renderToStaticMarkup(
+      <TaskPanelModal
+        opened={true}
+        title="Edit Task"
+        closeHref="/board"
+        size="80rem"
+        resizableStorageKey="preqstation:task-edit-panel:size:v1"
+      >
+        <div>Panel content</div>
+      </TaskPanelModal>,
+    );
+
+    expect(html).toContain('data-testid="resizable-panel"');
+    expect(resizableMock.mock.calls[0]?.[0].enable).toEqual({
+      top: true,
+      right: true,
+      bottom: true,
+      left: true,
+      topRight: true,
+      bottomRight: true,
+      bottomLeft: true,
+      topLeft: true,
+    });
+  });
+
+  it('does not activate resize for mobile or fullscreen modal states', () => {
+    useMediaQueryMock.mockReturnValue(true);
+
+    renderToStaticMarkup(
+      <TaskPanelModal
+        opened={true}
+        title="Edit Task"
+        closeHref="/board"
+        size="80rem"
+        resizableStorageKey="preqstation:task-edit-panel:size:v1"
+      >
+        <div>Panel content</div>
+      </TaskPanelModal>,
+    );
+
+    expect(resizableMock).not.toHaveBeenCalled();
+
+    useMediaQueryMock.mockReturnValue(false);
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('fullscreen=1'));
+
+    renderToStaticMarkup(
+      <TaskPanelModal
+        opened={true}
+        title="Edit Task"
+        closeHref="/board"
+        size="80rem"
+        resizableStorageKey="preqstation:task-edit-panel:size:v1"
+      >
+        <div>Panel content</div>
+      </TaskPanelModal>,
+    );
+
+    expect(resizableMock).not.toHaveBeenCalled();
+  });
+
+  it('does not activate resize while the mobile media query is unresolved', () => {
+    useMediaQueryMock.mockReturnValue(null);
+
+    renderToStaticMarkup(
+      <TaskPanelModal
+        opened={true}
+        title="Edit Task"
+        closeHref="/board"
+        size="80rem"
+        resizableStorageKey="preqstation:task-edit-panel:size:v1"
+      >
+        <div>Panel content</div>
+      </TaskPanelModal>,
+    );
+
+    expect(resizableMock).not.toHaveBeenCalled();
+  });
+
+  it('ignores invalid stored panel sizes and clamps valid sizes to the viewport', () => {
+    const storage = new Map<string, string>();
+    const localStorageLike = {
+      getItem: (key: string) => storage.get(key) ?? null,
+    };
+
+    storage.set('panel-size', JSON.stringify({ width: 1800, height: 1200 }));
+    expect(
+      readTaskPanelStoredSize('panel-size', localStorageLike, { width: 1000, height: 700 }),
+    ).toEqual({ width: 952, height: 652 });
+
+    storage.set('panel-size', JSON.stringify({ width: 'wide', height: 650 }));
+    expect(
+      readTaskPanelStoredSize('panel-size', localStorageLike, { width: 1000, height: 700 }),
+    ).toBeNull();
+
+    expect(clampTaskPanelSize({ width: 300, height: 200 }, { width: 1600, height: 1000 })).toEqual({
+      width: 720,
+      height: 520,
+    });
+  });
+
+  it('stores the clamped panel size when desktop resize stops', () => {
+    const storage = new Map<string, string>();
+    const originalWindow = globalThis.window;
+
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        innerWidth: 1000,
+        innerHeight: 700,
+        localStorage: {
+          getItem: (key: string) => storage.get(key) ?? null,
+          setItem: (key: string, value: string) => storage.set(key, value),
+        },
+      },
+    });
+
+    try {
+      renderToStaticMarkup(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      resizableMock.mock.calls[0]?.[0].onResizeStop?.(null, 'bottomRight', {
+        offsetWidth: 1800,
+        offsetHeight: 1200,
+      });
+
+      expect(storage.get('preqstation:task-edit-panel:size:v1')).toBe(
+        JSON.stringify({ width: 952, height: 652 }),
+      );
+    } finally {
+      Object.defineProperty(globalThis, 'window', {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
+  });
+
+  it('uses a stable fallback size for the first render and hydrates stored size after mount', async () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    window.localStorage.setItem(
+      'preqstation:task-edit-panel:size:v1',
+      JSON.stringify({ width: 900, height: 650 }),
+    );
+
+    try {
+      render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      expect(resizableMock.mock.calls[0]?.[0].size).toEqual({ width: 1280, height: 720 });
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].size).toEqual({ width: 900, height: 650 });
+      });
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
+  it('hydrates stored size when resize becomes enabled after a fullscreen mount', async () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    window.localStorage.setItem(
+      'preqstation:task-edit-panel:size:v1',
+      JSON.stringify({ width: 900, height: 650 }),
+    );
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('fullscreen=1'));
+
+    try {
+      const { rerender } = render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      expect(resizableMock).not.toHaveBeenCalled();
+
+      useSearchParamsMock.mockReturnValue(new URLSearchParams());
+      rerender(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].size).toEqual({ width: 900, height: 650 });
+      });
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
+  it('updates resize bounds and clamps the panel size when the viewport changes', () => {
+    const dom = installDom({ width: 1400, height: 900 });
+
+    try {
+      render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      dom.resizeTo(900, 650);
+
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      const latestResizableProps = resizableMock.mock.calls.at(-1)?.[0];
+
+      expect(latestResizableProps.maxWidth).toBe(852);
+      expect(latestResizableProps.maxHeight).toBe(602);
+      expect(latestResizableProps.size).toEqual({ width: 852, height: 602 });
+    } finally {
+      cleanup();
+      dom.restore();
+    }
   });
 
   it('uses a centered desktop modal with the requested edit width and descriptive close label', () => {
@@ -267,7 +694,7 @@ describe('TaskPanelModal', () => {
     const props = modalMock.mock.calls[0]?.[0];
     props?.onClose?.();
 
-    expect(props.overlayProps).toEqual({ opacity: 0.55, blur: 18 });
+    expect(modalOverlayMock).toHaveBeenCalledWith({ opacity: 0.55, blur: 18 });
     expect(replaceMock).not.toHaveBeenCalled();
 
     props?.onExitTransitionEnd?.();
