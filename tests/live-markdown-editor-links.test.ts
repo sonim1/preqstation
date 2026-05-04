@@ -93,6 +93,19 @@ describe('LiveMarkdownEditor links', () => {
     expect(source).toContain('<LiveBackspacePlugin />');
   });
 
+  it('lets non-list Shift+Tab escape live tab indentation handling', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/components/live-markdown-editor.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('function LiveTabPlugin()');
+    expect(source).toContain('event.shiftKey ? OUTDENT_CONTENT_COMMAND : INDENT_CONTENT_COMMAND');
+    expect(source).toContain('if (event.shiftKey) {\n          return false;\n        }');
+    expect(source).toContain('const currentSelection = $getSelection();');
+    expect(source).toContain("currentSelection.insertRawText('    ');");
+  });
+
   it('wires save shortcuts in both markdown and live editor paths', () => {
     const source = readFileSync(
       join(process.cwd(), 'app/components/live-markdown-editor.tsx'),

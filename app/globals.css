@@ -1743,7 +1743,7 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   position: absolute;
   inset: 0.15rem 0 0.15rem -0.35rem;
   border-radius: 8px;
-  background: color-mix(in srgb, var(--ui-accent-soft), transparent 36%);
+  background: color-mix(in srgb, var(--ui-accent-soft), transparent 62%);
   pointer-events: none;
 }
 
