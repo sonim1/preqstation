@@ -251,17 +251,12 @@ export function KanbanCardMenuDropdown({
   );
   const mobileTelegramDispatchDetailItem =
     isMobile && telegramDispatchDetail ? (
-      <Menu.Item closeMenuOnClick={false}>
-        <Text
-          component="div"
-          pt={2}
-          size="xs"
-          c="dimmed"
-          className={styles.kanbanCardMenuDispatchDetail}
-          data-kanban-dispatch-detail="true"
-        >
-          {telegramDispatchDetail}
-        </Text>
+      <Menu.Item
+        closeMenuOnClick={false}
+        className={styles.kanbanCardMenuDispatchDetail}
+        data-kanban-dispatch-detail="true"
+      >
+        {telegramDispatchDetail}
       </Menu.Item>
     ) : null;
   const desktopTelegramDispatchTooltipLabel = telegramDispatchTooltipDetail ? (
