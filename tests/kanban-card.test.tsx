@@ -623,6 +623,19 @@ describe('app/components/kanban-card', () => {
           <span> | Implement</span>
         </>
       ),
+      telegramDispatchTooltipDetail: (
+        <>
+          <div data-kanban-dispatch-tooltip-row="engine">
+            <span>Codex CLI</span>
+          </div>
+          <div data-kanban-dispatch-tooltip-row="target">
+            {renderTelegramDispatchTarget('telegram')}
+          </div>
+          <div data-kanban-dispatch-tooltip-row="mode">
+            <span>Implement</span>
+          </div>
+        </>
+      ),
       isSendingTelegram: false,
       onQuickMoveTask: vi.fn(),
       onDeleteTask: vi.fn(),
@@ -713,6 +726,12 @@ describe('app/components/kanban-card', () => {
     );
     expect(cardsCss).toMatch(
       /\.kanbanCardMenuDispatchDetail\s*\{[\s\S]*display:\s*inline-flex;[\s\S]*align-items:\s*center;/,
+    );
+    expect(cardsCss).toMatch(
+      /\.kanbanCardMenuDispatchTooltipDetail\s*\{[\s\S]*display:\s*flex;[\s\S]*flex-direction:\s*column;/,
+    );
+    expect(cardsCss).toMatch(
+      /\.kanbanCardMenuDispatchTooltipRow\s*\{[\s\S]*display:\s*flex;[\s\S]*align-items:\s*center;/,
     );
     expect(cardsCss).toMatch(/\.kanbanCardMenuDispatchTooltip\s*\{[\s\S]*max-width:\s*16rem;/);
   });

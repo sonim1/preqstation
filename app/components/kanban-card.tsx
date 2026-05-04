@@ -143,6 +143,7 @@ type KanbanCardMenuDropdownProps = {
   editHref: string;
   telegramEnabled: boolean;
   telegramDispatchDetail?: ReactNode;
+  telegramDispatchTooltipDetail?: ReactNode;
   isSendingTelegram: boolean;
   onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
   onDeleteTask: (taskId: string) => void;
@@ -230,6 +231,7 @@ export function KanbanCardMenuDropdown({
   editHref,
   telegramEnabled,
   telegramDispatchDetail,
+  telegramDispatchTooltipDetail,
   isSendingTelegram,
   onQuickMoveTask,
   onDeleteTask,
@@ -318,7 +320,9 @@ export function KanbanCardMenuDropdown({
           <Tooltip
             classNames={{ tooltip: styles.kanbanCardMenuDispatchTooltip }}
             label={
-              <div className={styles.kanbanCardMenuDispatchDetail}>{telegramDispatchDetail}</div>
+              <div className={styles.kanbanCardMenuDispatchTooltipDetail}>
+                {telegramDispatchTooltipDetail ?? telegramDispatchDetail}
+              </div>
             }
             withArrow
             openDelay={0}
@@ -422,6 +426,28 @@ export const KanbanCardContent = memo(function KanbanCardContent({
       <span>{telegramEngineConfig.label} | </span>
       {renderTelegramDispatchTarget(task.dispatchTarget)}
       <span> | {telegramDispatchModeLabel}</span>
+    </>
+  );
+  const telegramDispatchTooltipDetail = (
+    <>
+      <div
+        className={styles.kanbanCardMenuDispatchTooltipRow}
+        data-kanban-dispatch-tooltip-row="engine"
+      >
+        <span>{telegramEngineConfig.label}</span>
+      </div>
+      <div
+        className={styles.kanbanCardMenuDispatchTooltipRow}
+        data-kanban-dispatch-tooltip-row="target"
+      >
+        {renderTelegramDispatchTarget(task.dispatchTarget)}
+      </div>
+      <div
+        className={styles.kanbanCardMenuDispatchTooltipRow}
+        data-kanban-dispatch-tooltip-row="mode"
+      >
+        <span>{telegramDispatchModeLabel}</span>
+      </div>
     </>
   );
 
@@ -563,6 +589,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
                   editHref={editHref}
                   telegramEnabled={telegramEnabled}
                   telegramDispatchDetail={telegramDispatchDetail}
+                  telegramDispatchTooltipDetail={telegramDispatchTooltipDetail}
                   isSendingTelegram={isSendingTelegram}
                   onQuickMoveTask={onQuickMoveTask}
                   onDeleteTask={onDeleteTask}

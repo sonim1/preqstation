@@ -282,6 +282,20 @@
   min-width: 0;
 }
 
+.kanbanCardMenuDispatchTooltipDetail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.kanbanCardMenuDispatchTooltipRow {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
 .kanbanCardMenuDispatchTooltip {
   max-width: 16rem;
   background: rgba(11, 20, 38, 0.96);

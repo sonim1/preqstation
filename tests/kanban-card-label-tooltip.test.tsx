@@ -226,7 +226,7 @@ describe('app/components/kanban-card label tooltip behavior', () => {
     expect(html).toContain('data-tooltip-style-color="#f5f8ff"');
   });
 
-  it('shows the shared telegram detail copy in the desktop send tooltip', () => {
+  it('shows the telegram detail as separate rows in the desktop send tooltip', () => {
     const html = renderToStaticMarkup(
       <MantineProvider>
         <Menu opened withinPortal={false}>
@@ -246,6 +246,19 @@ describe('app/components/kanban-card label tooltip behavior', () => {
                 <span> | Implement</span>
               </>
             }
+            telegramDispatchTooltipDetail={
+              <>
+                <div data-kanban-dispatch-tooltip-row="engine">
+                  <span>Codex CLI</span>
+                </div>
+                <div data-kanban-dispatch-tooltip-row="target">
+                  {renderTelegramDispatchTarget('telegram')}
+                </div>
+                <div data-kanban-dispatch-tooltip-row="mode">
+                  <span>Implement</span>
+                </div>
+              </>
+            }
             isSendingTelegram={false}
             onQuickMoveTask={vi.fn()}
             onDeleteTask={vi.fn()}
@@ -260,9 +273,15 @@ describe('app/components/kanban-card label tooltip behavior', () => {
     expect(html).toContain('data-tooltip-events-hover="true"');
     expect(html).toContain('data-tooltip-events-focus="true"');
     expect(html).toContain('data-tooltip-events-touch="true"');
-    expect(html).toContain('Codex CLI | ');
+    expect(html).toContain('data-kanban-dispatch-tooltip-row="engine"');
+    expect(html).toContain('data-kanban-dispatch-tooltip-row="target"');
+    expect(html).toContain('data-kanban-dispatch-tooltip-row="mode"');
+    expect(html).toContain('Codex CLI');
     expect(html).toContain('🦞');
-    expect(html).toContain('| Implement');
+    expect(html).toContain('Telegram');
+    expect(html).toContain('Implement');
+    expect(html).not.toContain('Codex CLI | ');
+    expect(html).not.toContain('| Implement');
     expect(html).not.toContain('Engine: Codex CLI');
     expect(html).not.toContain('Target: ');
     expect(html).not.toContain('Mode: Implement');
