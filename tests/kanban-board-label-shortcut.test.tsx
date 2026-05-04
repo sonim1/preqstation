@@ -73,6 +73,7 @@ vi.mock('@/app/components/kanban-card', () => ({
       <div data-testid={`kanban-card:${String((props.task as { taskKey: string }).taskKey)}`} />
     );
   },
+  useStaleQueuedTask: () => false,
 }));
 
 vi.mock('@/app/components/task-label-picker', () => ({
