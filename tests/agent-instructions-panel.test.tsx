@@ -44,21 +44,46 @@ describe('app/components/panels/agent-instructions-panel', () => {
     });
   });
 
-  it('shows manual-save guidance and wraps the example code block inside mobile panels', () => {
+  it('shows project-wide guidance without language preset copy', () => {
     const html = renderToStaticMarkup(
       <MantineProvider>
         <AgentInstructionsPanel
           action={vi.fn(async () => null)}
           projectId="project-1"
-          value="Always answer in Korean."
+          value="Follow existing component patterns."
         />
       </MantineProvider>,
     );
 
     expect(html).toContain('Changes stay local until you save.');
+    expect(html).toContain(
+      'Saved with this project and appended to every dispatched PREQ task payload',
+    );
+    expect(html).toContain('Optional project-wide guidance for dispatched agents.');
+    expect(html).toContain('Project-wide examples');
+    expect(html).toContain(
+      'Follow the existing component patterns before adding new abstractions.',
+    );
+    expect(html).toContain('Update focused tests for behavior changes.');
+    expect(html).toContain('Call out security or data-loss risks in review notes.');
+    expect(html).not.toContain('Always answer in Korean');
     expect(html).toContain('max-width:100%');
     expect(html).toContain('white-space:pre-wrap');
     expect(html).toContain('overflow-wrap:anywhere');
+  });
+
+  it('keeps the textarea empty when no project instructions are saved', () => {
+    render(
+      <MantineProvider>
+        <AgentInstructionsPanel
+          action={vi.fn(async () => null)}
+          projectId="project-1"
+          value={null}
+        />
+      </MantineProvider>,
+    );
+
+    expect((screen.getByLabelText('Agent instructions') as HTMLTextAreaElement).value).toBe('');
   });
 
   it('surfaces dirty and saved states without refreshing the route', async () => {
@@ -75,7 +100,7 @@ describe('app/components/panels/agent-instructions-panel', () => {
 
     const textarea = screen.getByLabelText('Agent instructions');
     fireEvent.change(textarea, {
-      target: { value: 'Always answer in Korean unless asked otherwise.' },
+      target: { value: 'Run focused tests for changed behavior.' },
     });
 
     expect(screen.getByText('Unsaved changes.')).toBeTruthy();
@@ -92,7 +117,7 @@ describe('app/components/panels/agent-instructions-panel', () => {
     const submittedFormData = action.mock.calls[0]?.[1] as FormData;
     expect(submittedFormData.get('projectId')).toBe('project-1');
     expect(submittedFormData.get('agent_instructions')).toBe(
-      'Always answer in Korean unless asked otherwise.',
+      'Run focused tests for changed behavior.',
     );
   });
 
@@ -132,7 +157,7 @@ describe('app/components/panels/agent-instructions-panel', () => {
 
     const textarea = screen.getByLabelText('Agent instructions');
     fireEvent.change(textarea, {
-      target: { value: 'Always answer in Korean unless asked otherwise.' },
+      target: { value: 'Run focused tests for changed behavior.' },
     });
     fireEvent.submit(textarea.closest('form') as HTMLFormElement);
 
@@ -141,7 +166,7 @@ describe('app/components/panels/agent-instructions-panel', () => {
     });
 
     fireEvent.change(textarea, {
-      target: { value: 'Always answer in Korean unless asked otherwise. Add examples too.' },
+      target: { value: 'Run focused tests for changed behavior. Note review risks.' },
     });
 
     request.resolve({ ok: true });

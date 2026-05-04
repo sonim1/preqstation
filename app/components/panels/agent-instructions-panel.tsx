@@ -80,19 +80,21 @@ export function AgentInstructionsPanel({ action, projectId, value }: AgentInstru
         <Textarea
           name="agent_instructions"
           label="Agent instructions"
-          description="Saved with the project and attached to PREQ task payloads for coding agents."
+          description="Saved with this project and appended to every dispatched PREQ task payload as additional guidance for agents."
           value={draft}
           onChange={(event) => handleChange(event.currentTarget.value)}
-          placeholder="Always answer in Korean unless the user explicitly asks for another language."
+          placeholder="Optional project-wide guidance for dispatched agents."
           autosize
           minRows={4}
         />
         <div>
           <Text size="sm" fw={500} mb={4}>
-            Example
+            Project-wide examples
           </Text>
           <Code block style={exampleCodeStyle}>
-            Always answer in Korean unless the user explicitly asks for another language.
+            Follow the existing component patterns before adding new abstractions.
+            {'\n'}Update focused tests for behavior changes.
+            {'\n'}Call out security or data-loss risks in review notes.
           </Code>
         </div>
         <SubmitButton w="fit-content" disabled={!isDirty || isPending}>
