@@ -29,7 +29,12 @@ import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { $isHeadingNode, HeadingNode, QuoteNode } from '@lexical/rich-text';
 import { Box, Group, SegmentedControl, Text } from '@mantine/core';
-import { KEY_ARROW_RIGHT_COMMAND, KEY_BACKSPACE_COMMAND, KEY_SPACE_COMMAND, KEY_TAB_COMMAND } from 'lexical';
+import {
+  KEY_ARROW_RIGHT_COMMAND,
+  KEY_BACKSPACE_COMMAND,
+  KEY_SPACE_COMMAND,
+  KEY_TAB_COMMAND,
+} from 'lexical';
 import {
   $createParagraphNode,
   $getNodeByKey,
@@ -98,6 +103,7 @@ type LiveMarkdownEditorProps = {
   onBlur?: () => void;
   onSaveShortcut?: () => void;
   showHeader?: boolean;
+  autoFocus?: boolean;
   mode?: EditorMode;
   onModeChange?: (mode: EditorMode) => void;
 };
@@ -705,6 +711,7 @@ export function LiveMarkdownEditor({
   onBlur,
   onSaveShortcut,
   showHeader = true,
+  autoFocus = true,
   mode,
   onModeChange,
 }: LiveMarkdownEditorProps) {
@@ -714,7 +721,7 @@ export function LiveMarkdownEditor({
   const [editorInitialMarkdown, setEditorInitialMarkdown] = useState(() =>
     stripPreqChoiceBlocks(defaultValue),
   );
-  const [shouldAutoFocusEditor, setShouldAutoFocusEditor] = useState(true);
+  const [shouldAutoFocusEditor, setShouldAutoFocusEditor] = useState(autoFocus);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingCursorRef = useRef<number | null>(null);
   const isDirtyRef = useRef(false);
@@ -766,10 +773,10 @@ export function LiveMarkdownEditor({
     setMarkdown(sanitizedDefaultValue);
     setEditorInitialMarkdown(sanitizedDefaultValue);
     setEditorSeed((value) => value + 1);
-    setShouldAutoFocusEditor(true);
+    setShouldAutoFocusEditor(autoFocus);
     hasBootstrappedRef.current = false;
     previousMarkdownRef.current = sanitizedDefaultValue;
-  }, [defaultValue]);
+  }, [autoFocus, defaultValue]);
 
   useEffect(() => {
     if (pendingCursorRef.current !== null && textareaRef.current) {
@@ -797,15 +804,13 @@ export function LiveMarkdownEditor({
 
     const frame = requestAnimationFrame(() => {
       setMarkdown(sanitizedExternalMarkdown);
-      setEditorInitialMarkdown(sanitizedExternalMarkdown);
-      setEditorSeed((value) => value + 1);
-      setShouldAutoFocusEditor(true);
+      reseedLiveEditor(sanitizedExternalMarkdown, externalUpdate.cursorIndex != null || autoFocus);
     });
 
     return () => {
       cancelAnimationFrame(frame);
     };
-  }, [externalUpdate]);
+  }, [autoFocus, externalUpdate, reseedLiveEditor]);
 
   useEffect(() => {
     if (mode === undefined || mode === renderMode) return;
@@ -814,7 +819,7 @@ export function LiveMarkdownEditor({
       const nextMarkdown = renderMode === 'live' ? syncLiveMarkdownBeforeModeChange() : markdown;
 
       if (mode === 'live') {
-        reseedLiveEditor(nextMarkdown, true);
+        reseedLiveEditor(nextMarkdown, autoFocus);
       }
 
       setRenderMode(mode);
@@ -823,7 +828,7 @@ export function LiveMarkdownEditor({
     return () => {
       cancelAnimationFrame(frame);
     };
-  }, [markdown, mode, renderMode, reseedLiveEditor, syncLiveMarkdownBeforeModeChange]);
+  }, [autoFocus, markdown, mode, renderMode, reseedLiveEditor, syncLiveMarkdownBeforeModeChange]);
 
   useEffect(() => {
     const pendingExternalUpdate = pendingExternalUpdateRef.current;
@@ -920,7 +925,7 @@ export function LiveMarkdownEditor({
     const nextMarkdown = resolvedMode === 'live' ? syncLiveMarkdownBeforeModeChange() : markdown;
 
     if (nextMode === 'live') {
-      reseedLiveEditor(nextMarkdown, true);
+      reseedLiveEditor(nextMarkdown, autoFocus);
     }
 
     setRenderMode(nextMode);

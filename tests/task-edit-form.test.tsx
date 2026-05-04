@@ -418,6 +418,17 @@ describe('app/components/task-edit-form', () => {
     expect(flushSave).toHaveBeenCalledTimes(1);
   });
 
+  it('disables automatic focus for the edit task notes editor', () => {
+    renderTaskEditForm();
+
+    const notesEditorProps = liveMarkdownEditorPropsMock.mock.calls[0]?.[0] as
+      | { name: string; autoFocus?: boolean }
+      | undefined;
+
+    expect(notesEditorProps?.name).toBe('noteMd');
+    expect(notesEditorProps?.autoFocus).toBe(false);
+  });
+
   it('renders the mobile saving overlay only while autosave is saving', () => {
     const idleHtml = renderTaskEditForm();
 
