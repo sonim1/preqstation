@@ -17,6 +17,7 @@ const TASK_PANEL_RESIZE_MIN_WIDTH = 720;
 const TASK_PANEL_RESIZE_MIN_HEIGHT = 520;
 const TASK_PANEL_RESIZE_VIEWPORT_GUTTER = 48;
 const TASK_PANEL_RESIZE_DEFAULT_SIZE = { width: 1280, height: 720 };
+const TASK_PANEL_RESIZE_FALLBACK_VIEWPORT = { width: 1440, height: 900 };
 const TASK_PANEL_RESIZE_ENABLE: Enable = {
   top: true,
   right: true,
@@ -101,7 +102,7 @@ export function resolveTaskPanelFullscreenState({
 
 function getTaskPanelViewport(): TaskPanelViewport {
   if (typeof window === 'undefined') {
-    return { width: 1440, height: 900 };
+    return TASK_PANEL_RESIZE_FALLBACK_VIEWPORT;
   }
 
   return { width: window.innerWidth, height: window.innerHeight };
@@ -208,7 +209,7 @@ export function TaskPanelModal({
     : `Enter full screen for ${title} dialog`;
   const completeClose = onClose ?? (() => router.replace(closeHref));
   const isResizeEnabled = Boolean(resizableStorageKey) && !isMobile && !modalFullScreen;
-  const viewport = getTaskPanelViewport();
+  const [viewport, setViewport] = useState<TaskPanelViewport>(TASK_PANEL_RESIZE_FALLBACK_VIEWPORT);
   const resizeBounds = {
     minWidth: TASK_PANEL_RESIZE_MIN_WIDTH,
     minHeight: TASK_PANEL_RESIZE_MIN_HEIGHT,
@@ -222,20 +223,54 @@ export function TaskPanelModal({
     ),
   };
   const [resizableSize, setResizableSize] = useState<TaskPanelSize>(() =>
-    isResizeEnabled && resizableStorageKey && typeof window !== 'undefined'
-      ? (readTaskPanelStoredSize(
-          resizableStorageKey,
-          window.localStorage,
-          getTaskPanelViewport(),
-        ) ?? clampTaskPanelSize(TASK_PANEL_RESIZE_DEFAULT_SIZE, getTaskPanelViewport()))
-      : clampTaskPanelSize(TASK_PANEL_RESIZE_DEFAULT_SIZE, getTaskPanelViewport()),
+    clampTaskPanelSize(TASK_PANEL_RESIZE_DEFAULT_SIZE, TASK_PANEL_RESIZE_FALLBACK_VIEWPORT),
   );
+  const clampedResizableSize = clampTaskPanelSize(resizableSize, viewport);
 
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isResizeEnabled || typeof window === 'undefined') {
+      return;
+    }
+
+    const updateViewport = () => setViewport(getTaskPanelViewport());
+
+    updateViewport();
+    window.addEventListener('resize', updateViewport);
+
+    return () => window.removeEventListener('resize', updateViewport);
+  }, [isResizeEnabled]);
+
+  useEffect(() => {
+    if (!isResizeEnabled || !resizableStorageKey || typeof window === 'undefined') {
+      return;
+    }
+
+    const currentViewport = getTaskPanelViewport();
+    const storedSize = readTaskPanelStoredSize(
+      resizableStorageKey,
+      window.localStorage,
+      currentViewport,
+    );
+    const nextSize =
+      storedSize ?? clampTaskPanelSize(TASK_PANEL_RESIZE_DEFAULT_SIZE, currentViewport);
+    let isActive = true;
+
+    queueMicrotask(() => {
+      if (isActive) {
+        setResizableSize(nextSize);
+      }
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [isResizeEnabled, resizableStorageKey]);
 
   function requestClose() {
     if (pendingCloseActionRef.current) {
@@ -351,7 +386,7 @@ export function TaskPanelModal({
           minHeight={resizeBounds.minHeight}
           maxWidth={resizeBounds.maxWidth}
           maxHeight={resizeBounds.maxHeight}
-          size={resizableSize}
+          size={clampedResizableSize}
           onResizeStop={handleResizeStop}
         >
           {content}

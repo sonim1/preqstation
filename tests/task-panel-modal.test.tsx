@@ -1,3 +1,6 @@
+import { createRequire } from 'node:module';
+
+import { act, cleanup, render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -164,6 +167,83 @@ import {
   TaskPanelModal,
 } from '@/app/components/task-panel-modal';
 
+const require = createRequire(import.meta.url);
+const { JSDOM } = require('jsdom') as {
+  JSDOM: new (
+    html?: string,
+    options?: { url?: string },
+  ) => {
+    window: Window & typeof globalThis;
+  };
+};
+
+function installDom({ width, height }: { width: number; height: number }) {
+  const originalWindow = globalThis.window;
+  const originalDocument = globalThis.document;
+  const originalHTMLElement = globalThis.HTMLElement;
+  const originalEvent = globalThis.Event;
+  const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+    url: 'https://preqstation.test/dashboard',
+  });
+
+  Object.defineProperty(dom.window, 'innerWidth', {
+    configurable: true,
+    value: width,
+  });
+  Object.defineProperty(dom.window, 'innerHeight', {
+    configurable: true,
+    value: height,
+  });
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: dom.window,
+  });
+  Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: dom.window.document,
+  });
+  Object.defineProperty(globalThis, 'HTMLElement', {
+    configurable: true,
+    value: dom.window.HTMLElement,
+  });
+  Object.defineProperty(globalThis, 'Event', {
+    configurable: true,
+    value: dom.window.Event,
+  });
+
+  return {
+    resizeTo(width: number, height: number) {
+      Object.defineProperty(dom.window, 'innerWidth', {
+        configurable: true,
+        value: width,
+      });
+      Object.defineProperty(dom.window, 'innerHeight', {
+        configurable: true,
+        value: height,
+      });
+    },
+    restore() {
+      dom.window.close();
+      Object.defineProperty(globalThis, 'window', {
+        configurable: true,
+        value: originalWindow,
+      });
+      Object.defineProperty(globalThis, 'document', {
+        configurable: true,
+        value: originalDocument,
+      });
+      Object.defineProperty(globalThis, 'HTMLElement', {
+        configurable: true,
+        value: originalHTMLElement,
+      });
+      Object.defineProperty(globalThis, 'Event', {
+        configurable: true,
+        value: originalEvent,
+      });
+    },
+  };
+}
+
 describe('TaskPanelModal', () => {
   beforeEach(() => {
     actionIconMock.mockReset();
@@ -305,6 +385,69 @@ describe('TaskPanelModal', () => {
         configurable: true,
         value: originalWindow,
       });
+    }
+  });
+
+  it('uses a stable fallback size for the first render and hydrates stored size after mount', async () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    window.localStorage.setItem(
+      'preqstation:task-edit-panel:size:v1',
+      JSON.stringify({ width: 900, height: 650 }),
+    );
+
+    try {
+      render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      expect(resizableMock.mock.calls[0]?.[0].size).toEqual({ width: 1280, height: 720 });
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].size).toEqual({ width: 900, height: 650 });
+      });
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
+  it('updates resize bounds and clamps the panel size when the viewport changes', () => {
+    const dom = installDom({ width: 1400, height: 900 });
+
+    try {
+      render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      dom.resizeTo(900, 650);
+
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      const latestResizableProps = resizableMock.mock.calls.at(-1)?.[0];
+
+      expect(latestResizableProps.maxWidth).toBe(852);
+      expect(latestResizableProps.maxHeight).toBe(602);
+      expect(latestResizableProps.size).toEqual({ width: 852, height: 602 });
+    } finally {
+      cleanup();
+      dom.restore();
     }
   });
 
