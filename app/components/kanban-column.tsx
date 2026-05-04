@@ -10,7 +10,7 @@ import type { EnginePresets, KanbanStatus, KanbanTask } from '@/lib/kanban-helpe
 import { boardStatusLabel, statusColors } from '@/lib/kanban-helpers';
 
 import cardStyles from './cards.module.css';
-import { isStaleQueuedTask, KanbanCardContent } from './kanban-card';
+import { KanbanCardContent, useStaleQueuedTask } from './kanban-card';
 import { useTerminology } from './terminology-provider';
 
 function shouldIgnoreCardSurfaceEvent(target: HTMLElement) {
@@ -46,6 +46,126 @@ type KanbanColumnProps = {
   headerActions?: ReactNode;
   className?: string;
 };
+
+type KanbanColumnTaskCardProps = {
+  task: KanbanTask;
+  index: number;
+  isPending: boolean;
+  isMobile: boolean;
+  editHrefBase: string;
+  editHrefJoiner: string;
+  telegramEnabled: boolean;
+  router: AppRouterInstance;
+  onTaskQueued?: (taskKey: string, queuedAt: string) => void;
+  onOpenTaskEditor?: (task: KanbanTask) => void;
+  onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
+  onDeleteTask: (taskId: string) => void;
+  labelOptions: Array<{ id: string; name: string; color: string }>;
+  resolveTaskLabelOptions?: (
+    task: KanbanTask,
+  ) => Array<{ id: string; name: string; color: string }>;
+  onUpdateTaskLabels?: (taskKey: string, labelIds: string[]) => Promise<void>;
+  onProjectLabelOptionsChange?: (
+    projectId: string,
+    labelOptions: Array<{ id: string; name: string; color: string }>,
+  ) => void;
+  enginePresets?: EnginePresets | null;
+};
+
+function KanbanColumnTaskCard({
+  task,
+  index,
+  isPending,
+  isMobile,
+  editHrefBase,
+  editHrefJoiner,
+  telegramEnabled,
+  router,
+  onTaskQueued,
+  onOpenTaskEditor,
+  onQuickMoveTask,
+  onDeleteTask,
+  labelOptions,
+  resolveTaskLabelOptions,
+  onUpdateTaskLabels,
+  onProjectLabelOptionsChange,
+  enginePresets,
+}: KanbanColumnTaskCardProps) {
+  const isStaleQueued = useStaleQueuedTask(task.runState, task.runStateUpdatedAt);
+  const editHref = `${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(task.taskKey)}`;
+
+  return (
+    <Draggable
+      key={task.id}
+      draggableId={task.id}
+      index={index}
+      isDragDisabled={isMobile || isPending}
+    >
+      {(provided, snapshot) => (
+        <Paper
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          style={{
+            ...provided.draggableProps.style,
+            ...(snapshot.isDropAnimating ? { transitionDuration: '0.001s' } : {}),
+            cursor: snapshot.isDragging ? 'grabbing' : 'grab',
+          }}
+          p={0}
+          radius={6}
+          className={[
+            cardStyles.itemCard,
+            cardStyles.kanbanCard,
+            task.status === 'hold' || isStaleQueued ? cardStyles.kanbanCardHold : null,
+            snapshot.isDragging ? cardStyles.isDragging : null,
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          data-run-state={task.runState ?? undefined}
+          role="link"
+          tabIndex={snapshot.isDragging ? -1 : 0}
+          aria-label={`Open task ${task.taskKey} ${task.title}`}
+          onClick={(e) => {
+            if (snapshot.isDragging) return;
+            const target = e.target as HTMLElement;
+            if (shouldIgnoreCardSurfaceEvent(target)) return;
+            if (onOpenTaskEditor) {
+              onOpenTaskEditor(task);
+              return;
+            }
+            router.push(editHref);
+          }}
+          onKeyDown={(event) => {
+            if (snapshot.isDragging) return;
+            if (event.currentTarget !== event.target) return;
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            if (onOpenTaskEditor) {
+              onOpenTaskEditor(task);
+              return;
+            }
+            router.push(editHref);
+          }}
+        >
+          <KanbanCardContent
+            task={task}
+            isPending={isPending}
+            isMobile={isMobile}
+            editHref={editHref}
+            telegramEnabled={telegramEnabled}
+            onTaskQueued={onTaskQueued}
+            onQuickMoveTask={onQuickMoveTask}
+            onDeleteTask={onDeleteTask}
+            enginePresets={enginePresets ?? null}
+            labelOptions={resolveTaskLabelOptions ? resolveTaskLabelOptions(task) : labelOptions}
+            onUpdateTaskLabels={onUpdateTaskLabels}
+            onProjectLabelOptionsChange={onProjectLabelOptionsChange}
+          />
+        </Paper>
+      )}
+    </Draggable>
+  );
+}
 
 export function KanbanColumn({
   status,
@@ -105,84 +225,26 @@ export function KanbanColumn({
                 <KanbanEmptyLane className="kanban-empty-state--compact kanban-fill-height" />
               ) : null}
               {tasks.map((task, index) => (
-                <Draggable
+                <KanbanColumnTaskCard
                   key={task.id}
-                  draggableId={task.id}
+                  task={task}
                   index={index}
-                  isDragDisabled={isMobile || isPending}
-                >
-                  {(provided, snapshot) => (
-                    <Paper
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      style={{
-                        ...provided.draggableProps.style,
-                        ...(snapshot.isDropAnimating ? { transitionDuration: '0.001s' } : {}),
-                        cursor: snapshot.isDragging ? 'grabbing' : 'grab',
-                      }}
-                      p={0}
-                      radius={6}
-                      className={[
-                        cardStyles.itemCard,
-                        cardStyles.kanbanCard,
-                        task.status === 'hold' ||
-                        isStaleQueuedTask(task.runState, task.runStateUpdatedAt)
-                          ? cardStyles.kanbanCardHold
-                          : null,
-                        snapshot.isDragging ? cardStyles.isDragging : null,
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                      data-run-state={task.runState ?? undefined}
-                      role="link"
-                      tabIndex={snapshot.isDragging ? -1 : 0}
-                      aria-label={`Open task ${task.taskKey} ${task.title}`}
-                      onClick={(e) => {
-                        if (snapshot.isDragging) return;
-                        const target = e.target as HTMLElement;
-                        if (shouldIgnoreCardSurfaceEvent(target)) return;
-                        if (onOpenTaskEditor) {
-                          onOpenTaskEditor(task);
-                          return;
-                        }
-                        router.push(
-                          `${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(task.taskKey)}`,
-                        );
-                      }}
-                      onKeyDown={(event) => {
-                        if (snapshot.isDragging) return;
-                        if (event.currentTarget !== event.target) return;
-                        if (event.key !== 'Enter') return;
-                        event.preventDefault();
-                        if (onOpenTaskEditor) {
-                          onOpenTaskEditor(task);
-                          return;
-                        }
-                        router.push(
-                          `${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(task.taskKey)}`,
-                        );
-                      }}
-                    >
-                      <KanbanCardContent
-                        task={task}
-                        isPending={isPending}
-                        isMobile={isMobile}
-                        editHref={`${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(task.taskKey)}`}
-                        telegramEnabled={telegramEnabled}
-                        onTaskQueued={onTaskQueued}
-                        onQuickMoveTask={onQuickMoveTask}
-                        onDeleteTask={onDeleteTask}
-                        enginePresets={enginePresets ?? null}
-                        labelOptions={
-                          resolveTaskLabelOptions ? resolveTaskLabelOptions(task) : labelOptions
-                        }
-                        onUpdateTaskLabels={onUpdateTaskLabels}
-                        onProjectLabelOptionsChange={onProjectLabelOptionsChange}
-                      />
-                    </Paper>
-                  )}
-                </Draggable>
+                  isPending={isPending}
+                  isMobile={isMobile}
+                  editHrefBase={editHrefBase}
+                  editHrefJoiner={editHrefJoiner}
+                  telegramEnabled={telegramEnabled}
+                  router={router}
+                  onTaskQueued={onTaskQueued}
+                  onOpenTaskEditor={onOpenTaskEditor}
+                  onQuickMoveTask={onQuickMoveTask}
+                  onDeleteTask={onDeleteTask}
+                  labelOptions={labelOptions}
+                  resolveTaskLabelOptions={resolveTaskLabelOptions}
+                  onUpdateTaskLabels={onUpdateTaskLabels}
+                  onProjectLabelOptionsChange={onProjectLabelOptionsChange}
+                  enginePresets={enginePresets}
+                />
               ))}
               {provided.placeholder}
               <div className="kanban-column-drop-tail" aria-hidden="true" />

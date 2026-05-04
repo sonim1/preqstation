@@ -422,7 +422,7 @@ describe('app/components/kanban-card', () => {
           task={{
             ...BASE_TASK,
             runState: 'queued',
-            runStateUpdatedAt: '2026-05-04T12:00:00.000Z',
+            runStateUpdatedAt: '2020-01-01T00:00:00.000Z',
           }}
           isPending={false}
           editHref="/board?panel=task-edit&taskId=PROJ-211"

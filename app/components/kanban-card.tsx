@@ -3,7 +3,7 @@
 import { ActionIcon, Image, Menu, Text, Tooltip } from '@mantine/core';
 import { IconChecklist, IconCopy, IconDots, IconSend } from '@tabler/icons-react';
 import Link from 'next/link';
-import { memo, type ReactNode, useState } from 'react';
+import { memo, type ReactNode, useEffect, useState } from 'react';
 
 import { formatDateForDisplay } from '@/lib/date-time';
 import { ENGINE_CONFIGS, getEngineConfig } from '@/lib/engine-icons';
@@ -59,6 +59,30 @@ export function isStaleQueuedTask(
 
   const queuedAt = Date.parse(runStateUpdatedAt);
   return Number.isFinite(queuedAt) && now - queuedAt >= STALE_QUEUED_THRESHOLD_MS;
+}
+
+export function useStaleQueuedTask(
+  runState: TaskRunState | null | undefined,
+  runStateUpdatedAt: string | null | undefined,
+) {
+  const [, setTimerTick] = useState(0);
+  const isStaleQueued = isStaleQueuedTask(runState, runStateUpdatedAt);
+
+  useEffect(() => {
+    if (isStaleQueued || runState !== 'queued' || !runStateUpdatedAt) return;
+
+    const queuedAt = Date.parse(runStateUpdatedAt);
+    if (!Number.isFinite(queuedAt)) return;
+
+    const delayMs = Math.max(0, queuedAt + STALE_QUEUED_THRESHOLD_MS - Date.now());
+    const timeoutId = window.setTimeout(() => {
+      setTimerTick((tick) => tick + 1);
+    }, delayMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isStaleQueued, runState, runStateUpdatedAt]);
+
+  return isStaleQueued;
 }
 
 export function resolveLabelHashStyle(swatch: string) {
@@ -386,7 +410,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const taskPriority = parseTaskPriority(task.taskPriority);
   const doneActionLabel =
     task.status === 'done' ? `Already ${doneStatusLabel}` : `Mark as ${doneStatusLabel}`;
-  const isStaleQueued = isStaleQueuedTask(task.runState, task.runStateUpdatedAt);
+  const isStaleQueued = useStaleQueuedTask(task.runState, task.runStateUpdatedAt);
   const statusActionTooltipLabel = isStaleQueued ? STALE_QUEUED_WARNING_LABEL : doneActionLabel;
   const statusActionAriaLabel = isStaleQueued
     ? `${STALE_QUEUED_WARNING_LABEL}. ${doneActionLabel}`
