@@ -180,6 +180,7 @@ type KanbanCardMenuDropdownProps = {
   editHref: string;
   telegramEnabled: boolean;
   telegramDispatchDetail?: ReactNode;
+  telegramDispatchTooltipDetail?: ReactNode;
   isSendingTelegram: boolean;
   onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
   onDeleteTask: (taskId: string) => void;
@@ -267,6 +268,7 @@ export function KanbanCardMenuDropdown({
   editHref,
   telegramEnabled,
   telegramDispatchDetail,
+  telegramDispatchTooltipDetail,
   isSendingTelegram,
   onQuickMoveTask,
   onDeleteTask,
@@ -286,19 +288,21 @@ export function KanbanCardMenuDropdown({
   );
   const mobileTelegramDispatchDetailItem =
     isMobile && telegramDispatchDetail ? (
-      <Menu.Item closeMenuOnClick={false}>
-        <Text
-          component="div"
-          pt={2}
-          size="xs"
-          c="dimmed"
-          className={styles.kanbanCardMenuDispatchDetail}
-          data-kanban-dispatch-detail="true"
-        >
-          {telegramDispatchDetail}
-        </Text>
+      <Menu.Item
+        closeMenuOnClick={false}
+        className={styles.kanbanCardMenuDispatchDetail}
+        data-kanban-dispatch-detail="true"
+      >
+        {telegramDispatchDetail}
       </Menu.Item>
     ) : null;
+  const desktopTelegramDispatchTooltipLabel = telegramDispatchTooltipDetail ? (
+    <div className={styles.kanbanCardMenuDispatchTooltipDetail}>
+      {telegramDispatchTooltipDetail}
+    </div>
+  ) : (
+    <span className={styles.kanbanCardMenuDispatchDetail}>{telegramDispatchDetail}</span>
+  );
 
   return (
     <Menu.Dropdown>
@@ -354,9 +358,7 @@ export function KanbanCardMenuDropdown({
         ) : telegramDispatchDetail ? (
           <Tooltip
             classNames={{ tooltip: styles.kanbanCardMenuDispatchTooltip }}
-            label={
-              <div className={styles.kanbanCardMenuDispatchDetail}>{telegramDispatchDetail}</div>
-            }
+            label={desktopTelegramDispatchTooltipLabel}
             withArrow
             openDelay={0}
             events={{ hover: true, focus: true, touch: true }}
@@ -464,6 +466,28 @@ export const KanbanCardContent = memo(function KanbanCardContent({
       <span>{telegramEngineConfig.label} | </span>
       {renderTelegramDispatchTarget(task.dispatchTarget)}
       <span> | {telegramDispatchModeLabel}</span>
+    </>
+  );
+  const telegramDispatchTooltipDetail = (
+    <>
+      <div
+        className={styles.kanbanCardMenuDispatchTooltipRow}
+        data-kanban-dispatch-tooltip-row="engine"
+      >
+        <span>{telegramEngineConfig.label}</span>
+      </div>
+      <div
+        className={styles.kanbanCardMenuDispatchTooltipRow}
+        data-kanban-dispatch-tooltip-row="target"
+      >
+        {renderTelegramDispatchTarget(task.dispatchTarget)}
+      </div>
+      <div
+        className={styles.kanbanCardMenuDispatchTooltipRow}
+        data-kanban-dispatch-tooltip-row="mode"
+      >
+        <span>{telegramDispatchModeLabel}</span>
+      </div>
     </>
   );
 
@@ -616,6 +640,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
                   editHref={editHref}
                   telegramEnabled={telegramEnabled}
                   telegramDispatchDetail={telegramDispatchDetail}
+                  telegramDispatchTooltipDetail={telegramDispatchTooltipDetail}
                   isSendingTelegram={isSendingTelegram}
                   onQuickMoveTask={onQuickMoveTask}
                   onDeleteTask={onDeleteTask}
