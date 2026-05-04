@@ -545,6 +545,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
                   <span
                     className={styles.kanbanQueuedWarningIcon}
                     data-kanban-queued-warning="true"
+                    aria-hidden="true"
                   >
                     ⚠️
                   </span>
