@@ -117,8 +117,7 @@ function isServerRunStateStale(
   incomingUpdatedAt: string | null,
   currentUpdatedAt: string | null,
 ) {
-  if (!incomingRunState) return true;
-  if (!incomingUpdatedAt || !currentUpdatedAt) return false;
+  if (!incomingUpdatedAt || !currentUpdatedAt) return !incomingRunState;
 
   return Date.parse(incomingUpdatedAt) < Date.parse(currentUpdatedAt);
 }
