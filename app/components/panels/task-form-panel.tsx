@@ -16,6 +16,9 @@ import classes from './task-form-panel.module.css';
 
 type ActionState = { ok: true } | { ok: false; message: string } | null;
 
+const successResetKeys = new WeakMap<object, number>();
+let nextSuccessResetKey = 0;
+
 type TaskFormPanelProps = {
   createTodoAction: (prevState: unknown, formData: FormData) => Promise<ActionState>;
   projects: Array<{ id: string; name: string }>;
@@ -26,6 +29,23 @@ type TaskFormPanelProps = {
   taskPriorityOptions: Array<{ value: string; label: string }>;
   defaultProjectId?: string;
 };
+
+function taskFormSuccessResetKey(state: ActionState) {
+  if (!state?.ok) {
+    return 0;
+  }
+
+  const existingKey = successResetKeys.get(state);
+
+  if (existingKey) {
+    return existingKey;
+  }
+
+  nextSuccessResetKey += 1;
+  successResetKeys.set(state, nextSuccessResetKey);
+
+  return nextSuccessResetKey;
+}
 
 const TASK_PRIORITY_DETAIL: Record<TaskPriority, string> = {
   highest: 'Escalated, unblock first',
@@ -89,36 +109,38 @@ function TaskFormPriorityPicker({
         </Menu.Target>
 
         <Menu.Dropdown className={classes.priorityDropdown}>
-          {menuPriorities.map((priority) => {
-            const isSelected = priority === selectedPriority;
+          <div role="group" aria-label={label}>
+            {menuPriorities.map((priority) => {
+              const isSelected = priority === selectedPriority;
 
-            return (
-              <Menu.Item
-                key={priority}
-                role="menuitemradio"
-                aria-checked={isSelected}
-                aria-label={TASK_PRIORITY_LABEL[priority]}
-                data-task-priority-option="true"
-                data-task-priority-value={priority}
-                leftSection={
-                  <span className={classes.priorityOptionIcon}>
-                    <TaskFormPriorityMark priority={priority} />
+              return (
+                <Menu.Item
+                  key={priority}
+                  role="menuitemradio"
+                  aria-checked={isSelected}
+                  aria-label={TASK_PRIORITY_LABEL[priority]}
+                  data-task-priority-option="true"
+                  data-task-priority-value={priority}
+                  leftSection={
+                    <span className={classes.priorityOptionIcon}>
+                      <TaskFormPriorityMark priority={priority} />
+                    </span>
+                  }
+                  rightSection={isSelected ? <IconCheck size={14} /> : null}
+                  onClick={() => setSelectedPriority(priority)}
+                >
+                  <span className={classes.priorityOptionText}>
+                    <span className={classes.priorityOptionLabel}>
+                      {TASK_PRIORITY_LABEL[priority]}
+                    </span>
+                    <span className={classes.priorityOptionDetail}>
+                      {TASK_PRIORITY_DETAIL[priority]}
+                    </span>
                   </span>
-                }
-                rightSection={isSelected ? <IconCheck size={14} /> : null}
-                onClick={() => setSelectedPriority(priority)}
-              >
-                <span className={classes.priorityOptionText}>
-                  <span className={classes.priorityOptionLabel}>
-                    {TASK_PRIORITY_LABEL[priority]}
-                  </span>
-                  <span className={classes.priorityOptionDetail}>
-                    {TASK_PRIORITY_DETAIL[priority]}
-                  </span>
-                </span>
-              </Menu.Item>
-            );
-          })}
+                </Menu.Item>
+              );
+            })}
+          </div>
         </Menu.Dropdown>
       </Menu>
     </div>
@@ -232,6 +254,7 @@ export function TaskFormPanel({
                 onChange={setSelectedLabelIds}
               />
               <TaskFormPriorityPicker
+                key={taskFormSuccessResetKey(state)}
                 priorityOptions={taskPriorityOptions}
                 label={`${terminology.task.singular} priority`}
               />
