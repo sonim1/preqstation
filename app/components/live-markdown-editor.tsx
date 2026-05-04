@@ -819,7 +819,7 @@ export function LiveMarkdownEditor({
       const nextMarkdown = renderMode === 'live' ? syncLiveMarkdownBeforeModeChange() : markdown;
 
       if (mode === 'live') {
-        reseedLiveEditor(nextMarkdown, autoFocus);
+        reseedLiveEditor(nextMarkdown, true);
       }
 
       setRenderMode(mode);
@@ -925,7 +925,7 @@ export function LiveMarkdownEditor({
     const nextMarkdown = resolvedMode === 'live' ? syncLiveMarkdownBeforeModeChange() : markdown;
 
     if (nextMode === 'live') {
-      reseedLiveEditor(nextMarkdown, autoFocus);
+      reseedLiveEditor(nextMarkdown, true);
     }
 
     setRenderMode(nextMode);

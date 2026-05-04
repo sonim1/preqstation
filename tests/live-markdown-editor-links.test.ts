@@ -119,4 +119,14 @@ describe('LiveMarkdownEditor links', () => {
     expect(source).toContain('onSaveShortcut?.()');
     expect(source).toContain('onKeyDown={handleLiveEditorKeyDown}');
   });
+
+  it('focuses live mode after explicit mode switches even when initial autofocus is disabled', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/components/live-markdown-editor.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('reseedLiveEditor(nextMarkdown, true);');
+    expect(source).not.toContain('reseedLiveEditor(nextMarkdown, autoFocus);');
+  });
 });
