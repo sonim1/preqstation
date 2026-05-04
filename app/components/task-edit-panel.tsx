@@ -15,6 +15,8 @@ import { TaskEditPanelSkeleton } from './task-edit-panel-skeleton';
 import { TaskPanelModal } from './task-panel-modal';
 import { useTerminology } from './terminology-provider';
 
+const TASK_EDIT_PANEL_RESIZE_STORAGE_KEY = 'preqstation:task-edit-panel:size:v1';
+
 type TaskEditPanelProps = TaskEditFormProps & {
   closeHref: string;
   isLoading?: boolean;
@@ -39,6 +41,7 @@ export function TaskEditPanel({
         title="Edit Task"
         closeHref={closeHref}
         onClose={onClose}
+        resizableStorageKey={TASK_EDIT_PANEL_RESIZE_STORAGE_KEY}
         size={size}
       >
         <TaskEditPanelSkeleton />
@@ -109,6 +112,7 @@ function LoadedTaskEditPanel({
       closeHref={closeHref}
       closeOnEscape
       onClose={onClose}
+      resizableStorageKey={TASK_EDIT_PANEL_RESIZE_STORAGE_KEY}
       size={size}
     >
       <TaskEditForm
@@ -140,6 +144,7 @@ export function EmptyTaskEditPanel({
       title={`Edit ${terminology.task.singular}`}
       closeHref={closeHref}
       onClose={onClose}
+      resizableStorageKey={TASK_EDIT_PANEL_RESIZE_STORAGE_KEY}
       size={size}
     >
       <EmptyState compact title={`${terminology.task.singular} not found`} />

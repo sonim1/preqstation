@@ -23,18 +23,21 @@ vi.mock('@/app/components/task-panel-modal', () => ({
     headerCenterContent,
     closeHref,
     closeOnEscape,
+    resizableStorageKey,
   }: {
     children: React.ReactNode;
     title: string;
     headerCenterContent?: React.ReactNode;
     closeHref: string;
     closeOnEscape?: boolean;
+    resizableStorageKey?: string;
   }) => (
     <div
       data-testid="task-panel-modal"
       data-title={title}
       data-close-href={closeHref}
       data-close-on-escape={String(closeOnEscape)}
+      data-resizable-storage-key={resizableStorageKey ?? ''}
     >
       <div data-testid="task-panel-modal-header-center">{headerCenterContent}</div>
       {children}
@@ -62,7 +65,7 @@ vi.mock('@/app/components/task-edit-header-title', () => ({
   TaskEditHeaderTitle: () => <div data-testid="task-edit-header-title" />,
 }));
 
-import { TaskEditPanel } from '@/app/components/task-edit-panel';
+import { EmptyTaskEditPanel, TaskEditPanel } from '@/app/components/task-edit-panel';
 import { TerminologyProvider } from '@/app/components/terminology-provider';
 import { KITCHEN_TERMINOLOGY } from '@/lib/terminology';
 
@@ -133,6 +136,7 @@ describe('app/components/task-edit-panel', () => {
     );
 
     expect(html).toContain('data-testid="task-panel-modal"');
+    expect(html).toContain('data-resizable-storage-key="preqstation:task-edit-panel:size:v1"');
     expect(html).toContain('data-testid="task-edit-loading-shell"');
     expect(html).not.toContain('data-testid="task-edit-form"');
   });
@@ -148,7 +152,20 @@ describe('app/components/task-edit-panel', () => {
     );
 
     expect(html).toContain('data-testid="task-edit-form"');
+    expect(html).toContain('data-resizable-storage-key="preqstation:task-edit-panel:size:v1"');
     expect(html).not.toContain('data-testid="task-edit-loading-shell"');
+  });
+
+  it('uses the same persisted resize key for empty edit panels', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <EmptyTaskEditPanel closeHref="/board/PROJ" />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    expect(html).toContain('data-resizable-storage-key="preqstation:task-edit-panel:size:v1"');
   });
 
   it('places the autosave status in the modal header center for loaded edit panels', () => {
