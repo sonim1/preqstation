@@ -32,9 +32,28 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+vi.mock('@hello-pangea/dnd', () => ({
+  Droppable: ({ children, droppableId }: any) =>
+    children(
+      { innerRef: vi.fn(), droppableProps: { 'data-droppable-id': droppableId } },
+      { isDraggingOver: false },
+    ),
+  Draggable: ({ children, draggableId }: any) =>
+    children(
+      {
+        innerRef: vi.fn(),
+        draggableProps: { style: {}, 'data-draggable-id': draggableId },
+        dragHandleProps: {},
+      },
+      { isDragging: false, isDropAnimating: false },
+    ),
+}));
+
+import { KanbanBoardMobile } from '@/app/components/kanban-board-mobile';
 import {
   buildKanbanCardTelegramDispatch,
   getRunStateWaveConfig,
+  isStaleQueuedTask,
   KanbanCardContent,
   KanbanCardMenuDropdown,
   renderTelegramDispatchTarget,
@@ -42,7 +61,8 @@ import {
   resolveLabelHashStyle,
   resolveRunStateFrameStyle,
 } from '@/app/components/kanban-card';
-import type { KanbanTask } from '@/lib/kanban-helpers';
+import { KanbanColumn } from '@/app/components/kanban-column';
+import type { KanbanColumns, KanbanTask } from '@/lib/kanban-helpers';
 
 const cardsCss = fs.readFileSync(
   path.join(process.cwd(), 'app/components/cards.module.css'),
@@ -95,6 +115,59 @@ function resolveWaveTopHeadroom(runState: 'queued' | 'running') {
   return highestCrest + waveHeight * (waveShiftPercent / 100) + bandTopClearance;
 }
 
+function emptyColumns(): KanbanColumns {
+  return {
+    inbox: [],
+    todo: [],
+    hold: [],
+    ready: [],
+    done: [],
+    archived: [],
+  };
+}
+
+function renderQueuedTaskSurfaces(task: KanbanTask) {
+  const mobileHtml = renderToStaticMarkup(
+    <MantineProvider>
+      <KanbanBoardMobile
+        columns={{
+          ...emptyColumns(),
+          todo: [task],
+        }}
+        activeTab="todo"
+        onTabChange={() => {}}
+        isPending={false}
+        editHrefBase="/board"
+        editHrefJoiner="?"
+        router={{ push: () => {}, refresh: () => {} } as any}
+        onQuickMoveTask={() => {}}
+        onDeleteTask={() => {}}
+        saveError={null}
+        enginePresets={null}
+      />
+    </MantineProvider>,
+  );
+
+  const desktopHtml = renderToStaticMarkup(
+    <MantineProvider>
+      <KanbanColumn
+        status="todo"
+        tasks={[task]}
+        isPending={false}
+        isMobile={false}
+        editHrefBase="/board"
+        editHrefJoiner="?"
+        router={{ push: () => {} } as any}
+        onQuickMoveTask={() => {}}
+        onDeleteTask={() => {}}
+        enginePresets={null}
+      />
+    </MantineProvider>,
+  );
+
+  return { desktopHtml, mobileHtml };
+}
+
 describe('app/components/kanban-card', () => {
   it('uses card-size-aware wave positioning for queued while keeping running anchored', () => {
     expect(resolveRunStateFrameStyle('queued')).toEqual({
@@ -111,6 +184,16 @@ describe('app/components/kanban-card', () => {
     expect(resolveLabelHashStyle('#228be6')).toEqual({
       color: '#228be6',
     });
+  });
+
+  it('marks only queued tasks at least one hour old as stale', () => {
+    const now = Date.parse('2026-05-04T14:00:00.000Z');
+
+    expect(isStaleQueuedTask('queued', '2026-05-04T13:00:01.000Z', now)).toBe(false);
+    expect(isStaleQueuedTask('queued', '2026-05-04T13:00:00.000Z', now)).toBe(true);
+    expect(isStaleQueuedTask('running', '2026-05-04T12:00:00.000Z', now)).toBe(false);
+    expect(isStaleQueuedTask('queued', null, now)).toBe(false);
+    expect(isStaleQueuedTask('queued', 'not-a-date', now)).toBe(false);
   });
 
   it('prefers opening the kanban card menu to the right when the viewport has room', () => {
@@ -212,6 +295,26 @@ describe('app/components/kanban-card', () => {
     expect(cardsCss).toMatch(
       /\.kanbanCardHold::before\s*\{[\s\S]*box-shadow:\s*0 0 16px color-mix\(in srgb,\s*var\(--ui-warning\),\s*transparent 42%\);/,
     );
+    expect(cardsCss).toMatch(/\.kanbanQueuedWarningIcon\s*\{/);
+  });
+
+  it('renders stale queued desktop and mobile cards with the warning accent and hidden emoji', () => {
+    const staleTask: KanbanTask = {
+      ...BASE_TASK,
+      runState: 'queued',
+      runStateUpdatedAt: '2020-01-01T00:00:00.000Z',
+    };
+
+    const { desktopHtml, mobileHtml } = renderQueuedTaskSurfaces(staleTask);
+
+    for (const html of [desktopHtml, mobileHtml]) {
+      expect(html).toContain('kanbanCardHold');
+      expect(html).toContain('data-run-state-stale="queued"');
+      expect(html).toMatch(
+        /data-kanban-queued-warning="true"[^>]*aria-hidden="true"|aria-hidden="true"[^>]*data-kanban-queued-warning="true"/,
+      );
+      expect(html).toContain('Queued for more than 1 hour. Mark as done');
+    }
   });
 
   it('renders empty columns with a top-only aurora seam instead of a bordered panel', () => {
@@ -310,6 +413,31 @@ describe('app/components/kanban-card', () => {
     expect(html).toContain('data-run-state-chip="queued"');
     expect(html).toContain('Queued');
     expect(html).toContain('data-run-state-decor="queued"');
+  });
+
+  it('renders stale queued cards with warning status affordance while keeping queued chrome', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <KanbanCardContent
+          task={{
+            ...BASE_TASK,
+            runState: 'queued',
+            runStateUpdatedAt: '2020-01-01T00:00:00.000Z',
+          }}
+          isPending={false}
+          editHref="/board?panel=task-edit&taskId=PROJ-211"
+          onQuickMoveTask={vi.fn()}
+          onDeleteTask={vi.fn()}
+          enginePresets={null}
+        />
+      </MantineProvider>,
+    );
+
+    expect(html).toContain('data-run-state-stale="queued"');
+    expect(html).toContain('data-run-state-chip="queued"');
+    expect(html).toContain('Queued for more than 1 hour');
+    expect(html).toContain('aria-label="Queued for more than 1 hour');
+    expect(html).toContain('data-kanban-queued-warning="true"');
   });
 
   it('renders running card chrome with run-state chip and decorative backdrop', () => {

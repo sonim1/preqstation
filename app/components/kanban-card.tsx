@@ -3,7 +3,7 @@
 import { ActionIcon, Image, Menu, Text, Tooltip } from '@mantine/core';
 import { IconChecklist, IconCopy, IconDots, IconSend } from '@tabler/icons-react';
 import Link from 'next/link';
-import { memo, type ReactNode, useState } from 'react';
+import { memo, type ReactNode, useEffect, useState } from 'react';
 
 import { formatDateForDisplay } from '@/lib/date-time';
 import { ENGINE_CONFIGS, getEngineConfig } from '@/lib/engine-icons';
@@ -32,6 +32,8 @@ const RUN_STATE_LABELS: Record<TaskRunState, string> = {
 };
 
 const KANBAN_CARD_MENU_REQUIRED_RIGHT_SPACE = 220;
+export const STALE_QUEUED_THRESHOLD_MS = 60 * 60 * 1000;
+const STALE_QUEUED_WARNING_LABEL = 'Queued for more than 1 hour';
 
 export function resolveRunStateFrameStyle(runState: TaskRunState | null | undefined) {
   if (runState === 'queued') {
@@ -46,6 +48,41 @@ export function resolveRunStateFrameStyle(runState: TaskRunState | null | undefi
     } as React.CSSProperties;
   }
   return undefined;
+}
+
+export function isStaleQueuedTask(
+  runState: TaskRunState | null | undefined,
+  runStateUpdatedAt: string | null | undefined,
+  now = Date.now(),
+) {
+  if (runState !== 'queued' || !runStateUpdatedAt) return false;
+
+  const queuedAt = Date.parse(runStateUpdatedAt);
+  return Number.isFinite(queuedAt) && now - queuedAt >= STALE_QUEUED_THRESHOLD_MS;
+}
+
+export function useStaleQueuedTask(
+  runState: TaskRunState | null | undefined,
+  runStateUpdatedAt: string | null | undefined,
+) {
+  const [, setTimerTick] = useState(0);
+  const isStaleQueued = isStaleQueuedTask(runState, runStateUpdatedAt);
+
+  useEffect(() => {
+    if (isStaleQueued || runState !== 'queued' || !runStateUpdatedAt) return;
+
+    const queuedAt = Date.parse(runStateUpdatedAt);
+    if (!Number.isFinite(queuedAt)) return;
+
+    const delayMs = Math.max(0, queuedAt + STALE_QUEUED_THRESHOLD_MS - Date.now());
+    const timeoutId = window.setTimeout(() => {
+      setTimerTick((tick) => tick + 1);
+    }, delayMs);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isStaleQueued, runState, runStateUpdatedAt]);
+
+  return isStaleQueued;
 }
 
 export function resolveLabelHashStyle(swatch: string) {
@@ -373,6 +410,11 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const taskPriority = parseTaskPriority(task.taskPriority);
   const doneActionLabel =
     task.status === 'done' ? `Already ${doneStatusLabel}` : `Mark as ${doneStatusLabel}`;
+  const isStaleQueued = useStaleQueuedTask(task.runState, task.runStateUpdatedAt);
+  const statusActionTooltipLabel = isStaleQueued ? STALE_QUEUED_WARNING_LABEL : doneActionLabel;
+  const statusActionAriaLabel = isStaleQueued
+    ? `${STALE_QUEUED_WARNING_LABEL}. ${doneActionLabel}`
+    : doneActionLabel;
   const labelTooltipBackground = 'rgba(11, 20, 38, 0.96)';
   const labelTooltipBorder = '1px solid rgba(255, 255, 255, 0.08)';
   const labelTooltipText = '#f5f8ff';
@@ -493,6 +535,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
       className={styles.kanbanCardFrame}
       data-run-state={task.runState ?? undefined}
       data-run-state-active={task.runState ? 'true' : undefined}
+      data-run-state-stale={isStaleQueued ? 'queued' : undefined}
       style={resolveRunStateFrameStyle(task.runState)}
     >
       {task.runState ? <KanbanRunStateDecor runState={task.runState} /> : null}
@@ -503,7 +546,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
             data-kanban-top-row="true"
           >
             <Tooltip
-              label={doneActionLabel}
+              label={statusActionTooltipLabel}
               withArrow
               events={{ hover: true, focus: true, touch: false }}
             >
@@ -519,10 +562,20 @@ export const KanbanCardContent = memo(function KanbanCardContent({
                   }
                 }}
                 disabled={isPending}
-                aria-label={doneActionLabel}
+                aria-label={statusActionAriaLabel}
                 className={`kanban-status-button is-${task.status} ${styles.kanbanCardStatusAction}`}
               >
-                <KanbanStatusIndicator status={task.status} />
+                {isStaleQueued ? (
+                  <span
+                    className={styles.kanbanQueuedWarningIcon}
+                    data-kanban-queued-warning="true"
+                    aria-hidden="true"
+                  >
+                    ⚠️
+                  </span>
+                ) : (
+                  <KanbanStatusIndicator status={task.status} />
+                )}
               </ActionIcon>
             </Tooltip>
 

@@ -37,6 +37,7 @@ vi.mock('@/app/components/empty-state', () => ({
 
 vi.mock('@/app/components/kanban-card', () => ({
   KanbanCardContent: () => React.createElement('div', null, 'card'),
+  useStaleQueuedTask: () => false,
 }));
 
 vi.mock('@/lib/notifications', () => notifications);
