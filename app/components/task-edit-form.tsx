@@ -1093,6 +1093,7 @@ function TaskEditFormContent({
                     onBlur={flushOnBlur}
                     onSaveShortcut={flushSave}
                     showHeader={false}
+                    autoFocus={false}
                     mode={notesMode}
                     onModeChange={setNotesMode}
                   />

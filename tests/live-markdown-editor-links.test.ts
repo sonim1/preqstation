@@ -42,7 +42,7 @@ describe('LiveMarkdownEditor links', () => {
       'utf8',
     );
 
-    expect(source).toContain('import { KEY_ARROW_RIGHT_COMMAND');
+    expect(source).toContain('KEY_ARROW_RIGHT_COMMAND');
     expect(source).toContain('function CodeBlockExitPlugin()');
     expect(source).toContain('editor.registerCommand(');
     expect(source).toContain('const codeNodeKey = codeNode.getKey();');
@@ -118,5 +118,15 @@ describe('LiveMarkdownEditor links', () => {
     expect(source).toContain('!event.metaKey && !event.ctrlKey');
     expect(source).toContain('onSaveShortcut?.()');
     expect(source).toContain('onKeyDown={handleLiveEditorKeyDown}');
+  });
+
+  it('focuses live mode after explicit mode switches even when initial autofocus is disabled', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/components/live-markdown-editor.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('reseedLiveEditor(nextMarkdown, true);');
+    expect(source).not.toContain('reseedLiveEditor(nextMarkdown, autoFocus);');
   });
 });
