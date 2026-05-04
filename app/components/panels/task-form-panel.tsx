@@ -2,7 +2,7 @@
 
 import { Menu, NativeSelect, Stack, Text, TextInput, UnstyledButton } from '@mantine/core';
 import { IconCheck, IconChevronDown } from '@tabler/icons-react';
-import { useActionState, useEffect, useState } from 'react';
+import { useActionState, useEffect, useMemo, useState } from 'react';
 
 import { LiveMarkdownEditor } from '@/app/components/live-markdown-editor';
 import { SubmitButton } from '@/app/components/submit-button';
@@ -73,13 +73,11 @@ function TaskFormPriorityPicker({
 }) {
   const [selectedPriority, setSelectedPriority] = useState<TaskPriority>('none');
   const [opened, setOpened] = useState(false);
-  const parsedPriorityOptions = priorityOptions.reduce<TaskPriority[]>((options, option) => {
-    const priority = parseTaskPriority(option.value);
-
-    return options.includes(priority) ? options : [...options, priority];
-  }, []);
-  const menuPriorities: TaskPriority[] =
-    parsedPriorityOptions.length > 0 ? parsedPriorityOptions : ['none'];
+  const menuPriorities = useMemo(() => {
+    return priorityOptions.length > 0
+      ? Array.from(new Set(priorityOptions.map((option) => parseTaskPriority(option.value))))
+      : (['none'] as TaskPriority[]);
+  }, [priorityOptions]);
   const selectedLabel = TASK_PRIORITY_LABEL[selectedPriority];
 
   return (
