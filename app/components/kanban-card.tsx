@@ -264,6 +264,13 @@ export function KanbanCardMenuDropdown({
         </Text>
       </Menu.Item>
     ) : null;
+  const desktopTelegramDispatchTooltipLabel = telegramDispatchTooltipDetail ? (
+    <div className={styles.kanbanCardMenuDispatchTooltipDetail}>
+      {telegramDispatchTooltipDetail}
+    </div>
+  ) : (
+    <span className={styles.kanbanCardMenuDispatchDetail}>{telegramDispatchDetail}</span>
+  );
 
   return (
     <Menu.Dropdown>
@@ -319,11 +326,7 @@ export function KanbanCardMenuDropdown({
         ) : telegramDispatchDetail ? (
           <Tooltip
             classNames={{ tooltip: styles.kanbanCardMenuDispatchTooltip }}
-            label={
-              <div className={styles.kanbanCardMenuDispatchTooltipDetail}>
-                {telegramDispatchTooltipDetail ?? telegramDispatchDetail}
-              </div>
-            }
+            label={desktopTelegramDispatchTooltipLabel}
             withArrow
             openDelay={0}
             events={{ hover: true, focus: true, touch: true }}
