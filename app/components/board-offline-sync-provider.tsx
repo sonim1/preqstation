@@ -263,6 +263,7 @@ export function BoardOfflineSyncProvider({
           status: input.status,
           sortOrder: input.sortOrder,
           baseNoteFingerprint: input.baseNoteFingerprint,
+          baseTitleFingerprint: input.baseTitleFingerprint,
         },
       });
 

@@ -40,6 +40,10 @@ function hashTaskNoteText(value: string) {
   return (UINT32_RANGE * (HASH53_HIGH_MASK & right) + (left >>> 0)).toString(16);
 }
 
+function normalizeTaskTitleText(value: string | null | undefined) {
+  return (value || '').trim();
+}
+
 export function normalizeTaskNoteForComparison(value: string | null | undefined) {
   return normalizeTaskNoteText(value);
 }
@@ -47,4 +51,9 @@ export function normalizeTaskNoteForComparison(value: string | null | undefined)
 export function buildTaskNoteFingerprint(value: string | null | undefined) {
   const normalized = normalizeTaskNoteText(value);
   return `task-note:v1:${normalized.length}:${hashTaskNoteText(normalized)}`;
+}
+
+export function buildTaskTitleFingerprint(value: string | null | undefined) {
+  const normalized = normalizeTaskTitleText(value);
+  return `task-title:v1:${normalized.length}:${hashTaskNoteText(normalized)}`;
 }

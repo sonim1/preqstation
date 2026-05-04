@@ -3,7 +3,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { buildTaskNoteFingerprint } from '@/lib/task-note-fingerprint';
+import { buildTaskNoteFingerprint, buildTaskTitleFingerprint } from '@/lib/task-note-fingerprint';
 
 const mocked = vi.hoisted(() => ({
   deleteDraft: vi.fn(),
@@ -31,6 +31,7 @@ describe('app/hooks/use-task-offline-draft', () => {
     mocked.getDraft.mockResolvedValue({
       fields: {
         baseNoteFingerprint: buildTaskNoteFingerprint('## Server note'),
+        baseTitleFingerprint: buildTaskTitleFingerprint('원본 제목'),
         title: '복구된 제목',
         note: '## Offline',
       },
@@ -45,6 +46,36 @@ describe('app/hooks/use-task-offline-draft', () => {
     });
     expect(result.current.draftNote).toBe('## Offline');
     expect(result.current.canRestoreDraft).toBe(false);
+  });
+
+  it('exposes a non-conflicting online draft for auto-save without applying it to visible fields', async () => {
+    mocked.getDraft.mockResolvedValue({
+      updatedAt: '2026-04-28T15:00:00.000Z',
+      fields: {
+        baseTitleFingerprint: buildTaskTitleFingerprint('원본 제목'),
+        baseNoteFingerprint: buildTaskNoteFingerprint('## Server note'),
+        title: '로컬 제목',
+        note: '## Offline note',
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note', true),
+    );
+
+    await waitFor(() => {
+      expect(result.current.autoSaveDraft).toEqual(
+        expect.objectContaining({
+          title: '로컬 제목',
+          note: '## Offline note',
+          baseTitleFingerprint: buildTaskTitleFingerprint('원본 제목'),
+          baseNoteFingerprint: buildTaskNoteFingerprint('## Server note'),
+        }),
+      );
+    });
+    expect(result.current.canRestoreDraft).toBe(false);
+    expect(result.current.draftTitle).toBe('원본 제목');
+    expect(result.current.draftNote).toBe('## Server note');
   });
 
   it('keeps the latest server note when the saved draft only mirrors an older base note', async () => {
@@ -135,9 +166,10 @@ describe('app/hooks/use-task-offline-draft', () => {
     expect(mocked.deleteDraft).not.toHaveBeenCalled();
   });
 
-  it('keeps a title-only stale draft restorable without surfacing a note conflict', async () => {
+  it('keeps a title-only stale draft restorable as a conflict without auto-save', async () => {
     mocked.getDraft.mockResolvedValue({
       fields: {
+        baseTitleFingerprint: buildTaskTitleFingerprint('이전 제목'),
         title: '로컬 초안 제목',
         note: '## Server note',
         baseNoteFingerprint: buildTaskNoteFingerprint('## Older note'),
@@ -151,7 +183,27 @@ describe('app/hooks/use-task-offline-draft', () => {
     await waitFor(() => {
       expect(result.current.canRestoreDraft).toBe(true);
     });
-    expect(result.current.hasNoteConflict).toBe(false);
+    expect(result.current.hasNoteConflict).toBe(true);
+    expect(result.current.autoSaveDraft).toBeNull();
+  });
+
+  it('does not auto-save legacy drafts missing either base fingerprint', async () => {
+    mocked.getDraft.mockResolvedValue({
+      fields: {
+        baseNoteFingerprint: buildTaskNoteFingerprint('## Server note'),
+        title: '로컬 제목',
+        note: '## Offline note',
+      },
+    });
+
+    const { result } = renderHook(() =>
+      useTaskOfflineDraft('PROJ-310', '원본 제목', '## Server note', true),
+    );
+
+    await waitFor(() => {
+      expect(result.current.canRestoreDraft).toBe(true);
+    });
+    expect(result.current.autoSaveDraft).toBeNull();
   });
 
   it('keeps the server note active online and exposes a restorable stale local draft', async () => {
@@ -267,6 +319,7 @@ describe('app/hooks/use-task-offline-draft', () => {
         id: 'task:PROJ-310',
         entityKey: 'PROJ-310',
         fields: {
+          baseTitleFingerprint: buildTaskTitleFingerprint('원본 제목'),
           baseNoteFingerprint: buildTaskNoteFingerprint('## Server note'),
           title: '변경된 제목',
           note: '## Updated note',

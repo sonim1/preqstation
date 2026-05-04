@@ -236,6 +236,7 @@ describe('app/components/board-offline-sync-provider', () => {
         status: undefined,
         sortOrder: undefined,
         baseNoteFingerprint: undefined,
+        baseTitleFingerprint: undefined,
       },
     });
     expect(result).toEqual({

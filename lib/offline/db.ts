@@ -8,6 +8,7 @@ export type OfflineDraftRecord = {
   entityKey: string;
   fields: {
     baseNoteFingerprint?: string;
+    baseTitleFingerprint?: string;
     note?: string;
     title?: string;
   };
@@ -34,6 +35,7 @@ export type OfflineCreateMutationPayload = {
 
 export type OfflinePatchMutationPayload = {
   baseNoteFingerprint?: string;
+  baseTitleFingerprint?: string;
   labelIds?: string[];
   note?: string;
   sortOrder?: string;

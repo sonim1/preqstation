@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { deleteDraft, getDraft, putDraft } from '@/lib/offline/draft-store';
-import { buildTaskNoteFingerprint } from '@/lib/task-note-fingerprint';
+import { buildTaskNoteFingerprint, buildTaskTitleFingerprint } from '@/lib/task-note-fingerprint';
 
 const LEGACY_NOTE_CONFLICT_BASE_FINGERPRINT_PREFIX = 'task-note:legacy-conflict:';
 
 type TaskOfflineDraftState = {
   baseNoteFingerprint: string;
+  baseTitleFingerprint: string;
   note: string;
   title: string;
 };
@@ -42,15 +43,22 @@ export function useTaskOfflineDraft(
   online: boolean,
 ) {
   const serverBaseNoteFingerprint = buildTaskNoteFingerprint(serverNote);
+  const serverBaseTitleFingerprint = buildTaskTitleFingerprint(serverTitle);
   const [draftTitle, setDraftTitle] = useState(serverTitle);
   const [draftNote, setDraftNote] = useState(serverNote ?? '');
   const [draftBaseNoteFingerprint, setDraftBaseNoteFingerprint] =
     useState(serverBaseNoteFingerprint);
+  const [draftBaseTitleFingerprint, setDraftBaseTitleFingerprint] = useState(
+    serverBaseTitleFingerprint,
+  );
   const [draftRevision, setDraftRevision] = useState(0);
   const [hasNoteConflict, setHasNoteConflict] = useState(false);
   const [restorableDraft, setRestorableDraft] = useState<RestorableTaskOfflineDraft | null>(null);
+  const [autoSaveDraft, setAutoSaveDraft] = useState<RestorableTaskOfflineDraft | null>(null);
+  const [failedAutoSaveDraftKey, setFailedAutoSaveDraftKey] = useState<string | null>(null);
   const draftRef = useRef<TaskOfflineDraftState>({
     baseNoteFingerprint: serverBaseNoteFingerprint,
+    baseTitleFingerprint: serverBaseTitleFingerprint,
     title: serverTitle,
     note: serverNote ?? '',
   });
@@ -62,12 +70,14 @@ export function useTaskOfflineDraft(
     loadTokenRef.current = loadToken;
     const serverDraft = {
       baseNoteFingerprint: serverBaseNoteFingerprint,
+      baseTitleFingerprint: serverBaseTitleFingerprint,
       title: serverTitle,
       note: serverNote ?? '',
     };
     const applyDraft = (nextDraft: TaskOfflineDraftState) => {
       draftRef.current = nextDraft;
       setDraftBaseNoteFingerprint(nextDraft.baseNoteFingerprint);
+      setDraftBaseTitleFingerprint(nextDraft.baseTitleFingerprint);
       setDraftTitle(nextDraft.title);
       setDraftNote(nextDraft.note);
       setDraftRevision((currentRevision) => currentRevision + 1);
@@ -81,6 +91,7 @@ export function useTaskOfflineDraft(
       applyDraft(serverDraft);
       setHasNoteConflict(false);
       setRestorableDraft(null);
+      setAutoSaveDraft(null);
 
       const record = await getDraft(buildTaskOfflineDraftId(taskKey));
       if (!active || loadTokenRef.current !== loadToken || !record) {
@@ -88,25 +99,38 @@ export function useTaskOfflineDraft(
       }
 
       const storedNote = record.fields.note ?? serverDraft.note;
+      const storedTitle = record.fields.title ?? serverDraft.title;
       const storedNoteFingerprint = buildTaskNoteFingerprint(storedNote);
+      const storedTitleFingerprint = buildTaskTitleFingerprint(storedTitle);
       const storedBaseNoteFingerprint = record.fields.baseNoteFingerprint?.trim() || null;
+      const storedBaseTitleFingerprint = record.fields.baseTitleFingerprint?.trim() || null;
       const legacyConflictBaseNoteFingerprint = `${LEGACY_NOTE_CONFLICT_BASE_FINGERPRINT_PREFIX}${storedNoteFingerprint}`;
       const hasStaleBase =
         !!storedBaseNoteFingerprint &&
         storedBaseNoteFingerprint !== serverDraft.baseNoteFingerprint;
+      const hasStaleTitleBase =
+        !!storedBaseTitleFingerprint &&
+        storedBaseTitleFingerprint !== serverDraft.baseTitleFingerprint;
       const hasLocalNoteEdits =
         !!storedBaseNoteFingerprint && storedNoteFingerprint !== storedBaseNoteFingerprint;
+      const hasLocalTitleEdits =
+        !!storedBaseTitleFingerprint && storedTitleFingerprint !== storedBaseTitleFingerprint;
       const hasLegacyConflict =
         !storedBaseNoteFingerprint && storedNoteFingerprint !== serverDraft.baseNoteFingerprint;
       const noteMatchesServer = storedNoteFingerprint === serverDraft.baseNoteFingerprint;
+      const titleMatchesServer = storedTitleFingerprint === serverDraft.baseTitleFingerprint;
       const shouldApplyStoredNote =
         storedBaseNoteFingerprint === serverDraft.baseNoteFingerprint ||
         (!storedBaseNoteFingerprint && storedNoteFingerprint === serverDraft.baseNoteFingerprint) ||
         (hasStaleBase && hasLocalNoteEdits) ||
         hasLegacyConflict;
       const resolvedDraft = {
-        title: record.fields.title ?? serverDraft.title,
+        title: storedTitle,
         note: shouldApplyStoredNote ? storedNote : serverDraft.note,
+        baseTitleFingerprint:
+          storedBaseTitleFingerprint && !titleMatchesServer
+            ? storedBaseTitleFingerprint
+            : serverDraft.baseTitleFingerprint,
         baseNoteFingerprint:
           !shouldApplyStoredNote || noteMatchesServer
             ? serverDraft.baseNoteFingerprint
@@ -117,19 +141,47 @@ export function useTaskOfflineDraft(
                 : serverDraft.baseNoteFingerprint,
       };
       const hasConflict =
-        ((hasStaleBase && hasLocalNoteEdits) || hasLegacyConflict) && !noteMatchesServer;
+        (((hasStaleBase && hasLocalNoteEdits) || hasLegacyConflict) && !noteMatchesServer) ||
+        (hasStaleTitleBase && hasLocalTitleEdits && !titleMatchesServer);
       const nextRestorableDraft = {
         title: resolvedDraft.title,
         note: resolvedDraft.note,
+        baseTitleFingerprint: resolvedDraft.baseTitleFingerprint,
         baseNoteFingerprint: serverDraft.baseNoteFingerprint,
         updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : null,
       };
       const hasRestorableDraft = hasDraftChanges(nextRestorableDraft, serverDraft);
       const hasPersistedDraftChanges = hasDraftContentChanges(nextRestorableDraft, serverDraft);
+      const nextAutoSaveDraft =
+        online &&
+        storedBaseTitleFingerprint &&
+        storedBaseNoteFingerprint &&
+        storedBaseTitleFingerprint === serverDraft.baseTitleFingerprint &&
+        storedBaseNoteFingerprint === serverDraft.baseNoteFingerprint &&
+        hasDraftChanges(
+          {
+            title: storedTitle,
+            note: storedNote,
+            baseTitleFingerprint: storedBaseTitleFingerprint,
+            baseNoteFingerprint: storedBaseNoteFingerprint,
+          },
+          serverDraft,
+        )
+          ? {
+              title: storedTitle,
+              note: storedNote,
+              baseTitleFingerprint: storedBaseTitleFingerprint,
+              baseNoteFingerprint: storedBaseNoteFingerprint,
+              updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : null,
+            }
+          : null;
+      const autoSaveDraftKey = nextAutoSaveDraft
+        ? `${taskKey}:${nextAutoSaveDraft.baseTitleFingerprint}:${nextAutoSaveDraft.baseNoteFingerprint}:${nextAutoSaveDraft.title}:${buildTaskNoteFingerprint(nextAutoSaveDraft.note)}`
+        : null;
 
       setHasNoteConflict(hasConflict);
 
-      if (!hasConflict && !hasRestorableDraft && !hasPersistedDraftChanges) {
+      if (!hasConflict && !hasRestorableDraft && !hasPersistedDraftChanges && !nextAutoSaveDraft) {
         void Promise.resolve()
           .then(() => deleteDraft(buildTaskOfflineDraftId(taskKey)))
           .catch(() => undefined);
@@ -137,6 +189,13 @@ export function useTaskOfflineDraft(
       }
 
       if (online) {
+        if (nextAutoSaveDraft && autoSaveDraftKey !== failedAutoSaveDraftKey) {
+          setAutoSaveDraft(nextAutoSaveDraft);
+          setRestorableDraft(null);
+          return;
+        }
+
+        setAutoSaveDraft(null);
         setRestorableDraft(hasRestorableDraft ? nextRestorableDraft : null);
         return;
       }
@@ -147,7 +206,15 @@ export function useTaskOfflineDraft(
     return () => {
       active = false;
     };
-  }, [online, serverBaseNoteFingerprint, serverNote, serverTitle, taskKey]);
+  }, [
+    failedAutoSaveDraftKey,
+    online,
+    serverBaseNoteFingerprint,
+    serverBaseTitleFingerprint,
+    serverNote,
+    serverTitle,
+    taskKey,
+  ]);
 
   const writeDraft = useCallback(
     async (partialDraft: Partial<TaskOfflineDraftState>) => {
@@ -159,10 +226,12 @@ export function useTaskOfflineDraft(
 
       draftRef.current = nextDraft;
       setDraftBaseNoteFingerprint(nextDraft.baseNoteFingerprint);
+      setDraftBaseTitleFingerprint(nextDraft.baseTitleFingerprint);
       setDraftTitle(nextDraft.title);
       setDraftNote(nextDraft.note);
       setHasNoteConflict(false);
       setRestorableDraft(null);
+      setAutoSaveDraft(null);
 
       await putDraft({
         id: buildTaskOfflineDraftId(taskKey),
@@ -171,6 +240,7 @@ export function useTaskOfflineDraft(
         fields: {
           title: nextDraft.title,
           note: nextDraft.note,
+          baseTitleFingerprint: nextDraft.baseTitleFingerprint,
           baseNoteFingerprint: nextDraft.baseNoteFingerprint,
         },
         updatedAt: new Date().toISOString(),
@@ -206,6 +276,7 @@ export function useTaskOfflineDraft(
     const { updatedAt: _updatedAt, ...nextDraft } = restorableDraft;
     draftRef.current = nextDraft;
     setDraftBaseNoteFingerprint(nextDraft.baseNoteFingerprint);
+    setDraftBaseTitleFingerprint(nextDraft.baseTitleFingerprint);
     setDraftTitle(nextDraft.title);
     setDraftNote(nextDraft.note);
     setDraftRevision((currentRevision) => currentRevision + 1);
@@ -213,14 +284,29 @@ export function useTaskOfflineDraft(
     setRestorableDraft(null);
   }, [restorableDraft]);
 
+  const markAutoSaveDraftFailed = useCallback(() => {
+    if (!autoSaveDraft) {
+      return;
+    }
+
+    setFailedAutoSaveDraftKey(
+      `${taskKey}:${autoSaveDraft.baseTitleFingerprint}:${autoSaveDraft.baseNoteFingerprint}:${autoSaveDraft.title}:${buildTaskNoteFingerprint(autoSaveDraft.note)}`,
+    );
+    setAutoSaveDraft(null);
+    setRestorableDraft(autoSaveDraft);
+  }, [autoSaveDraft, taskKey]);
+
   return {
+    autoSaveDraft,
     canRestoreDraft: restorableDraft !== null,
     clearDraft,
     draftBaseNoteFingerprint,
+    draftBaseTitleFingerprint,
     draftNote,
     draftRevision,
     draftTitle,
     hasNoteConflict,
+    markAutoSaveDraftFailed,
     restoreDraft,
     restoreDraftPreview: restorableDraft
       ? {

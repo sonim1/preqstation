@@ -32,6 +32,7 @@ export type QueueOfflineCreateInput = {
 
 export type QueueOfflinePatchInput = {
   baseNoteFingerprint?: string;
+  baseTitleFingerprint?: string;
   labelIds?: string[];
   labels?: OptimisticLabel[];
   note?: string;
