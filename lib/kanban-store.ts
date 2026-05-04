@@ -112,6 +112,45 @@ function normalizeColumns(columns: KanbanColumns): NormalizedKanbanBoard {
   return { tasksByKey, taskKeysById, columnTaskKeys };
 }
 
+function isServerRunStateStale(
+  incomingRunState: KanbanTask['runState'],
+  incomingUpdatedAt: string | null,
+  currentUpdatedAt: string | null,
+) {
+  if (!incomingUpdatedAt || !currentUpdatedAt) return !incomingRunState;
+
+  return Date.parse(incomingUpdatedAt) < Date.parse(currentUpdatedAt);
+}
+
+function mergeOptimisticQueuedRunState<
+  T extends Pick<KanbanTask, 'runState' | 'runStateUpdatedAt'>,
+>(incoming: T, current: Pick<KanbanTask, 'runState' | 'runStateUpdatedAt'> | null | undefined): T {
+  if (
+    current?.runState !== 'queued' ||
+    !isServerRunStateStale(incoming.runState, incoming.runStateUpdatedAt, current.runStateUpdatedAt)
+  ) {
+    return incoming;
+  }
+
+  return {
+    ...incoming,
+    runState: current.runState,
+    runStateUpdatedAt: current.runStateUpdatedAt,
+  };
+}
+
+function mergeHydratedColumns(
+  incoming: KanbanColumns,
+  currentTasksByKey: Record<string, KanbanTask>,
+): KanbanColumns {
+  return allStatuses.reduce((columns, status) => {
+    columns[status] = (incoming[status] ?? []).map((task) =>
+      mergeOptimisticQueuedRunState(task, currentTasksByKey[task.taskKey]),
+    );
+    return columns;
+  }, emptyKanbanColumns());
+}
+
 export function denormalizeColumns(
   tasksByKey: Record<string, KanbanTask>,
   columnTaskKeys: Record<KanbanStatus, string[]>,
@@ -204,10 +243,18 @@ export function createKanbanStore(snapshot: KanbanHydrationSnapshot) {
       ...focusState(snapshot.focusedTask),
       isReconciliationPaused: false,
       hydrate(nextSnapshot) {
-        const nextNormalized = normalizeColumns(nextSnapshot.columns);
+        const current = get();
+        const nextColumns = mergeHydratedColumns(nextSnapshot.columns, current.tasksByKey);
+        const nextFocusedTask =
+          nextSnapshot.focusedTask &&
+          current.focusedTask &&
+          nextSnapshot.focusedTask.taskKey === current.focusedTask.taskKey
+            ? mergeOptimisticQueuedRunState(nextSnapshot.focusedTask, current.focusedTask)
+            : nextSnapshot.focusedTask;
+        const nextNormalized = normalizeColumns(nextColumns);
         set({
           ...nextNormalized,
-          ...focusState(nextSnapshot.focusedTask),
+          ...focusState(nextFocusedTask),
         });
       },
       applyMove(taskId, status, index) {
