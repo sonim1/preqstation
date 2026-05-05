@@ -142,7 +142,7 @@ vi.mock('re-resizable', () => ({
     onResize?: (
       event: unknown,
       direction: unknown,
-      ref: { offsetWidth: number; offsetHeight: number },
+      ref: { offsetWidth: number; offsetHeight: number; style: CSSStyleDeclaration },
       delta: { width: number; height: number },
     ) => void;
     size?: { width: number; height: number };
@@ -463,6 +463,41 @@ describe('TaskPanelModal', () => {
         JSON.stringify({ width: 952, height: 652 }),
       );
     } finally {
+      dom.restore();
+    }
+  });
+
+  it('updates the panel offset directly on the resizing element during desktop resize', () => {
+    const dom = installDom({ width: 1000, height: 700 });
+
+    try {
+      render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      const resizeRef = document.createElement('div');
+
+      resizableMock.mock.calls[0]?.[0].onResizeStart?.(null, 'bottomRight', {
+        offsetWidth: 720,
+        offsetHeight: 520,
+      });
+      resizableMock.mock.calls[0]?.[0].onResize?.(null, 'bottomRight', resizeRef, {
+        width: 120,
+        height: 80,
+      });
+
+      expect(resizeRef.style.left).toBe('60px');
+      expect(resizeRef.style.top).toBe('40px');
+    } finally {
+      cleanup();
       dom.restore();
     }
   });

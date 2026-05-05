@@ -478,10 +478,15 @@ export function TaskPanelModal({
           onResizeStart={(_event, _direction) => {
             resizeStartOffsetRef.current = resizeOffset;
           }}
-          onResize={(_event, direction, _ref, delta) => {
-            setResizeOffset(
-              calculateTaskPanelResizeOffset(resizeStartOffsetRef.current, direction, delta),
+          onResize={(_event, direction, ref, delta) => {
+            const offset = calculateTaskPanelResizeOffset(
+              resizeStartOffsetRef.current,
+              direction,
+              delta,
             );
+
+            ref.style.left = `${offset.x}px`;
+            ref.style.top = `${offset.y}px`;
           }}
           onResizeStop={handleResizeStop}
         >
