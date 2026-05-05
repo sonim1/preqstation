@@ -501,7 +501,7 @@ export function useTaskEditFormController({
     isDirty,
     isDirtyRef,
   } = useAutoSave(formRef, 800, { submit: submitTaskUpdate });
-  const autoSavingDraftKeyRef = useRef<string | null>(null);
+  const autoSavingDraftKeyRef = useRef<string | null | 'completed'>(null);
 
   useEffect(() => {
     setTaskEditRefreshBlocked(isDirty || saveStatus === 'saving');
@@ -524,7 +524,10 @@ export function useTaskEditFormController({
     }
 
     const autoSaveDraftKey = `${editableTodo.taskKey}:${autoSaveDraft.baseTitleFingerprint}:${autoSaveDraft.baseNoteFingerprint}:${autoSaveDraft.title}:${buildTaskNoteFingerprint(autoSaveDraft.note)}`;
-    if (autoSavingDraftKeyRef.current === autoSaveDraftKey) {
+    if (
+      autoSavingDraftKeyRef.current === autoSaveDraftKey ||
+      autoSavingDraftKeyRef.current === 'completed'
+    ) {
       return;
     }
 
@@ -542,6 +545,12 @@ export function useTaskEditFormController({
         formData.set('noteMd', autoSaveDraft.note);
         formData.set('baseTitleFingerprint', autoSaveDraft.baseTitleFingerprint);
         formData.set('baseNoteFingerprint', autoSaveDraft.baseNoteFingerprint);
+        formData.set('taskPriority', editableTodo.taskPriority ?? 'none');
+        formData.set('status', editableTodo.status);
+        formData.set('projectId', editableTodo.projectId ?? '');
+        for (const labelId of editableTodo.labelIds ?? []) {
+          formData.append('labelIds', labelId);
+        }
 
         const result = await updateTodoAction(null, formData);
         if (!result?.ok) {
@@ -562,11 +571,20 @@ export function useTaskEditFormController({
       })
       .catch(() => {
         markAutoSaveDraftFailed();
+      })
+      .finally(() => {
+        if (autoSavingDraftKeyRef.current === autoSaveDraftKey) {
+          autoSavingDraftKeyRef.current = 'completed';
+        }
       });
   }, [
     autoSaveDraft,
     clearDraft,
+    editableTodo.labelIds,
+    editableTodo.projectId,
+    editableTodo.status,
     editableTodo.taskKey,
+    editableTodo.taskPriority,
     isDirtyRef,
     markAutoSaveDraftFailed,
     onTaskUpdated,

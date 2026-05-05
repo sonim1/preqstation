@@ -191,9 +191,13 @@ Run this after any deploy that changes board shell code, `/sw.js`, or the offlin
 - Re-enable network and confirm the queued create/edit/move mutations replay automatically, the
   optimistic `OFFLINE-*` task key is replaced with the server task key, and the task remains in the
   expected lane.
+- For a task draft whose saved base title and note still match the server task, confirm reconnecting
+  auto-saves the draft and preserves the task priority, status, project, and labels.
 - If replay hits a note-conflict `409`, confirm the conflicting patch is removed from the queue,
   the latest server task title/notes are restored in the board/task editor, and the inline draft
   warning still offers `Restore draft` so the user can reconcile their offline notes manually.
+- If the server title changed while a browser draft was saved, confirm the inline draft warning
+  still offers `Restore draft` instead of auto-saving over the newer title.
 - If replay hits another permanent validation/not-found/conflict error (`400`, `404`, `410`,
   `422`, or a `409` without refreshed task payloads), confirm that mutation is dropped, later
   queued mutations continue syncing, and the user still sees the returned error message. Transient

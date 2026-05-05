@@ -714,10 +714,11 @@ describe('app/components/task-edit-form', () => {
     expect(submittedFormData.get('noteMd')).toBe('## Offline note');
     expect(submittedFormData.get('baseTitleFingerprint')).toBe('task-title:v1:18:feedface');
     expect(submittedFormData.get('baseNoteFingerprint')).toBe('task-note:v1:42:deadbeef');
-    expect(submittedFormData.getAll('labelIds')).toEqual([]);
-    expect(submittedFormData.get('projectId')).toBeNull();
+    expect(submittedFormData.getAll('labelIds')).toEqual(['11111111-1111-4111-8111-111111111111']);
+    expect(submittedFormData.get('projectId')).toBe('project-1');
     expect(submittedFormData.get('runState')).toBeNull();
-    expect(submittedFormData.get('taskPriority')).toBeNull();
+    expect(submittedFormData.get('status')).toBe('todo');
+    expect(submittedFormData.get('taskPriority')).toBe('high');
     expect(clearDraft).toHaveBeenCalledTimes(1);
     expect(onTaskUpdated).toHaveBeenCalledWith({
       boardTask: expect.objectContaining({ title: 'Offline rename' }),

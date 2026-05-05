@@ -183,7 +183,8 @@ describe('app/hooks/use-task-offline-draft', () => {
     await waitFor(() => {
       expect(result.current.canRestoreDraft).toBe(true);
     });
-    expect(result.current.hasNoteConflict).toBe(true);
+    expect(result.current.hasTitleConflict).toBe(true);
+    expect(result.current.hasNoteConflict).toBe(false);
     expect(result.current.autoSaveDraft).toBeNull();
   });
 
