@@ -148,8 +148,11 @@ While offline, quick-add, task edits, and board moves are applied optimistically
 written to the local mutation queue. Once `/api/ping` reports the backend reachable again, the app
 replays those mutations against the normal internal board APIs and replaces temporary `OFFLINE-*`
 task keys with server-issued task keys after sync. If a replayed note edit conflicts with newer
-server notes, the conflicting patch is removed from the queue, the latest server task snapshot is
-restored into the board/task panel, and the saved local draft remains available for manual restore.
+server notes, or if a browser draft was based on an older server title, the conflicting patch is
+removed from the queue, the latest server task snapshot is restored into the board/task panel, and
+the saved local draft remains available for manual restore. Browser drafts whose title and note
+fingerprints still match the latest server task are auto-saved after reconnect instead of asking the
+user to restore them manually.
 
 ---
 

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { taskLabelAssignments } from '@/lib/db/schema';
-import { buildTaskNoteFingerprint } from '@/lib/task-note-fingerprint';
+import { buildTaskNoteFingerprint, buildTaskTitleFingerprint } from '@/lib/task-note-fingerprint';
 
 const mocked = vi.hoisted(() => {
   const returningFn = vi.fn().mockResolvedValue([]);
@@ -668,6 +668,72 @@ describe('lib/actions/task-actions', () => {
       expect.objectContaining({
         title: 'After',
         note: 'latest server note',
+      }),
+    );
+  });
+
+  it('updateTask rejects stale title edits when the server title changed in another session', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValue({
+      id: 'task-1',
+      taskKey: 'PROJ-8',
+      title: 'Latest server title',
+      note: 'same note',
+      projectId: PROJECT_ID,
+      labelId: null,
+      taskPriority: 'none',
+      label: null,
+    });
+
+    const result = await updateTask({
+      ownerId: OWNER_ID,
+      identifier: 'PROJ-8',
+      title: 'Local stale title',
+      noteMd: 'same note',
+      baseTitleFingerprint: buildTaskTitleFingerprint('Older title'),
+      taskPriority: 'none',
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      code: 'CONFLICT',
+      message: 'Task title changed in another session. Reload the latest title and try again.',
+    });
+    expect(mocked.tx.update).not.toHaveBeenCalled();
+  });
+
+  it('updateTask preserves the latest server title when a stale form only changes notes', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValue({
+      id: 'task-1',
+      taskKey: 'PROJ-8',
+      title: 'Latest server title',
+      note: 'before note',
+      projectId: PROJECT_ID,
+      labelId: null,
+      taskPriority: 'none',
+      label: null,
+    });
+
+    const result = await updateTask({
+      ownerId: OWNER_ID,
+      identifier: 'PROJ-8',
+      title: 'Older title',
+      noteMd: 'after note',
+      baseTitleFingerprint: buildTaskTitleFingerprint('Older title'),
+      taskPriority: 'none',
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      data: expect.objectContaining({
+        taskKey: 'PROJ-8',
+        changed: true,
+        changedFields: ['Note'],
+      }),
+    });
+    expect(mocked.txSetFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Latest server title',
+        note: 'after note',
       }),
     );
   });
