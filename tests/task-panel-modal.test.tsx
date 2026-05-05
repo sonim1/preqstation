@@ -132,8 +132,21 @@ vi.mock('re-resizable', () => ({
       event: unknown,
       direction: unknown,
       ref: { offsetWidth: number; offsetHeight: number },
+      delta: { width: number; height: number },
+    ) => void;
+    onResizeStart?: (
+      event: unknown,
+      direction: unknown,
+      ref: { offsetWidth: number; offsetHeight: number },
+    ) => void;
+    onResize?: (
+      event: unknown,
+      direction: unknown,
+      ref: { offsetWidth: number; offsetHeight: number; style: CSSStyleDeclaration },
+      delta: { width: number; height: number },
     ) => void;
     size?: { width: number; height: number };
+    style?: React.CSSProperties;
   }) => {
     resizableMock(props);
 
@@ -146,6 +159,8 @@ vi.mock('re-resizable', () => ({
         data-min-height={String(props.minHeight ?? '')}
         data-max-width={String(props.maxWidth ?? '')}
         data-max-height={String(props.maxHeight ?? '')}
+        data-left={String(props.style?.left ?? '')}
+        data-top={String(props.style?.top ?? '')}
       >
         {props.children}
       </div>
@@ -166,6 +181,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 import {
+  calculateTaskPanelResizeOffset,
   clampTaskPanelSize,
   readTaskPanelStoredSize,
   resolveTaskPanelFullscreenState,
@@ -430,10 +446,18 @@ describe('TaskPanelModal', () => {
         </TaskPanelModal>,
       );
 
-      resizableMock.mock.calls[0]?.[0].onResizeStop?.(null, 'bottomRight', {
-        offsetWidth: 1800,
-        offsetHeight: 1200,
-      });
+      resizableMock.mock.calls[0]?.[0].onResizeStop?.(
+        null,
+        'bottomRight',
+        {
+          offsetWidth: 1800,
+          offsetHeight: 1200,
+        },
+        {
+          width: 1080,
+          height: 680,
+        },
+      );
 
       expect(window.localStorage.getItem('preqstation:task-edit-panel:size:v1')).toBe(
         JSON.stringify({ width: 952, height: 652 }),
@@ -441,6 +465,59 @@ describe('TaskPanelModal', () => {
     } finally {
       dom.restore();
     }
+  });
+
+  it('updates the panel offset directly on the resizing element during desktop resize', () => {
+    const dom = installDom({ width: 1000, height: 700 });
+
+    try {
+      render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      const resizeRef = document.createElement('div');
+
+      resizableMock.mock.calls[0]?.[0].onResizeStart?.(null, 'bottomRight', {
+        offsetWidth: 720,
+        offsetHeight: 520,
+      });
+      resizableMock.mock.calls[0]?.[0].onResize?.(null, 'bottomRight', resizeRef, {
+        width: 120,
+        height: 80,
+      });
+
+      expect(resizeRef.style.left).toBe('60px');
+      expect(resizeRef.style.top).toBe('40px');
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
+  it('offsets the resizable panel so the opposite edge stays pinned', () => {
+    expect(
+      calculateTaskPanelResizeOffset({ x: 0, y: 0 }, 'left', { width: 120, height: 0 }),
+    ).toEqual({ x: -60, y: 0 });
+    expect(
+      calculateTaskPanelResizeOffset({ x: 0, y: 0 }, 'right', { width: 120, height: 0 }),
+    ).toEqual({ x: 60, y: 0 });
+    expect(
+      calculateTaskPanelResizeOffset({ x: 10, y: 10 }, 'top', { width: 0, height: 80 }),
+    ).toEqual({ x: 10, y: -30 });
+    expect(
+      calculateTaskPanelResizeOffset({ x: 10, y: 10 }, 'bottomLeft', {
+        width: 120,
+        height: 80,
+      }),
+    ).toEqual({ x: -50, y: 50 });
   });
 
   it('uses a stable fallback size for the first render and hydrates stored size after mount', async () => {
@@ -511,6 +588,80 @@ describe('TaskPanelModal', () => {
 
       await waitFor(() => {
         expect(resizableMock.mock.calls.at(-1)?.[0].size).toEqual({ width: 900, height: 650 });
+      });
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
+  it('resets the resize offset when returning from fullscreen', async () => {
+    const dom = installDom({ width: 1000, height: 700 });
+
+    try {
+      const { rerender } = render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      act(() => {
+        resizableMock.mock.calls[0]?.[0].onResizeStop?.(
+          null,
+          'bottomRight',
+          {
+            offsetWidth: 720,
+            offsetHeight: 520,
+          },
+          {
+            width: 120,
+            height: 80,
+          },
+        );
+      });
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 60, top: 40 });
+      });
+
+      await act(async () => {
+        useSearchParamsMock.mockReturnValue(new URLSearchParams('fullscreen=1'));
+        rerender(
+          <TaskPanelModal
+            opened={true}
+            title="Edit Task"
+            closeHref="/board"
+            size="80rem"
+            resizableStorageKey="preqstation:task-edit-panel:size:v1"
+          >
+            <div>Panel content</div>
+          </TaskPanelModal>,
+        );
+      });
+
+      await act(async () => {
+        useSearchParamsMock.mockReturnValue(new URLSearchParams());
+        rerender(
+          <TaskPanelModal
+            opened={true}
+            title="Edit Task"
+            closeHref="/board"
+            size="80rem"
+            resizableStorageKey="preqstation:task-edit-panel:size:v1"
+          >
+            <div>Panel content</div>
+          </TaskPanelModal>,
+        );
+      });
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 0, top: 0 });
       });
     } finally {
       cleanup();

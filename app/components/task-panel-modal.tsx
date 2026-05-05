@@ -4,7 +4,13 @@ import { ActionIcon, Group, Modal, Tooltip } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconMaximize, IconMinimize, IconX } from '@tabler/icons-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { type Enable, type HandleClassName, Resizable } from 're-resizable';
+import {
+  type Enable,
+  type HandleClassName,
+  type NumberSize,
+  Resizable,
+  type ResizeDirection,
+} from 're-resizable';
 import { forwardRef, useEffect, useRef, useState } from 'react';
 
 import classes from './task-panel-modal.module.css';
@@ -43,6 +49,11 @@ const TASK_PANEL_RESIZE_HANDLE_CLASSES: HandleClassName = {
 type TaskPanelSize = {
   width: number;
   height: number;
+};
+
+type TaskPanelOffset = {
+  x: number;
+  y: number;
 };
 
 type TaskPanelViewport = {
@@ -163,6 +174,26 @@ export function clampTaskPanelSize(
   };
 }
 
+export function calculateTaskPanelResizeOffset(
+  baseOffset: TaskPanelOffset,
+  direction: ResizeDirection,
+  delta: NumberSize,
+): TaskPanelOffset {
+  const normalizedDirection = direction.toLowerCase();
+  const x = normalizedDirection.includes('left')
+    ? baseOffset.x - delta.width / 2
+    : normalizedDirection.includes('right')
+      ? baseOffset.x + delta.width / 2
+      : baseOffset.x;
+  const y = normalizedDirection.includes('top')
+    ? baseOffset.y - delta.height / 2
+    : normalizedDirection.includes('bottom')
+      ? baseOffset.y + delta.height / 2
+      : baseOffset.y;
+
+  return { x, y };
+}
+
 export function readTaskPanelStoredSize(
   storageKey: string,
   storage: Pick<TaskPanelStorage, 'getItem'>,
@@ -257,6 +288,8 @@ export function TaskPanelModal({
   const [resizableSize, setResizableSize] = useState<TaskPanelSize>(() =>
     clampTaskPanelSize(TASK_PANEL_RESIZE_DEFAULT_SIZE, TASK_PANEL_RESIZE_FALLBACK_VIEWPORT),
   );
+  const [resizeOffset, setResizeOffset] = useState<TaskPanelOffset>({ x: 0, y: 0 });
+  const resizeStartOffsetRef = useRef<TaskPanelOffset>({ x: 0, y: 0 });
   const clampedResizableSize = clampTaskPanelSize(resizableSize, viewport);
 
   useEffect(() => {
@@ -289,6 +322,23 @@ export function TaskPanelModal({
       window.removeEventListener('resize', updateViewport);
       resizeObserver?.disconnect();
     };
+  }, [isResizeEnabled]);
+
+  useEffect(() => {
+    if (!isResizeEnabled) {
+      let isActive = true;
+
+      resizeStartOffsetRef.current = { x: 0, y: 0 };
+      queueMicrotask(() => {
+        if (isActive) {
+          setResizeOffset({ x: 0, y: 0 });
+        }
+      });
+
+      return () => {
+        isActive = false;
+      };
+    }
   }, [isResizeEnabled]);
 
   useEffect(() => {
@@ -328,12 +378,15 @@ export function TaskPanelModal({
 
   function handleResizeStop(
     _event: MouseEvent | TouchEvent,
-    _direction: unknown,
+    direction: ResizeDirection,
     ref: HTMLElement,
+    delta: NumberSize,
   ) {
     if (!resizableStorageKey || typeof window === 'undefined') {
       return;
     }
+
+    setResizeOffset(calculateTaskPanelResizeOffset(resizeStartOffsetRef.current, direction, delta));
 
     const nextSize = clampTaskPanelSize(
       { width: ref.offsetWidth, height: ref.offsetHeight },
@@ -428,12 +481,30 @@ export function TaskPanelModal({
           className={`${classes.content} ${classes.resizableShell}`}
           data-resizable
           enable={TASK_PANEL_RESIZE_ENABLE}
+          handleWrapperClass={classes.resizeHandleWrapper}
           handleClasses={TASK_PANEL_RESIZE_HANDLE_CLASSES}
           minWidth={resizeBounds.minWidth}
           minHeight={resizeBounds.minHeight}
           maxWidth={resizeBounds.maxWidth}
           maxHeight={resizeBounds.maxHeight}
           size={clampedResizableSize}
+          style={{
+            left: resizeOffset.x,
+            top: resizeOffset.y,
+          }}
+          onResizeStart={(_event, _direction) => {
+            resizeStartOffsetRef.current = resizeOffset;
+          }}
+          onResize={(_event, direction, ref, delta) => {
+            const offset = calculateTaskPanelResizeOffset(
+              resizeStartOffsetRef.current,
+              direction,
+              delta,
+            );
+
+            ref.style.left = `${offset.x}px`;
+            ref.style.top = `${offset.y}px`;
+          }}
           onResizeStop={handleResizeStop}
         >
           {contentChildren}

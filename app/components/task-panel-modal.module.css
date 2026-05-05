@@ -34,11 +34,19 @@
   max-height: calc(100dvh - 3rem);
 }
 
+.resizeHandleWrapper {
+  position: absolute;
+  inset: 0;
+  z-index: 1001;
+  pointer-events: none;
+}
+
 .resizeHandleTop,
 .resizeHandleRight,
 .resizeHandleBottom,
 .resizeHandleLeft {
-  z-index: 2;
+  z-index: 2 !important;
+  pointer-events: auto;
 }
 
 .resizeHandleTop,
@@ -47,10 +55,26 @@
   cursor: ns-resize;
 }
 
+.resizeHandleTop {
+  top: 0 !important;
+}
+
+.resizeHandleBottom {
+  bottom: 0 !important;
+}
+
 .resizeHandleLeft,
 .resizeHandleRight {
   width: 8px;
   cursor: ew-resize;
+}
+
+.resizeHandleLeft {
+  left: 0 !important;
+}
+
+.resizeHandleRight {
+  right: 0 !important;
 }
 
 .resizeHandleTopRight,
@@ -59,7 +83,28 @@
 .resizeHandleTopLeft {
   width: 14px;
   height: 14px;
-  z-index: 3;
+  z-index: 3 !important;
+  pointer-events: auto;
+}
+
+.resizeHandleTopRight,
+.resizeHandleTopLeft {
+  top: 0 !important;
+}
+
+.resizeHandleBottomRight,
+.resizeHandleBottomLeft {
+  bottom: 0 !important;
+}
+
+.resizeHandleTopRight,
+.resizeHandleBottomRight {
+  right: 0 !important;
+}
+
+.resizeHandleTopLeft,
+.resizeHandleBottomLeft {
+  left: 0 !important;
 }
 
 .resizeHandleTopRight,

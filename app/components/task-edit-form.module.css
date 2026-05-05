@@ -3,6 +3,7 @@
   display: flex;
   flex-direction: column;
   container-type: inline-size;
+  height: 100%;
   min-height: 0;
   padding-bottom: var(--mantine-spacing-xs);
 }
@@ -38,7 +39,7 @@
   flex: 1 1 auto;
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
   min-height: 0;
 }
 
@@ -47,6 +48,7 @@
   gap: 0.75rem;
   min-height: 0;
   align-content: start;
+  min-width: 0;
 }
 
 .mainColumn {
@@ -74,7 +76,9 @@
 }
 
 .notesContent {
+  display: flex;
   flex: 1 1 auto;
+  flex-direction: column;
   min-height: 0;
 }
 
@@ -250,6 +254,15 @@
   min-width: 0;
 }
 
+.settingsControls :global(.mantine-Stack-root),
+.settingsControls :global(.mantine-Group-root),
+.settingsControls :global(.mantine-Input-wrapper),
+.settingsControls :global(.mantine-Input-input),
+.settingsControls :global(.mantine-Button-root),
+.settingsControls :global(.mantine-Menu-target) {
+  min-width: 0;
+}
+
 .labelShortcutField {
   min-width: 0;
   display: flex;
@@ -389,7 +402,7 @@
   line-height: 1.25;
 }
 
-@container (max-width: 62em) {
+@container (max-width: 74em) {
   .shell {
     grid-template-columns: 1fr;
   }
