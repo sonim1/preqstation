@@ -36,7 +36,7 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(contentRule).toContain('min-height: min(calc(100dvh - 3rem), 52rem);');
     expect(contentRule).toContain('overflow: hidden;');
     expect(taskPanelModalCss).toMatch(
-      /\.content\[data-resizable='true'\]\s*\{[\s\S]*flex-basis:\s*auto !important;/,
+      /\.content\[data-resizable='true'\]\s*\{[^}]*flex-basis:\s*auto !important;/,
     );
     expect(taskPanelModalCss).not.toMatch(
       /\.content\[data-resizable='true'\]\s*>\s*div\s*\{[^}]*height:\s*100%;/,
