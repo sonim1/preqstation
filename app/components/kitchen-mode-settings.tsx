@@ -79,20 +79,17 @@ export function KitchenModeSettings({ defaultValue }: KitchenModeSettingsProps) 
         aria-label={`Turn ${enabled ? 'off' : 'on'} Kitchen Mode`}
         style={{ cursor: isPending ? 'default' : 'pointer' }}
       >
-        <Switch
-          checked={enabled}
-          onChange={(event) => handleChange(event.currentTarget.checked)}
-          onClick={(event) => {
-            if ((event.target as HTMLElement).tagName === 'INPUT') {
-              event.stopPropagation();
-            }
-          }}
-          label="Kitchen Mode"
-          description="Switch mapped UI copy from PREQSTATION terms to kitchen terminology."
-          disabled={isPending}
-          size="lg"
-          className={controlClasses.touchSwitch}
-        />
+        <div onClick={(event) => event.stopPropagation()}>
+          <Switch
+            checked={enabled}
+            onChange={(event) => handleChange(event.currentTarget.checked)}
+            label="Kitchen Mode"
+            description="Switch mapped UI copy from PREQSTATION terms to kitchen terminology."
+            disabled={isPending}
+            size="lg"
+            className={controlClasses.touchSwitch}
+          />
+        </div>
       </Group>
       <div className={controlClasses.statusSlot}>
         {status ? <SettingStatusMessage tone={status.tone} message={status.message} /> : null}

@@ -6,6 +6,8 @@ import type { DbClientOrTx } from '@/lib/db/types';
 const DEFAULT_BOARD_SEARCH_LIMIT = 50;
 const MAX_BOARD_SEARCH_LIMIT = 50;
 
+let searchTasksFunctionCheck: Promise<boolean> | null = null;
+
 export type TaskSearchResult = {
   taskId: string;
   score: number;
@@ -78,7 +80,7 @@ async function fallbackSearchTasksForBoard({
   return readSearchRows(result);
 }
 
-async function hasSearchTasksFunction(client: DbClientOrTx) {
+async function checkSearchTasksFunction(client: DbClientOrTx) {
   const result = await client.execute<{ search_function: string | null }>(sql`
     select to_regprocedure('public.search_tasks_fts(uuid,text,uuid,integer)')::text as search_function
   `);
@@ -89,6 +91,18 @@ async function hasSearchTasksFunction(client: DbClientOrTx) {
       : [];
 
   return Boolean(rows[0]?.search_function);
+}
+
+function hasSearchTasksFunction(client: DbClientOrTx) {
+  searchTasksFunctionCheck ??= checkSearchTasksFunction(client).catch((error: unknown) => {
+    searchTasksFunctionCheck = null;
+    throw error;
+  });
+  return searchTasksFunctionCheck;
+}
+
+export function resetSearchTasksFunctionCacheForTests() {
+  searchTasksFunctionCheck = null;
 }
 
 export async function searchTasksForBoard({
@@ -120,6 +134,7 @@ export async function searchTasksForBoard({
       rows = readSearchRows(result);
     } catch (error) {
       if (!isMissingSearchFunctionError(error)) throw error;
+      searchTasksFunctionCheck = Promise.resolve(false);
       rows = await fallbackSearchTasksForBoard({
         ownerId,
         query: trimmedQuery,

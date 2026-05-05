@@ -10,7 +10,7 @@ vi.mock('@/lib/db', () => ({
   db: mocked.db,
 }));
 
-import { searchTasksForBoard } from '@/lib/task-search';
+import { resetSearchTasksFunctionCacheForTests, searchTasksForBoard } from '@/lib/task-search';
 
 function flattenQueryChunks(query: { queryChunks?: unknown[] }) {
   return (query.queryChunks ?? []).flatMap((chunk) => {
@@ -28,6 +28,7 @@ function flattenQueryChunks(query: { queryChunks?: unknown[] }) {
 
 describe('lib/task-search', () => {
   beforeEach(() => {
+    resetSearchTasksFunctionCacheForTests();
     vi.clearAllMocks();
     mocked.db.execute.mockResolvedValue({ rows: [] });
   });
@@ -122,5 +123,34 @@ describe('lib/task-search', () => {
     expect(chunks.join('')).toContain('from tasks t');
     expect(chunks).toContain('%QA%');
     expect(chunks).toContain(50);
+  });
+
+  it('caches the FTS helper function check after the first successful probe', async () => {
+    mocked.db.execute
+      .mockResolvedValueOnce({
+        rows: [{ search_function: 'search_tasks_fts(uuid,text,uuid,integer)' }],
+      })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+
+    await searchTasksForBoard({
+      ownerId: 'owner-1',
+      query: 'first',
+    });
+    await searchTasksForBoard({
+      ownerId: 'owner-1',
+      query: 'second',
+    });
+
+    expect(mocked.db.execute).toHaveBeenCalledTimes(3);
+    const queryTexts = mocked.db.execute.mock.calls.map(([queryArg]) =>
+      flattenQueryChunks(queryArg).join(''),
+    );
+    expect(
+      queryTexts.filter((queryText) => queryText.includes('to_regprocedure')).length,
+    ).toBe(1);
+    expect(
+      queryTexts.filter((queryText) => queryText.includes('from search_tasks_fts(')).length,
+    ).toBe(2);
   });
 });

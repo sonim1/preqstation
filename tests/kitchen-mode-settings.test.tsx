@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { MantineProvider } from '@mantine/core';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -10,6 +10,7 @@ import { KitchenModeSettings } from '@/app/components/kitchen-mode-settings';
 
 describe('app/components/kitchen-mode-settings', () => {
   afterEach(() => {
+    cleanup();
     vi.unstubAllGlobals();
   });
 
@@ -70,5 +71,28 @@ describe('app/components/kitchen-mode-settings', () => {
     expect(screen.getByRole<HTMLInputElement>('switch', { name: /Kitchen Mode/ }).checked).toBe(
       true,
     );
+  });
+
+  it('does not dispatch twice when the switch label click also toggles the input', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+    });
+    stubMatchMedia();
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MantineProvider>
+        <KitchenModeSettings defaultValue={false} />
+      </MantineProvider>,
+    );
+
+    const row = screen.getByRole('button', { name: 'Turn on Kitchen Mode' });
+    fireEvent.click(within(row).getByText('Kitchen Mode'));
+    fireEvent.click(within(row).getByRole('switch', { name: /Kitchen Mode/ }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -40,9 +40,6 @@ export function ProjectFormPanel({ createProjectAction }: ProjectFormPanelProps)
           placeholder="AB12"
           description="3-4 uppercase letters/numbers. Leave empty to auto-generate from name. Immutable after creation."
         />
-        <Group justify="flex-end">
-          <SubmitButton>Create Project</SubmitButton>
-        </Group>
         <LiveMarkdownEditor
           name="descriptionMd"
           label="Project description (Markdown)"
@@ -54,6 +51,9 @@ export function ProjectFormPanel({ createProjectAction }: ProjectFormPanelProps)
           </Text>
           <ProjectBackgroundPicker name="bgImage" />
         </div>
+        <Group justify="flex-end">
+          <SubmitButton>Create Project</SubmitButton>
+        </Group>
       </Stack>
     </form>
   );
