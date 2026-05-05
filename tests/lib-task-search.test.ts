@@ -146,9 +146,7 @@ describe('lib/task-search', () => {
     const queryTexts = mocked.db.execute.mock.calls.map(([queryArg]) =>
       flattenQueryChunks(queryArg).join(''),
     );
-    expect(
-      queryTexts.filter((queryText) => queryText.includes('to_regprocedure')).length,
-    ).toBe(1);
+    expect(queryTexts.filter((queryText) => queryText.includes('to_regprocedure')).length).toBe(1);
     expect(
       queryTexts.filter((queryText) => queryText.includes('from search_tasks_fts(')).length,
     ).toBe(2);

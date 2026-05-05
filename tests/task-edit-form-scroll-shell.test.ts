@@ -25,6 +25,7 @@ function getRuleBody(css: string, selector: string) {
 describe('task edit modal scroll-shell CSS regressions', () => {
   it('keeps the desktop modal shell fixed while the body owns overflow', () => {
     const contentRule = getRuleBody(taskPanelModalCss, '.content');
+    const resizeHandleWrapperRule = getRuleBody(taskPanelModalCss, '.resizeHandleWrapper');
     const titleRowRule = getRuleBody(taskPanelModalCss, '.titleRow');
     const titleCenterRule = getRuleBody(taskPanelModalCss, '.titleCenter');
     const bodyRule = getRuleBody(taskPanelModalCss, '.body');
@@ -37,6 +38,11 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(taskPanelModalCss).toMatch(
       /\.content\[data-resizable='true'\]\s*\{[\s\S]*flex-basis:\s*auto !important;/,
     );
+    expect(resizeHandleWrapperRule).toContain('position: absolute;');
+    expect(resizeHandleWrapperRule).toContain('z-index: 1001;');
+    expect(resizeHandleWrapperRule).toContain('pointer-events: none;');
+    expect(taskPanelModalCss).toMatch(/\.resizeHandleTop\s*\{[\s\S]*top:\s*0 !important;/);
+    expect(taskPanelModalCss).toMatch(/\.resizeHandleLeft\s*\{[\s\S]*left:\s*0 !important;/);
     expect(titleRowRule).toContain('position: relative;');
     expect(titleCenterRule).toContain('position: absolute;');
     expect(titleCenterRule).toContain('left: 50%;');
@@ -63,6 +69,7 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     const metadataSectionRule = getRuleBody(taskEditFormCss, '.metadataSection');
     const notesCardRule = getRuleBody(taskEditFormCss, '.notesCard');
     const activityCardRule = getRuleBody(taskEditFormCss, '.activityCard');
+    const notesContentRule = getRuleBody(taskEditFormCss, '.notesContent');
     const notesEditorRule = getRuleBody(taskEditFormCss, '.notesEditor');
     const dispatchLabelRule = getRuleBody(
       globalCss,
@@ -74,9 +81,10 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     );
 
     expect(shellRule).toContain('--task-edit-section-min-height: clamp(30rem, 62vh, 44rem);');
-    expect(shellRule).toContain('grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);');
+    expect(shellRule).toContain('grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);');
     expect(sidebarRule).toContain('display: grid;');
     expect(sidebarRule).toContain('align-content: start;');
+    expect(sidebarRule).toContain('min-width: 0;');
     expect(mainColumnRule).toContain('display: grid;');
     expect(mainColumnRule).toContain('grid-template-rows: minmax(0, 1fr) auto;');
     expect(mainColumnRule).toContain('min-height: 0;');
@@ -96,18 +104,22 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(notesCardRule).toContain('display: flex;');
     expect(notesCardRule).toContain('min-height: var(--task-edit-section-min-height);');
     expect(activityCardRule).toContain('padding: 0;');
+    expect(notesContentRule).toContain('display: flex;');
+    expect(notesContentRule).toContain('flex: 1 1 auto;');
+    expect(notesContentRule).toContain('flex-direction: column;');
     expect(notesEditorRule).toContain('display: flex;');
     expect(notesEditorRule).toContain('flex: 1 1 auto;');
     expect(notesEditorRule).toContain('flex-direction: column;');
     expect(taskEditFormCss).toMatch(/\.shell\s*\{[\s\S]*min-height:\s*0;/);
     expect(getRuleBody(taskEditFormCss, '.root')).toContain('container-type: inline-size;');
+    expect(getRuleBody(taskEditFormCss, '.root')).toContain('height: 100%;');
     expect(taskEditFormCss).toMatch(
       /\.notesEditor :global\(\.live-markdown-editor\)\s*\{[\s\S]*flex:\s*1 1 auto;/,
     );
     expect(taskEditFormCss).toMatch(
       /\.notesEditor :global\(\.live-editor-shell\)\s*\{[\s\S]*display:\s*flex;/,
     );
-    expect(taskEditFormCss).toMatch(/@container \(max-width: 62em\)\s*\{[\s\S]*\.shell\s*\{/);
+    expect(taskEditFormCss).toMatch(/@container \(max-width: 74em\)\s*\{[\s\S]*\.shell\s*\{/);
     expect(taskEditFormCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.dispatchRail[\s\S]*padding:\s*0;/,
     );
