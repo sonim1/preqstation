@@ -132,8 +132,21 @@ vi.mock('re-resizable', () => ({
       event: unknown,
       direction: unknown,
       ref: { offsetWidth: number; offsetHeight: number },
+      delta: { width: number; height: number },
+    ) => void;
+    onResizeStart?: (
+      event: unknown,
+      direction: unknown,
+      ref: { offsetWidth: number; offsetHeight: number },
+    ) => void;
+    onResize?: (
+      event: unknown,
+      direction: unknown,
+      ref: { offsetWidth: number; offsetHeight: number },
+      delta: { width: number; height: number },
     ) => void;
     size?: { width: number; height: number };
+    style?: React.CSSProperties;
   }) => {
     resizableMock(props);
 
@@ -146,6 +159,8 @@ vi.mock('re-resizable', () => ({
         data-min-height={String(props.minHeight ?? '')}
         data-max-width={String(props.maxWidth ?? '')}
         data-max-height={String(props.maxHeight ?? '')}
+        data-left={String(props.style?.left ?? '')}
+        data-top={String(props.style?.top ?? '')}
       >
         {props.children}
       </div>
@@ -166,6 +181,7 @@ vi.mock('next/navigation', () => ({
 }));
 
 import {
+  calculateTaskPanelResizeOffset,
   clampTaskPanelSize,
   readTaskPanelStoredSize,
   resolveTaskPanelFullscreenState,
@@ -430,10 +446,18 @@ describe('TaskPanelModal', () => {
         </TaskPanelModal>,
       );
 
-      resizableMock.mock.calls[0]?.[0].onResizeStop?.(null, 'bottomRight', {
-        offsetWidth: 1800,
-        offsetHeight: 1200,
-      });
+      resizableMock.mock.calls[0]?.[0].onResizeStop?.(
+        null,
+        'bottomRight',
+        {
+          offsetWidth: 1800,
+          offsetHeight: 1200,
+        },
+        {
+          width: 1080,
+          height: 680,
+        },
+      );
 
       expect(window.localStorage.getItem('preqstation:task-edit-panel:size:v1')).toBe(
         JSON.stringify({ width: 952, height: 652 }),
@@ -441,6 +465,24 @@ describe('TaskPanelModal', () => {
     } finally {
       dom.restore();
     }
+  });
+
+  it('offsets the resizable panel so the opposite edge stays pinned', () => {
+    expect(
+      calculateTaskPanelResizeOffset({ x: 0, y: 0 }, 'left', { width: 120, height: 0 }),
+    ).toEqual({ x: -60, y: 0 });
+    expect(
+      calculateTaskPanelResizeOffset({ x: 0, y: 0 }, 'right', { width: 120, height: 0 }),
+    ).toEqual({ x: 60, y: 0 });
+    expect(
+      calculateTaskPanelResizeOffset({ x: 10, y: 10 }, 'top', { width: 0, height: 80 }),
+    ).toEqual({ x: 10, y: -30 });
+    expect(
+      calculateTaskPanelResizeOffset({ x: 10, y: 10 }, 'bottomLeft', {
+        width: 120,
+        height: 80,
+      }),
+    ).toEqual({ x: -50, y: 50 });
   });
 
   it('uses a stable fallback size for the first render and hydrates stored size after mount', async () => {
