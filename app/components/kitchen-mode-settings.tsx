@@ -26,6 +26,7 @@ export function KitchenModeSettings({ defaultValue }: KitchenModeSettingsProps) 
 
   const handleChange = useCallback(
     (value: boolean) => {
+      if (isPending || value === enabled) return;
       const previousValue = savedEnabled;
       setEnabled(value);
       startTransition(async () => {
@@ -58,21 +59,37 @@ export function KitchenModeSettings({ defaultValue }: KitchenModeSettingsProps) 
         }
       });
     },
-    [savedEnabled],
+    [enabled, isPending, savedEnabled],
   );
 
   return (
     <Stack gap="sm">
-      <Group align="center" gap="sm" wrap="wrap">
-        <Switch
-          checked={enabled}
-          onChange={(event) => handleChange(event.currentTarget.checked)}
-          label="Kitchen Mode"
-          description="Switch mapped UI copy from PREQSTATION terms to kitchen terminology."
-          disabled={isPending}
-          size="lg"
-          className={controlClasses.touchSwitch}
-        />
+      <Group
+        align="center"
+        gap="sm"
+        wrap="wrap"
+        onClick={() => handleChange(!enabled)}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          handleChange(!enabled);
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={`Turn ${enabled ? 'off' : 'on'} Kitchen Mode`}
+        style={{ cursor: isPending ? 'default' : 'pointer' }}
+      >
+        <div onClick={(event) => event.stopPropagation()}>
+          <Switch
+            checked={enabled}
+            onChange={(event) => handleChange(event.currentTarget.checked)}
+            label="Kitchen Mode"
+            description="Switch mapped UI copy from PREQSTATION terms to kitchen terminology."
+            disabled={isPending}
+            size="lg"
+            className={controlClasses.touchSwitch}
+          />
+        </div>
       </Group>
       <div className={controlClasses.statusSlot}>
         {status ? <SettingStatusMessage tone={status.tone} message={status.message} /> : null}

@@ -24,7 +24,6 @@ import {
   IconClipboard,
   IconPlugConnected,
 } from '@tabler/icons-react';
-import { useRouter } from 'next/navigation';
 import { useActionState, useEffect } from 'react';
 
 import { SubmitButton } from '@/app/components/submit-button';
@@ -52,7 +51,6 @@ export function OnboardingWizard({
   createProjectAction,
   createTaskAction,
 }: OnboardingWizardProps) {
-  const router = useRouter();
   const terminology = useTerminology();
 
   const [projectState, projectFormAction] = useActionState(createProjectAction, null);
@@ -77,6 +75,16 @@ export function OnboardingWizard({
   const projectDone = Boolean(createdProject);
   const taskDone = Boolean(createdTask);
   const active = taskDone ? 3 : projectDone ? 2 : 1;
+  const dashboardActions = (
+    <Group justify="flex-end">
+      <Button component="a" href="/dashboard" variant="subtle">
+        Skip
+      </Button>
+      <Button component="a" href="/dashboard">
+        Go to Dashboard
+      </Button>
+    </Group>
+  );
 
   // Show error notifications (same pattern as existing panels)
   useEffect(() => {
@@ -91,10 +99,6 @@ export function OnboardingWizard({
     }
   }, [taskState]);
 
-  const handleFinish = () => {
-    router.push('/dashboard');
-  };
-
   return (
     <Stack gap="xl">
       <Stepper active={active} size="sm">
@@ -103,6 +107,8 @@ export function OnboardingWizard({
         <Stepper.Step label={terminology.task.singular} />
         <Stepper.Step label="Worker" />
       </Stepper>
+
+      {taskDone ? dashboardActions : null}
 
       <Paper withBorder radius="lg" p="lg">
         <Stack gap="md">
@@ -275,12 +281,7 @@ export function OnboardingWizard({
             </Text>
           </Stack>
 
-          <Group justify="flex-end">
-            <Button variant="subtle" onClick={handleFinish}>
-              Skip
-            </Button>
-            <Button onClick={handleFinish}>Go to Dashboard</Button>
-          </Group>
+          {dashboardActions}
         </Stack>
       </Paper>
     </Stack>
