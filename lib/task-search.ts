@@ -28,13 +28,17 @@ function clampBoardSearchLimit(limit?: number) {
   return Math.min(normalized, MAX_BOARD_SEARCH_LIMIT);
 }
 
+function readRows<T>(result: unknown): T[] {
+  return Array.isArray(result)
+    ? (result as T[])
+    : Array.isArray((result as { rows?: T[] }).rows)
+      ? (result as { rows: T[] }).rows
+      : [];
+}
+
 function readSearchRows(result: unknown) {
   type SearchRow = { task_id: string; score: number | string };
-  return Array.isArray(result)
-    ? (result as SearchRow[])
-    : Array.isArray((result as { rows?: SearchRow[] }).rows)
-      ? (result as { rows: SearchRow[] }).rows
-      : [];
+  return readRows<SearchRow>(result);
 }
 
 function isMissingSearchFunctionError(error: unknown) {
@@ -84,11 +88,7 @@ async function checkSearchTasksFunction(client: DbClientOrTx) {
   const result = await client.execute<{ search_function: string | null }>(sql`
     select to_regprocedure('public.search_tasks_fts(uuid,text,uuid,integer)')::text as search_function
   `);
-  const rows = Array.isArray(result)
-    ? result
-    : Array.isArray((result as { rows?: { search_function: string | null }[] }).rows)
-      ? (result as { rows: { search_function: string | null }[] }).rows
-      : [];
+  const rows = readRows<{ search_function: string | null }>(result);
 
   return Boolean(rows[0]?.search_function);
 }
