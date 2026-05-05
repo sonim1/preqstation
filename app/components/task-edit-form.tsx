@@ -548,6 +548,7 @@ export function useTaskEditFormController({
         formData.set('taskPriority', editableTodo.taskPriority ?? 'none');
         formData.set('status', editableTodo.status);
         formData.set('projectId', editableTodo.projectId ?? '');
+        formData.set('runState', editableTodo.runState ?? '');
         for (const labelId of editableTodo.labelIds ?? []) {
           formData.append('labelIds', labelId);
         }
@@ -582,6 +583,7 @@ export function useTaskEditFormController({
     clearDraft,
     editableTodo.labelIds,
     editableTodo.projectId,
+    editableTodo.runState,
     editableTodo.status,
     editableTodo.taskKey,
     editableTodo.taskPriority,
