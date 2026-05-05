@@ -595,6 +595,80 @@ describe('TaskPanelModal', () => {
     }
   });
 
+  it('resets the resize offset when returning from fullscreen', async () => {
+    const dom = installDom({ width: 1000, height: 700 });
+
+    try {
+      const { rerender } = render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      act(() => {
+        resizableMock.mock.calls[0]?.[0].onResizeStop?.(
+          null,
+          'bottomRight',
+          {
+            offsetWidth: 720,
+            offsetHeight: 520,
+          },
+          {
+            width: 120,
+            height: 80,
+          },
+        );
+      });
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 60, top: 40 });
+      });
+
+      await act(async () => {
+        useSearchParamsMock.mockReturnValue(new URLSearchParams('fullscreen=1'));
+        rerender(
+          <TaskPanelModal
+            opened={true}
+            title="Edit Task"
+            closeHref="/board"
+            size="80rem"
+            resizableStorageKey="preqstation:task-edit-panel:size:v1"
+          >
+            <div>Panel content</div>
+          </TaskPanelModal>,
+        );
+      });
+
+      await act(async () => {
+        useSearchParamsMock.mockReturnValue(new URLSearchParams());
+        rerender(
+          <TaskPanelModal
+            opened={true}
+            title="Edit Task"
+            closeHref="/board"
+            size="80rem"
+            resizableStorageKey="preqstation:task-edit-panel:size:v1"
+          >
+            <div>Panel content</div>
+          </TaskPanelModal>,
+        );
+      });
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 0, top: 0 });
+      });
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
   it('updates resize bounds and clamps the panel size when the viewport changes', () => {
     const dom = installDom({ width: 1400, height: 900 });
 

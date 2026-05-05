@@ -325,6 +325,23 @@ export function TaskPanelModal({
   }, [isResizeEnabled]);
 
   useEffect(() => {
+    if (!isResizeEnabled) {
+      let isActive = true;
+
+      resizeStartOffsetRef.current = { x: 0, y: 0 };
+      queueMicrotask(() => {
+        if (isActive) {
+          setResizeOffset({ x: 0, y: 0 });
+        }
+      });
+
+      return () => {
+        isActive = false;
+      };
+    }
+  }, [isResizeEnabled]);
+
+  useEffect(() => {
     if (!isResizeEnabled || !resizableStorageKey || typeof window === 'undefined') {
       return;
     }
