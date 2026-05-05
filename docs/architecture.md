@@ -269,6 +269,10 @@ The workspace keeps a browser-local offline path layered on top of the normal in
   validation/not-found/conflict failures (`400`, `404`, `410`, `422`, plus `409` responses without
   refreshed task payloads) are dropped so later queued mutations can continue, while transient
   failures still halt replay and leave the remaining queue intact for the next retry.
+- `useTaskOfflineDraft` compares stored base title and note fingerprints with the latest server
+  fingerprints. Non-conflicting drafts are auto-saved online with the task's current metadata
+  preserved; title or note conflicts stay restorable so the user can reconcile the local draft
+  against the latest server task.
 
 ### Task Lifecycle
 

@@ -36,7 +36,7 @@ import {
   TASK_STATUSES,
   type TaskStatus,
 } from '@/lib/task-meta';
-import { buildTaskNoteFingerprint } from '@/lib/task-note-fingerprint';
+import { buildTaskNoteFingerprint, buildTaskTitleFingerprint } from '@/lib/task-note-fingerprint';
 import { safeCreateTaskCompletionNotification } from '@/lib/task-notifications';
 import { buildTaskRunStateUpdate } from '@/lib/task-run-state';
 import {
@@ -54,6 +54,7 @@ import {
 
 const updateTaskSchema = z.object({
   baseNoteFingerprint: z.string().trim().optional().or(z.literal('')),
+  baseTitleFingerprint: z.string().trim().optional().or(z.literal('')),
   title: z.string().trim().min(1).max(TODO_TITLE_MAX_LENGTH).optional(),
   note: z.string().trim().max(TODO_NOTE_MAX_LENGTH).optional().or(z.literal('')),
   status: z.enum(TASK_STATUSES).optional(),
@@ -224,6 +225,56 @@ function toPatchedBoardTask(params: {
       color: label.color ?? 'blue',
     })),
   };
+}
+
+function buildTaskConflictResponse(params: {
+  existing: Parameters<typeof toEditableTodo>[0] & {
+    sortOrder: string;
+    dueAt: Date | null;
+  };
+  error: string;
+  labels: Array<{ id: string; name: string; color?: string | null }>;
+  project: {
+    id: string;
+    name: string;
+    projectKey: string | null;
+  } | null;
+}) {
+  return NextResponse.json(
+    {
+      error: params.error,
+      boardTask: toPatchedBoardTask({
+        existing: params.existing,
+        title: params.existing.title,
+        note: params.existing.note ?? null,
+        status: params.existing.status,
+        sortOrder: params.existing.sortOrder,
+        taskPriority: params.existing.taskPriority,
+        dueAt: params.existing.dueAt,
+        project: params.project,
+        labels: params.labels,
+      }),
+      focusedTask: serializeEditableBoardTask(
+        toEditableTodo({
+          ...params.existing,
+          labelAssignments: params.labels.map((label, index) => ({
+            position: index,
+            label: { id: label.id, name: label.name, color: label.color ?? null },
+          })),
+          label: params.labels[0]
+            ? {
+                id: params.labels[0].id,
+                name: params.labels[0].name,
+                color: params.labels[0].color ?? null,
+              }
+            : null,
+          note: params.existing.note ?? null,
+          workLogs: params.existing.workLogs ?? [],
+        }),
+      ),
+    },
+    { status: 409 },
+  );
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -412,7 +463,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           );
         }
 
-        const nextTitle = payload.title !== undefined ? payload.title : existing.title;
+        let nextTitle = payload.title !== undefined ? payload.title : existing.title;
         let nextNote =
           payload.note !== undefined
             ? payload.note === ''
@@ -428,6 +479,32 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
               ? null
               : new Date(payload.dueAt);
         const baseNoteFingerprint = payload.baseNoteFingerprint?.trim() || null;
+        const baseTitleFingerprint = payload.baseTitleFingerprint?.trim() || null;
+
+        if (payload.title !== undefined) {
+          const existingTitleFingerprint = buildTaskTitleFingerprint(existing.title);
+          const submittedTitleFingerprint = buildTaskTitleFingerprint(nextTitle);
+
+          if (baseTitleFingerprint && baseTitleFingerprint !== existingTitleFingerprint) {
+            if (submittedTitleFingerprint === baseTitleFingerprint) {
+              nextTitle = existing.title;
+            } else {
+              return buildTaskConflictResponse({
+                existing,
+                error:
+                  'Task title changed in another session. Reload the latest title and try again.',
+                labels: existingLabels,
+                project: nextProjectId
+                  ? {
+                      id: nextProjectId,
+                      name: nextProjectName,
+                      projectKey: nextProjectKey,
+                    }
+                  : null,
+              });
+            }
+          }
+        }
 
         if (payload.note !== undefined) {
           const existingNoteFingerprint = buildTaskNoteFingerprint(existing.note);
@@ -437,48 +514,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             if (submittedNoteFingerprint === baseNoteFingerprint) {
               nextNote = existing.note ?? null;
             } else {
-              return NextResponse.json(
-                {
-                  error:
-                    'Task notes changed in another session. Reload the latest notes and try again.',
-                  boardTask: toPatchedBoardTask({
-                    existing,
-                    title: existing.title,
-                    note: existing.note ?? null,
-                    status: existing.status,
-                    sortOrder: existing.sortOrder,
-                    taskPriority: existing.taskPriority,
-                    dueAt: existing.dueAt,
-                    project: nextProjectId
-                      ? {
-                          id: nextProjectId,
-                          name: nextProjectName,
-                          projectKey: nextProjectKey,
-                        }
-                      : null,
-                    labels: existingLabels,
-                  }),
-                  focusedTask: serializeEditableBoardTask(
-                    toEditableTodo({
-                      ...existing,
-                      labelAssignments: existingLabels.map((label, index) => ({
-                        position: index,
-                        label: { id: label.id, name: label.name, color: label.color ?? null },
-                      })),
-                      label: existingLabels[0]
-                        ? {
-                            id: existingLabels[0].id,
-                            name: existingLabels[0].name,
-                            color: existingLabels[0].color ?? null,
-                          }
-                        : null,
-                      note: existing.note ?? null,
-                      workLogs: existing.workLogs ?? [],
-                    }),
-                  ),
-                },
-                { status: 409 },
-              );
+              return buildTaskConflictResponse({
+                existing,
+                error:
+                  'Task notes changed in another session. Reload the latest notes and try again.',
+                labels: existingLabels,
+                project: nextProjectId
+                  ? {
+                      id: nextProjectId,
+                      name: nextProjectName,
+                      projectKey: nextProjectKey,
+                    }
+                  : null,
+              });
             }
           }
         }
@@ -595,7 +643,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         }
 
         const data: Record<string, unknown> = {};
-        if (payload.title !== undefined) data.title = payload.title;
+        if (payload.title !== undefined) data.title = nextTitle;
         if (payload.note !== undefined) data.note = nextNote;
         if (payload.status !== undefined) {
           data.status = payload.status;

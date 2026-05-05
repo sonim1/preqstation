@@ -249,6 +249,52 @@ describe('lib/offline/mutation-sync', () => {
     expect(onApplied).not.toHaveBeenCalled();
   });
 
+  it('sends base title fingerprints in offline patch replay bodies', async () => {
+    listQueuedOfflineMutationsMock.mockResolvedValueOnce([
+      {
+        id: 'patch:PROJ-515',
+        kind: 'patch',
+        createdAt: '2026-04-25T12:00:00.000Z',
+        taskKey: 'PROJ-515',
+        payload: {
+          title: 'Offline title',
+          baseTitleFingerprint: 'task-title:v1:12:abcdef',
+        },
+      },
+    ]);
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        boardTask: {
+          id: 'task-515',
+          taskKey: 'PROJ-515',
+          title: 'Offline title',
+          note: null,
+          branch: null,
+          status: 'todo',
+          sortOrder: 'a1',
+          taskPriority: 'none',
+          dueAt: null,
+          engine: null,
+          runState: null,
+          runStateUpdatedAt: null,
+          project: { id: 'project-1', name: 'Alpha', projectKey: 'PROJ' },
+          updatedAt: '2026-04-25T12:02:00.000Z',
+          archivedAt: null,
+          labels: [],
+        },
+      }),
+    });
+
+    await flushOfflineMutations({ fetchImpl: fetchMock });
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+      title: 'Offline title',
+      baseTitleFingerprint: 'task-title:v1:12:abcdef',
+    });
+  });
+
   it('treats note conflicts as handled replay outcomes and returns the latest task snapshots', async () => {
     listQueuedOfflineMutationsMock.mockResolvedValueOnce([
       {

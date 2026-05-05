@@ -61,6 +61,7 @@ import {
   TASK_PRIORITY_LABEL,
   type TaskPriority,
 } from '@/lib/task-meta';
+import { buildTaskNoteFingerprint } from '@/lib/task-note-fingerprint';
 
 import cardStyles from './cards.module.css';
 import classes from './task-edit-form.module.css';
@@ -410,13 +411,17 @@ export function useTaskEditFormController({
   const [fieldRevisions, setFieldRevisions] = useState(incomingFieldRevisions);
   const [selectedLabelIds, setSelectedLabelIds] = useState(labelIds);
   const {
+    autoSaveDraft,
     canRestoreDraft,
     clearDraft,
     draftBaseNoteFingerprint,
+    draftBaseTitleFingerprint,
     draftNote,
     draftRevision,
     draftTitle,
     hasNoteConflict,
+    hasTitleConflict,
+    markAutoSaveDraftFailed,
     restoreDraft,
     restoreDraftPreview,
     updateNoteDraft,
@@ -471,6 +476,7 @@ export function useTaskEditFormController({
         taskPriority: parseTaskPriority(String(formData.get('taskPriority') || 'none')),
         status: editableTodo.status as KanbanStatus,
         baseNoteFingerprint: draftBaseNoteFingerprint,
+        baseTitleFingerprint: draftBaseTitleFingerprint,
       });
 
       onTaskUpdated?.(result);
@@ -478,6 +484,7 @@ export function useTaskEditFormController({
     [
       boardOfflineSync,
       draftBaseNoteFingerprint,
+      draftBaseTitleFingerprint,
       editableTodo.status,
       editableTodo.taskKey,
       labelById,
@@ -494,6 +501,7 @@ export function useTaskEditFormController({
     isDirty,
     isDirtyRef,
   } = useAutoSave(formRef, 800, { submit: submitTaskUpdate });
+  const autoSavingDraftKeyRef = useRef<string | null | 'completed'>(null);
 
   useEffect(() => {
     setTaskEditRefreshBlocked(isDirty || saveStatus === 'saving');
@@ -504,6 +512,89 @@ export function useTaskEditFormController({
       setTaskEditRefreshBlocked(false);
     };
   }, []);
+
+  useEffect(() => {
+    if (!autoSaveDraft) {
+      autoSavingDraftKeyRef.current = null;
+      return;
+    }
+
+    if (!online || saveStatus === 'saving' || isDirtyRef.current) {
+      return;
+    }
+
+    const autoSaveDraftKey = `${editableTodo.taskKey}:${autoSaveDraft.baseTitleFingerprint}:${autoSaveDraft.baseNoteFingerprint}:${autoSaveDraft.title}:${buildTaskNoteFingerprint(autoSaveDraft.note)}`;
+    if (
+      autoSavingDraftKeyRef.current === autoSaveDraftKey ||
+      autoSavingDraftKeyRef.current === 'completed'
+    ) {
+      return;
+    }
+
+    const form = formRef.current;
+    if (!form) {
+      return;
+    }
+
+    autoSavingDraftKeyRef.current = autoSaveDraftKey;
+    void Promise.resolve()
+      .then(async () => {
+        const formData = new FormData();
+        formData.set('id', editableTodo.taskKey);
+        formData.set('title', autoSaveDraft.title);
+        formData.set('noteMd', autoSaveDraft.note);
+        formData.set('baseTitleFingerprint', autoSaveDraft.baseTitleFingerprint);
+        formData.set('baseNoteFingerprint', autoSaveDraft.baseNoteFingerprint);
+        formData.set('taskPriority', editableTodo.taskPriority ?? 'none');
+        formData.set('runState', editableTodo.runState ?? '');
+        formData.set('status', editableTodo.status);
+        formData.set('projectId', editableTodo.projectId ?? '');
+        for (const labelId of editableTodo.labelIds ?? []) {
+          formData.append('labelIds', labelId);
+        }
+
+        const result = await updateTodoAction(null, formData);
+        if (!result?.ok) {
+          markAutoSaveDraftFailed();
+          showErrorNotification(result?.message ?? 'Failed to save local draft.');
+          return;
+        }
+
+        await clearDraft();
+        if (result.boardTask || result.focusedTask) {
+          onTaskUpdated?.({
+            boardTask: result.boardTask,
+            focusedTask: result.focusedTask,
+          });
+        } else {
+          router.refresh();
+        }
+      })
+      .catch(() => {
+        markAutoSaveDraftFailed();
+      })
+      .finally(() => {
+        if (autoSavingDraftKeyRef.current === autoSaveDraftKey) {
+          autoSavingDraftKeyRef.current = 'completed';
+        }
+      });
+  }, [
+    autoSaveDraft,
+    clearDraft,
+    editableTodo.labelIds,
+    editableTodo.projectId,
+    editableTodo.runState,
+    editableTodo.status,
+    editableTodo.taskKey,
+    editableTodo.taskPriority,
+    isDirtyRef,
+    markAutoSaveDraftFailed,
+    onTaskUpdated,
+    online,
+    router,
+    saveStatus,
+    updateTodoAction,
+  ]);
 
   useEffect(() => {
     if (updateState && !updateState.ok) {
@@ -608,9 +699,11 @@ export function useTaskEditFormController({
   };
 
   return {
+    autoSaveDraft,
     canRestoreNoteDraft: canRestoreDraft,
     clearOfflineDraft: clearDraft,
     draftBaseNoteFingerprint,
+    draftBaseTitleFingerprint,
     draftNote,
     draftRevision,
     draftTitle,
@@ -636,6 +729,7 @@ export function useTaskEditFormController({
     selectedLabelIds,
     selectedLabels,
     setSelectedLabelIds,
+    titleConflict: hasTitleConflict,
     titleRenderKey: fieldRevisions.title,
     triggerSave,
     updateFormAction,
@@ -883,9 +977,11 @@ function TaskEditFormContent({
   const terminology = useTerminology();
   const { status, projectId, taskKey, taskPriority, engine, runState } = editableTodo;
   const {
+    autoSaveDraft,
     canRestoreNoteDraft,
     clearOfflineDraft: _clearOfflineDraft,
     draftBaseNoteFingerprint,
+    draftBaseTitleFingerprint,
     draftNote,
     draftRevision,
     draftTitle: _draftTitle,
@@ -926,7 +1022,7 @@ function TaskEditFormContent({
   });
   const [noteMarkdown, setNoteMarkdown] = useState(draftNote);
   const draftWarningKey =
-    noteConflict || canRestoreNoteDraft
+    noteConflict || (canRestoreNoteDraft && !autoSaveDraft)
       ? `${taskKey}:${noteConflict ? 'conflict' : 'restore'}:${canRestoreNoteDraft ? 'restorable' : 'no-restore'}:${activeNotesRevision}`
       : null;
   const [dismissedDraftWarningKey, setDismissedDraftWarningKey] = useState<string | null>(null);
@@ -981,6 +1077,7 @@ function TaskEditFormContent({
         <input type="hidden" name="projectId" value={projectId ?? ''} />
         <input type="hidden" name="runState" value={runState ?? ''} />
         <input type="hidden" name="baseNoteFingerprint" value={draftBaseNoteFingerprint} />
+        <input type="hidden" name="baseTitleFingerprint" value={draftBaseTitleFingerprint} />
         {selectedLabelIds.map((selectedLabelId) => (
           <input key={selectedLabelId} type="hidden" name="labelIds" value={selectedLabelId} />
         ))}

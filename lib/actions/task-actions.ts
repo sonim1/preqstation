@@ -36,6 +36,7 @@ import {
 } from '@/lib/task-meta';
 import {
   buildTaskNoteFingerprint,
+  buildTaskTitleFingerprint,
   normalizeTaskNoteForComparison,
 } from '@/lib/task-note-fingerprint';
 import { createTaskCompletionNotification } from '@/lib/task-notifications';
@@ -107,6 +108,7 @@ export type UpdateTaskParams = {
   ownerId: string;
   identifier: string;
   baseNoteFingerprint?: string | null;
+  baseTitleFingerprint?: string | null;
   title: string;
   noteMd?: string | null;
   labelIds?: string[] | null;
@@ -475,11 +477,26 @@ export async function updateTask(
       const labelId = nextLabelIds[0] ?? null;
 
       const noteMd = normalizeTaskNoteForComparison(params.noteMd);
+      const existingTitleFingerprint = buildTaskTitleFingerprint(existing.title);
+      const submittedTitleFingerprint = buildTaskTitleFingerprint(title);
+      const baseTitleFingerprint = normalizeText(params.baseTitleFingerprint);
+      let effectiveTitle = title;
+
+      if (baseTitleFingerprint && baseTitleFingerprint !== existingTitleFingerprint) {
+        if (submittedTitleFingerprint === baseTitleFingerprint) {
+          effectiveTitle = existing.title;
+        } else {
+          return fail(
+            'CONFLICT',
+            'Task title changed in another session. Reload the latest title and try again.',
+          );
+        }
+      }
       const taskPriority = parseTaskPriority(params.taskPriority);
       const runState =
         params.runState === undefined ? undefined : coerceTaskRunState(params.runState);
       const changes: Array<{ field: string; from: string; to: string }> = [];
-      addTaskFieldChange(changes, 'Title', existing.title, title);
+      addTaskFieldChange(changes, 'Title', existing.title, effectiveTitle);
       addTaskFieldChange(
         changes,
         'Task Priority',
@@ -520,7 +537,7 @@ export async function updateTask(
         existingNote !== effectiveNoteMd
           ? buildTaskNoteChangeDetail({
               taskKey: existing.taskKey,
-              taskTitle: title,
+              taskTitle: effectiveTitle,
               previousNote: existingNote,
               updatedNote: effectiveNoteMd,
             })
@@ -558,7 +575,7 @@ export async function updateTask(
       await client
         .update(tasks)
         .set({
-          title,
+          title: effectiveTitle,
           note: effectiveNoteMd || null,
           labelId: requestedLabelIds === undefined ? existing.labelId : labelId,
           taskPriority,
@@ -585,7 +602,12 @@ export async function updateTask(
           const existingChanges = parseFieldChangesFromDetail(recentLog.detail ?? '');
           if (existingChanges) {
             const merged = mergeFieldChanges(existingChanges, fieldLogChanges);
-            const rebuilt = rebuildWorkLogFromChanges(existing.taskKey, title, merged, terminology);
+            const rebuilt = rebuildWorkLogFromChanges(
+              existing.taskKey,
+              effectiveTitle,
+              merged,
+              terminology,
+            );
             if (rebuilt) {
               await client
                 .update(workLogs)
@@ -602,7 +624,7 @@ export async function updateTask(
           } else {
             const fieldLog = buildTaskFieldChangeWorkLog({
               taskKey: existing.taskKey,
-              taskTitle: title,
+              taskTitle: effectiveTitle,
               changes: fieldLogChanges,
               terminology,
             });
@@ -621,7 +643,7 @@ export async function updateTask(
         } else {
           const fieldLog = buildTaskFieldChangeWorkLog({
             taskKey: existing.taskKey,
-            taskTitle: title,
+            taskTitle: effectiveTitle,
             changes: fieldLogChanges,
             terminology,
           });

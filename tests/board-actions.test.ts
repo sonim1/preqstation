@@ -72,6 +72,7 @@ describe('lib/actions/board-actions', () => {
       ownerId: 'owner-1',
       identifier: 'PROJ-8',
       baseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      baseTitleFingerprint: '',
       title: 'Updated from board',
       noteMd: 'Local board note',
       labelIds: [],

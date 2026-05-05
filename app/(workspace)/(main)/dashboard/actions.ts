@@ -189,6 +189,7 @@ export async function updateTodo(_prevState: unknown, formData: FormData): Promi
       ownerId: ownerUser.id,
       identifier: String(formData.get('id') || ''),
       baseNoteFingerprint: String(formData.get('baseNoteFingerprint') || ''),
+      baseTitleFingerprint: String(formData.get('baseTitleFingerprint') || ''),
       title: String(formData.get('title') || ''),
       noteMd: String(formData.get('noteMd') || ''),
       labelIds: getTaskLabelIdsFromFormData(formData),

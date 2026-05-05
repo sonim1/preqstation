@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { taskLabelAssignments, workLogs } from '@/lib/db/schema';
-import { buildTaskNoteFingerprint } from '@/lib/task-note-fingerprint';
+import { buildTaskNoteFingerprint, buildTaskTitleFingerprint } from '@/lib/task-note-fingerprint';
 
 import { TEST_BASE_URL } from './test-utils';
 
@@ -483,6 +483,91 @@ describe('app/api/todos/[id]/route', () => {
       expect.objectContaining({
         title: 'After',
         note: 'Latest server note',
+      }),
+    );
+  });
+
+  it('PATCH returns the latest task snapshots when a stale title replay conflicts', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValue({
+      ...existingTask,
+      title: 'Latest server title',
+      note: 'Server note',
+      branch: null,
+      dispatchTarget: null,
+      runState: null,
+      runStateUpdatedAt: null,
+      archivedAt: null,
+      updatedAt: new Date('2026-04-28T16:00:00.000Z'),
+      project: { id: 'project-1', name: 'Project A', projectKey: 'PROJ' },
+      label: { id: 'label-1', name: 'Label A', color: 'blue' },
+      labelAssignments: [],
+      workLogs: [],
+    });
+
+    const response = await PATCH(
+      patchRequest({
+        title: 'Local stale title',
+        note: 'Server note',
+        taskPriority: 'none',
+        baseTitleFingerprint: buildTaskTitleFingerprint('Older title'),
+      }),
+      { params: Promise.resolve({ id: 'todo-1' }) },
+    );
+
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({
+      error: 'Task title changed in another session. Reload the latest title and try again.',
+      boardTask: expect.objectContaining({
+        taskKey: 'NONE-1',
+        title: 'Latest server title',
+      }),
+      focusedTask: expect.objectContaining({
+        taskKey: 'NONE-1',
+        title: 'Latest server title',
+      }),
+    });
+    expect(mocked.txUpdate).not.toHaveBeenCalled();
+  });
+
+  it('PATCH keeps the latest server title when stale replay only changes notes', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValue({
+      ...existingTask,
+      title: 'Latest server title',
+      note: 'Before note',
+      branch: null,
+      dispatchTarget: null,
+      runState: null,
+      runStateUpdatedAt: null,
+      archivedAt: null,
+      updatedAt: new Date('2026-04-28T16:00:00.000Z'),
+      project: { id: 'project-1', name: 'Project A', projectKey: 'PROJ' },
+      label: { id: 'label-1', name: 'Label A', color: 'blue' },
+      labelAssignments: [],
+      workLogs: [],
+    });
+
+    const response = await PATCH(
+      patchRequest({
+        title: 'Older title',
+        note: 'After note',
+        taskPriority: 'none',
+        baseTitleFingerprint: buildTaskTitleFingerprint('Older title'),
+      }),
+      { params: Promise.resolve({ id: 'todo-1' }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect((await response.json()).boardTask).toEqual(
+      expect.objectContaining({
+        taskKey: 'NONE-1',
+        title: 'Latest server title',
+        note: 'After note',
+      }),
+    );
+    expect(mocked.txSetFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Latest server title',
+        note: 'After note',
       }),
     );
   });

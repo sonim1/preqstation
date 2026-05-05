@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { MantineProvider } from '@mantine/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -185,12 +185,16 @@ describe('app/components/task-edit-form', () => {
     });
     useTaskOfflineDraftMock.mockReturnValue({
       canRestoreDraft: false,
+      autoSaveDraft: null,
       clearDraft: vi.fn(),
       draftBaseNoteFingerprint: 'task-note:v1:0:abc123',
+      draftBaseTitleFingerprint: 'task-title:v1:19:abc123',
       draftNote: 'Move the actions into the form meta header.',
       draftRevision: 0,
       draftTitle: 'OpenClaw 기능 UI수정',
       hasNoteConflict: false,
+      hasTitleConflict: false,
+      markAutoSaveDraftFailed: vi.fn(),
       restoreDraft: vi.fn(),
       restoreDraftPreview: null,
       updateNoteDraft: vi.fn(),
@@ -236,15 +240,18 @@ describe('app/components/task-edit-form', () => {
     );
   });
 
-  it('includes the note base fingerprint, stale note warning, and restore action when a stale draft is available', () => {
+  it('includes the base fingerprints, stale note warning, and restore action when a stale draft is available', () => {
     useTaskOfflineDraftMock.mockReturnValueOnce({
       canRestoreDraft: true,
+      autoSaveDraft: null,
       clearDraft: vi.fn(),
       draftBaseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      draftBaseTitleFingerprint: 'task-title:v1:18:feedface',
       draftNote: 'Move the actions into the form meta header.',
       draftRevision: 1,
       draftTitle: 'OpenClaw 기능 UI수정',
       hasNoteConflict: true,
+      markAutoSaveDraftFailed: vi.fn(),
       restoreDraft: vi.fn(),
       restoreDraftPreview: {
         title: '복구될 브라우저 초안',
@@ -259,6 +266,8 @@ describe('app/components/task-edit-form', () => {
 
     expect(html).toContain('name="baseNoteFingerprint"');
     expect(html).toContain('value="task-note:v1:42:deadbeef"');
+    expect(html).toContain('name="baseTitleFingerprint"');
+    expect(html).toContain('value="task-title:v1:18:feedface"');
     expect(html).toContain('Server notes changed while this draft was open.');
     expect(html).toContain('Restore draft');
     expect(html).toContain('Restore preview · PROJ-187');
@@ -282,12 +291,15 @@ describe('app/components/task-edit-form', () => {
     });
     useTaskOfflineDraftMock.mockReturnValueOnce({
       canRestoreDraft: true,
+      autoSaveDraft: null,
       clearDraft: vi.fn(),
       draftBaseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      draftBaseTitleFingerprint: 'task-title:v1:18:feedface',
       draftNote: 'Move the actions into the form meta header.',
       draftRevision: 1,
       draftTitle: 'OpenClaw 기능 UI수정',
       hasNoteConflict: true,
+      markAutoSaveDraftFailed: vi.fn(),
       restoreDraft,
       restoreDraftPreview: null,
       updateNoteDraft: vi.fn(),
@@ -335,12 +347,15 @@ describe('app/components/task-edit-form', () => {
     const restoreDraft = vi.fn();
     useTaskOfflineDraftMock.mockReturnValueOnce({
       canRestoreDraft: true,
+      autoSaveDraft: null,
       clearDraft: vi.fn(),
       draftBaseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      draftBaseTitleFingerprint: 'task-title:v1:18:feedface',
       draftNote: 'Move the actions into the form meta header.',
       draftRevision: 1,
       draftTitle: 'OpenClaw 기능 UI수정',
       hasNoteConflict: true,
+      markAutoSaveDraftFailed: vi.fn(),
       restoreDraft,
       restoreDraftPreview: null,
       updateNoteDraft: vi.fn(),
@@ -460,7 +475,7 @@ describe('app/components/task-edit-form', () => {
         branch: null,
         title: 'Offline rename',
         note: '## Offline note',
-        status: 'todo',
+        status: 'todo' as const,
         sortOrder: 'a0',
         taskPriority: 'none',
         dueAt: null,
@@ -482,7 +497,7 @@ describe('app/components/task-edit-form', () => {
         labelIds: [],
         labels: [],
         taskPriority: 'none',
-        status: 'todo',
+        status: 'todo' as const,
         engine: null,
         dispatchTarget: null,
         runState: null,
@@ -501,12 +516,16 @@ describe('app/components/task-edit-form', () => {
     });
     useTaskOfflineDraftMock.mockReturnValueOnce({
       canRestoreDraft: false,
+      autoSaveDraft: null,
       clearDraft,
       draftBaseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      draftBaseTitleFingerprint: 'task-title:v1:18:feedface',
       draftNote: '## Original note',
       draftRevision: 0,
       draftTitle: 'OpenClaw 기능 UI수정',
       hasNoteConflict: false,
+      hasTitleConflict: false,
+      markAutoSaveDraftFailed: vi.fn(),
       restoreDraft: vi.fn(),
       restoreDraftPreview: null,
       updateNoteDraft: vi.fn(),
@@ -587,12 +606,239 @@ describe('app/components/task-edit-form', () => {
       taskPriority: 'none',
       status: 'todo',
       baseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      baseTitleFingerprint: 'task-title:v1:18:feedface',
     });
     expect(onTaskUpdated).toHaveBeenCalledWith({
       boardTask: expect.objectContaining({ taskKey: 'PROJ-187' }),
       focusedTask: expect.objectContaining({ taskKey: 'PROJ-187' }),
     });
     expect(clearDraft).not.toHaveBeenCalled();
+  });
+
+  it('auto-saves a non-conflicting draft through the update action without showing the restore warning', async () => {
+    const effects: Array<() => void | (() => void)> = [];
+    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
+      effects.push(effect);
+    });
+    const clearDraft = vi.fn();
+    const updateTodoAction = vi.fn(async (_prevState: unknown, formData: FormData) => ({
+      ok: true as const,
+      boardTask: {
+        id: '1',
+        taskKey: 'PROJ-187',
+        branch: null,
+        title: String(formData.get('title')),
+        note: String(formData.get('noteMd')),
+        status: 'todo' as const,
+        sortOrder: 'a0',
+        taskPriority: 'none',
+        dueAt: null,
+        engine: null,
+        runState: null,
+        runStateUpdatedAt: null,
+        project: { id: 'project-1', name: 'Project Manager', projectKey: 'PROJ' },
+        updatedAt: '2026-04-28T16:00:00.000Z',
+        archivedAt: null,
+        labels: [],
+      },
+    }));
+    useTaskOfflineDraftMock.mockReturnValueOnce({
+      canRestoreDraft: false,
+      autoSaveDraft: {
+        title: 'Offline rename',
+        note: '## Offline note',
+        baseTitleFingerprint: 'task-title:v1:18:feedface',
+        baseNoteFingerprint: 'task-note:v1:42:deadbeef',
+        updatedAt: '2026-04-28T15:00:00.000Z',
+      },
+      clearDraft,
+      draftBaseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      draftBaseTitleFingerprint: 'task-title:v1:18:feedface',
+      draftNote: 'Move the actions into the form meta header.',
+      draftRevision: 0,
+      draftTitle: 'OpenClaw 기능 UI수정',
+      hasNoteConflict: false,
+      hasTitleConflict: false,
+      markAutoSaveDraftFailed: vi.fn(),
+      restoreDraft: vi.fn(),
+      restoreDraftPreview: null,
+      updateNoteDraft: vi.fn(),
+      updateTitleDraft: vi.fn(),
+    });
+
+    const onTaskUpdated = vi.fn();
+    const { container } = render(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'OpenClaw 기능 UI수정',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: ['11111111-1111-4111-8111-111111111111'],
+              labels: [
+                {
+                  id: '11111111-1111-4111-8111-111111111111',
+                  name: 'Stale label',
+                  color: null,
+                },
+              ],
+              taskPriority: 'high',
+              status: 'todo',
+              engine: 'codex',
+              dispatchTarget: null,
+              runState: 'queued',
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[
+              { value: 'none', label: 'None' },
+              { value: 'high', label: 'High' },
+            ]}
+            updateTodoAction={updateTodoAction}
+            onTaskUpdated={onTaskUpdated}
+          />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    const form = container.querySelector('form');
+    if (!form) throw new Error('Task edit form did not render.');
+    const titleInput = document.createElement('input');
+    titleInput.name = 'title';
+    titleInput.value = 'Visible title';
+    form.appendChild(titleInput);
+
+    for (const effect of effects) {
+      effect();
+    }
+
+    await waitFor(() => {
+      expect(updateTodoAction).toHaveBeenCalledTimes(1);
+    });
+    const submittedFormData = updateTodoAction.mock.calls[0]?.[1] as FormData;
+    expect(submittedFormData.get('title')).toBe('Offline rename');
+    expect(submittedFormData.get('noteMd')).toBe('## Offline note');
+    expect(submittedFormData.get('baseTitleFingerprint')).toBe('task-title:v1:18:feedface');
+    expect(submittedFormData.get('baseNoteFingerprint')).toBe('task-note:v1:42:deadbeef');
+    expect(submittedFormData.getAll('labelIds')).toEqual(['11111111-1111-4111-8111-111111111111']);
+    expect(submittedFormData.get('projectId')).toBe('project-1');
+    expect(submittedFormData.get('runState')).toBe('queued');
+    expect(submittedFormData.get('status')).toBe('todo');
+    expect(submittedFormData.get('taskPriority')).toBe('high');
+    expect(clearDraft).toHaveBeenCalledTimes(1);
+    expect(onTaskUpdated).toHaveBeenCalledWith({
+      boardTask: expect.objectContaining({ title: 'Offline rename' }),
+      focusedTask: undefined,
+    });
+    expect(container.textContent).not.toContain('A saved local draft is available');
+  });
+
+  it('does not replay the same auto-save draft after a successful save re-render', async () => {
+    const effects: Array<() => void | (() => void)> = [];
+    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
+      effects.push(effect);
+    });
+    const clearDraft = vi.fn();
+    const autoSaveDraft = {
+      title: 'Offline rename',
+      note: '## Offline note',
+      baseTitleFingerprint: 'task-title:v1:18:feedface',
+      baseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      updatedAt: '2026-04-28T15:00:00.000Z',
+    };
+    const updateTodoAction = vi.fn(async () => ({
+      ok: true as const,
+      boardTask: {
+        id: '1',
+        taskKey: 'PROJ-187',
+        branch: null,
+        title: autoSaveDraft.title,
+        note: autoSaveDraft.note,
+        status: 'todo' as const,
+        sortOrder: 'a0',
+        taskPriority: 'none',
+        dueAt: null,
+        engine: null,
+        runState: null,
+        runStateUpdatedAt: null,
+        project: { id: 'project-1', name: 'Project Manager', projectKey: 'PROJ' },
+        updatedAt: '2026-04-28T16:00:00.000Z',
+        archivedAt: null,
+        labels: [],
+      },
+    }));
+    useTaskOfflineDraftMock.mockReturnValue({
+      canRestoreDraft: false,
+      autoSaveDraft,
+      clearDraft,
+      draftBaseNoteFingerprint: 'task-note:v1:42:deadbeef',
+      draftBaseTitleFingerprint: 'task-title:v1:18:feedface',
+      draftNote: 'Move the actions into the form meta header.',
+      draftRevision: 0,
+      draftTitle: 'OpenClaw 기능 UI수정',
+      hasNoteConflict: false,
+      hasTitleConflict: false,
+      markAutoSaveDraftFailed: vi.fn(),
+      restoreDraft: vi.fn(),
+      restoreDraftPreview: null,
+      updateNoteDraft: vi.fn(),
+      updateTitleDraft: vi.fn(),
+    });
+
+    const renderForm = (onTaskUpdated: () => void) => (
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'OpenClaw 기능 UI수정',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: [],
+              labels: [],
+              taskPriority: 'none',
+              status: 'todo',
+              engine: 'codex',
+              dispatchTarget: null,
+              runState: null,
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
+            updateTodoAction={updateTodoAction}
+            onTaskUpdated={onTaskUpdated}
+          />
+        </TerminologyProvider>
+      </MantineProvider>
+    );
+
+    const { rerender } = render(renderForm(vi.fn()));
+
+    for (const effect of effects) {
+      effect();
+    }
+
+    await waitFor(() => {
+      expect(updateTodoAction).toHaveBeenCalledTimes(1);
+    });
+    expect(clearDraft).toHaveBeenCalledTimes(1);
+
+    effects.length = 0;
+    rerender(renderForm(vi.fn()));
+    for (const effect of effects) {
+      effect();
+    }
+    await Promise.resolve();
+
+    expect(updateTodoAction).toHaveBeenCalledTimes(1);
   });
 
   it('blocks polling while the task form has unsaved edits', () => {
