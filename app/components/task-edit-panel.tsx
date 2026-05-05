@@ -16,6 +16,7 @@ import { TaskPanelModal } from './task-panel-modal';
 import { useTerminology } from './terminology-provider';
 
 const TASK_EDIT_PANEL_RESIZE_STORAGE_KEY = 'preqstation:task-edit-panel:size:v1';
+const TASK_EDIT_PANEL_FULLSCREEN_STORAGE_KEY = 'preqstation:task-edit-panel:fullscreen:v1';
 
 type TaskEditPanelProps = TaskEditFormProps & {
   closeHref: string;
@@ -41,6 +42,7 @@ export function TaskEditPanel({
         title="Edit Task"
         closeHref={closeHref}
         onClose={onClose}
+        fullscreenStorageKey={TASK_EDIT_PANEL_FULLSCREEN_STORAGE_KEY}
         resizableStorageKey={TASK_EDIT_PANEL_RESIZE_STORAGE_KEY}
         size={size}
       >
@@ -112,6 +114,7 @@ function LoadedTaskEditPanel({
       closeHref={closeHref}
       closeOnEscape
       onClose={onClose}
+      fullscreenStorageKey={TASK_EDIT_PANEL_FULLSCREEN_STORAGE_KEY}
       resizableStorageKey={TASK_EDIT_PANEL_RESIZE_STORAGE_KEY}
       size={size}
     >
@@ -144,6 +147,7 @@ export function EmptyTaskEditPanel({
       title={`Edit ${terminology.task.singular}`}
       closeHref={closeHref}
       onClose={onClose}
+      fullscreenStorageKey={TASK_EDIT_PANEL_FULLSCREEN_STORAGE_KEY}
       resizableStorageKey={TASK_EDIT_PANEL_RESIZE_STORAGE_KEY}
       size={size}
     >

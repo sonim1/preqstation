@@ -23,6 +23,7 @@ vi.mock('@/app/components/task-panel-modal', () => ({
     headerCenterContent,
     closeHref,
     closeOnEscape,
+    fullscreenStorageKey,
     resizableStorageKey,
   }: {
     children: React.ReactNode;
@@ -30,6 +31,7 @@ vi.mock('@/app/components/task-panel-modal', () => ({
     headerCenterContent?: React.ReactNode;
     closeHref: string;
     closeOnEscape?: boolean;
+    fullscreenStorageKey?: string;
     resizableStorageKey?: string;
   }) => (
     <div
@@ -37,6 +39,7 @@ vi.mock('@/app/components/task-panel-modal', () => ({
       data-title={title}
       data-close-href={closeHref}
       data-close-on-escape={String(closeOnEscape)}
+      data-fullscreen-storage-key={fullscreenStorageKey ?? ''}
       data-resizable-storage-key={resizableStorageKey ?? ''}
     >
       <div data-testid="task-panel-modal-header-center">{headerCenterContent}</div>
@@ -166,6 +169,40 @@ describe('app/components/task-edit-panel', () => {
     );
 
     expect(html).toContain('data-resizable-storage-key="preqstation:task-edit-panel:size:v1"');
+  });
+
+  it('uses the same persisted fullscreen key for loaded, loading, and empty edit panels', () => {
+    taskEditFormControllerMock.mockReturnValue(buildController());
+
+    const loadedHtml = renderToStaticMarkup(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditPanel {...BASE_PROPS} />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+    const loadingHtml = renderToStaticMarkup(
+      <MantineProvider>
+        <TaskEditPanel {...BASE_PROPS} isLoading />
+      </MantineProvider>,
+    );
+    const emptyHtml = renderToStaticMarkup(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <EmptyTaskEditPanel closeHref="/board/PROJ" />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    expect(loadedHtml).toContain(
+      'data-fullscreen-storage-key="preqstation:task-edit-panel:fullscreen:v1"',
+    );
+    expect(loadingHtml).toContain(
+      'data-fullscreen-storage-key="preqstation:task-edit-panel:fullscreen:v1"',
+    );
+    expect(emptyHtml).toContain(
+      'data-fullscreen-storage-key="preqstation:task-edit-panel:fullscreen:v1"',
+    );
   });
 
   it('places the autosave status in the modal header center for loaded edit panels', () => {

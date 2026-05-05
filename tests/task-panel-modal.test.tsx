@@ -858,11 +858,59 @@ describe('TaskPanelModal', () => {
     expect(html).toContain('aria-label="Exit full screen for Edit Task dialog"');
   });
 
+  it('restores stored desktop fullscreen when the URL does not include fullscreen=1', () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    window.localStorage.setItem('preqstation:task-edit-panel:fullscreen:v1', 'true');
+
+    try {
+      const html = renderToStaticMarkup(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/dashboard?panel=task-edit&taskId=PROJ-335"
+          fullscreenStorageKey="preqstation:task-edit-panel:fullscreen:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      expect(html).toContain('data-full-screen="true"');
+    } finally {
+      dom.restore();
+    }
+  });
+
+  it('lets fullscreen=1 override a stored desktop fullscreen preference', () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    window.localStorage.setItem('preqstation:task-edit-panel:fullscreen:v1', 'false');
+    useSearchParamsMock.mockReturnValue(
+      new URLSearchParams('panel=task-edit&taskId=PROJ-335&fullscreen=1'),
+    );
+
+    try {
+      renderToStaticMarkup(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/dashboard?panel=task-edit&taskId=PROJ-335"
+          fullscreenStorageKey="preqstation:task-edit-panel:fullscreen:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      expect(modalMock.mock.calls.at(-1)?.[0].fullScreen).toBe(true);
+    } finally {
+      dom.restore();
+    }
+  });
+
   it('uses optimistic desktop fullscreen state while URL params are stale', () => {
     expect(
       resolveTaskPanelFullscreenState({
         isMobile: false,
         optimisticDesktopFullScreen: true,
+        storedDesktopFullScreen: null,
         urlDesktopFullScreen: false,
       }),
     ).toEqual({ isDesktopFullScreen: true, modalFullScreen: true });
@@ -871,6 +919,7 @@ describe('TaskPanelModal', () => {
       resolveTaskPanelFullscreenState({
         isMobile: false,
         optimisticDesktopFullScreen: false,
+        storedDesktopFullScreen: null,
         urlDesktopFullScreen: true,
       }),
     ).toEqual({ isDesktopFullScreen: false, modalFullScreen: false });
@@ -879,57 +928,93 @@ describe('TaskPanelModal', () => {
       resolveTaskPanelFullscreenState({
         isMobile: true,
         optimisticDesktopFullScreen: false,
+        storedDesktopFullScreen: true,
         urlDesktopFullScreen: true,
       }),
     ).toEqual({ isDesktopFullScreen: false, modalFullScreen: true });
   });
 
   it('adds and removes fullscreen=1 without dropping other query params', () => {
+    const dom = installDom({ width: 1000, height: 700 });
     useSearchParamsMock.mockReturnValue(new URLSearchParams('panel=task-edit&taskId=PROJ-335'));
 
-    renderToStaticMarkup(
-      <TaskPanelModal
-        opened={true}
-        title="Edit Task"
-        closeHref="/dashboard?panel=task-edit&taskId=PROJ-335"
-      >
-        <div>Panel content</div>
-      </TaskPanelModal>,
-    );
+    try {
+      renderToStaticMarkup(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/dashboard?panel=task-edit&taskId=PROJ-335"
+          fullscreenStorageKey="preqstation:task-edit-panel:fullscreen:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
 
-    let actionIconProps = actionIconMock.mock.calls.at(-1)?.[0] as
-      | React.ButtonHTMLAttributes<HTMLButtonElement>
-      | undefined;
+      let actionIconProps = actionIconMock.mock.calls.at(-1)?.[0] as
+        | React.ButtonHTMLAttributes<HTMLButtonElement>
+        | undefined;
 
-    actionIconProps?.onClick?.({ preventDefault() {} } as React.MouseEvent<HTMLButtonElement>);
+      actionIconProps?.onClick?.({ preventDefault() {} } as React.MouseEvent<HTMLButtonElement>);
 
-    expect(replaceMock).toHaveBeenCalledWith(
-      '/dashboard?panel=task-edit&taskId=PROJ-335&fullscreen=1',
-    );
+      expect(replaceMock).toHaveBeenCalledWith(
+        '/dashboard?panel=task-edit&taskId=PROJ-335&fullscreen=1',
+      );
+      expect(window.localStorage.getItem('preqstation:task-edit-panel:fullscreen:v1')).toBe('true');
 
-    actionIconMock.mockReset();
-    replaceMock.mockReset();
-    useSearchParamsMock.mockReturnValue(
-      new URLSearchParams('panel=task-edit&taskId=PROJ-335&fullscreen=1'),
-    );
+      actionIconMock.mockReset();
+      replaceMock.mockReset();
+      useSearchParamsMock.mockReturnValue(
+        new URLSearchParams('panel=task-edit&taskId=PROJ-335&fullscreen=1'),
+      );
 
-    renderToStaticMarkup(
-      <TaskPanelModal
-        opened={true}
-        title="Edit Task"
-        closeHref="/dashboard?panel=task-edit&taskId=PROJ-335"
-      >
-        <div>Panel content</div>
-      </TaskPanelModal>,
-    );
+      renderToStaticMarkup(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/dashboard?panel=task-edit&taskId=PROJ-335"
+          fullscreenStorageKey="preqstation:task-edit-panel:fullscreen:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
 
-    actionIconProps = actionIconMock.mock.calls.at(-1)?.[0] as
-      | React.ButtonHTMLAttributes<HTMLButtonElement>
-      | undefined;
+      actionIconProps = actionIconMock.mock.calls.at(-1)?.[0] as
+        | React.ButtonHTMLAttributes<HTMLButtonElement>
+        | undefined;
 
-    actionIconProps?.onClick?.({ preventDefault() {} } as React.MouseEvent<HTMLButtonElement>);
+      actionIconProps?.onClick?.({ preventDefault() {} } as React.MouseEvent<HTMLButtonElement>);
 
-    expect(replaceMock).toHaveBeenCalledWith('/dashboard?panel=task-edit&taskId=PROJ-335');
+      expect(replaceMock).toHaveBeenCalledWith('/dashboard?panel=task-edit&taskId=PROJ-335');
+      expect(window.localStorage.getItem('preqstation:task-edit-panel:fullscreen:v1')).toBe(
+        'false',
+      );
+    } finally {
+      dom.restore();
+    }
+  });
+
+  it('ignores stored desktop fullscreen on mobile', () => {
+    const dom = installDom({ width: 390, height: 844 });
+    window.localStorage.setItem('preqstation:task-edit-panel:fullscreen:v1', 'true');
+    useMediaQueryMock.mockReturnValue(true);
+
+    try {
+      const html = renderToStaticMarkup(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/dashboard"
+          fullscreenStorageKey="preqstation:task-edit-panel:fullscreen:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      expect(html).toContain('data-full-screen="true"');
+      expect(html).not.toContain('Exit full screen for Edit Task dialog');
+    } finally {
+      dom.restore();
+    }
   });
 
   it('falls back to a full-screen mobile modal', () => {
