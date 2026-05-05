@@ -37,6 +37,9 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(taskPanelModalCss).toMatch(
       /\.content\[data-resizable='true'\]\s*\{[\s\S]*flex-basis:\s*auto !important;/,
     );
+    expect(taskPanelModalCss).not.toMatch(
+      /\.content\[data-resizable='true'\]\s*>\s*div\s*\{[\s\S]*height:\s*100%;/,
+    );
     expect(titleRowRule).toContain('position: relative;');
     expect(titleCenterRule).toContain('position: absolute;');
     expect(titleCenterRule).toContain('left: 50%;');

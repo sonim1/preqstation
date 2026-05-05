@@ -29,13 +29,6 @@
   max-height: none;
 }
 
-.content[data-resizable='true'] > div {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-}
-
 .resizableShell {
   max-width: calc(100vw - 3rem);
   max-height: calc(100dvh - 3rem);
