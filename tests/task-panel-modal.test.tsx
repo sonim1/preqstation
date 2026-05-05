@@ -87,7 +87,12 @@ vi.mock('@mantine/core', () => ({
           />
         );
       },
-      Content: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+      Content: ({
+        children,
+        classNames: _classNames,
+        styles: _styles,
+        ...props
+      }: React.HTMLAttributes<HTMLDivElement> & { classNames?: unknown; styles?: unknown }) => (
         <div data-testid="task-panel-modal-content" {...props}>
           {children}
         </div>
@@ -361,21 +366,56 @@ describe('TaskPanelModal', () => {
     });
   });
 
-  it('stores the clamped panel size when desktop resize stops', () => {
-    const storage = new Map<string, string>();
-    const originalWindow = globalThis.window;
+  it('clamps desktop resize bounds to the workspace main wrapper when it is narrower than the viewport', async () => {
+    const dom = installDom({ width: 1400, height: 900 });
+    const workspaceMain = document.createElement('main');
+    workspaceMain.className = 'workspace-main';
+    workspaceMain.getBoundingClientRect = () =>
+      ({
+        width: 960,
+        height: 700,
+        top: 56,
+        right: 1200,
+        bottom: 756,
+        left: 240,
+        x: 240,
+        y: 56,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    document.body.appendChild(workspaceMain);
+    window.localStorage.setItem(
+      'preqstation:task-edit-panel:size:v1',
+      JSON.stringify({ width: 1300, height: 850 }),
+    );
 
-    Object.defineProperty(globalThis, 'window', {
-      configurable: true,
-      value: {
-        innerWidth: 1000,
-        innerHeight: 700,
-        localStorage: {
-          getItem: (key: string) => storage.get(key) ?? null,
-          setItem: (key: string, value: string) => storage.set(key, value),
-        },
-      },
-    });
+    try {
+      render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      await waitFor(() => {
+        const latestResizableProps = resizableMock.mock.calls.at(-1)?.[0];
+
+        expect(latestResizableProps.maxWidth).toBe(912);
+        expect(latestResizableProps.maxHeight).toBe(652);
+        expect(latestResizableProps.size).toEqual({ width: 912, height: 652 });
+      });
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
+  it('stores the clamped panel size when desktop resize stops', () => {
+    const dom = installDom({ width: 1000, height: 700 });
 
     try {
       renderToStaticMarkup(
@@ -395,14 +435,11 @@ describe('TaskPanelModal', () => {
         offsetHeight: 1200,
       });
 
-      expect(storage.get('preqstation:task-edit-panel:size:v1')).toBe(
+      expect(window.localStorage.getItem('preqstation:task-edit-panel:size:v1')).toBe(
         JSON.stringify({ width: 952, height: 652 }),
       );
     } finally {
-      Object.defineProperty(globalThis, 'window', {
-        configurable: true,
-        value: originalWindow,
-      });
+      dom.restore();
     }
   });
 
@@ -510,6 +547,80 @@ describe('TaskPanelModal', () => {
       expect(latestResizableProps.size).toEqual({ width: 852, height: 602 });
     } finally {
       cleanup();
+      dom.restore();
+    }
+  });
+
+  it('updates resize bounds when the workspace main wrapper changes size', () => {
+    const dom = installDom({ width: 1400, height: 900 });
+    const originalResizeObserver = globalThis.ResizeObserver;
+    let workspaceSize = { width: 1200, height: 800 };
+    let resizeObserverCallback: ResizeObserverCallback | null = null;
+    const observeMock = vi.fn();
+    const disconnectMock = vi.fn();
+    const workspaceMain = document.createElement('main');
+    workspaceMain.className = 'workspace-main';
+    workspaceMain.getBoundingClientRect = () =>
+      ({
+        width: workspaceSize.width,
+        height: workspaceSize.height,
+        top: 56,
+        right: 1200,
+        bottom: 856,
+        left: 0,
+        x: 0,
+        y: 56,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    document.body.appendChild(workspaceMain);
+
+    class ResizeObserverMock {
+      constructor(callback: ResizeObserverCallback) {
+        resizeObserverCallback = callback;
+      }
+
+      observe = observeMock;
+      disconnect = disconnectMock;
+      unobserve = vi.fn();
+    }
+
+    Object.defineProperty(globalThis, 'ResizeObserver', {
+      configurable: true,
+      value: ResizeObserverMock,
+    });
+
+    try {
+      render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      expect(observeMock).toHaveBeenCalledWith(workspaceMain);
+
+      workspaceSize = { width: 900, height: 650 };
+
+      act(() => {
+        resizeObserverCallback?.([], {} as ResizeObserver);
+      });
+
+      const latestResizableProps = resizableMock.mock.calls.at(-1)?.[0];
+
+      expect(latestResizableProps.maxWidth).toBe(852);
+      expect(latestResizableProps.maxHeight).toBe(602);
+      expect(latestResizableProps.size).toEqual({ width: 852, height: 602 });
+    } finally {
+      cleanup();
+      Object.defineProperty(globalThis, 'ResizeObserver', {
+        configurable: true,
+        value: originalResizeObserver,
+      });
       dom.restore();
     }
   });

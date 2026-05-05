@@ -34,6 +34,9 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(contentRule).toContain('max-height:');
     expect(contentRule).toContain('min-height: min(calc(100dvh - 3rem), 52rem);');
     expect(contentRule).toContain('overflow: hidden;');
+    expect(taskPanelModalCss).toMatch(
+      /\.content\[data-resizable='true'\]\s*\{[\s\S]*flex-basis:\s*auto !important;/,
+    );
     expect(titleRowRule).toContain('position: relative;');
     expect(titleCenterRule).toContain('position: absolute;');
     expect(titleCenterRule).toContain('left: 50%;');
@@ -97,13 +100,14 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(notesEditorRule).toContain('flex: 1 1 auto;');
     expect(notesEditorRule).toContain('flex-direction: column;');
     expect(taskEditFormCss).toMatch(/\.shell\s*\{[\s\S]*min-height:\s*0;/);
+    expect(getRuleBody(taskEditFormCss, '.root')).toContain('container-type: inline-size;');
     expect(taskEditFormCss).toMatch(
       /\.notesEditor :global\(\.live-markdown-editor\)\s*\{[\s\S]*flex:\s*1 1 auto;/,
     );
     expect(taskEditFormCss).toMatch(
       /\.notesEditor :global\(\.live-editor-shell\)\s*\{[\s\S]*display:\s*flex;/,
     );
-    expect(taskEditFormCss).toMatch(/@media \(max-width: 62em\)\s*\{[\s\S]*\.shell\s*\{/);
+    expect(taskEditFormCss).toMatch(/@container \(max-width: 62em\)\s*\{[\s\S]*\.shell\s*\{/);
     expect(taskEditFormCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.dispatchRail[\s\S]*padding:\s*0;/,
     );

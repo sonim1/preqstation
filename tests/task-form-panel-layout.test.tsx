@@ -30,12 +30,14 @@ vi.mock('@mantine/core', async () => {
     children: React.ReactNode;
     onChange?: (opened: boolean) => void;
     opened?: boolean;
-  }) => (
-    <MenuContext.Provider value={{ onChange, opened }}>{children}</MenuContext.Provider>
-  );
+  }) => <MenuContext.Provider value={{ onChange, opened }}>{children}</MenuContext.Provider>;
 
   const Menu = Object.assign(MenuRoot, {
-    Target: ({ children }: { children: React.ReactElement<{ onClick?: React.MouseEventHandler }> }) => {
+    Target: ({
+      children,
+    }: {
+      children: React.ReactElement<{ onClick?: React.MouseEventHandler }>;
+    }) => {
       const { onChange, opened } = React.useContext(MenuContext);
 
       return React.cloneElement(children, {
