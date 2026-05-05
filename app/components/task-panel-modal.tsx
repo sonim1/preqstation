@@ -126,10 +126,7 @@ function getTaskPanelViewport(): TaskPanelViewport {
     return TASK_PANEL_RESIZE_FALLBACK_VIEWPORT;
   }
 
-  const workspaceMain =
-    typeof document === 'undefined'
-      ? null
-      : document.querySelector(TASK_PANEL_RESIZE_BOUNDARY_SELECTOR);
+  const workspaceMain = document.querySelector(TASK_PANEL_RESIZE_BOUNDARY_SELECTOR);
   const workspaceMainRect = workspaceMain?.getBoundingClientRect();
   const width =
     workspaceMainRect && workspaceMainRect.width > 0
@@ -276,9 +273,22 @@ export function TaskPanelModal({
     const updateViewport = () => setViewport(getTaskPanelViewport());
 
     updateViewport();
+    const workspaceMain = document.querySelector(TASK_PANEL_RESIZE_BOUNDARY_SELECTOR);
+    const resizeObserver =
+      workspaceMain && typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(updateViewport)
+        : null;
+
+    if (workspaceMain) {
+      resizeObserver?.observe(workspaceMain);
+    }
+
     window.addEventListener('resize', updateViewport);
 
-    return () => window.removeEventListener('resize', updateViewport);
+    return () => {
+      window.removeEventListener('resize', updateViewport);
+      resizeObserver?.disconnect();
+    };
   }, [isResizeEnabled]);
 
   useEffect(() => {

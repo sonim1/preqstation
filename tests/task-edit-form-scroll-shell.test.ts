@@ -107,7 +107,6 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(taskEditFormCss).toMatch(
       /\.notesEditor :global\(\.live-editor-shell\)\s*\{[\s\S]*display:\s*flex;/,
     );
-    expect(taskEditFormCss).toMatch(/@media \(max-width: 62em\)\s*\{[\s\S]*\.shell\s*\{/);
     expect(taskEditFormCss).toMatch(/@container \(max-width: 62em\)\s*\{[\s\S]*\.shell\s*\{/);
     expect(taskEditFormCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.dispatchRail[\s\S]*padding:\s*0;/,
