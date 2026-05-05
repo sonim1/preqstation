@@ -546,6 +546,7 @@ export function useTaskEditFormController({
         formData.set('baseTitleFingerprint', autoSaveDraft.baseTitleFingerprint);
         formData.set('baseNoteFingerprint', autoSaveDraft.baseNoteFingerprint);
         formData.set('taskPriority', editableTodo.taskPriority ?? 'none');
+        formData.set('runState', editableTodo.runState ?? '');
         formData.set('status', editableTodo.status);
         formData.set('projectId', editableTodo.projectId ?? '');
         for (const labelId of editableTodo.labelIds ?? []) {
