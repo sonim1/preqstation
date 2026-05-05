@@ -87,7 +87,12 @@ vi.mock('@mantine/core', () => ({
           />
         );
       },
-      Content: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
+      Content: ({
+        children,
+        classNames: _classNames,
+        styles: _styles,
+        ...props
+      }: React.HTMLAttributes<HTMLDivElement> & { classNames?: unknown; styles?: unknown }) => (
         <div data-testid="task-panel-modal-content" {...props}>
           {children}
         </div>
@@ -359,6 +364,54 @@ describe('TaskPanelModal', () => {
       width: 720,
       height: 520,
     });
+  });
+
+  it('clamps desktop resize bounds to the workspace main wrapper when it is narrower than the viewport', async () => {
+    const dom = installDom({ width: 1400, height: 900 });
+    const workspaceMain = document.createElement('main');
+    workspaceMain.className = 'workspace-main';
+    workspaceMain.getBoundingClientRect = () =>
+      ({
+        width: 960,
+        height: 700,
+        top: 56,
+        right: 1200,
+        bottom: 756,
+        left: 240,
+        x: 240,
+        y: 56,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    document.body.appendChild(workspaceMain);
+    window.localStorage.setItem(
+      'preqstation:task-edit-panel:size:v1',
+      JSON.stringify({ width: 1300, height: 850 }),
+    );
+
+    try {
+      render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      await waitFor(() => {
+        const latestResizableProps = resizableMock.mock.calls.at(-1)?.[0];
+
+        expect(latestResizableProps.maxWidth).toBe(912);
+        expect(latestResizableProps.maxHeight).toBe(652);
+        expect(latestResizableProps.size).toEqual({ width: 912, height: 652 });
+      });
+    } finally {
+      cleanup();
+      dom.restore();
+    }
   });
 
   it('stores the clamped panel size when desktop resize stops', () => {

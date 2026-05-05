@@ -5,7 +5,7 @@ import { useMediaQuery } from '@mantine/hooks';
 import { IconMaximize, IconMinimize, IconX } from '@tabler/icons-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { type Enable, type HandleClassName, Resizable } from 're-resizable';
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 
 import classes from './task-panel-modal.module.css';
 
@@ -18,6 +18,7 @@ const TASK_PANEL_RESIZE_MIN_HEIGHT = 520;
 const TASK_PANEL_RESIZE_VIEWPORT_GUTTER = 48;
 const TASK_PANEL_RESIZE_DEFAULT_SIZE = { width: 1280, height: 720 };
 const TASK_PANEL_RESIZE_FALLBACK_VIEWPORT = { width: 1440, height: 900 };
+const TASK_PANEL_RESIZE_BOUNDARY_SELECTOR = '.workspace-main';
 const TASK_PANEL_RESIZE_ENABLE: Enable = {
   top: true,
   right: true,
@@ -50,6 +51,26 @@ type TaskPanelViewport = {
 };
 
 type TaskPanelStorage = Pick<Storage, 'getItem' | 'setItem'>;
+
+type ResizableModalContentProps = Omit<
+  React.ComponentProps<typeof Modal.Content>,
+  'classNames' | 'style' | 'styles'
+> & {
+  style?: React.CSSProperties;
+};
+
+const ResizableModalContent = forwardRef<HTMLDivElement, ResizableModalContentProps>(
+  function ResizableModalContent({ className, style, ...props }, ref) {
+    return (
+      <Modal.Content
+        {...props}
+        ref={ref}
+        classNames={{ content: className }}
+        styles={{ content: style }}
+      />
+    );
+  },
+);
 
 function buildCurrentHref(pathname: string, currentSearch: string) {
   return currentSearch ? `${pathname}?${currentSearch}` : pathname;
@@ -105,7 +126,21 @@ function getTaskPanelViewport(): TaskPanelViewport {
     return TASK_PANEL_RESIZE_FALLBACK_VIEWPORT;
   }
 
-  return { width: window.innerWidth, height: window.innerHeight };
+  const workspaceMain =
+    typeof document === 'undefined'
+      ? null
+      : document.querySelector(TASK_PANEL_RESIZE_BOUNDARY_SELECTOR);
+  const workspaceMainRect = workspaceMain?.getBoundingClientRect();
+  const width =
+    workspaceMainRect && workspaceMainRect.width > 0
+      ? Math.min(window.innerWidth, workspaceMainRect.width)
+      : window.innerWidth;
+  const height =
+    workspaceMainRect && workspaceMainRect.height > 0
+      ? Math.min(window.innerHeight, workspaceMainRect.height)
+      : window.innerHeight;
+
+  return { width, height };
 }
 
 function isFinitePositiveNumber(value: unknown): value is number {
@@ -335,8 +370,8 @@ export function TaskPanelModal({
     </div>
   );
 
-  const content = (
-    <Modal.Content className={classes.content} data-resizable={isResizeEnabled || undefined}>
+  const contentChildren = (
+    <>
       <Modal.Header className={classes.header}>
         <Modal.Title className={classes.title}>{titleNode}</Modal.Title>
         <Modal.CloseButton
@@ -348,7 +383,7 @@ export function TaskPanelModal({
         />
       </Modal.Header>
       <Modal.Body className={classes.body}>{children}</Modal.Body>
-    </Modal.Content>
+    </>
   );
 
   return (
@@ -379,7 +414,9 @@ export function TaskPanelModal({
       <Modal.Overlay opacity={0.55} blur={18} />
       {isResizeEnabled ? (
         <Resizable
-          className={classes.resizableShell}
+          as={ResizableModalContent}
+          className={`${classes.content} ${classes.resizableShell}`}
+          data-resizable
           enable={TASK_PANEL_RESIZE_ENABLE}
           handleClasses={TASK_PANEL_RESIZE_HANDLE_CLASSES}
           minWidth={resizeBounds.minWidth}
@@ -389,10 +426,10 @@ export function TaskPanelModal({
           size={clampedResizableSize}
           onResizeStop={handleResizeStop}
         >
-          {content}
+          {contentChildren}
         </Resizable>
       ) : (
-        content
+        <Modal.Content classNames={{ content: classes.content }}>{contentChildren}</Modal.Content>
       )}
     </Modal.Root>
   );
