@@ -389,24 +389,6 @@
   line-height: 1.25;
 }
 
-@media (max-width: 62em) {
-  .shell {
-    grid-template-columns: 1fr;
-  }
-
-  .sectionSurface {
-    min-height: auto;
-  }
-
-  .notesCard {
-    min-height: var(--task-edit-section-min-height);
-  }
-
-  .dispatchRail {
-    min-height: auto;
-  }
-}
-
 @container (max-width: 62em) {
   .shell {
     grid-template-columns: 1fr;
