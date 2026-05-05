@@ -45,6 +45,127 @@
   max-width: 46ch;
 }
 
+.priorityField {
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.priorityLabel {
+  color: var(--mantine-color-text);
+  line-height: 1.55;
+}
+
+.priorityTrigger {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+  border-radius: 0.625rem;
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.priorityTrigger:hover,
+.priorityTrigger:focus-visible,
+.priorityTrigger[data-opened='true'] {
+  border-color: color-mix(in srgb, var(--ui-accent), var(--ui-border) 56%);
+  background: color-mix(in srgb, var(--ui-accent-soft), var(--ui-surface) 78%);
+}
+
+.priorityTrigger:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-focus-ring), transparent 18%);
+}
+
+.priorityTriggerLabel {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  overflow: hidden;
+  color: var(--ui-text);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.priorityTriggerLabel span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.priorityTriggerMeta {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--ui-muted-text);
+}
+
+.priorityTriggerHint {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.priorityNoneDot {
+  flex: 0 0 auto;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 999px;
+  background: var(--mantine-color-dimmed);
+  opacity: 0.72;
+}
+
+.priorityDropdown {
+  min-width: clamp(13.75rem, 28vw, 15.75rem);
+  max-width: min(18rem, calc(100vw - 2rem));
+  padding: 0.5rem;
+}
+
+.priorityOptionIcon {
+  width: 1.125rem;
+  min-width: 1.125rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.priorityOptionText {
+  min-width: 0;
+  display: grid;
+  gap: 0.0625rem;
+}
+
+.priorityOptionLabel {
+  overflow: hidden;
+  color: var(--mantine-color-text);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.priorityOptionDetail {
+  color: var(--mantine-color-dimmed);
+  font-size: 0.6875rem;
+  line-height: 1.25;
+}
+
 .actions {
   padding-top: 0.2rem;
 }

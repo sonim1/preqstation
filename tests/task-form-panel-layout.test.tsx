@@ -1,19 +1,149 @@
+// @vitest-environment jsdom
+
 import { MantineProvider } from '@mantine/core';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TerminologyProvider } from '@/app/components/terminology-provider';
 import { KITCHEN_TERMINOLOGY } from '@/lib/terminology';
 
 const formAction = vi.hoisted(() => vi.fn());
 const taskLabelPickerPropsMock = vi.hoisted(() => vi.fn());
+const actionStateMock = vi.hoisted(() => ({
+  current: null as { ok: true } | { ok: false; message: string } | null,
+}));
+
+vi.mock('@mantine/core', async () => {
+  const React = await vi.importActual<typeof import('react')>('react');
+  const MenuContext = React.createContext({
+    onChange: undefined as ((opened: boolean) => void) | undefined,
+    opened: false,
+  });
+
+  const MenuRoot = ({
+    children,
+    onChange,
+    opened = false,
+  }: {
+    children: React.ReactNode;
+    onChange?: (opened: boolean) => void;
+    opened?: boolean;
+  }) => (
+    <MenuContext.Provider value={{ onChange, opened }}>{children}</MenuContext.Provider>
+  );
+
+  const Menu = Object.assign(MenuRoot, {
+    Target: ({ children }: { children: React.ReactElement<{ onClick?: React.MouseEventHandler }> }) => {
+      const { onChange, opened } = React.useContext(MenuContext);
+
+      return React.cloneElement(children, {
+        onClick: (event: React.MouseEvent) => {
+          children.props.onClick?.(event);
+          onChange?.(!opened);
+        },
+      });
+    },
+    Dropdown: ({
+      children,
+      ...props
+    }: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode }) => {
+      const { opened } = React.useContext(MenuContext);
+
+      return opened ? <div {...props}>{children}</div> : null;
+    },
+    Item: ({
+      children,
+      leftSection,
+      onClick,
+      rightSection,
+      ...props
+    }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+      children: React.ReactNode;
+      leftSection?: React.ReactNode;
+      rightSection?: React.ReactNode;
+    }) => (
+      <button type="button" onClick={onClick} {...props}>
+        {leftSection}
+        {children}
+        {rightSection}
+      </button>
+    ),
+  });
+
+  return {
+    MantineProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+    Menu,
+    NativeSelect: ({
+      data,
+      label,
+      name,
+      onChange,
+      required,
+      value,
+    }: {
+      data: Array<{ value: string; label: string }>;
+      label: string;
+      name: string;
+      onChange?: React.ChangeEventHandler<HTMLSelectElement>;
+      required?: boolean;
+      value?: string;
+    }) => (
+      <label>
+        {label}
+        <select name={name} onChange={onChange} required={required} value={value}>
+          {data.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    ),
+    Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    Text: ({
+      children,
+      component: Component = 'p',
+      ...props
+    }: {
+      children: React.ReactNode;
+      component?: React.ElementType;
+    }) => <Component {...props}>{children}</Component>,
+    TextInput: ({
+      label,
+      name,
+      placeholder,
+      required,
+    }: {
+      label: string;
+      name: string;
+      placeholder?: string;
+      required?: boolean;
+    }) => (
+      <label>
+        {label}
+        <input name={name} placeholder={placeholder} required={required} />
+      </label>
+    ),
+    UnstyledButton: ({
+      children,
+      onClick,
+      type = 'button',
+      ...props
+    }: React.ButtonHTMLAttributes<HTMLButtonElement> & { children: React.ReactNode }) => (
+      <button onClick={onClick} type={type} {...props}>
+        {children}
+      </button>
+    ),
+  };
+});
 
 vi.mock('react', async () => {
   const actual = await vi.importActual<typeof import('react')>('react');
   return {
     ...actual,
-    useActionState: () => [null, formAction],
+    useActionState: () => [actionStateMock.current, formAction],
   };
 });
 
@@ -40,8 +170,24 @@ vi.mock('@/lib/notifications', () => ({
 
 import { TaskFormPanel } from '@/app/components/panels/task-form-panel';
 
-function renderTaskFormPanel() {
-  return renderToStaticMarkup(
+beforeAll(() => {
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      addEventListener: vi.fn(),
+      addListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+      matches: false,
+      media: query,
+      onchange: null,
+      removeEventListener: vi.fn(),
+      removeListener: vi.fn(),
+    })),
+  });
+});
+
+function taskFormPanelElement() {
+  return (
     <MantineProvider>
       <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
         <TaskFormPanel
@@ -64,9 +210,26 @@ function renderTaskFormPanel() {
           defaultProjectId="project-1"
         />
       </TerminologyProvider>
-    </MantineProvider>,
+    </MantineProvider>
   );
 }
+
+function renderTaskFormPanel() {
+  return renderToStaticMarkup(taskFormPanelElement());
+}
+
+function renderTaskFormPanelClient() {
+  return render(taskFormPanelElement());
+}
+
+beforeEach(() => {
+  actionStateMock.current = null;
+});
+
+afterEach(() => {
+  cleanup();
+  taskLabelPickerPropsMock.mockClear();
+});
 
 describe('TaskFormPanel layout', () => {
   it('renders setup, notes, and metadata sections instead of a single unstructured stack', () => {
@@ -104,5 +267,48 @@ describe('TaskFormPanel layout', () => {
         ],
       }),
     );
+  });
+
+  it('renders priority as a custom picker while preserving the taskPriority form field', () => {
+    const html = renderTaskFormPanel();
+
+    expect(html).toContain('name="taskPriority"');
+    expect(html).toContain('type="hidden"');
+    expect(html).toContain('data-task-priority-value="none"');
+    expect(html).not.toContain('<select name="taskPriority"');
+  });
+
+  it('groups priority radio menu items for assistive technologies', async () => {
+    renderTaskFormPanelClient();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ticket priority' }));
+
+    const group = await screen.findByRole('group', { name: 'Ticket priority' });
+
+    expect(group.contains(screen.getByRole('menuitemradio', { name: 'No priority' }))).toBe(true);
+    expect(group.contains(screen.getByRole('menuitemradio', { name: 'High' }))).toBe(true);
+  });
+
+  it('resets the selected priority after a successful submission state', async () => {
+    const view = renderTaskFormPanelClient();
+    const priorityInput = document.querySelector<HTMLInputElement>('input[name="taskPriority"]');
+
+    expect(priorityInput?.value).toBe('none');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ticket priority' }));
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: 'High' }));
+
+    await waitFor(() => {
+      expect(priorityInput?.value).toBe('high');
+    });
+
+    actionStateMock.current = { ok: true };
+    view.rerender(taskFormPanelElement());
+
+    await waitFor(() => {
+      expect(document.querySelector<HTMLInputElement>('input[name="taskPriority"]')?.value).toBe(
+        'none',
+      );
+    });
   });
 });
