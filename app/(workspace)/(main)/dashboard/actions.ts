@@ -24,7 +24,7 @@ import { requireOwnerUser } from '@/lib/owner';
 import { getTaskLabelIdsFromFormData } from '@/lib/task-labels';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 
-type ActionState = { ok: true } | { ok: false; message: string };
+type ActionState = { ok: true; projectKey?: string } | { ok: false; message: string };
 
 // ---------- Project actions (thin wrappers) ----------
 
@@ -52,7 +52,7 @@ export async function createProject(_prevState: unknown, formData: FormData): Pr
   });
 
   revalidatePath('/');
-  redirect('/dashboard');
+  return { ok: true as const, projectKey: result.data.projectKey };
 }
 
 export async function updateProject(_prevState: unknown, formData: FormData): Promise<ActionState> {

@@ -1,6 +1,7 @@
 'use client';
 
-import { Stack, Text, TextInput } from '@mantine/core';
+import { Group, Stack, Text, TextInput } from '@mantine/core';
+import { useRouter } from 'next/navigation';
 import { useActionState, useEffect } from 'react';
 
 import { LiveMarkdownEditor } from '@/app/components/live-markdown-editor';
@@ -8,20 +9,26 @@ import { ProjectBackgroundPicker } from '@/app/components/project-background-pic
 import { SubmitButton } from '@/app/components/submit-button';
 import { showErrorNotification } from '@/lib/notifications';
 
-type ActionState = { ok: true } | { ok: false; message: string } | null;
+type ActionState = { ok: true; projectKey?: string } | { ok: false; message: string } | null;
 
 type ProjectFormPanelProps = {
   createProjectAction: (prevState: unknown, formData: FormData) => Promise<ActionState>;
 };
 
 export function ProjectFormPanel({ createProjectAction }: ProjectFormPanelProps) {
+  const router = useRouter();
   const [state, formAction] = useActionState(createProjectAction, null);
 
   useEffect(() => {
     if (state && !state.ok) {
       showErrorNotification(state.message);
+      return;
     }
-  }, [state]);
+    if (state?.ok) {
+      router.replace(state.projectKey ? `/project/${state.projectKey}` : '/projects');
+      router.refresh();
+    }
+  }, [router, state]);
 
   return (
     <form action={formAction}>
@@ -44,7 +51,9 @@ export function ProjectFormPanel({ createProjectAction }: ProjectFormPanelProps)
           </Text>
           <ProjectBackgroundPicker name="bgImage" />
         </div>
-        <SubmitButton>Create Project</SubmitButton>
+        <Group justify="flex-end">
+          <SubmitButton>Create Project</SubmitButton>
+        </Group>
       </Stack>
     </form>
   );
