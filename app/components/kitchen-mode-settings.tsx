@@ -26,6 +26,7 @@ export function KitchenModeSettings({ defaultValue }: KitchenModeSettingsProps) 
 
   const handleChange = useCallback(
     (value: boolean) => {
+      if (isPending || value === enabled) return;
       const previousValue = savedEnabled;
       setEnabled(value);
       startTransition(async () => {
@@ -58,15 +59,34 @@ export function KitchenModeSettings({ defaultValue }: KitchenModeSettingsProps) 
         }
       });
     },
-    [savedEnabled],
+    [enabled, isPending, savedEnabled],
   );
 
   return (
     <Stack gap="sm">
-      <Group align="center" gap="sm" wrap="wrap">
+      <Group
+        align="center"
+        gap="sm"
+        wrap="wrap"
+        onClick={() => handleChange(!enabled)}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          handleChange(!enabled);
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={`Turn ${enabled ? 'off' : 'on'} Kitchen Mode`}
+        style={{ cursor: isPending ? 'default' : 'pointer' }}
+      >
         <Switch
           checked={enabled}
           onChange={(event) => handleChange(event.currentTarget.checked)}
+          onClick={(event) => {
+            if ((event.target as HTMLElement).tagName === 'INPUT') {
+              event.stopPropagation();
+            }
+          }}
           label="Kitchen Mode"
           description="Switch mapped UI copy from PREQSTATION terms to kitchen terminology."
           disabled={isPending}

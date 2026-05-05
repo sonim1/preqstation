@@ -25,9 +25,20 @@ vi.mock('@mantine/core', () => {
       </section>
     ),
     Badge: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
-    Button: ({ children }: { children?: React.ReactNode }) => (
-      <button type="button">{children}</button>
-    ),
+    Button: ({
+      children,
+      component: Component,
+      href,
+    }: {
+      children?: React.ReactNode;
+      component?: React.ElementType;
+      href?: string;
+    }) =>
+      Component ? (
+        <Component href={href}>{children}</Component>
+      ) : (
+        <button type="button">{children}</button>
+      ),
     Code: ({ children }: { children?: React.ReactNode }) => <code>{children}</code>,
     CopyButton: ({
       children,
@@ -173,6 +184,7 @@ describe('OnboardingWizard', () => {
     expect(html).toContain('OPS-1');
     expect(html).toContain('Worker connected');
     expect(html).toContain('Go to Dashboard');
+    expect(html).toContain('href="/dashboard"');
     expect(html).toContain('data-active="3"');
   });
 });
