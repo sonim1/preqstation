@@ -160,6 +160,7 @@
 }
 
 .controls {
+  flex: 0 0 auto;
   grid-column: 3;
   justify-self: end;
 }
