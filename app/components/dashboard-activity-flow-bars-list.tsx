@@ -2,6 +2,7 @@
 
 import { BarsList, type BarsListBarData } from '@mantine/charts';
 import { Tooltip, useMantineTheme } from '@mantine/core';
+import Link from 'next/link';
 
 import classes from './dashboard-operator-desk.module.css';
 import type { DashboardPortfolioOverviewData } from './dashboard-portfolio-overview';
@@ -14,6 +15,7 @@ type DashboardActivityFlowBarsListProps = {
 
 type ActivityBarData = BarsListBarData & {
   id: string;
+  projectKey: string;
   color: string;
   tooltipLabel: string;
 };
@@ -28,6 +30,7 @@ export function DashboardActivityFlowBarsList({ projects }: DashboardActivityFlo
 
     return {
       id: project.id,
+      projectKey: project.projectKey,
       name: project.name,
       value: totalLogs,
       color: ACTIVITY_BAR_COLORS[index % ACTIVITY_BAR_COLORS.length],
@@ -67,6 +70,16 @@ export function DashboardActivityFlowBarsList({ projects }: DashboardActivityFlo
             variant: 'filled',
             autoContrast: true,
           });
+          const label = (
+            <Link
+              href={`/board/${activityBar.projectKey}`}
+              className={classes.portfolioActivityBarLabel}
+              data-activity-bar-label={activityBar.name}
+              aria-label={`Open ${activityBar.name} board`}
+            >
+              {activityBar.name}
+            </Link>
+          );
 
           return (
             <Tooltip
@@ -98,24 +111,10 @@ export function DashboardActivityFlowBarsList({ projects }: DashboardActivityFlo
                         color: colors.color,
                       }}
                     >
-                      {labelPosition === 'inside' ? (
-                        <span
-                          className={classes.portfolioActivityBarLabel}
-                          data-activity-bar-label={activityBar.name}
-                        >
-                          {activityBar.name}
-                        </span>
-                      ) : null}
+                      {labelPosition === 'inside' ? label : null}
                     </div>
 
-                    {labelPosition === 'outside' ? (
-                      <span
-                        className={classes.portfolioActivityBarLabel}
-                        data-activity-bar-label={activityBar.name}
-                      >
-                        {activityBar.name}
-                      </span>
-                    ) : null}
+                    {labelPosition === 'outside' ? label : null}
                   </div>
 
                   <div className={classes.portfolioActivityBarValue}>{activityBar.value}</div>

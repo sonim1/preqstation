@@ -222,6 +222,7 @@
   outline: none;
   cursor: pointer;
   touch-action: manipulation;
+  text-decoration: none;
 }
 
 .portfolioMatrixPoint:hover,
@@ -355,6 +356,8 @@
   min-width: 0;
   padding: 0.5rem 0;
   border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 22%);
+  color: inherit;
+  text-decoration: none;
 }
 
 .portfolioMatrixSummaryMeta,
@@ -428,6 +431,7 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--ui-text);
+  text-decoration: none;
 }
 
 .portfolioActivityBarTrack[data-activity-label-position='inside'] .portfolioActivityBarLabel {
@@ -608,6 +612,7 @@
 .passTokenMeta {
   flex-shrink: 0;
   white-space: nowrap;
+  text-decoration: none;
 }
 
 .passLoadMore {

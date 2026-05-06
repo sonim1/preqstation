@@ -1,4 +1,5 @@
 import { Group, Text, Title } from '@mantine/core';
+import Link from 'next/link';
 
 import { DashboardActivityFlowBarsList } from './dashboard-activity-flow-bars-list';
 import { DashboardInfoHint } from './dashboard-info-hint';
@@ -50,6 +51,7 @@ type MatrixRenderPoint = {
   title: string;
   ariaLabel: string;
   isCluster: boolean;
+  projectKey: string | null;
   clusterProjectKeys: string | null;
   linkedProjectIds: string;
   tooltipLines: string[];
@@ -207,6 +209,7 @@ export function DashboardPortfolioOverview({
             )
             .join('; ')}`,
           isCluster: true,
+          projectKey: null,
           clusterProjectKeys: projects.map((project) => project.projectKey).join(','),
           linkedProjectIds: projects.map((project) => project.id).join(' '),
           tooltipLines: projects.map(
@@ -225,8 +228,9 @@ export function DashboardPortfolioOverview({
         overlapSize,
         bucket: project.bucket,
         title: `${project.projectKey} · ${project.name} · ${project.openTaskCount} open`,
-        ariaLabel: `${project.projectKey} ${project.name} ${project.openTaskCount} open tasks`,
+        ariaLabel: `Open ${project.name} board`,
         isCluster: false,
+        projectKey: project.projectKey,
         clusterProjectKeys: null,
         linkedProjectIds: project.id,
         tooltipLines: [`${project.projectKey} · ${project.name} · ${project.openTaskCount} open`],
@@ -307,23 +311,8 @@ export function DashboardPortfolioOverview({
                     />
 
                     {positionedMatrixPoints.map((project) => {
-                      return (
-                        <button
-                          key={project.id}
-                          type="button"
-                          className={classes.portfolioMatrixPoint}
-                          style={{
-                            left: `${project.left}%`,
-                            top: `${project.top}%`,
-                          }}
-                          title={project.title}
-                          data-label-position={project.labelPosition}
-                          data-overlap-size={project.overlapSize}
-                          data-matrix-cluster={project.isCluster ? 'true' : undefined}
-                          data-cluster-projects={project.clusterProjectKeys ?? undefined}
-                          data-matrix-project-ids={project.linkedProjectIds}
-                          aria-label={project.ariaLabel}
-                        >
+                      const pointContent = (
+                        <>
                           <span className={matrixDotClassName(project.bucket)}>
                             {project.isCluster ? (
                               <span className={classes.portfolioMatrixCount}>
@@ -338,7 +327,39 @@ export function DashboardPortfolioOverview({
                               </span>
                             ))}
                           </span>
-                        </button>
+                        </>
+                      );
+                      const pointProps = {
+                        className: classes.portfolioMatrixPoint,
+                        style: {
+                          left: `${project.left}%`,
+                          top: `${project.top}%`,
+                        },
+                        title: project.title,
+                        'data-label-position': project.labelPosition,
+                        'data-overlap-size': project.overlapSize,
+                        'data-matrix-cluster': project.isCluster ? 'true' : undefined,
+                        'data-cluster-projects': project.clusterProjectKeys ?? undefined,
+                        'data-matrix-project-ids': project.linkedProjectIds,
+                        'aria-label': project.ariaLabel,
+                      };
+
+                      if (!project.projectKey) {
+                        return (
+                          <button key={project.id} type="button" {...pointProps}>
+                            {pointContent}
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <Link
+                          key={project.id}
+                          href={`/board/${project.projectKey}`}
+                          {...pointProps}
+                        >
+                          {pointContent}
+                        </Link>
                       );
                     })}
                   </div>
@@ -350,16 +371,18 @@ export function DashboardPortfolioOverview({
 
                   <div className={classes.portfolioMatrixSummary} data-matrix-summary-list="true">
                     {portfolioOverview.matrixProjects.map((project) => (
-                      <div
+                      <Link
                         key={project.id}
+                        href={`/board/${project.projectKey}`}
                         className={classes.portfolioMatrixSummaryItem}
                         data-matrix-summary-project={project.id}
+                        aria-label={`Open ${project.name} board`}
                       >
                         <Text fw={700}>{project.projectKey}</Text>
                         <Text size="xs" className={classes.portfolioMatrixSummaryMeta}>
                           {`${project.name} · ${project.openTaskCount} open · ${project.recencyDays}d stale`}
                         </Text>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </div>

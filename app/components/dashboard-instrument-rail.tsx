@@ -2,6 +2,7 @@
 
 import { Group, Paper, Progress, Stack, Text, Title } from '@mantine/core';
 import { IconPlugConnected } from '@tabler/icons-react';
+import Link from 'next/link';
 import { useState } from 'react';
 
 import type { Terminology } from '@/lib/terminology';
@@ -15,7 +16,7 @@ type ReadyTodo = {
   id: string;
   taskKey: string;
   title: string;
-  project: { name: string } | null;
+  project: { name: string; projectKey: string } | null;
 };
 
 export const INITIAL_VISIBLE_READY_TODOS = 5;
@@ -115,9 +116,21 @@ export function DashboardInstrumentRail({
                         {todo.title}
                       </Text>
                     </div>
-                    <Text size="sm" className={classes.passTokenMeta}>
-                      {todo.project ? todo.project.name : 'General'}
-                    </Text>
+                    {todo.project ? (
+                      <Text
+                        component={Link}
+                        href={`/board/${todo.project.projectKey}`}
+                        size="sm"
+                        className={classes.passTokenMeta}
+                        aria-label={`Open ${todo.project.name} board`}
+                      >
+                        {todo.project.name}
+                      </Text>
+                    ) : (
+                      <Text size="sm" className={classes.passTokenMeta}>
+                        General
+                      </Text>
+                    )}
                   </Group>
                 </div>
               ))

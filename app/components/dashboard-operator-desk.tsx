@@ -18,7 +18,7 @@ type DashboardTodo = {
   taskPriority: string;
   status: string;
   focusedAt?: Date | null;
-  project: { name: string } | null;
+  project: { name: string; projectKey: string } | null;
   labels: Array<{ id: string; name: string; color?: string | null }>;
   engine?: string | null;
   runState?: string | null;

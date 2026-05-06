@@ -95,6 +95,14 @@ vi.mock('@mantine/core', async (importOriginal) => {
   };
 });
 
+vi.mock('next/link', () => ({
+  default: ({ children, href, ...props }: { children: React.ReactNode; href: string }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
 import { DashboardActivityFlowBarsList } from '@/app/components/dashboard-activity-flow-bars-list';
 import type { DashboardPortfolioOverviewData } from '@/app/components/dashboard-portfolio-overview';
 
@@ -170,6 +178,8 @@ describe('app/components/dashboard-activity-flow-bars-list', () => {
     expect(html).toContain('data-activity-bar-title="Risk Project"');
     expect(html).toContain('data-activity-label-position="outside"');
     expect(html).toContain('data-activity-bar-label="Risk Project"');
+    expect(html).toContain('href="/board/RISK"');
+    expect(html).toContain('aria-label="Open Risk Project board"');
     expect(html).toContain('data-activity-bar-width="36"');
     expect(html).toContain('data-activity-label-position="inside"');
     expect(html).toContain('data-tooltip-label="RISK · 5 logs · 2d ago · hold 2"');
