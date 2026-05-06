@@ -959,12 +959,11 @@ export function LiveMarkdownEditor({
   mode,
   onModeChange,
 }: LiveMarkdownEditorProps) {
-  const [markdown, setMarkdown] = useState(() => stripPreqChoiceBlocks(defaultValue));
+  const sanitizedDefaultValue = useMemo(() => stripPreqChoiceBlocks(defaultValue), [defaultValue]);
+  const [markdown, setMarkdown] = useState(sanitizedDefaultValue);
   const [renderMode, setRenderMode] = useState<EditorMode>(mode ?? 'live');
   const [editorSeed, setEditorSeed] = useState(0);
-  const [editorInitialMarkdown, setEditorInitialMarkdown] = useState(() =>
-    stripPreqChoiceBlocks(defaultValue),
-  );
+  const [editorInitialMarkdown, setEditorInitialMarkdown] = useState(sanitizedDefaultValue);
   const [shouldAutoFocusEditor, setShouldAutoFocusEditor] = useState(autoFocus);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingCursorRef = useRef<number | null>(null);
@@ -972,7 +971,8 @@ export function LiveMarkdownEditor({
   const hasBootstrappedRef = useRef(false);
   const lastAppliedExternalVersionRef = useRef<number | null>(null);
   const pendingExternalUpdateRef = useRef<{ markdown: string; version: number } | null>(null);
-  const previousMarkdownRef = useRef(stripPreqChoiceBlocks(defaultValue));
+  const previousMarkdownRef = useRef(sanitizedDefaultValue);
+  const currentMarkdownRef = useRef(sanitizedDefaultValue);
   const liveEditorBridgeRef = useRef<LiveEditorBridge | null>(null);
   const resolvedMode = renderMode;
 
@@ -1011,8 +1011,11 @@ export function LiveMarkdownEditor({
   }, [markdown, onContentChange, reconcileLiveMarkdown]);
 
   useEffect(() => {
-    const sanitizedDefaultValue = stripPreqChoiceBlocks(defaultValue);
-    if (sanitizedDefaultValue === markdown) {
+    currentMarkdownRef.current = markdown;
+  }, [markdown]);
+
+  useEffect(() => {
+    if (sanitizedDefaultValue === currentMarkdownRef.current) {
       isDirtyRef.current = false;
       previousMarkdownRef.current = sanitizedDefaultValue;
       return;
@@ -1026,7 +1029,7 @@ export function LiveMarkdownEditor({
     setShouldAutoFocusEditor(autoFocus);
     hasBootstrappedRef.current = false;
     previousMarkdownRef.current = sanitizedDefaultValue;
-  }, [autoFocus, defaultValue, markdown]);
+  }, [autoFocus, sanitizedDefaultValue]);
 
   useEffect(() => {
     if (pendingCursorRef.current !== null && textareaRef.current) {

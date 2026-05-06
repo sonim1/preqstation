@@ -26,6 +26,12 @@ beforeAll(() => {
     unobserve() {}
     disconnect() {}
   };
+
+  vi.stubGlobal('requestAnimationFrame', ((callback: FrameRequestCallback) => {
+    callback(0);
+    return 0;
+  }) as typeof requestAnimationFrame);
+  vi.stubGlobal('cancelAnimationFrame', vi.fn());
 });
 
 afterEach(() => {
@@ -51,6 +57,7 @@ function renderEditor(defaultValue: string) {
 
 function renderEditorWithControls(defaultValue: string) {
   const onContentChange = vi.fn();
+  const onExternalUpdateApplied = vi.fn();
   const view = render(
     <MantineProvider>
       <LiveMarkdownEditor
@@ -58,6 +65,7 @@ function renderEditorWithControls(defaultValue: string) {
         label="Description"
         defaultValue={defaultValue}
         onContentChange={onContentChange}
+        onExternalUpdateApplied={onExternalUpdateApplied}
         autoFocus={false}
       />
     </MantineProvider>,
@@ -65,6 +73,7 @@ function renderEditorWithControls(defaultValue: string) {
 
   return {
     onContentChange,
+    onExternalUpdateApplied,
     rerenderDefaultValue: (nextDefaultValue: string) => {
       view.rerender(
         <MantineProvider>
@@ -73,6 +82,26 @@ function renderEditorWithControls(defaultValue: string) {
             label="Description"
             defaultValue={nextDefaultValue}
             onContentChange={onContentChange}
+            onExternalUpdateApplied={onExternalUpdateApplied}
+            autoFocus={false}
+          />
+        </MantineProvider>,
+      );
+    },
+    rerenderExternalUpdate: (externalUpdate: {
+      markdown: string;
+      version: number;
+      cursorIndex?: number | null;
+    }) => {
+      view.rerender(
+        <MantineProvider>
+          <LiveMarkdownEditor
+            name="description"
+            label="Description"
+            defaultValue={defaultValue}
+            externalUpdate={externalUpdate}
+            onContentChange={onContentChange}
+            onExternalUpdateApplied={onExternalUpdateApplied}
             autoFocus={false}
           />
         </MantineProvider>,
@@ -151,5 +180,17 @@ describe('LiveMarkdownEditor spacing reconciliation', () => {
       expect(getHiddenMarkdownInput(container).value).toBe(markdown);
     });
     expect(screen.getByLabelText('Description live editor')).toBe(editor);
+  });
+
+  it('keeps an external update when defaultValue still has the old markdown', async () => {
+    const { container, onExternalUpdateApplied, rerenderExternalUpdate } =
+      renderEditorWithControls('Saved note');
+
+    rerenderExternalUpdate({ markdown: 'External note', version: 1 });
+
+    await waitFor(() => {
+      expect(onExternalUpdateApplied).toHaveBeenCalledWith('External note');
+    });
+    expect(getHiddenMarkdownInput(container).value).toBe('External note');
   });
 });
