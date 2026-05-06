@@ -105,6 +105,25 @@ describe('LiveMarkdownEditor spacing reconciliation', () => {
     expect(onContentChange).not.toHaveBeenCalled();
   });
 
+  it('preserves deliberate blank line runs between paragraphs during bootstrap', async () => {
+    const markdown = 'First paragraph\n\n\nSecond paragraph';
+    const { container, onContentChange } = renderEditor(markdown);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Description live editor').textContent).toContain(
+        'Second paragraph',
+      );
+    });
+
+    const emptyParagraphs = Array.from(container.querySelectorAll('.live-editor-paragraph')).filter(
+      (p) => p.textContent?.trim() === '',
+    );
+    expect(emptyParagraphs.length).toBeGreaterThanOrEqual(2);
+
+    expect(getHiddenMarkdownInput(container).value).toBe(markdown);
+    expect(onContentChange).not.toHaveBeenCalled();
+  });
+
   it('maintains deliberate blank lines when switching modes', async () => {
     const markdown = 'First paragraph\n\nSecond paragraph';
     const { container } = renderEditor(markdown);

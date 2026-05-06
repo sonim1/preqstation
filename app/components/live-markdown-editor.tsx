@@ -417,12 +417,21 @@ function ensureParagraphAfterCodeNode(codeNode: CodeNode) {
 
 function hasDeliberateMarkdownBlankLine(markdown: string) {
   const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+  const firstContentLine = lines.findIndex((line) => line.trim() !== '');
+  let lastContentLine = -1;
 
-  return lines.some((line, index) => {
-    if (line.trim() !== '') return false;
-    if (index === 0 || index === lines.length - 1) return false;
-    return lines[index - 1].trim() !== '' && lines[index + 1].trim() !== '';
-  });
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    if (lines[index].trim() !== '') {
+      lastContentLine = index;
+      break;
+    }
+  }
+
+  if (firstContentLine === -1) return false;
+
+  return lines
+    .slice(firstContentLine + 1, lastContentLine)
+    .some((line) => line.trim() === '');
 }
 
 function shouldPreserveLiveMarkdownNewLines(markdown: string) {
