@@ -112,6 +112,39 @@ describe('lib/task-sort-order', () => {
     expect(spies.update).not.toHaveBeenCalled();
   });
 
+  it('keeps consecutive appends in creation order when the prior append becomes the lane tail', async () => {
+    const rows: LaneRow[] = [
+      {
+        id: 'task-1',
+        sortOrder: 'a0',
+        dueAt: null,
+        createdAt: new Date('2026-04-01T00:00:00.000Z'),
+      },
+    ];
+    const { client, spies } = createClient(rows);
+
+    const firstKey = await resolveAppendSortOrder({
+      client: client as never,
+      ownerId: 'owner-1',
+      status: 'todo',
+    });
+    rows.push({
+      id: 'task-2',
+      sortOrder: firstKey,
+      dueAt: null,
+      createdAt: new Date('2026-04-01T00:01:00.000Z'),
+    });
+    const secondKey = await resolveAppendSortOrder({
+      client: client as never,
+      ownerId: 'owner-1',
+      status: 'todo',
+    });
+
+    expect(firstKey > 'a0').toBe(true);
+    expect(secondKey > firstKey).toBe(true);
+    expect(spies.update).not.toHaveBeenCalled();
+  });
+
   it('rebalances duplicate keys in deterministic board order before appending', async () => {
     const { client, spies } = createClient([
       {

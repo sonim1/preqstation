@@ -4,6 +4,7 @@ import {
 } from '@/lib/editable-board-task';
 import type { KanbanTask } from '@/lib/kanban-helpers';
 import type { EditableBoardTask } from '@/lib/kanban-store';
+import type { OfflineCreateMutationPayload } from '@/lib/offline/db';
 import {
   deleteOfflineMutation,
   listQueuedOfflineMutations,
@@ -73,6 +74,11 @@ function readStructuredErrorMessage(
   return `Failed to sync offline task ${action} (${status}).`;
 }
 
+function buildCreateReplayPayload(payload: OfflineCreateMutationPayload) {
+  const { sortOrder: _sortOrder, ...replayPayload } = payload;
+  return replayPayload;
+}
+
 export async function flushOfflineMutations(
   params: {
     fetchImpl?: typeof fetch;
@@ -83,16 +89,18 @@ export async function flushOfflineMutations(
   const fetchImpl = params.fetchImpl ?? fetch;
   let appliedCount = 0;
   let skippedError: string | null = null;
-  const queuedMutations = await listQueuedOfflineMutations();
 
-  for (const mutation of queuedMutations) {
+  for (;;) {
+    const mutation = (await listQueuedOfflineMutations())[0];
+    if (!mutation) break;
+
     try {
       if (mutation.kind === 'create') {
         const response = await fetchImpl('/api/todos', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'same-origin',
-          body: JSON.stringify(mutation.payload),
+          body: JSON.stringify(buildCreateReplayPayload(mutation.payload)),
         });
 
         if (!response.ok) {
