@@ -70,6 +70,32 @@ function buildOfflineKeyPart() {
   return randomDigits === '000000000' ? '000000001' : randomDigits;
 }
 
+async function putMergedPatchRecord(params: {
+  createdAt?: string;
+  payload: OfflinePatchMutationPayload;
+  taskKey: string;
+}) {
+  const db = await openOfflineDb();
+  const patchId = buildOfflinePatchMutationId(params.taskKey);
+  const existingPatchRecord = await db.get('mutations', patchId);
+  const record: OfflinePatchMutationRecord = {
+    id: patchId,
+    kind: 'patch',
+    createdAt:
+      existingPatchRecord?.kind === 'patch'
+        ? existingPatchRecord.createdAt
+        : (params.createdAt ?? new Date().toISOString()),
+    payload:
+      existingPatchRecord?.kind === 'patch'
+        ? mergeDefinedFields(existingPatchRecord.payload, params.payload)
+        : params.payload,
+    taskKey: params.taskKey,
+  };
+
+  await db.put('mutations', record);
+  return record;
+}
+
 export function buildOfflineTaskKey() {
   return `OFFLINE-${buildOfflineKeyPart()}`;
 }
@@ -248,27 +274,22 @@ export async function queueOfflinePatchMutation(params: {
     };
 
     await db.put('mutations', nextCreateRecord);
+    if (params.payload.status !== undefined || params.payload.sortOrder !== undefined) {
+      await putMergedPatchRecord({
+        taskKey: params.taskKey,
+        payload: {
+          status: params.payload.status,
+          sortOrder: params.payload.sortOrder,
+        },
+      });
+    }
     return nextCreateRecord;
   }
 
-  const patchId = buildOfflinePatchMutationId(params.taskKey);
-  const existingPatchRecord = await db.get('mutations', patchId);
-  const record: OfflinePatchMutationRecord = {
-    id: patchId,
-    kind: 'patch',
-    createdAt:
-      existingPatchRecord?.kind === 'patch'
-        ? existingPatchRecord.createdAt
-        : new Date().toISOString(),
-    payload:
-      existingPatchRecord?.kind === 'patch'
-        ? mergeDefinedFields(existingPatchRecord.payload, params.payload)
-        : params.payload,
+  return putMergedPatchRecord({
     taskKey: params.taskKey,
-  };
-
-  await db.put('mutations', record);
-  return record;
+    payload: params.payload,
+  });
 }
 
 export async function deleteOfflineMutation(id: string) {

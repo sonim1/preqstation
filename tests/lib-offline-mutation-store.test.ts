@@ -180,6 +180,16 @@ describe('lib/offline/mutation-store', () => {
           sortOrder: 'a1',
         },
       },
+      {
+        id: buildOfflinePatchMutationId('OFFLINE-123456789'),
+        kind: 'patch',
+        createdAt: expect.any(String),
+        taskKey: 'OFFLINE-123456789',
+        payload: {
+          status: 'todo',
+          sortOrder: 'a1',
+        },
+      },
     ]);
   });
 
@@ -226,6 +236,68 @@ describe('lib/offline/mutation-store', () => {
           labelIds: [],
           taskPriority: 'none',
           status: 'todo',
+          sortOrder: 'a1',
+        },
+      },
+      {
+        id: buildOfflinePatchMutationId('OFFLINE-123456789'),
+        kind: 'patch',
+        createdAt: expect.any(String),
+        taskKey: 'OFFLINE-123456789',
+        payload: {
+          status: 'todo',
+          sortOrder: 'a1',
+        },
+      },
+    ]);
+  });
+
+  it('updates queued local-task move replays when later status changes omit sortOrder', async () => {
+    await queueOfflineCreateMutation({
+      taskKey: 'OFFLINE-123456789',
+      payload: {
+        title: 'Draft task',
+        note: '',
+        projectId: 'project-1',
+        labelIds: [],
+        taskPriority: 'none',
+        status: 'inbox',
+        sortOrder: 'a0',
+      },
+    });
+    await queueOfflinePatchMutation({
+      taskKey: 'OFFLINE-123456789',
+      payload: {
+        status: 'todo',
+        sortOrder: 'a1',
+      },
+    });
+    await queueOfflinePatchMutation({
+      taskKey: 'OFFLINE-123456789',
+      payload: {
+        status: 'archived',
+        sortOrder: undefined,
+      },
+    });
+
+    const queued = await listQueuedOfflineMutations();
+
+    expect(queued).toEqual([
+      expect.objectContaining({
+        id: buildOfflineCreateMutationId('OFFLINE-123456789'),
+        kind: 'create',
+        payload: expect.objectContaining({
+          status: 'archived',
+          sortOrder: 'a1',
+        }),
+      }),
+      {
+        id: buildOfflinePatchMutationId('OFFLINE-123456789'),
+        kind: 'patch',
+        createdAt: expect.any(String),
+        taskKey: 'OFFLINE-123456789',
+        payload: {
+          status: 'archived',
           sortOrder: 'a1',
         },
       },

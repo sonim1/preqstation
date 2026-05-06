@@ -89,9 +89,11 @@ export async function flushOfflineMutations(
   const fetchImpl = params.fetchImpl ?? fetch;
   let appliedCount = 0;
   let skippedError: string | null = null;
-  const queuedMutations = await listQueuedOfflineMutations();
 
-  for (const mutation of queuedMutations) {
+  for (;;) {
+    const mutation = (await listQueuedOfflineMutations())[0];
+    if (!mutation) break;
+
     try {
       if (mutation.kind === 'create') {
         const response = await fetchImpl('/api/todos', {
