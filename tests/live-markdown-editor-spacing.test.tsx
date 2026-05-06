@@ -49,6 +49,39 @@ function renderEditor(defaultValue: string) {
   return { onContentChange, ...view };
 }
 
+function renderEditorWithControls(defaultValue: string) {
+  const onContentChange = vi.fn();
+  const view = render(
+    <MantineProvider>
+      <LiveMarkdownEditor
+        name="description"
+        label="Description"
+        defaultValue={defaultValue}
+        onContentChange={onContentChange}
+        autoFocus={false}
+      />
+    </MantineProvider>,
+  );
+
+  return {
+    onContentChange,
+    rerenderDefaultValue: (nextDefaultValue: string) => {
+      view.rerender(
+        <MantineProvider>
+          <LiveMarkdownEditor
+            name="description"
+            label="Description"
+            defaultValue={nextDefaultValue}
+            onContentChange={onContentChange}
+            autoFocus={false}
+          />
+        </MantineProvider>,
+      );
+    },
+    ...view,
+  };
+}
+
 function getHiddenMarkdownInput(container: HTMLElement) {
   const input = container.querySelector('input[name="description"]');
   expect(input).toBeInstanceOf(HTMLInputElement);
@@ -102,5 +135,21 @@ describe('LiveMarkdownEditor spacing reconciliation', () => {
       );
     });
     expect(getHiddenMarkdownInput(container).value).toBe(markdown);
+  });
+
+  it('does not reseed live mode when rehydrated defaultValue sanitizes to the current markdown', async () => {
+    const markdown = 'Saved note';
+    const { container, rerenderDefaultValue } = renderEditorWithControls(markdown);
+
+    const editor = await screen.findByLabelText('Description live editor');
+
+    rerenderDefaultValue(
+      [markdown, '', ':::preq-choice', 'question: Keep existing note?', ':::'].join('\n'),
+    );
+
+    await waitFor(() => {
+      expect(getHiddenMarkdownInput(container).value).toBe(markdown);
+    });
+    expect(screen.getByLabelText('Description live editor')).toBe(editor);
   });
 });

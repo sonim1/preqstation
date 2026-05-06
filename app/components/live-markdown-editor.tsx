@@ -1011,8 +1011,14 @@ export function LiveMarkdownEditor({
   }, [markdown, onContentChange, reconcileLiveMarkdown]);
 
   useEffect(() => {
-    if (isDirtyRef.current) return; // user has edited — do not reset
     const sanitizedDefaultValue = stripPreqChoiceBlocks(defaultValue);
+    if (sanitizedDefaultValue === markdown) {
+      isDirtyRef.current = false;
+      previousMarkdownRef.current = sanitizedDefaultValue;
+      return;
+    }
+
+    if (isDirtyRef.current) return; // user has edited — do not reset
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset editor state when external defaultValue changes
     setMarkdown(sanitizedDefaultValue);
     setEditorInitialMarkdown(sanitizedDefaultValue);
@@ -1020,7 +1026,7 @@ export function LiveMarkdownEditor({
     setShouldAutoFocusEditor(autoFocus);
     hasBootstrappedRef.current = false;
     previousMarkdownRef.current = sanitizedDefaultValue;
-  }, [autoFocus, defaultValue]);
+  }, [autoFocus, defaultValue, markdown]);
 
   useEffect(() => {
     if (pendingCursorRef.current !== null && textareaRef.current) {
