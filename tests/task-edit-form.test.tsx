@@ -245,6 +245,29 @@ describe('app/components/task-edit-form', () => {
     );
   });
 
+  it('keeps notes editable offline while disabling server-only edit panel controls', () => {
+    useOfflineStatusMock.mockReturnValueOnce({ online: false });
+    useBoardOfflineSyncMock.mockReturnValueOnce({
+      online: false,
+      queueTaskCreate: vi.fn(),
+      queueTaskMove: vi.fn(),
+      queueTaskPatch: vi.fn(),
+    });
+
+    const html = renderTaskEditForm();
+
+    expect(html).toContain('data-component="LiveMarkdownEditor"');
+    expect(liveMarkdownEditorPropsMock.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ name: 'noteMd' }),
+    );
+    expect(html).not.toContain('data-panel="task-edit-comments"');
+    expect(html).not.toContain('data-panel="task-edit-dispatch"');
+    expect(taskCopyActionsPropsMock).not.toHaveBeenCalled();
+    expect(taskLabelPickerPropsMock.mock.calls[0]?.[0]).toEqual(
+      expect.objectContaining({ disabled: true }),
+    );
+  });
+
   it('includes the base fingerprints, stale note warning, and restore action when a stale draft is available', () => {
     useTaskOfflineDraftMock.mockReturnValueOnce({
       canRestoreDraft: true,

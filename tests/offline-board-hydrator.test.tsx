@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const hydrateMock = vi.hoisted(() => vi.fn());
 const getSnapshotMock = vi.hoisted(() => vi.fn());
 const putSnapshotMock = vi.hoisted(() => vi.fn());
+const listQueuedOfflineMutationsMock = vi.hoisted(() => vi.fn());
 const useFocusedTaskMock = vi.hoisted(() => vi.fn());
 const useKanbanColumnsMock = vi.hoisted(() => vi.fn());
 
@@ -20,6 +21,16 @@ vi.mock('@/lib/offline/snapshot-store', () => ({
   putSnapshot: putSnapshotMock,
 }));
 
+vi.mock('@/lib/offline/mutation-store', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/offline/mutation-store')>(
+    '@/lib/offline/mutation-store',
+  );
+  return {
+    ...actual,
+    listQueuedOfflineMutations: listQueuedOfflineMutationsMock,
+  };
+});
+
 import { OfflineBoardHydrator } from '@/app/components/offline-board-hydrator';
 
 describe('app/components/offline-board-hydrator', () => {
@@ -27,10 +38,12 @@ describe('app/components/offline-board-hydrator', () => {
     hydrateMock.mockReset();
     getSnapshotMock.mockReset();
     putSnapshotMock.mockReset();
+    listQueuedOfflineMutationsMock.mockReset();
     useFocusedTaskMock.mockReset();
     useKanbanColumnsMock.mockReset();
     getSnapshotMock.mockResolvedValue(null);
     putSnapshotMock.mockResolvedValue(undefined);
+    listQueuedOfflineMutationsMock.mockResolvedValue([]);
     useFocusedTaskMock.mockReturnValue(null);
     useKanbanColumnsMock.mockReturnValue({
       inbox: [],
@@ -103,6 +116,40 @@ describe('app/components/offline-board-hydrator', () => {
         expect.objectContaining({
           columns: expect.objectContaining({
             todo: [expect.objectContaining({ taskKey: 'PROJ-1', title: 'Cached' })],
+          }),
+        }),
+      );
+    });
+  });
+
+  it('stores queued offline creates in the board snapshot so refresh keeps them visible', async () => {
+    listQueuedOfflineMutationsMock.mockResolvedValue([
+      {
+        id: 'create:OFFLINE-123',
+        kind: 'create',
+        clientTaskKey: 'OFFLINE-123',
+        createdAt: '2026-05-06T10:00:00.000Z',
+        payload: {
+          title: 'Offline card',
+          note: '',
+          projectId: 'project-1',
+          labelIds: [],
+          taskPriority: 'none',
+          status: 'inbox',
+          sortOrder: 'a0',
+        },
+      },
+    ]);
+
+    render(<OfflineBoardHydrator boardKey="PROJ" />);
+
+    await waitFor(() => {
+      expect(putSnapshotMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          payload: expect.objectContaining({
+            columns: expect.objectContaining({
+              inbox: [expect.objectContaining({ taskKey: 'OFFLINE-123', title: 'Offline card' })],
+            }),
           }),
         }),
       );

@@ -253,6 +253,45 @@ describe('app/components/board-offline-sync-provider', () => {
     });
   });
 
+  it('upserts the optimistic task when creating a task offline', async () => {
+    useOfflineStatusMock.mockReturnValue({ online: false });
+    getKanbanStateMock.mockReturnValue({
+      focusedTask: null,
+      tasksByKey: {},
+      columnTaskKeys: { inbox: [], todo: [], hold: [], ready: [], done: [], archived: [] },
+    });
+    queueOfflineCreateMutationMock.mockResolvedValue(undefined);
+    const onReady = vi.fn();
+
+    render(
+      <BoardOfflineSyncProvider editHrefBase="/board/PROJ" activeProjectId="project-1">
+        <BoardOfflineSyncProbe onReady={onReady} />
+      </BoardOfflineSyncProvider>,
+    );
+
+    await waitFor(() => {
+      expect(onReady).toHaveBeenCalled();
+    });
+
+    const result = await onReady.mock.lastCall?.[0]?.queueTaskCreate({
+      title: 'Offline card',
+      note: '',
+      project: { id: 'project-1', name: 'Project PROJ', projectKey: 'PROJ' },
+      labels: [],
+      taskPriority: 'none',
+      status: 'inbox',
+    });
+
+    expect(result.taskKey).toMatch(/^OFFLINE-/);
+    expect(queueOfflineCreateMutationMock).toHaveBeenCalledWith({
+      taskKey: result.taskKey,
+      payload: expect.objectContaining({ title: 'Offline card', projectId: 'project-1' }),
+    });
+    expect(upsertSnapshotsMock).toHaveBeenCalledWith([
+      expect.objectContaining({ taskKey: result.taskKey, title: 'Offline card', status: 'inbox' }),
+    ]);
+  });
+
   it('clears the offline draft only after a queued patch replay succeeds', async () => {
     getKanbanStateMock.mockReturnValue({
       focusedTask: FocusedTask('PROJ-255'),
@@ -326,5 +365,40 @@ describe('app/components/board-offline-sync-provider', () => {
       'Server notes changed while offline changes were queued. Reopen the task and use Restore draft to decide what to keep.',
     );
     expect(deleteDraftMock).not.toHaveBeenCalled();
+  });
+
+  it('replaces an offline created task with the server task after replay succeeds', async () => {
+    const replaceState = vi.fn();
+    vi.stubGlobal('location', new URL('https://example.test/board/PROJ?taskId=OFFLINE-123'));
+    vi.stubGlobal('history', { replaceState } as unknown as History);
+    getKanbanStateMock.mockReturnValue({
+      focusedTask: FocusedTask('OFFLINE-123'),
+      tasksByKey: {
+        'OFFLINE-123': buildBoardTask('project-1', 'PROJ', 'OFFLINE-123'),
+      },
+    });
+    flushOfflineMutationsMock.mockImplementationOnce(async ({ onApplied }) => {
+      await onApplied?.({
+        kind: 'create',
+        previousTaskKey: 'OFFLINE-123',
+        boardTask: buildBoardTask('project-1', 'PROJ', 'PROJ-501'),
+      });
+
+      return { appliedCount: 1, error: null, halted: false };
+    });
+
+    render(
+      <BoardOfflineSyncProvider editHrefBase="/board/PROJ" activeProjectId="project-1">
+        <div>board</div>
+      </BoardOfflineSyncProvider>,
+    );
+
+    await waitFor(() => {
+      expect(removeTaskMock).toHaveBeenCalledWith('OFFLINE-123');
+    });
+    expect(upsertSnapshotsMock).toHaveBeenCalledWith([
+      expect.objectContaining({ taskKey: 'PROJ-501' }),
+    ]);
+    expect(replaceState).toHaveBeenCalledWith(null, '', '/board/PROJ?taskId=PROJ-501');
   });
 });
