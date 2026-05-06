@@ -165,8 +165,8 @@ Recommended validation from the settings screen:
 - OpenClaw Telegram test, OpenClaw `/status`, and Hermes Telegram test succeed for the channels you enabled
 - Tasks dispatched to Telegram can surface `Requested` / `Running` execution badges
 - Hermes-targeted task sends plus Hermes-targeted project insight sends land in the Hermes chat
-- QA runs can queue through `🦞 Telegram` and/or `H Telegram`, and project insight dispatch uses
-  the enabled Telegram target chips shown in the modal
+- QA runs can queue only the selected ready tasks through `🦞 Telegram` and/or `H Telegram`, and
+  project insight dispatch uses the enabled Telegram target chips shown in the modal
 - `claude mcp add --transport http .../mcp` or `codex mcp add ... --url .../mcp` completes browser login successfully
 - Dispatcher setup is optional and can wait until the project/task/worker path is already working
 

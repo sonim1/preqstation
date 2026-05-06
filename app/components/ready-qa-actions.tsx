@@ -4,6 +4,8 @@ import {
   Accordion,
   ActionIcon,
   Badge,
+  Button,
+  Checkbox,
   Code,
   CopyButton,
   Group,
@@ -16,7 +18,7 @@ import {
 import { IconCheck, IconCopy, IconFlask, IconInfoCircle } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { type CSSProperties, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 
 import { DispatchPromptPreview } from '@/app/components/dispatch-prompt-preview';
 import { DispatchSegmentedControl } from '@/app/components/dispatch-segmented-control';
@@ -45,13 +47,18 @@ type ReadyQaActionsProps = {
   projectKey: string;
   projectName: string;
   branchName: string;
-  readyCount: number;
+  readyTasks: ReadyQaTask[];
   telegramEnabled: boolean;
   hermesTelegramEnabled?: boolean;
   initialRuns: QaRunView[];
   defaultEngine?: string | null;
   size?: number | string;
   iconSize?: number;
+};
+
+type ReadyQaTask = {
+  taskKey: string;
+  title: string;
 };
 
 type QaDispatchTarget = TaskDispatchTarget;
@@ -164,7 +171,7 @@ export function ReadyQaActions({
   projectKey,
   projectName,
   branchName,
-  readyCount,
+  readyTasks = [],
   telegramEnabled,
   hermesTelegramEnabled = false,
   initialRuns,
@@ -185,15 +192,35 @@ export function ReadyQaActions({
     resolveInitialQaTarget(resolveQaTargets({ telegramEnabled, hermesTelegramEnabled }), null),
   );
   const [queuedQaPrompt, setQueuedQaPrompt] = useState<string | null>(null);
+  const [selectedTaskKeys, setSelectedTaskKeys] = useState<string[]>(() =>
+    readyTasks.map((task) => task.taskKey),
+  );
   const selectedEngineConfig =
     getEngineConfig(selectedEngine) ?? ENGINE_CONFIGS[DEFAULT_ENGINE_KEY];
   const visibleRuns = getVisibleQaRuns(runs, visibleRunCount);
   const availableTargets = resolveQaTargets({ telegramEnabled, hermesTelegramEnabled });
   const effectiveTarget = resolveInitialQaTarget(availableTargets, selectedTarget);
-  const canQueueQa = readyCount > 0 && effectiveTarget !== null;
+  const readyCount = readyTasks.length;
+  const selectedReadyTaskKeys = useMemo(() => {
+    const selectedSet = new Set(selectedTaskKeys);
+    return readyTasks
+      .filter((task) => selectedSet.has(task.taskKey))
+      .map((task) => task.taskKey);
+  }, [readyTasks, selectedTaskKeys]);
+  const selectedReadyCount = selectedReadyTaskKeys.length;
+  const canQueueQa = selectedReadyCount > 0 && effectiveTarget !== null;
   const qaPreview = queuedQaPrompt ?? QUEUED_QA_PROMPT_HELP;
 
+  useEffect(() => {
+    setSelectedTaskKeys((currentKeys) => {
+      const readyTaskKeys = new Set(readyTasks.map((task) => task.taskKey));
+      return currentKeys.filter((taskKey) => readyTaskKeys.has(taskKey));
+    });
+  }, [readyTasks]);
+
   function openRunsModal() {
+    setSelectedTaskKeys(readyTasks.map((task) => task.taskKey));
+    setQueuedQaPrompt(null);
     setOpened(true);
   }
 
@@ -207,7 +234,7 @@ export function ReadyQaActions({
   }
 
   async function runQa() {
-    if (isSubmitting || !effectiveTarget) return;
+    if (isSubmitting || !effectiveTarget || selectedReadyTaskKeys.length === 0) return;
     setIsSubmitting(true);
 
     try {
@@ -220,6 +247,7 @@ export function ReadyQaActions({
           body: JSON.stringify({
             engine: selectedEngineConfig.key,
             dispatchTarget: effectiveTarget,
+            taskKeys: selectedReadyTaskKeys,
           }),
         },
       );
@@ -259,6 +287,25 @@ export function ReadyQaActions({
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function toggleReadyTask(taskKey: string) {
+    setSelectedTaskKeys((currentKeys) =>
+      currentKeys.includes(taskKey)
+        ? currentKeys.filter((currentKey) => currentKey !== taskKey)
+        : [...currentKeys, taskKey],
+    );
+    setQueuedQaPrompt(null);
+  }
+
+  function selectAllReadyTasks() {
+    setSelectedTaskKeys(readyTasks.map((task) => task.taskKey));
+    setQueuedQaPrompt(null);
+  }
+
+  function clearReadyTasks() {
+    setSelectedTaskKeys([]);
+    setQueuedQaPrompt(null);
   }
 
   return (
@@ -387,6 +434,57 @@ export function ReadyQaActions({
                   };
                 })}
               />
+
+              <div className="ready-qa-task-picker">
+                <Group justify="space-between" align="center" gap="xs">
+                  <Text size="xs" fw={700} className="task-dispatch-field-label">
+                    Scope
+                  </Text>
+                  <Group gap={6}>
+                    <Button
+                      type="button"
+                      variant="subtle"
+                      size="compact-xs"
+                      aria-label="Select all ready tasks"
+                      disabled={isSubmitting || readyCount === 0}
+                      onClick={selectAllReadyTasks}
+                    >
+                      Select all
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="subtle"
+                      size="compact-xs"
+                      aria-label="Clear all ready tasks"
+                      disabled={isSubmitting || readyCount === 0}
+                      onClick={clearReadyTasks}
+                    >
+                      Clear all
+                    </Button>
+                  </Group>
+                </Group>
+                <Stack gap={6}>
+                  {readyTasks.map((task) => (
+                    <Checkbox
+                      key={task.taskKey}
+                      checked={selectedTaskKeys.includes(task.taskKey)}
+                      disabled={isSubmitting}
+                      label={
+                        <span className="ready-qa-task-label">
+                          <Code>{task.taskKey}</Code>
+                          <span>{task.title}</span>
+                        </span>
+                      }
+                      aria-label={`Include ${task.taskKey} in QA`}
+                      onChange={() => toggleReadyTask(task.taskKey)}
+                    />
+                  ))}
+                </Stack>
+                <Text size="xs" c="dimmed">
+                  {selectedReadyCount} of {readyCount} ready {terminology.task.pluralLower}{' '}
+                  selected.
+                </Text>
+              </div>
 
               <DispatchPromptPreview
                 prompt={qaPreview}

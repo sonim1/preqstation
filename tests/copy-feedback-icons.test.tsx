@@ -236,7 +236,7 @@ describe('copy feedback icons', () => {
         projectKey="ALPHA"
         projectName="Project One"
         branchName="release/mobile"
-        readyCount={1}
+        readyTasks={[{ taskKey: 'QA-1', title: 'QA task' }]}
         telegramEnabled
         initialRuns={[createRun()]}
       />,
@@ -282,7 +282,10 @@ describe('copy feedback icons', () => {
         projectKey="ALPHA"
         projectName="Project One"
         branchName="release/mobile"
-        readyCount={2}
+        readyTasks={[
+          { taskKey: 'QA-7', title: 'QA seven' },
+          { taskKey: 'QA-8', title: 'QA eight' },
+        ]}
         telegramEnabled
         initialRuns={[]}
       />,

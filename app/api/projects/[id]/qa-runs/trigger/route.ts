@@ -26,6 +26,9 @@ const triggerQaRunSchema = z
   .object({
     engine: z.enum(ENGINE_KEYS).optional(),
     dispatchTarget: z.enum(['telegram', 'hermes-telegram']).optional().default('telegram'),
+    taskKeys: z
+      .array(z.string().min(1), { required_error: 'Select at least one ready task for QA' })
+      .min(1, 'Select at least one ready task for QA'),
   })
   .strict();
 
@@ -36,9 +39,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const owner = await requireOwnerUser();
     const { id } = await params;
-    const payload = triggerQaRunSchema.parse(
+    const parseResult = triggerQaRunSchema.safeParse(
       (await req.json().catch(() => ({}))) as Record<string, unknown>,
     );
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: parseResult.error.errors[0]?.message || 'Invalid request payload' },
+        { status: 400 },
+      );
+    }
+    const payload = parseResult.data;
 
     return await withOwnerDb(owner.id, async (client) => {
       const project = await client.query.projects.findFirst({
@@ -58,6 +68,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       });
       if (readyTasks.length === 0) {
         return NextResponse.json({ error: 'No ready tasks available for QA' }, { status: 400 });
+      }
+      const requestedTaskKeys = new Set(payload.taskKeys);
+      const selectedReadyTasks = readyTasks.filter((task) => requestedTaskKeys.has(task.taskKey));
+      if (selectedReadyTasks.length !== requestedTaskKeys.size || selectedReadyTasks.length === 0) {
+        return NextResponse.json(
+          { error: 'Selected QA tasks must be ready tasks in this project' },
+          { status: 400 },
+        );
       }
 
       if (!(await qaRunsStorageAvailable(client))) {
@@ -98,7 +116,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           projectId: project.id,
           branchName,
           engine: qaEngine,
-          taskKeys: readyTasks.map((task) => task.taskKey),
+          taskKeys: selectedReadyTasks.map((task) => task.taskKey),
         },
         client,
       );

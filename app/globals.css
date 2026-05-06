@@ -3194,6 +3194,30 @@ html[data-mantine-color-scheme='dark'] .live-editor-input [data-live-editor-empt
   object-fit: contain;
 }
 
+.ready-qa-task-picker {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.625rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-surface-strong), transparent 48%);
+}
+
+.ready-qa-task-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.ready-qa-task-label > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .task-dispatch-segment {
   position: relative;
   z-index: 1;
