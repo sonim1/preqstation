@@ -15,7 +15,7 @@ type OptimisticProject = {
   projectKey?: string | null;
 };
 
-type OptimisticLabel = {
+export type OptimisticLabel = {
   color: string | null;
   id: string;
   name: string;
@@ -138,6 +138,7 @@ export function buildOptimisticTask(params: {
 export function buildOptimisticTasksFromQueuedCreates(
   records: OfflineMutationRecord[],
   projectsById: Record<string, OptimisticProject>,
+  labelsById: Record<string, OptimisticLabel> = {},
 ): KanbanTask[] {
   return records.flatMap((record) => {
     if (record.kind !== 'create') return [];
@@ -152,7 +153,9 @@ export function buildOptimisticTasksFromQueuedCreates(
         title: record.payload.title,
         note: record.payload.note,
         project,
-        labels: [],
+        labels: record.payload.labelIds
+          .map((labelId) => labelsById[labelId])
+          .filter((label): label is OptimisticLabel => Boolean(label)),
         taskPriority: record.payload.taskPriority,
         status: record.payload.status ?? 'inbox',
         sortOrder: record.payload.sortOrder ?? record.createdAt,

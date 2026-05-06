@@ -268,7 +268,7 @@ describe('lib/offline/mutation-store', () => {
             title: 'Offline card',
             note: '',
             projectId: 'project-1',
-            labelIds: [],
+            labelIds: ['label-1'],
             taskPriority: 'none',
             status: 'inbox',
             sortOrder: 'a0',
@@ -277,6 +277,9 @@ describe('lib/offline/mutation-store', () => {
       ],
       {
         'project-1': { id: 'project-1', name: 'Project PROJ', projectKey: 'PROJ' },
+      },
+      {
+        'label-1': { id: 'label-1', name: 'Bug', color: 'red' },
       },
     );
 
@@ -288,6 +291,7 @@ describe('lib/offline/mutation-store', () => {
         status: 'inbox',
         sortOrder: 'a0',
         project: expect.objectContaining({ id: 'project-1', projectKey: 'PROJ' }),
+        labels: [expect.objectContaining({ id: 'label-1', name: 'Bug', color: 'red' })],
       }),
     ]);
   });

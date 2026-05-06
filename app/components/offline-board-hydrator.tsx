@@ -12,6 +12,7 @@ import type { KanbanHydrationSnapshot } from '@/lib/kanban-store';
 import {
   buildOptimisticTasksFromQueuedCreates,
   listQueuedOfflineMutations,
+  type OptimisticLabel,
 } from '@/lib/offline/mutation-store';
 import { getSnapshot, putSnapshot } from '@/lib/offline/snapshot-store';
 
@@ -79,6 +80,20 @@ function mergeQueuedCreatesIntoColumns(columns: KanbanColumns, queuedCreateTasks
   return nextColumns;
 }
 
+function buildLabelsById(columns: KanbanColumns) {
+  const labelsById: Record<string, OptimisticLabel> = {};
+
+  for (const status of allStatuses) {
+    for (const task of columns[status]) {
+      for (const label of task.labels) {
+        labelsById[label.id] = label;
+      }
+    }
+  }
+
+  return labelsById;
+}
+
 export function OfflineBoardHydrator({ boardKey }: OfflineBoardHydratorProps) {
   const columns = useKanbanColumns();
   const focusedTask = useFocusedTask();
@@ -87,28 +102,37 @@ export function OfflineBoardHydrator({ boardKey }: OfflineBoardHydratorProps) {
   useEffect(() => {
     let cancelled = false;
 
-    void listQueuedOfflineMutations().then((queuedMutations) => {
-      if (cancelled) {
-        return;
-      }
+    try {
+      void listQueuedOfflineMutations()
+        .then((queuedMutations) => {
+          if (cancelled) {
+            return;
+          }
 
-      const queuedCreateTasks = buildOptimisticTasksFromQueuedCreates(
-        queuedMutations,
-        buildProjectsById(columns, queuedMutations, boardKey),
-      );
-      const snapshotColumns = mergeQueuedCreatesIntoColumns(columns, queuedCreateTasks);
+          const queuedCreateTasks = buildOptimisticTasksFromQueuedCreates(
+            queuedMutations,
+            buildProjectsById(columns, queuedMutations, boardKey),
+            buildLabelsById(columns),
+          );
+          const snapshotColumns = mergeQueuedCreatesIntoColumns(columns, queuedCreateTasks);
 
-      return putSnapshot({
-        id: `board:${boardKey}`,
-        kind: 'board',
-        entityKey: boardKey,
-        payload: {
-          columns: snapshotColumns,
-          focusedTask,
-        },
-        updatedAt: new Date().toISOString(),
-      });
-    });
+          return putSnapshot({
+            id: `board:${boardKey}`,
+            kind: 'board',
+            entityKey: boardKey,
+            payload: {
+              columns: snapshotColumns,
+              focusedTask,
+            },
+            updatedAt: new Date().toISOString(),
+          });
+        })
+        .catch((error: unknown) => {
+          console.error('Failed to persist offline board snapshot:', error);
+        });
+    } catch (error) {
+      console.error('Failed to start offline board snapshot persistence:', error);
+    }
 
     return () => {
       cancelled = true;

@@ -133,13 +133,40 @@ describe('app/components/offline-board-hydrator', () => {
           title: 'Offline card',
           note: '',
           projectId: 'project-1',
-          labelIds: [],
+          labelIds: ['label-1'],
           taskPriority: 'none',
           status: 'inbox',
           sortOrder: 'a0',
         },
       },
     ]);
+    useKanbanColumnsMock.mockReturnValue({
+      inbox: [],
+      todo: [
+        {
+          id: '1',
+          taskKey: 'PROJ-1',
+          branch: null,
+          title: 'Existing',
+          note: null,
+          status: 'todo',
+          sortOrder: 'a0',
+          taskPriority: 'none',
+          dueAt: null,
+          engine: null,
+          runState: null,
+          runStateUpdatedAt: null,
+          project: { id: 'project-1', name: 'Project PROJ', projectKey: 'PROJ' },
+          updatedAt: '2026-05-06T10:00:00.000Z',
+          archivedAt: null,
+          labels: [{ id: 'label-1', name: 'Bug', color: 'red' }],
+        },
+      ],
+      hold: [],
+      ready: [],
+      done: [],
+      archived: [],
+    });
 
     render(<OfflineBoardHydrator boardKey="PROJ" />);
 
@@ -148,7 +175,13 @@ describe('app/components/offline-board-hydrator', () => {
         expect.objectContaining({
           payload: expect.objectContaining({
             columns: expect.objectContaining({
-              inbox: [expect.objectContaining({ taskKey: 'OFFLINE-123', title: 'Offline card' })],
+              inbox: [
+                expect.objectContaining({
+                  taskKey: 'OFFLINE-123',
+                  title: 'Offline card',
+                  labels: [expect.objectContaining({ id: 'label-1', name: 'Bug', color: 'red' })],
+                }),
+              ],
             }),
           }),
         }),
