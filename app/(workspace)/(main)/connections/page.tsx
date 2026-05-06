@@ -136,29 +136,19 @@ function isConnectionExpiringSoon(
 }
 
 function getConnectionSummary(connections: ConnectionRecord[], now: number) {
-  const needsAttention = connections.filter(
-    (connection) => !!connection.revokedAt || isConnectionExpired(connection, now),
-  ).length;
   const expiringSoon = connections.filter((connection) =>
     isConnectionExpiringSoon(connection, now),
   ).length;
-  const healthy = connections.length - needsAttention - expiringSoon;
+  const healthy = connections.length - expiringSoon;
 
   return {
     total: connections.length,
     healthy,
     expiringSoon,
-    needsAttention,
   };
 }
 
 function getSummaryHeadline(summary: ReturnType<typeof getConnectionSummary>) {
-  if (summary.needsAttention > 0) {
-    return summary.needsAttention === 1
-      ? '1 connection needs attention'
-      : `${summary.needsAttention} connections need attention`;
-  }
-
   if (summary.expiringSoon > 0) {
     return summary.expiringSoon === 1
       ? '1 connection expires soon'
@@ -170,9 +160,7 @@ function getSummaryHeadline(summary: ReturnType<typeof getConnectionSummary>) {
 
 function getSummaryHeadlineToneClassName(summary: {
   expiringSoon: number;
-  needsAttention: number;
 }) {
-  if (summary.needsAttention > 0) return styles.summaryHeadlineAttention;
   if (summary.expiringSoon > 0) return styles.summaryHeadlineWarning;
   return styles.summaryHeadlineHealthy;
 }
@@ -260,29 +248,19 @@ function getExpiryDisplay(
 }
 
 function getBrowserSessionSummary(browserSessions: BrowserSessionRecord[], now: number) {
-  const needsAttention = browserSessions.filter(
-    (session) => !!session.revokedAt || isConnectionExpired(session, now),
-  ).length;
   const expiringSoon = browserSessions.filter((session) =>
     isConnectionExpiringSoon(session, now),
   ).length;
-  const active = browserSessions.length - needsAttention - expiringSoon;
+  const active = browserSessions.length - expiringSoon;
 
   return {
     total: browserSessions.length,
     active,
     expiringSoon,
-    needsAttention,
   };
 }
 
 function getBrowserSessionSummaryHeadline(summary: ReturnType<typeof getBrowserSessionSummary>) {
-  if (summary.needsAttention > 0) {
-    return summary.needsAttention === 1
-      ? '1 browser session needs attention'
-      : `${summary.needsAttention} browser sessions need attention`;
-  }
-
   if (summary.expiringSoon > 0) {
     return summary.expiringSoon === 1
       ? '1 browser session expires soon'

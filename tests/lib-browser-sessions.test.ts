@@ -128,10 +128,7 @@ describe('lib/browser-sessions', () => {
       expect.objectContaining({
         where: and(
           eq(browserSessions.ownerId, 'owner-1'),
-          eq(browserSessions.ipAddress, '203.0.113.10'),
           eq(browserSessions.userAgent, CHROME_MAC_UA),
-          eq(browserSessions.browserName, 'Chrome'),
-          eq(browserSessions.osName, 'macOS'),
           isNull(browserSessions.revokedAt),
           gte(browserSessions.expiresAt, now),
         ),
@@ -140,9 +137,6 @@ describe('lib/browser-sessions', () => {
     expect(mocked.ownerClient.insert).not.toHaveBeenCalled();
     expect(mocked.updateSet).toHaveBeenCalledWith({
       ipAddress: '203.0.113.10',
-      userAgent: CHROME_MAC_UA,
-      browserName: 'Chrome',
-      osName: 'macOS',
       lastUsedAt: now,
       expiresAt: new Date('2026-04-02T08:45:00.000Z'),
       revokedAt: null,
@@ -155,13 +149,18 @@ describe('lib/browser-sessions', () => {
     );
   });
 
-  it('creates a distinct browser session when only the IP address changes', async () => {
+  it('reuses a browser session when only the IP address changes', async () => {
     const now = new Date('2026-03-26T08:45:00.000Z');
     const expectedExpiry = new Date('2026-04-02T08:45:00.000Z');
-    mocked.ownerClient.query.browserSessions.findFirst.mockResolvedValueOnce(null);
-    mocked.insertReturning.mockResolvedValueOnce([
+    mocked.ownerClient.query.browserSessions.findFirst.mockResolvedValueOnce(
       buildBrowserSession({
-        id: 'browser-session-new-ip',
+        id: 'browser-session-existing',
+        ipAddress: '203.0.113.10',
+      }),
+    );
+    mocked.updateReturning.mockResolvedValueOnce([
+      buildBrowserSession({
+        id: 'browser-session-existing',
         ipAddress: '198.51.100.25',
         lastUsedAt: now,
         expiresAt: expectedExpiry,
@@ -175,22 +174,16 @@ describe('lib/browser-sessions', () => {
       now,
     });
 
-    expect(mocked.ownerClient.insert).toHaveBeenCalledOnce();
-    expect(mocked.ownerClient.update).not.toHaveBeenCalled();
-    expect(mocked.insertValues).toHaveBeenCalledWith(
-      expect.objectContaining({
-        ownerId: 'owner-1',
-        ipAddress: '198.51.100.25',
-        userAgent: CHROME_MAC_UA,
-        browserName: 'Chrome',
-        osName: 'macOS',
-        lastUsedAt: now,
-        expiresAt: expectedExpiry,
-      }),
-    );
+    expect(mocked.ownerClient.insert).not.toHaveBeenCalled();
+    expect(mocked.updateSet).toHaveBeenCalledWith({
+      ipAddress: '198.51.100.25',
+      lastUsedAt: now,
+      expiresAt: expectedExpiry,
+      revokedAt: null,
+    });
     expect(session).toEqual(
       expect.objectContaining({
-        id: 'browser-session-new-ip',
+        id: 'browser-session-existing',
         ipAddress: '198.51.100.25',
       }),
     );
