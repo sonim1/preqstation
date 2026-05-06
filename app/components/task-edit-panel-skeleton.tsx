@@ -26,9 +26,19 @@ export function TaskEditPanelSkeleton() {
 
           <section
             className={`${classes.activityCard} ${classes.sectionSurface}`}
+            data-panel="task-edit-comments"
+          >
+            <Stack gap="md">
+              <Skeleton h={16} w="18%" radius="sm" />
+              <Skeleton radius="md" className={classes.skeletonActivityRow} />
+            </Stack>
+          </section>
+
+          <section
+            className={`${classes.activityCard} ${classes.sectionSurface}`}
             data-panel="task-edit-activity"
           >
-            <Stack gap="sm">
+            <Stack gap="md">
               <Skeleton h={16} w="18%" radius="sm" />
               <Skeleton radius="md" className={classes.skeletonActivityRow} />
               <Skeleton radius="md" className={classes.skeletonActivityRow} />
@@ -62,15 +72,19 @@ export function TaskEditPanelSkeleton() {
             className={`${classes.metadataSection} ${classes.sectionSurface}`}
             data-panel="task-edit-metadata"
           >
-            <Stack gap="md" className={classes.settingsPanel}>
+            <Stack gap="md">
               <Skeleton h={14} w="46%" radius="sm" />
-              <Skeleton h={32} radius="md" />
-              <SimpleGrid cols={2} spacing="sm">
-                <Skeleton h={32} radius="md" />
-                <Skeleton h={32} radius="md" />
-              </SimpleGrid>
-              <Skeleton h={32} radius="md" />
-              <Skeleton h={36} radius="md" />
+              <div className={classes.settingsPanel} data-panel="task-edit-settings-card">
+                <Stack gap="md">
+                  <Skeleton h={32} radius="md" />
+                  <SimpleGrid cols={2} spacing="sm">
+                    <Skeleton h={32} radius="md" />
+                    <Skeleton h={32} radius="md" />
+                  </SimpleGrid>
+                  <Skeleton h={32} radius="md" />
+                  <Skeleton h={36} radius="md" />
+                </Stack>
+              </div>
             </Stack>
           </section>
         </aside>

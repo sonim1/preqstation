@@ -154,24 +154,53 @@ describe('app/components/task-edit-panel', () => {
 
     expect(html).toContain('data-testid="task-edit-loading-shell"');
     expect(html).toContain('data-layout="task-edit-shell"');
-    expect(html).toContain('data-panel="task-edit-main-column"');
-    expect(html).toContain('data-panel="task-edit-sidebar"');
-    expect(html).toContain('data-panel="task-edit-dispatch"');
-    expect(html).toContain('data-panel="task-edit-metadata"');
-    expect(html).toContain('data-panel="task-edit-notes-primary"');
-    expect(html).toContain('data-panel="task-edit-activity"');
-    expect(html.indexOf('data-panel="task-edit-main-column"')).toBeLessThan(
-      html.indexOf('data-panel="task-edit-sidebar"'),
-    );
-    expect(html.indexOf('data-panel="task-edit-notes-primary"')).toBeLessThan(
-      html.indexOf('data-panel="task-edit-activity"'),
-    );
-    expect(html.indexOf('data-panel="task-edit-sidebar"')).toBeLessThan(
-      html.indexOf('data-panel="task-edit-dispatch"'),
-    );
-    expect(html.indexOf('data-panel="task-edit-dispatch"')).toBeLessThan(
-      html.indexOf('data-panel="task-edit-metadata"'),
-    );
+
+    const document = new DOMParser().parseFromString(html, 'text/html');
+    const shell = document.querySelector('[data-layout="task-edit-shell"]');
+    const mainColumn = document.querySelector('[data-panel="task-edit-main-column"]');
+    const sidebar = document.querySelector('[data-panel="task-edit-sidebar"]');
+
+    expect(shell).not.toBeNull();
+    expect(mainColumn).not.toBeNull();
+    expect(sidebar).not.toBeNull();
+
+    if (!shell || !mainColumn || !sidebar) {
+      throw new Error('Expected task edit skeleton layout panels to render.');
+    }
+
+    expect(
+      Array.from(shell.children)
+        .map((element) => element.getAttribute('data-panel'))
+        .filter(Boolean),
+    ).toEqual(['task-edit-main-column', 'task-edit-sidebar']);
+
+    const mainPanels = Array.from(mainColumn.children)
+      .map((element) => element.getAttribute('data-panel'))
+      .filter(Boolean);
+    const sidebarPanels = Array.from(sidebar.children)
+      .map((element) => element.getAttribute('data-panel'))
+      .filter(Boolean);
+
+    expect(mainPanels).toEqual([
+      'task-edit-notes-primary',
+      'task-edit-comments',
+      'task-edit-activity',
+    ]);
+    expect(sidebarPanels).toEqual(['task-edit-dispatch', 'task-edit-metadata']);
+    expect(document.querySelector('[data-panel="task-edit-settings-card"]')).not.toBeNull();
+
+    const allPanels = Array.from(document.querySelectorAll('[data-panel]'));
+    const activityPanel = document.querySelector('[data-panel="task-edit-activity"]');
+    const dispatchPanel = document.querySelector('[data-panel="task-edit-dispatch"]');
+
+    expect(activityPanel).not.toBeNull();
+    expect(dispatchPanel).not.toBeNull();
+
+    if (!activityPanel || !dispatchPanel) {
+      throw new Error('Expected activity and dispatch panels to render.');
+    }
+
+    expect(allPanels.indexOf(activityPanel)).toBeLessThan(allPanels.indexOf(dispatchPanel));
   });
 
   it('renders the edit form once detail is ready', () => {
