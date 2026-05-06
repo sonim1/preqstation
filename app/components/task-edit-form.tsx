@@ -824,7 +824,7 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
       const response = await fetch(`/api/todos/${encodeURIComponent(taskKey)}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body, dispatch: false }),
+        body: JSON.stringify({ body }),
       });
       const payload = (await response.json().catch(() => null)) as {
         comment?: TaskComment;
@@ -873,7 +873,7 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
           />
           <Group justify="space-between" gap="sm">
             <Text size="xs" c="dimmed">
-              New comments are saved here; task status stays unchanged.
+              New comments queue an agent follow-up; task status stays unchanged.
             </Text>
             <Button
               type="button"

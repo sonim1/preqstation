@@ -1069,7 +1069,7 @@ describe('app/components/task-edit-form', () => {
     expect(refreshMock).not.toHaveBeenCalled();
   });
 
-  it('submits UI comments without queueing external dispatch', async () => {
+  it('submits UI comments through the queued dispatch flow', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -1081,14 +1081,20 @@ describe('app/components/task-edit-form', () => {
           author_type: 'user',
           author_name: 'Owner',
           body: 'Please check this',
-          run_state: null,
-          run_state_updated_at: null,
-          engine: null,
-          dispatch_target: null,
+          run_state: 'queued',
+          run_state_updated_at: '2026-05-05T00:00:00.000Z',
+          engine: 'codex',
+          dispatch_target: 'hermes-telegram',
           error_message: null,
           metadata: null,
           created_at: '2026-05-05T00:00:00.000Z',
           updated_at: '2026-05-05T00:00:00.000Z',
+        },
+        dispatch: {
+          objective: 'comment',
+          task_key: 'PROJ-187',
+          comment_id: 'comment-1',
+          dispatch_target: 'hermes-telegram',
         },
       }),
     });
@@ -1109,7 +1115,7 @@ describe('app/components/task-edit-form', () => {
               taskPriority: 'none',
               status: 'todo',
               engine: 'codex',
-              dispatchTarget: null,
+              dispatchTarget: 'hermes-telegram',
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
@@ -1132,8 +1138,9 @@ describe('app/components/task-edit-form', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/todos/PROJ-187/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body: 'Please check this', dispatch: false }),
+        body: JSON.stringify({ body: 'Please check this' }),
       });
     });
+    expect(await screen.findByText('queued')).toBeTruthy();
   });
 });
