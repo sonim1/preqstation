@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { writeAuditLog } from '@/lib/audit';
 import {
   TODO_NOTE_MAX_LENGTH,
-  TODO_SORT_ORDER_MAX_LENGTH,
   TODO_TITLE_MAX_LENGTH,
 } from '@/lib/content-limits';
 import { getDayRangeForTimeZone } from '@/lib/date-time';
@@ -32,7 +31,6 @@ const createTodoSchema = z.object({
   projectId: z.string().uuid(),
   labelIds: z.array(z.string().uuid()).optional(),
   dueAt: z.string().datetime().optional().or(z.literal('')),
-  sortOrder: z.string().max(TODO_SORT_ORDER_MAX_LENGTH).optional(),
   taskPriority: z.enum(TASK_PRIORITIES).optional(),
   status: z.enum(['inbox', 'todo', 'hold', 'ready', 'done', 'archived']).optional(),
 });

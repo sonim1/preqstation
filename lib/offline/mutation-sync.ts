@@ -75,14 +75,8 @@ function readStructuredErrorMessage(
 }
 
 function buildCreateReplayPayload(payload: OfflineCreateMutationPayload) {
-  return {
-    title: payload.title,
-    note: payload.note,
-    projectId: payload.projectId,
-    labelIds: payload.labelIds,
-    taskPriority: payload.taskPriority,
-    status: payload.status,
-  };
+  const { sortOrder: _sortOrder, ...replayPayload } = payload;
+  return replayPayload;
 }
 
 export async function flushOfflineMutations(
