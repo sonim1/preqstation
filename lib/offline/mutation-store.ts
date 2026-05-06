@@ -135,6 +135,32 @@ export function buildOptimisticTask(params: {
   };
 }
 
+export function buildOptimisticTasksFromQueuedCreates(
+  records: OfflineMutationRecord[],
+  projectsById: Record<string, OptimisticProject>,
+): KanbanTask[] {
+  return records.flatMap((record) => {
+    if (record.kind !== 'create') return [];
+
+    const project = projectsById[record.payload.projectId];
+    if (!project) return [];
+
+    return [
+      buildOptimisticTask({
+        id: `offline-task:${record.clientTaskKey}`,
+        taskKey: record.clientTaskKey,
+        title: record.payload.title,
+        note: record.payload.note,
+        project,
+        labels: [],
+        taskPriority: record.payload.taskPriority,
+        status: record.payload.status ?? 'inbox',
+        sortOrder: record.payload.sortOrder ?? record.createdAt,
+      }),
+    ];
+  });
+}
+
 export function applyOptimisticTaskPatch(params: {
   boardTask: KanbanTask;
   focusedTask: EditableBoardTask | null;

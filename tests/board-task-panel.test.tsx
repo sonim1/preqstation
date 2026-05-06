@@ -155,4 +155,74 @@ describe('app/components/board-task-panel', () => {
     );
     expect(showErrorNotificationMock).not.toHaveBeenCalled();
   });
+
+  it('renders the offline preview as editable detail when task detail fetch fails offline', async () => {
+    const previewTask = {
+      id: 'offline-task:OFFLINE-123',
+      taskKey: 'OFFLINE-123',
+      title: 'Offline card',
+      branch: null,
+      note: '',
+      projectId: null,
+      labelIds: [],
+      labels: [],
+      taskPriority: 'none',
+      status: 'inbox',
+      engine: null,
+      runState: null,
+      runStateUpdatedAt: null,
+      workLogs: [],
+    };
+    useFocusedTaskMock.mockReturnValue(previewTask);
+    useKanbanFocusedTaskKeyMock.mockReturnValue('OFFLINE-123');
+    useFocusedTaskDetailStatusMock.mockReturnValue('loading');
+    getSnapshotMock.mockResolvedValue(null);
+    fetchMock.mockRejectedValue(new TypeError('Failed to fetch'));
+
+    BoardTaskPanel({
+      activePanel: 'task-edit',
+      activeTaskKey: 'OFFLINE-123',
+      boardHref: '/board',
+      serverFocusedTask: null,
+      projects: [],
+      projectLabelOptionsByProjectId: {},
+      taskPriorityOptions: [],
+      updateTodoAction: async () => ({ ok: true }),
+      telegramEnabled: false,
+      onClose: vi.fn(),
+    });
+
+    effects.splice(0).forEach((effect) => {
+      effect();
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(setFocusedTaskMock).toHaveBeenCalledWith(
+      expect.objectContaining({ taskKey: 'OFFLINE-123', note: '' }),
+    );
+
+    useFocusedTaskDetailStatusMock.mockReturnValue('ready');
+    const renderedPanel = BoardTaskPanel({
+      activePanel: 'task-edit',
+      activeTaskKey: 'OFFLINE-123',
+      boardHref: '/board',
+      serverFocusedTask: null,
+      projects: [],
+      projectLabelOptionsByProjectId: {},
+      taskPriorityOptions: [],
+      updateTodoAction: async () => ({ ok: true }),
+      telegramEnabled: false,
+      onClose: vi.fn(),
+    });
+
+    expect(renderedPanel).toEqual(
+      expect.objectContaining({
+        props: expect.objectContaining({
+          editableTodo: expect.objectContaining({ taskKey: 'OFFLINE-123' }),
+          isLoading: false,
+        }),
+      }),
+    );
+  });
 });

@@ -206,6 +206,7 @@ function SectionHeading({ title, helpText, aside }: SectionHeadingProps) {
 }
 
 type TaskEditLabelShortcutProps = {
+  disabled?: boolean;
   labelOptions: TaskEditLabelOption[];
   selectedLabelIds: string[];
   selectedLabels: TaskEditLabelOption[];
@@ -216,6 +217,7 @@ type TaskEditLabelShortcutProps = {
 };
 
 function TaskEditLabelShortcut({
+  disabled = false,
   labelOptions,
   selectedLabelIds,
   selectedLabels,
@@ -247,6 +249,7 @@ function TaskEditLabelShortcut({
         selectedLabelIds={selectedLabelIds}
         selectedLabels={selectedLabels}
         projectId={projectId}
+        disabled={disabled}
         triggerAriaLabel={`Edit labels for ${taskTitle}`}
         onChange={onChange}
         onOptionsChange={onOptionsChange}
@@ -285,6 +288,7 @@ function TaskEditLabelShortcut({
 }
 
 type TaskEditPriorityShortcutProps = {
+  disabled?: boolean;
   initialPriority: string;
   priorityOptions: Array<{ value: string; label: string }>;
   renderKey: string;
@@ -307,6 +311,7 @@ function TaskEditPriorityMark({ priority }: { priority: TaskPriority }) {
 }
 
 function TaskEditPriorityShortcut({
+  disabled = false,
   initialPriority,
   priorityOptions,
   renderKey,
@@ -324,6 +329,10 @@ function TaskEditPriorityShortcut({
   const selectedLabel = TASK_PRIORITY_LABEL[selectedPriority];
 
   const selectPriority = (priority: TaskPriority) => {
+    if (disabled) {
+      return;
+    }
+
     setSelectedPriority(priority);
     onChange();
   };
@@ -341,6 +350,7 @@ function TaskEditPriorityShortcut({
             type="button"
             className={classes.priorityShortcutButton}
             aria-label={`Edit priority for ${taskTitle}`}
+            disabled={disabled}
             data-task-edit-priority-trigger="true"
             data-task-edit-priority-value={selectedPriority}
           >
@@ -375,6 +385,7 @@ function TaskEditPriorityShortcut({
                 onClick={() => {
                   selectPriority(priority);
                 }}
+                disabled={disabled}
               >
                 <span className={classes.priorityShortcutMenuText}>
                   <span className={classes.priorityShortcutMenuLabel}>
@@ -726,6 +737,7 @@ export function useTaskEditFormController({
     projectName,
     priorityRenderKey: fieldRevisions.taskPriority,
     saveStatus,
+    isOffline: !online,
     selectedLabelIds,
     selectedLabels,
     setSelectedLabelIds,
@@ -1004,6 +1016,7 @@ function TaskEditFormContent({
     projectName,
     priorityRenderKey,
     saveStatus,
+    isOffline,
     selectedLabelIds,
     selectedLabels,
     setSelectedLabelIds,
@@ -1204,7 +1217,7 @@ function TaskEditFormContent({
               </Stack>
             </section>
 
-            <TaskCommentsSection taskKey={taskKey} />
+            {!isOffline ? <TaskCommentsSection taskKey={taskKey} /> : null}
 
             <section className={classes.activityCard} data-panel="task-edit-activity">
               <Stack gap="md">
@@ -1256,7 +1269,7 @@ function TaskEditFormContent({
           </div>
 
           <aside className={classes.sidebar} data-panel="task-edit-sidebar">
-            {status !== 'archived' ? (
+            {!isOffline && status !== 'archived' ? (
               <section
                 className={`${classes.dispatchRail} ${classes.sectionSurface}`}
                 data-panel="task-edit-dispatch"
@@ -1319,6 +1332,7 @@ function TaskEditFormContent({
 
                   <Stack gap="lg" className={classes.settingsControls}>
                     <TaskEditLabelShortcut
+                      disabled={isOffline}
                       key={`labels:${labelRenderKey ?? fieldRenderKey}`}
                       labelOptions={labelOptions}
                       selectedLabelIds={selectedLabelIds}
@@ -1336,6 +1350,7 @@ function TaskEditFormContent({
                       }}
                     />
                     <TaskEditPriorityShortcut
+                      disabled={isOffline}
                       key={`priority:${priorityRenderKey ?? fieldRenderKey}`}
                       initialPriority={taskPriority}
                       priorityOptions={taskPriorityOptions}

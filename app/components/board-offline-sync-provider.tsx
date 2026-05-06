@@ -226,9 +226,11 @@ export function BoardOfflineSyncProvider({
         },
       });
 
+      upsertSnapshots([optimisticTask]);
+
       return optimisticTask;
     },
-    [kanbanStore],
+    [kanbanStore, upsertSnapshots],
   );
 
   const queueTaskPatch = useCallback(

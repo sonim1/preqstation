@@ -6,6 +6,7 @@ import { openOfflineDb } from '@/lib/offline/db';
 import {
   buildOfflineCreateMutationId,
   buildOfflinePatchMutationId,
+  buildOptimisticTasksFromQueuedCreates,
   listQueuedOfflineMutations,
   queueOfflineCreateMutation,
   queueOfflinePatchMutation,
@@ -252,6 +253,42 @@ describe('lib/offline/mutation-store', () => {
         taskKey: 'PROJ-512',
         payload: { title: 'Rename after sync' },
       },
+    ]);
+  });
+
+  it('builds optimistic board tasks from queued offline create records', () => {
+    const tasks = buildOptimisticTasksFromQueuedCreates(
+      [
+        {
+          id: 'create:OFFLINE-123',
+          kind: 'create',
+          clientTaskKey: 'OFFLINE-123',
+          createdAt: '2026-05-06T10:00:00.000Z',
+          payload: {
+            title: 'Offline card',
+            note: '',
+            projectId: 'project-1',
+            labelIds: [],
+            taskPriority: 'none',
+            status: 'inbox',
+            sortOrder: 'a0',
+          },
+        },
+      ],
+      {
+        'project-1': { id: 'project-1', name: 'Project PROJ', projectKey: 'PROJ' },
+      },
+    );
+
+    expect(tasks).toEqual([
+      expect.objectContaining({
+        id: 'offline-task:OFFLINE-123',
+        taskKey: 'OFFLINE-123',
+        title: 'Offline card',
+        status: 'inbox',
+        sortOrder: 'a0',
+        project: expect.objectContaining({ id: 'project-1', projectKey: 'PROJ' }),
+      }),
     ]);
   });
 });
