@@ -78,6 +78,61 @@ describe('lib/offline/mutation-sync', () => {
     });
   });
 
+  it('does not replay optimistic sortOrder values for offline-created tasks', async () => {
+    listQueuedOfflineMutationsMock.mockResolvedValueOnce([
+      {
+        id: 'create:OFFLINE-123456789',
+        kind: 'create',
+        clientTaskKey: 'OFFLINE-123456789',
+        createdAt: '2026-04-25T12:00:00.000Z',
+        payload: {
+          title: 'Offline task',
+          note: 'Saved offline',
+          projectId: 'project-1',
+          labelIds: [],
+          taskPriority: 'none',
+          status: 'inbox',
+          sortOrder: 'optimistic-client-key',
+        },
+      },
+    ]);
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        boardTask: {
+          id: 'task-1',
+          taskKey: 'PROJ-900',
+          title: 'Offline task',
+          note: 'Saved offline',
+          branch: null,
+          status: 'inbox',
+          sortOrder: 'server-key',
+          taskPriority: 'none',
+          dueAt: null,
+          engine: null,
+          runState: null,
+          runStateUpdatedAt: null,
+          project: { id: 'project-1', name: 'Alpha', projectKey: 'PROJ' },
+          updatedAt: '2026-04-25T12:01:00.000Z',
+          archivedAt: null,
+          labels: [],
+        },
+      }),
+    });
+
+    await flushOfflineMutations({ fetchImpl: fetchMock });
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
+      title: 'Offline task',
+      note: 'Saved offline',
+      projectId: 'project-1',
+      labelIds: [],
+      taskPriority: 'none',
+      status: 'inbox',
+    });
+  });
+
   it('hydrates focused task payloads returned from offline patch replay', async () => {
     listQueuedOfflineMutationsMock.mockResolvedValueOnce([
       {

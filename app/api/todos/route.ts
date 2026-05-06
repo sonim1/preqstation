@@ -184,14 +184,11 @@ export async function POST(req: Request) {
         requestedStatus && validStatuses.includes(requestedStatus) ? requestedStatus : 'inbox';
       const branch = generateBranchName(taskKeyParts.taskKey, payload.title);
 
-      let sortOrder = payload.sortOrder;
-      if (!sortOrder) {
-        sortOrder = await resolveAppendSortOrder({
-          client,
-          ownerId: owner.id,
-          status,
-        });
-      }
+      const sortOrder = await resolveAppendSortOrder({
+        client,
+        ownerId: owner.id,
+        status,
+      });
 
       const [todo] = await client
         .insert(tasks)

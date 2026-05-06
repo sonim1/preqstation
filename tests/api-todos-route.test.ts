@@ -272,6 +272,32 @@ describe('app/api/todos/route', () => {
     expect(mocked.txValuesFn).toHaveBeenCalledWith(expect.objectContaining({ sortOrder: 'z0' }));
   });
 
+  it('POST ignores client sortOrder and appends with the server-resolved lane tail', async () => {
+    mocked.resolveAppendSortOrder.mockResolvedValueOnce('z0');
+
+    const response = await POST(
+      jsonRequest('POST', `${TEST_BASE_URL}/api/todos`, {
+        title: 'Task A',
+        note: '',
+        projectId: '88e36c35-bed9-426c-af82-37c466525dd2',
+        sortOrder: 'stale-client-key',
+        status: 'todo',
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(mocked.resolveAppendSortOrder).toHaveBeenCalledWith(
+      expect.objectContaining({
+        client: expect.anything(),
+        ownerId: 'owner-1',
+        status: 'todo',
+      }),
+    );
+    expect(mocked.txValuesFn).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'todo', sortOrder: 'z0' }),
+    );
+  });
+
   it('POST rejects legacy labelId', async () => {
     const response = await POST(
       jsonRequest('POST', `${TEST_BASE_URL}/api/todos`, {
