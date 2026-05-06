@@ -110,6 +110,7 @@ type TaskPanelModalProps = {
   headerCenterContent?: React.ReactNode;
   onClose?: () => void;
   headerActions?: React.ReactNode;
+  fullscreenStorageKey?: string;
   resizableStorageKey?: string;
   size?: string;
   children: React.ReactNode;
@@ -118,13 +119,18 @@ type TaskPanelModalProps = {
 export function resolveTaskPanelFullscreenState({
   isMobile,
   optimisticDesktopFullScreen,
+  storedDesktopFullScreen,
   urlDesktopFullScreen,
 }: {
   isMobile: boolean;
   optimisticDesktopFullScreen: boolean | null;
+  storedDesktopFullScreen: boolean | null;
   urlDesktopFullScreen: boolean;
 }) {
-  const isDesktopFullScreen = !isMobile && (optimisticDesktopFullScreen ?? urlDesktopFullScreen);
+  const isDesktopFullScreen =
+    !isMobile &&
+    (optimisticDesktopFullScreen ??
+      (urlDesktopFullScreen ? true : (storedDesktopFullScreen ?? false)));
 
   return {
     isDesktopFullScreen,
@@ -230,6 +236,39 @@ function writeTaskPanelStoredSize(
   }
 }
 
+function readTaskPanelStoredFullscreen(
+  storageKey: string,
+  storage: Pick<TaskPanelStorage, 'getItem'>,
+): boolean | null {
+  try {
+    const raw = storage.getItem(storageKey);
+
+    if (raw === 'true') {
+      return true;
+    }
+
+    if (raw === 'false') {
+      return false;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function writeTaskPanelStoredFullscreen(
+  storageKey: string,
+  storage: Pick<TaskPanelStorage, 'setItem'>,
+  fullscreen: boolean,
+) {
+  try {
+    storage.setItem(storageKey, String(fullscreen));
+  } catch {
+    // Storage can be unavailable in private or constrained browser contexts.
+  }
+}
+
 export function TaskPanelModal({
   opened,
   title,
@@ -239,6 +278,7 @@ export function TaskPanelModal({
   headerCenterContent,
   onClose,
   headerActions,
+  fullscreenStorageKey,
   resizableStorageKey,
   size,
   children,
@@ -252,6 +292,9 @@ export function TaskPanelModal({
     fromHref: string;
     value: boolean;
   } | null>(null);
+  const [storedDesktopFullScreenOverride, setStoredDesktopFullScreenOverride] = useState<
+    boolean | null
+  >(null);
   const isMountedRef = useRef(true);
   const pendingCloseActionRef = useRef<(() => void) | null>(null);
   const currentSearch = searchParams.toString();
@@ -260,10 +303,16 @@ export function TaskPanelModal({
     optimisticDesktopFullScreen?.fromHref === currentHref
       ? optimisticDesktopFullScreen.value
       : null;
-  const urlDesktopFullScreen = !isMobile && searchParams.get('fullscreen') === '1';
+  const urlDesktopFullScreen = searchParams.get('fullscreen') === '1';
+  const storedDesktopFullScreen =
+    isMobile || !fullscreenStorageKey || typeof window === 'undefined'
+      ? null
+      : (storedDesktopFullScreenOverride ??
+        readTaskPanelStoredFullscreen(fullscreenStorageKey, window.localStorage));
   const { isDesktopFullScreen, modalFullScreen } = resolveTaskPanelFullscreenState({
     isMobile: Boolean(isMobile),
     optimisticDesktopFullScreen: activeOptimisticDesktopFullScreen,
+    storedDesktopFullScreen,
     urlDesktopFullScreen,
   });
   const nextFullScreenHref = buildFullscreenHref(pathname, currentSearch, !isDesktopFullScreen);
@@ -414,10 +463,20 @@ export function TaskPanelModal({
               radius="md"
               aria-label={fullScreenLabel}
               onClick={() => {
+                const nextDesktopFullScreen = !isDesktopFullScreen;
+
                 setOptimisticDesktopFullScreen({
-                  fromHref: currentHref,
-                  value: !isDesktopFullScreen,
+                  fromHref: nextFullScreenHref,
+                  value: nextDesktopFullScreen,
                 });
+                if (fullscreenStorageKey && typeof window !== 'undefined') {
+                  setStoredDesktopFullScreenOverride(nextDesktopFullScreen);
+                  writeTaskPanelStoredFullscreen(
+                    fullscreenStorageKey,
+                    window.localStorage,
+                    nextDesktopFullScreen,
+                  );
+                }
                 router.replace(nextFullScreenHref);
               }}
             >
