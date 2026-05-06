@@ -181,8 +181,8 @@ export function BoardTaskPanel({
   }, [focusedTask, focusedTaskDetailStatus]);
 
   const handleTaskQueued = useCallback(
-    (taskKey: string, queuedAt: string) => {
-      applyOptimisticRunState(taskKey, queuedAt);
+    (taskKey: string, queuedAt: string, dispatchTarget: KanbanTask['dispatchTarget']) => {
+      applyOptimisticRunState(taskKey, queuedAt, dispatchTarget);
     },
     [applyOptimisticRunState],
   );

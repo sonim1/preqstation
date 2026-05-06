@@ -68,7 +68,7 @@ type TaskCopyActionsProps = {
   noteMarkdown?: string | null;
   telegramEnabled?: boolean;
   hermesTelegramEnabled?: boolean;
-  onTaskQueued?: (taskKey: string, queuedAt: string) => void;
+  onTaskQueued?: (taskKey: string, queuedAt: string, dispatchTarget: TaskDispatchTarget) => void;
 };
 
 type DispatchState = 'idle' | 'loading' | 'success' | 'error';
@@ -315,6 +315,7 @@ export function TaskCopyActions({
 
     try {
       const isHermesTelegram = effectiveAction === 'send-hermes-telegram';
+      const dispatchTarget = isHermesTelegram ? 'hermes-telegram' : 'telegram';
       const result = await sendTaskTelegramMessage(
         taskKey,
         isHermesTelegram
@@ -334,7 +335,7 @@ export function TaskCopyActions({
               objective: effectiveObjective,
               askHint: effectiveObjective === 'ask' ? askHint : null,
             }),
-        isHermesTelegram ? 'hermes-telegram' : 'telegram',
+        dispatchTarget,
       );
 
       if (!result.ok) {
@@ -342,7 +343,7 @@ export function TaskCopyActions({
         showErrorNotification(result.error);
       } else {
         const queuedAt = new Date().toISOString();
-        onTaskQueued?.(taskKey, queuedAt);
+        onTaskQueued?.(taskKey, queuedAt, dispatchTarget);
         persistDispatchPreference(selectedEngine, effectiveObjective, effectiveAction);
         setDispatchState('success');
       }

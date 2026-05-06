@@ -611,8 +611,8 @@ export function KanbanBoard({
   }, [archiveDrawerOpened]);
 
   const applyOptimisticQueuedTask = useCallback(
-    (taskKey: string, queuedAt: string) => {
-      kanbanStore.getState().applyOptimisticRunState(taskKey, queuedAt);
+    (taskKey: string, queuedAt: string, dispatchTarget: KanbanTask['dispatchTarget']) => {
+      kanbanStore.getState().applyOptimisticRunState(taskKey, queuedAt, dispatchTarget);
       const nextColumns = readColumnsFromStore();
       columnsRef.current = nextColumns;
       setSaveError(null);

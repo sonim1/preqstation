@@ -183,6 +183,7 @@ function toPatchedBoardTask(params: {
     branch: string | null;
     projectId: string | null;
     engine: string | null;
+    dispatchTarget?: string | null;
   };
   title: string;
   note: string | null;
@@ -208,6 +209,7 @@ function toPatchedBoardTask(params: {
     taskPriority: params.taskPriority,
     dueAt: params.dueAt ? params.dueAt.toISOString() : null,
     engine: params.existing.engine ?? null,
+    dispatchTarget: normalizeTaskDispatchTarget(params.existing.dispatchTarget),
     runState: null,
     runStateUpdatedAt: null,
     project: params.project?.projectKey

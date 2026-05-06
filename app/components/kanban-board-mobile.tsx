@@ -72,7 +72,11 @@ type KanbanBoardMobileProps = {
   telegramEnabled?: boolean;
   router: AppRouterInstance;
   onRefresh?: () => void;
-  onTaskQueued?: (taskKey: string, queuedAt: string) => void;
+  onTaskQueued?: (
+    taskKey: string,
+    queuedAt: string,
+    dispatchTarget: KanbanTask['dispatchTarget'],
+  ) => void;
   onOpenTaskEditor?: (task: KanbanTask) => void;
   onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
   onDeleteTask: (taskId: string) => void;
@@ -96,7 +100,11 @@ type KanbanBoardMobileTaskCardProps = {
   isPending: boolean;
   telegramEnabled: boolean;
   router: AppRouterInstance;
-  onTaskQueued?: (taskKey: string, queuedAt: string) => void;
+  onTaskQueued?: (
+    taskKey: string,
+    queuedAt: string,
+    dispatchTarget: KanbanTask['dispatchTarget'],
+  ) => void;
   onOpenTaskEditor?: (task: KanbanTask) => void;
   onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
   onDeleteTask: (taskId: string) => void;

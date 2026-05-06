@@ -106,7 +106,11 @@ export type TaskEditFormProps = {
   branchName?: string | null;
   telegramEnabled?: boolean;
   hermesTelegramEnabled?: boolean;
-  onTaskQueued?: (taskKey: string, queuedAt: string) => void;
+  onTaskQueued?: (
+    taskKey: string,
+    queuedAt: string,
+    dispatchTarget: KanbanTask['dispatchTarget'],
+  ) => void;
   onDispatchQueued?: () => void;
   onTaskUpdated?: (result: {
     boardTask?: KanbanTask | null;
@@ -1054,8 +1058,12 @@ function TaskEditFormContent({
       applyTaskEditNotesModeChange(currentState, nextMode, activeNotesRevision, taskKey),
     );
   };
-  const handleDispatchQueued = (taskKey: string, queuedAt: string) => {
-    onTaskQueued?.(taskKey, queuedAt);
+  const handleDispatchQueued = (
+    taskKey: string,
+    queuedAt: string,
+    dispatchTarget: KanbanTask['dispatchTarget'],
+  ) => {
+    onTaskQueued?.(taskKey, queuedAt, dispatchTarget);
     onDispatchQueued?.();
   };
   const handleRestoreDraft = () => {

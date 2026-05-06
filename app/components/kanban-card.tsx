@@ -161,7 +161,11 @@ export type KanbanCardContentProps = {
   isMobile?: boolean;
   editHref: string;
   telegramEnabled?: boolean;
-  onTaskQueued?: (taskKey: string, queuedAt: string) => void;
+  onTaskQueued?: (
+    taskKey: string,
+    queuedAt: string,
+    dispatchTarget: KanbanTask['dispatchTarget'],
+  ) => void;
   onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
   onDeleteTask: (taskId: string) => void;
   enginePresets?: EnginePresets | null;
@@ -543,7 +547,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
       }
 
       const queuedAt = new Date().toISOString();
-      onTaskQueued?.(task.taskKey, queuedAt);
+      onTaskQueued?.(task.taskKey, queuedAt, telegramDispatch.dispatchTarget);
       showSuccessNotification('Telegram message sent.');
     } catch (error) {
       const message =

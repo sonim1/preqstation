@@ -957,12 +957,16 @@ describe('app/components/task-edit-form', () => {
     });
 
     const taskCopyActionsProps = taskCopyActionsPropsMock.mock.calls[0]?.[0] as {
-      onTaskQueued?: (taskKey: string, queuedAt: string) => void;
+      onTaskQueued?: (taskKey: string, queuedAt: string, dispatchTarget: 'hermes-telegram') => void;
     };
 
-    taskCopyActionsProps.onTaskQueued?.('PROJ-187', '2026-03-30T13:10:00.000Z');
+    taskCopyActionsProps.onTaskQueued?.('PROJ-187', '2026-03-30T13:10:00.000Z', 'hermes-telegram');
 
-    expect(onTaskQueued).toHaveBeenCalledWith('PROJ-187', '2026-03-30T13:10:00.000Z');
+    expect(onTaskQueued).toHaveBeenCalledWith(
+      'PROJ-187',
+      '2026-03-30T13:10:00.000Z',
+      'hermes-telegram',
+    );
     expect(onDispatchQueued).toHaveBeenCalled();
   });
 

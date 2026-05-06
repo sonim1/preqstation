@@ -10,6 +10,7 @@ import {
   queueTaskExecutionOptimistically,
 } from '@/lib/kanban-helpers';
 import type { TaskArtifact } from '@/lib/task-artifacts';
+import { normalizeTaskDispatchTarget } from '@/lib/task-dispatch';
 
 export type FocusedTaskDetailStatus = 'idle' | 'loading' | 'ready';
 
@@ -71,7 +72,11 @@ export type KanbanStoreState = {
   openFocusedTaskFromBoardTask: (task: KanbanTask) => void;
   setReconciliationPaused: (paused: boolean) => void;
   removeTask: (taskKey: string) => void;
-  applyOptimisticRunState: (taskKey: string, queuedAt: string) => void;
+  applyOptimisticRunState: (
+    taskKey: string,
+    queuedAt: string,
+    dispatchTarget?: KanbanTask['dispatchTarget'] | null,
+  ) => void;
 };
 
 function emptyColumnTaskKeys(): Record<KanbanStatus, string[]> {
@@ -348,19 +353,21 @@ export function createKanbanStore(snapshot: KanbanHydrationSnapshot) {
           ...(current.focusedTaskKey === taskKey ? focusState(null) : null),
         });
       },
-      applyOptimisticRunState(taskKey, queuedAt) {
+      applyOptimisticRunState(taskKey, queuedAt, dispatchTarget) {
         const previous = selectKanbanColumns(get());
-        const next = queueTaskExecutionOptimistically(previous, taskKey, queuedAt);
+        const next = queueTaskExecutionOptimistically(previous, taskKey, queuedAt, dispatchTarget);
         if (!next.changed) return;
 
         const nextNormalized = normalizeColumns(next.next);
         const current = get();
+        const nextDispatchTarget = normalizeTaskDispatchTarget(dispatchTarget);
         const focusedTask =
           current.focusedTaskKey === taskKey && current.focusedTask
             ? {
                 ...current.focusedTask,
                 runState: 'queued' as const,
                 runStateUpdatedAt: queuedAt,
+                dispatchTarget: nextDispatchTarget ?? current.focusedTask.dispatchTarget ?? null,
               }
             : current.focusedTask;
 
