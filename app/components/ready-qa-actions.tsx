@@ -18,7 +18,7 @@ import {
 import { IconCheck, IconCopy, IconFlask, IconInfoCircle } from '@tabler/icons-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { type CSSProperties, useEffect, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 
 import { DispatchPromptPreview } from '@/app/components/dispatch-prompt-preview';
 import { DispatchSegmentedControl } from '@/app/components/dispatch-segmented-control';
@@ -201,9 +201,12 @@ export function ReadyQaActions({
   const availableTargets = resolveQaTargets({ telegramEnabled, hermesTelegramEnabled });
   const effectiveTarget = resolveInitialQaTarget(availableTargets, selectedTarget);
   const readyCount = readyTasks.length;
-  const selectedReadyTaskKeys = readyTasks
-    .filter((task) => selectedTaskKeys.includes(task.taskKey))
-    .map((task) => task.taskKey);
+  const selectedReadyTaskKeys = useMemo(() => {
+    const selectedSet = new Set(selectedTaskKeys);
+    return readyTasks
+      .filter((task) => selectedSet.has(task.taskKey))
+      .map((task) => task.taskKey);
+  }, [readyTasks, selectedTaskKeys]);
   const selectedReadyCount = selectedReadyTaskKeys.length;
   const canQueueQa = selectedReadyCount > 0 && effectiveTarget !== null;
   const qaPreview = queuedQaPrompt ?? QUEUED_QA_PROMPT_HELP;

@@ -482,6 +482,14 @@ export function KanbanBoard({
   const [activeTab, setActiveTab] = useState<string>('inbox');
   const boardFlowStatuses = useMemo(() => getBoardFlowStatuses(), []);
   const visibleBoardStatuses = useMemo(() => getVisibleBoardStatuses(columns), [columns]);
+  const readyQaTasks = useMemo(
+    () =>
+      columns.ready.map((task) => ({
+        taskKey: task.taskKey,
+        title: task.title,
+      })),
+    [columns.ready],
+  );
   const isBoardInteractionDisabled = isPending;
   const mobileStatuses = useMemo(
     () => getMobileBoardStatuses(columns, activeTab),
@@ -875,10 +883,7 @@ export function KanbanBoard({
             projectKey={readyQaConfig.projectKey}
             projectName={readyQaConfig.projectName}
             branchName={readyQaConfig.branchName}
-            readyTasks={columns.ready.map((task) => ({
-              taskKey: task.taskKey,
-              title: task.title,
-            }))}
+            readyTasks={readyQaTasks}
             telegramEnabled={telegramEnabled}
             hermesTelegramEnabled={hermesTelegramEnabled}
             initialRuns={readyQaConfig.runs}
