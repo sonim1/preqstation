@@ -2,7 +2,13 @@
 
 import { CodeHighlightNode, CodeNode, registerCodeHighlighting } from '@lexical/code';
 import { AutoLinkNode, LinkNode } from '@lexical/link';
-import { ListItemNode, ListNode } from '@lexical/list';
+import {
+  $createListItemNode,
+  $createListNode,
+  $isListItemNode,
+  ListItemNode,
+  ListNode,
+} from '@lexical/list';
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
@@ -37,16 +43,19 @@ import {
 } from 'lexical';
 import {
   $createParagraphNode,
+  $createTextNode,
   $getNodeByKey,
   $getRoot,
   $getSelection,
   $isElementNode,
   $isParagraphNode,
   $isRangeSelection,
+  $isTextNode,
   BLUR_COMMAND,
   COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_LOW,
   type EditorState,
+  type ElementNode,
   INDENT_CONTENT_COMMAND,
   OUTDENT_CONTENT_COMMAND,
   PASTE_COMMAND,
@@ -63,6 +72,10 @@ import {
 
 import { resolveAutoSaveContentChange } from '@/app/hooks/use-auto-save';
 import { normalizeUnsupportedBlockAlignment } from '@/lib/live-markdown-alignment';
+import {
+  isCursorInsideLiveChecklistMarker,
+  parseLiveChecklistMarker,
+} from '@/lib/live-markdown-checklist';
 import {
   detectClosedCodeFence,
   shouldExitCodeBlockOnArrowRight,
@@ -114,6 +127,8 @@ type LiveEditorBridge = {
   readMarkdown: () => string;
 };
 
+const LIVE_CHECKLIST_SOURCE_SYNC_TAG = 'live-checklist-source-sync';
+
 const LIVE_MARKDOWN_HEADING_TRANSFORMER: ElementTransformer = {
   ...HEADING,
   replace: (parentNode, children, match, isImport) => {
@@ -160,7 +175,7 @@ function clearActiveLineDecorations(element: HTMLElement | null) {
 }
 function getBlockNodeOffset(
   node: ReturnType<RangeSelection['anchor']['getNode']>,
-  blockNode: CodeNode | LiveHeadingSourceNode | ListItemNode,
+  blockNode: ElementNode,
 ) {
   let offset = 0;
   let current = node;
@@ -238,7 +253,7 @@ function resolveLiveHeadingSourceCursor(
   };
 }
 
-function resolveListItemCursor(selection: RangeSelection, listItemNode: ListItemNode) {
+function resolveListItemCursor(selection: RangeSelection, listItemNode: ElementNode) {
   const anchor = selection.anchor;
   const anchorNode = anchor.getNode();
   const textLength = listItemNode.getTextContentSize();
@@ -287,6 +302,105 @@ function exitListItemAtStart(listItemNode: ListItemNode) {
   const paragraph = $createParagraphNode();
   listItemNode.replace(paragraph, true);
   paragraph.selectStart();
+  return true;
+}
+
+function appendChildrenSkippingLeadingCharacters(
+  source: ReturnType<typeof $createParagraphNode> | ListItemNode,
+  target: ReturnType<typeof $createParagraphNode> | ListItemNode,
+  charactersToSkip: number,
+) {
+  let remainingCharacters = charactersToSkip;
+
+  for (const child of source.getChildren()) {
+    if (remainingCharacters <= 0) {
+      target.append(child);
+      continue;
+    }
+
+    const childTextSize = child.getTextContentSize();
+    if (childTextSize <= remainingCharacters) {
+      child.remove();
+      remainingCharacters -= childTextSize;
+      continue;
+    }
+
+    if ($isTextNode(child)) {
+      child.spliceText(0, remainingCharacters, '');
+      target.append(child);
+      remainingCharacters = 0;
+      continue;
+    }
+
+    target.append($createTextNode(child.getTextContent().slice(remainingCharacters)));
+    child.remove();
+    remainingCharacters = 0;
+  }
+}
+
+function $collapseLiveChecklistSourceNode(
+  source: ReturnType<typeof $createParagraphNode>,
+  options: { selectStart?: boolean } = {},
+) {
+  const parsed = parseLiveChecklistMarker(source.getTextContent());
+  if (!parsed) return source;
+
+  const { selectStart = true } = options;
+  const list = $createListNode('check');
+  const listItem = $createListItemNode(parsed.checked);
+  list.append(listItem);
+  appendChildrenSkippingLeadingCharacters(source, listItem, parsed.markerLength);
+  source.replace(list);
+  if (selectStart) {
+    listItem.selectStart();
+  }
+  return listItem;
+}
+
+function $revealChecklistAsLiveSource(listItemNode: ListItemNode) {
+  const paragraph = $createParagraphNode();
+  const marker = listItemNode.getChecked() ? '- [x] ' : '- [ ] ';
+  paragraph.append($createTextNode(marker));
+  paragraph.append(...listItemNode.getChildren());
+  listItemNode.replace(paragraph);
+  paragraph.select(6, 6);
+  return paragraph;
+}
+
+function $applyLiveChecklistShortcut(
+  parentNode: ReturnType<typeof $createParagraphNode>,
+  anchorNode: ReturnType<RangeSelection['anchor']['getNode']>,
+  anchorOffset: number,
+): boolean {
+  if (!$isParagraphNode(parentNode)) return false;
+  if (!$isTextNode(anchorNode) || parentNode.getFirstChild() !== anchorNode) return false;
+
+  const lineAfterSpace = `${anchorNode.getTextContent().slice(0, anchorOffset)} ${anchorNode
+    .getTextContent()
+    .slice(anchorOffset)}${anchorNode
+    .getNextSiblings()
+    .map((node) => node.getTextContent())
+    .join('')}`;
+  const parsed = parseLiveChecklistMarker(lineAfterSpace);
+  if (!parsed) return false;
+  if (anchorOffset + 1 !== parsed.markerLength) return false;
+
+  const list = $createListNode('check');
+  const listItem = $createListItemNode(parsed.checked);
+  const trailingText = anchorNode.getTextContent().slice(anchorOffset);
+  const nextSiblings = anchorNode.getNextSiblings();
+
+  if (trailingText) {
+    anchorNode.spliceText(0, anchorOffset, '');
+    listItem.append(anchorNode);
+  } else {
+    anchorNode.remove();
+  }
+
+  listItem.append(...nextSiblings);
+  list.append(listItem);
+  parentNode.replace(list);
+  listItem.selectStart();
   return true;
 }
 
@@ -612,6 +726,136 @@ function LiveHeadingShortcutPlugin() {
       },
       COMMAND_PRIORITY_HIGH,
     );
+  }, [editor]);
+
+  return null;
+}
+
+function LiveChecklistShortcutPlugin() {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    return editor.registerCommand(
+      KEY_SPACE_COMMAND,
+      (event) => {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return false;
+
+        const anchorNode = selection.anchor.getNode();
+        const parentNode = anchorNode.getParent();
+        if (!$isParagraphNode(parentNode)) return false;
+
+        const didApply = $applyLiveChecklistShortcut(
+          parentNode,
+          anchorNode,
+          selection.anchor.offset,
+        );
+        if (!didApply) return false;
+
+        event.preventDefault();
+        return true;
+      },
+      COMMAND_PRIORITY_HIGH,
+    );
+  }, [editor]);
+
+  return null;
+}
+
+function LiveChecklistSourcePlugin() {
+  const [editor] = useLexicalComposerContext();
+  const activeSourceKeyRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const unregisterUpdate = editor.registerUpdateListener(({ editorState, tags }) => {
+      if (tags.has(LIVE_CHECKLIST_SOURCE_SYNC_TAG)) return;
+
+      let checklistItemKeyToReveal: string | null = null;
+      let activeSourceKey: string | null = null;
+      let shouldCollapseActiveSource = false;
+
+      editorState.read(() => {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return;
+
+        const blockNode = selection.anchor.getNode().getTopLevelElement();
+        if (!blockNode) return;
+
+        if ($isParagraphNode(blockNode)) {
+          const parsed = parseLiveChecklistMarker(blockNode.getTextContent());
+          if (parsed) {
+            activeSourceKey = blockNode.getKey();
+            shouldCollapseActiveSource = !isCursorInsideLiveChecklistMarker(
+              resolveListItemCursor(selection, blockNode).cursor,
+            );
+          }
+          return;
+        }
+
+        if ($isListItemNode(blockNode) && blockNode.getChecked() !== undefined) {
+          if (resolveListItemCursor(selection, blockNode).cursor === 0) {
+            checklistItemKeyToReveal = blockNode.getKey();
+          }
+        }
+      });
+
+      const previousSourceKey = activeSourceKeyRef.current;
+      const sourceKeyToCollapse =
+        previousSourceKey && (previousSourceKey !== activeSourceKey || shouldCollapseActiveSource)
+          ? previousSourceKey
+          : null;
+
+      if (!checklistItemKeyToReveal && !sourceKeyToCollapse && !activeSourceKey) return;
+
+      editor.update(
+        () => {
+          if (sourceKeyToCollapse) {
+            const sourceNode = $getNodeByKey(sourceKeyToCollapse);
+            if ($isParagraphNode(sourceNode)) {
+              $collapseLiveChecklistSourceNode(sourceNode, { selectStart: false });
+            }
+          }
+
+          if (checklistItemKeyToReveal) {
+            const checklistItemNode = $getNodeByKey(checklistItemKeyToReveal);
+            activeSourceKeyRef.current = $isListItemNode(checklistItemNode)
+              ? $revealChecklistAsLiveSource(checklistItemNode).getKey()
+              : null;
+            return;
+          }
+
+          activeSourceKeyRef.current = shouldCollapseActiveSource ? null : activeSourceKey;
+        },
+        { tag: LIVE_CHECKLIST_SOURCE_SYNC_TAG },
+      );
+    });
+
+    const unregisterBlur = editor.registerCommand(
+      BLUR_COMMAND,
+      () => {
+        const sourceKey = activeSourceKeyRef.current;
+        if (!sourceKey) return false;
+
+        editor.update(
+          () => {
+            const sourceNode = $getNodeByKey(sourceKey);
+            if ($isParagraphNode(sourceNode)) {
+              $collapseLiveChecklistSourceNode(sourceNode, { selectStart: false });
+            }
+            activeSourceKeyRef.current = null;
+          },
+          { tag: LIVE_CHECKLIST_SOURCE_SYNC_TAG },
+        );
+
+        return false;
+      },
+      COMMAND_PRIORITY_LOW,
+    );
+
+    return () => {
+      unregisterUpdate();
+      unregisterBlur();
+    };
   }, [editor]);
 
   return null;
@@ -1049,14 +1293,17 @@ export function LiveMarkdownEditor({
             <AutoLinkPlugin matchers={URL_MATCHERS} />
             <LiveTabPlugin />
             <LiveHeadingShortcutPlugin />
+            <LiveChecklistShortcutPlugin />
             <LiveBackspacePlugin />
             <MarkdownShortcutPlugin transformers={MARKDOWN_SHORTCUT_TRANSFORMERS} />
             <CodeHighlightingPlugin />
             <CodeBlockExitPlugin />
             <LiveHeadingSourcePlugin />
+            <LiveChecklistSourcePlugin />
             <OnChangePlugin
               onChange={(editorState: EditorState, _editor, tags) => {
                 if (tags.has(LIVE_HEADING_SOURCE_SYNC_TAG)) return;
+                if (tags.has(LIVE_CHECKLIST_SOURCE_SYNC_TAG)) return;
 
                 editorState.read(() => {
                   const md = reconcileLiveMarkdown($convertToMarkdownString(MARKDOWN_TRANSFORMERS));
