@@ -100,7 +100,9 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(sidebarRule).toContain('align-content: start;');
     expect(sidebarRule).toContain('min-width: 0;');
     expect(mainColumnRule).toContain('display: grid;');
-    expect(mainColumnRule).toContain('grid-template-rows: minmax(0, 1fr) auto;');
+    expect(mainColumnRule).toContain('grid-template-rows: auto auto auto;');
+    expect(mainColumnRule).toContain('align-content: start;');
+    expect(mainColumnRule).toContain('max-width: 100%;');
     expect(mainColumnRule).toContain('min-height: 0;');
     expect(mainColumnRule).toContain('min-width: 0;');
     expect(dispatchRailRule).toContain('display: grid;');
@@ -123,6 +125,9 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(notesCardRule).toContain('max-width: 100%;');
     expect(activityCardRule).toContain('padding: 0;');
     expect(activityCardRule).toContain('max-width: 100%;');
+    expect(activityCardRule).toContain('min-height: auto;');
+    expect(activityCardRule).toContain('overflow-wrap: anywhere;');
+    expect(getRuleBody(taskEditFormCss, '.commentCard')).toContain('overflow-wrap: anywhere;');
     expect(notesContentRule).toContain('display: flex;');
     expect(notesContentRule).toContain('flex: 1 1 auto;');
     expect(notesContentRule).toContain('flex-direction: column;');
@@ -140,11 +145,26 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     );
     expect(taskEditFormCss).toMatch(/@container \(max-width: 82em\)\s*\{[\s\S]*\.shell\s*\{/);
     expect(taskEditFormCss).toMatch(
+      /@container \(max-width: 82em\)\s*\{[\s\S]*\.shell\s*\{[\s\S]*--task-edit-section-min-height:\s*clamp\(22rem,\s*48vh,\s*34rem\);/,
+    );
+    expect(taskEditFormCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.dispatchRail[\s\S]*padding:\s*0;/,
     );
     expect(taskEditFormCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.shell\s*\{[\s\S]*display:\s*flex;[\s\S]*flex-direction:\s*column;/,
     );
+    expect(taskEditFormCss).toMatch(
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.shell\s*\{[\s\S]*--task-edit-section-min-height:\s*clamp\(18rem,\s*42vh,\s*28rem\);/,
+    );
+    expect(taskEditFormCss).toMatch(
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.mainColumn\s*\{[\s\S]*display:\s*flex;[\s\S]*flex-direction:\s*column;/,
+    );
+    expect(taskEditFormCss).toMatch(
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.notesCard,\s*[\s\S]*\.activityCard\s*\{[\s\S]*flex:\s*0 0 auto;[\s\S]*width:\s*100%;/,
+    );
+    expect(mainColumnRule).not.toContain('height: 2000px;');
+    expect(notesCardRule).not.toContain('height: 2000px;');
+    expect(activityCardRule).not.toContain('height: 2000px;');
     expect(taskEditFormCss).not.toContain('.shellWithoutDispatch');
   });
 

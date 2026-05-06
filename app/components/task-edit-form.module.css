@@ -57,9 +57,11 @@
 .mainColumn {
   display: grid;
   gap: 1.25rem;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto;
+  align-content: start;
   min-height: 0;
   min-width: 0;
+  max-width: 100%;
 }
 
 .dispatchRail {
@@ -142,9 +144,11 @@
 
 .activityCard {
   min-width: 0;
+  min-height: auto;
   max-width: 100%;
   padding: 0;
   display: block;
+  overflow-wrap: anywhere;
 }
 
 .commentCard {
@@ -152,6 +156,7 @@
   border: 1px solid color-mix(in srgb, var(--ui-border), transparent 20%);
   border-radius: 0.75rem;
   background: color-mix(in srgb, var(--ui-surface), transparent 8%);
+  overflow-wrap: anywhere;
 }
 
 .sectionSurface {
@@ -424,6 +429,8 @@
 
 @container (max-width: 82em) {
   .shell {
+    --task-edit-section-min-height: clamp(22rem, 48vh, 34rem);
+
     grid-template-columns: 1fr;
   }
 
@@ -446,9 +453,18 @@
   }
 
   .shell {
+    --task-edit-section-min-height: clamp(18rem, 42vh, 28rem);
+
     display: flex;
     flex-direction: column;
     grid-template-columns: 1fr;
+  }
+
+  .mainColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-height: auto;
   }
 
   .dispatchRail,
@@ -457,6 +473,12 @@
   .activityCard {
     max-width: 100%;
     padding: 0;
+  }
+
+  .notesCard,
+  .activityCard {
+    flex: 0 0 auto;
+    width: 100%;
   }
 
   .metaHeader {
