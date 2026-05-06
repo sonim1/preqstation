@@ -16,6 +16,11 @@
   gap: 12px;
 }
 
+.sectionActions {
+  justify-content: flex-end;
+  min-width: 0;
+}
+
 .sectionEmptyState {
   align-items: flex-start;
   text-align: left;
@@ -193,6 +198,13 @@
   min-width: var(--ui-hit-touch-min);
 }
 
+.bulkActionButton {
+  --button-height: var(--ui-hit-touch-min);
+  min-height: var(--ui-hit-touch-min);
+  max-width: 100%;
+  white-space: normal;
+}
+
 :global(html[data-mantine-color-scheme='dark']) .tableShell {
   border-color: color-mix(in srgb, var(--ui-border), transparent 0%);
   box-shadow: none;
@@ -208,6 +220,10 @@
   .sectionHeader {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .sectionActions {
+    justify-content: flex-start;
   }
 
   .dataCellMeta {

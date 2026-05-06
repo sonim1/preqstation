@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNull } from 'drizzle-orm';
+import { and, desc, eq, gt, gte, isNull } from 'drizzle-orm';
 
 import { withOwnerDb } from '@/lib/db/rls';
 import { browserSessions } from '@/lib/db/schema';
@@ -194,4 +194,27 @@ export async function revokeBrowserSession(input: {
 
     return updated ?? null;
   });
+}
+
+export async function revokeActiveOwnerBrowserSessions(input: {
+  ownerId: string;
+  now?: Date;
+  revokedAt?: Date;
+}) {
+  const now = input.now ?? new Date();
+  const revokedAt = input.revokedAt ?? new Date();
+
+  return withOwnerDb(input.ownerId, (client) =>
+    client
+      .update(browserSessions)
+      .set({ revokedAt })
+      .where(
+        and(
+          eq(browserSessions.ownerId, input.ownerId),
+          isNull(browserSessions.revokedAt),
+          gt(browserSessions.expiresAt, now),
+        ),
+      )
+      .returning({ id: browserSessions.id }),
+  );
 }

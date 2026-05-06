@@ -1,5 +1,5 @@
 import { Badge, Container, Group, Stack, Text } from '@mantine/core';
-import { IconPlugConnected } from '@tabler/icons-react';
+import { IconPlugConnected, IconTrash } from '@tabler/icons-react';
 import { redirect } from 'next/navigation';
 import type { CSSProperties } from 'react';
 
@@ -16,7 +16,12 @@ import { listOwnerMcpConnections } from '@/lib/mcp/connections';
 import { getOwnerUserOrNull } from '@/lib/owner';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 
-import { revokeBrowserSessionAction, revokeConnectionAction } from './actions';
+import {
+  revokeAllBrowserSessionsAction,
+  revokeAllConnectionsAction,
+  revokeBrowserSessionAction,
+  revokeConnectionAction,
+} from './actions';
 
 const ENGINE_LABELS = {
   'claude-code': 'Claude Code',
@@ -309,7 +314,13 @@ function sortBrowserSessionsForTable(browserSessions: BrowserSessionRecord[], no
   });
 }
 
+function pluralize(count: number, singular: string, plural: string) {
+  return count === 1 ? singular : plural;
+}
+
 function ConnectionActionGroup({ connection }: { connection: ConnectionRecord }) {
+  const label = `Revoke ${connection.displayName} connection`;
+
   return (
     <Group className={styles.actionGroup} gap={6} wrap="wrap">
       <form
@@ -319,18 +330,20 @@ function ConnectionActionGroup({ connection }: { connection: ConnectionRecord })
       >
         <input type="hidden" name="connectionId" value={connection.id} />
       </form>
-      <ConnectionsConfirmActionButton
-        aria-label={`Revoke ${connection.displayName} connection`}
-        className={styles.actionButton}
-        size="xs"
-        style={REVOKE_ACTION_BUTTON_STYLE}
-        formId={`revoke-connection-${connection.id}`}
-        confirmTitle="Revoke connection"
-        confirmMessage={`Revoke ${connection.displayName}? This client will lose access immediately.`}
-        confirmLabel="Revoke"
-      >
-        Revoke
-      </ConnectionsConfirmActionButton>
+      <span title={label}>
+        <ConnectionsConfirmActionButton
+          aria-label={label}
+          className={styles.actionButton}
+          size="xs"
+          style={REVOKE_ACTION_BUTTON_STYLE}
+          formId={`revoke-connection-${connection.id}`}
+          confirmTitle="Revoke connection"
+          confirmMessage={`Revoke ${connection.displayName}? This client will lose access immediately.`}
+          confirmLabel="Revoke"
+        >
+          <IconTrash size={16} aria-hidden="true" />
+        </ConnectionsConfirmActionButton>
+      </span>
     </Group>
   );
 }
@@ -342,6 +355,8 @@ function BrowserSessionActionGroup({
   ipLabel: string;
   session: BrowserSessionRecord;
 }) {
+  const label = `Revoke browser session from ${ipLabel}`;
+
   return (
     <Group className={styles.actionGroup} gap={6} wrap="wrap">
       <form
@@ -351,18 +366,20 @@ function BrowserSessionActionGroup({
       >
         <input type="hidden" name="sessionId" value={session.id} />
       </form>
-      <ConnectionsConfirmActionButton
-        aria-label={`Revoke browser session from ${ipLabel}`}
-        className={styles.actionButton}
-        size="xs"
-        style={REVOKE_ACTION_BUTTON_STYLE}
-        formId={`revoke-browser-session-${session.id}`}
-        confirmTitle="Revoke browser session"
-        confirmMessage={`Revoke the browser session from ${ipLabel}? This browser will need to sign in again.`}
-        confirmLabel="Revoke"
-      >
-        Revoke
-      </ConnectionsConfirmActionButton>
+      <span title={label}>
+        <ConnectionsConfirmActionButton
+          aria-label={label}
+          className={styles.actionButton}
+          size="xs"
+          style={REVOKE_ACTION_BUTTON_STYLE}
+          formId={`revoke-browser-session-${session.id}`}
+          confirmTitle="Revoke browser session"
+          confirmMessage={`Revoke the browser session from ${ipLabel}? This browser will need to sign in again.`}
+          confirmLabel="Revoke"
+        >
+          <IconTrash size={16} aria-hidden="true" />
+        </ConnectionsConfirmActionButton>
+      </span>
     </Group>
   );
 }
@@ -426,6 +443,36 @@ export default async function ConnectionsPage(props?: {
                 >
                   Connected Clients
                 </Text>
+                {visibleConnections.length > 0 ? (
+                  <Group className={styles.sectionActions} gap={6} wrap="wrap">
+                    <form
+                      id="revoke-all-connections"
+                      action={revokeAllConnectionsAction}
+                      style={{ display: 'none' }}
+                    />
+                    <ConnectionsConfirmActionButton
+                      aria-label="Revoke all connected clients"
+                      className={styles.bulkActionButton}
+                      size="xs"
+                      style={REVOKE_ACTION_BUTTON_STYLE}
+                      formId="revoke-all-connections"
+                      confirmTitle="Revoke all connected clients"
+                      confirmMessage={`Revoke all ${visibleConnections.length} ${pluralize(
+                        visibleConnections.length,
+                        'connected client',
+                        'connected clients',
+                      )}? ${pluralize(
+                        visibleConnections.length,
+                        'This client',
+                        'These clients',
+                      )} will lose access immediately.`}
+                      confirmLabel="Revoke all"
+                    >
+                      <IconTrash size={16} aria-hidden="true" />
+                      Revoke all
+                    </ConnectionsConfirmActionButton>
+                  </Group>
+                ) : null}
               </div>
               {visibleConnections.length > 0 ? (
                 <div className={styles.summaryRail}>
@@ -578,6 +625,36 @@ export default async function ConnectionsPage(props?: {
                 >
                   Browser Sessions
                 </Text>
+                {visibleBrowserSessions.length > 0 ? (
+                  <Group className={styles.sectionActions} gap={6} wrap="wrap">
+                    <form
+                      id="revoke-all-browser-sessions"
+                      action={revokeAllBrowserSessionsAction}
+                      style={{ display: 'none' }}
+                    />
+                    <ConnectionsConfirmActionButton
+                      aria-label="Revoke all browser sessions"
+                      className={styles.bulkActionButton}
+                      size="xs"
+                      style={REVOKE_ACTION_BUTTON_STYLE}
+                      formId="revoke-all-browser-sessions"
+                      confirmTitle="Revoke all browser sessions"
+                      confirmMessage={`Revoke all ${visibleBrowserSessions.length} ${pluralize(
+                        visibleBrowserSessions.length,
+                        'browser session',
+                        'browser sessions',
+                      )}? ${pluralize(
+                        visibleBrowserSessions.length,
+                        'This browser',
+                        'These browsers',
+                      )} will need to sign in again.`}
+                      confirmLabel="Revoke all"
+                    >
+                      <IconTrash size={16} aria-hidden="true" />
+                      Revoke all
+                    </ConnectionsConfirmActionButton>
+                  </Group>
+                ) : null}
               </div>
               {visibleBrowserSessions.length === 0 ? (
                 <EmptyState

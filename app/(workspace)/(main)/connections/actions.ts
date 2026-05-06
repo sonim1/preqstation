@@ -3,8 +3,11 @@
 import { revalidatePath } from 'next/cache';
 
 import { writeAuditLog } from '@/lib/audit';
-import { revokeBrowserSession } from '@/lib/browser-sessions';
-import { setMcpConnectionRevokedState } from '@/lib/mcp/connections';
+import { revokeActiveOwnerBrowserSessions, revokeBrowserSession } from '@/lib/browser-sessions';
+import {
+  revokeActiveOwnerMcpConnections,
+  setMcpConnectionRevokedState,
+} from '@/lib/mcp/connections';
 import { requireOwnerUser } from '@/lib/owner';
 
 async function updateConnectionRevokedState(formData: FormData, revoked: boolean): Promise<void> {
@@ -43,8 +46,53 @@ export async function revokeConnectionAction(formData: FormData) {
   return updateConnectionRevokedState(formData, true);
 }
 
+export async function revokeAllConnectionsAction() {
+  try {
+    const owner = await requireOwnerUser();
+    const revoked = await revokeActiveOwnerMcpConnections({ ownerId: owner.id });
+    if (revoked.length === 0) {
+      return;
+    }
+
+    await writeAuditLog({
+      ownerId: owner.id,
+      action: 'mcp_connections.revoked_all',
+      targetType: 'mcp_connection',
+      meta: { count: revoked.length },
+    });
+
+    revalidatePath('/connections');
+    revalidatePath('/api-keys');
+  } catch (error) {
+    if (error instanceof Response) return;
+    return;
+  }
+}
+
 export async function restoreConnectionAction(formData: FormData) {
   return updateConnectionRevokedState(formData, false);
+}
+
+export async function revokeAllBrowserSessionsAction() {
+  try {
+    const owner = await requireOwnerUser();
+    const revoked = await revokeActiveOwnerBrowserSessions({ ownerId: owner.id });
+    if (revoked.length === 0) {
+      return;
+    }
+
+    await writeAuditLog({
+      ownerId: owner.id,
+      action: 'browser_sessions.revoked_all',
+      targetType: 'browser_session',
+      meta: { count: revoked.length },
+    });
+
+    revalidatePath('/connections');
+  } catch (error) {
+    if (error instanceof Response) return;
+    return;
+  }
 }
 
 export async function revokeBrowserSessionAction(formData: FormData) {

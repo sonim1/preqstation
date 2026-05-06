@@ -26,6 +26,8 @@ describe('connections confirm actions source', () => {
     expect(confirmSource).toContain('ConnectionsConfirmActionButton');
     expect(pageSource).toContain('ConnectionsConfirmActionProvider');
     expect(pageSource).toContain('ConnectionsConfirmActionButton');
+    expect(pageSource).toContain('formId="revoke-all-connections"');
+    expect(pageSource).toContain('formId="revoke-all-browser-sessions"');
     expect(pageSource).not.toContain('@/app/components/confirm-action-button');
   });
 

@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, gt, isNull } from 'drizzle-orm';
 
 import { withAdminDb, withOwnerDb } from '@/lib/db/rls';
 import { mcpConnections, oauthClients } from '@/lib/db/schema';
@@ -242,4 +242,27 @@ export async function setMcpConnectionRevokedState(input: {
 
     return updated ?? null;
   });
+}
+
+export async function revokeActiveOwnerMcpConnections(input: {
+  ownerId: string;
+  now?: Date;
+  revokedAt?: Date;
+}) {
+  const now = input.now ?? new Date();
+  const revokedAt = input.revokedAt ?? new Date();
+
+  return withOwnerDb(input.ownerId, (client) =>
+    client
+      .update(mcpConnections)
+      .set({ revokedAt })
+      .where(
+        and(
+          eq(mcpConnections.ownerId, input.ownerId),
+          isNull(mcpConnections.revokedAt),
+          gt(mcpConnections.expiresAt, now),
+        ),
+      )
+      .returning({ id: mcpConnections.id }),
+  );
 }
