@@ -138,7 +138,8 @@
 
 .titleRow {
   position: relative;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, max-content) auto;
   align-items: center;
   gap: 0.75rem;
   width: 100%;
@@ -147,17 +148,18 @@
 
 .titleText {
   min-width: 0;
-  flex: 1 1 auto;
+  overflow-wrap: anywhere;
 }
 
 .titleCenter {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  min-width: 0;
+  max-width: 100%;
+  justify-self: center;
   pointer-events: none;
 }
 
 .controls {
+  flex: 0 0 auto;
   margin-left: auto;
 }
 
