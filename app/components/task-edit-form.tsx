@@ -967,6 +967,10 @@ export function resolveTaskEditNotesMode(
   return currentState.taskKey === activeTaskKey ? currentState.mode : 'live';
 }
 
+export function resolveTaskEditNotesEditorKey(taskKey: string, draftRevision: number): string {
+  return `note:${taskKey}:${draftRevision}`;
+}
+
 type TaskEditFormContentProps = TaskEditFormProps & {
   controller: TaskEditFormController;
 };
@@ -1028,6 +1032,7 @@ function TaskEditFormContent({
     updateTitleDraft: _updateTitleDraft,
   } = controller;
   const activeNotesRevision = `${noteRenderKey ?? fieldRenderKey}:${draftRevision}`;
+  const notesEditorKey = resolveTaskEditNotesEditorKey(taskKey, draftRevision);
   const [notesModeState, setNotesModeState] = useState<TaskEditNotesModeState>({
     mode: 'live',
     revision: activeNotesRevision,
@@ -1187,7 +1192,7 @@ function TaskEditFormContent({
                     </Alert>
                   ) : null}
                   <LiveMarkdownEditor
-                    key={`note:${activeNotesRevision}`}
+                    key={notesEditorKey}
                     name="noteMd"
                     label="Notes"
                     defaultValue={draftNote}
