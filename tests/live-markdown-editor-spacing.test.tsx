@@ -26,6 +26,12 @@ beforeAll(() => {
     unobserve() {}
     disconnect() {}
   };
+
+  vi.stubGlobal('requestAnimationFrame', ((callback: FrameRequestCallback) => {
+    callback(0);
+    return 0;
+  }) as typeof requestAnimationFrame);
+  vi.stubGlobal('cancelAnimationFrame', vi.fn());
 });
 
 afterEach(() => {
@@ -47,6 +53,62 @@ function renderEditor(defaultValue: string) {
   );
 
   return { onContentChange, ...view };
+}
+
+function renderEditorWithControls(defaultValue: string) {
+  const onContentChange = vi.fn();
+  const onExternalUpdateApplied = vi.fn();
+  const view = render(
+    <MantineProvider>
+      <LiveMarkdownEditor
+        name="description"
+        label="Description"
+        defaultValue={defaultValue}
+        onContentChange={onContentChange}
+        onExternalUpdateApplied={onExternalUpdateApplied}
+        autoFocus={false}
+      />
+    </MantineProvider>,
+  );
+
+  return {
+    onContentChange,
+    onExternalUpdateApplied,
+    rerenderDefaultValue: (nextDefaultValue: string) => {
+      view.rerender(
+        <MantineProvider>
+          <LiveMarkdownEditor
+            name="description"
+            label="Description"
+            defaultValue={nextDefaultValue}
+            onContentChange={onContentChange}
+            onExternalUpdateApplied={onExternalUpdateApplied}
+            autoFocus={false}
+          />
+        </MantineProvider>,
+      );
+    },
+    rerenderExternalUpdate: (externalUpdate: {
+      markdown: string;
+      version: number;
+      cursorIndex?: number | null;
+    }) => {
+      view.rerender(
+        <MantineProvider>
+          <LiveMarkdownEditor
+            name="description"
+            label="Description"
+            defaultValue={defaultValue}
+            externalUpdate={externalUpdate}
+            onContentChange={onContentChange}
+            onExternalUpdateApplied={onExternalUpdateApplied}
+            autoFocus={false}
+          />
+        </MantineProvider>,
+      );
+    },
+    ...view,
+  };
 }
 
 function getHiddenMarkdownInput(container: HTMLElement) {
@@ -102,5 +164,65 @@ describe('LiveMarkdownEditor spacing reconciliation', () => {
       );
     });
     expect(getHiddenMarkdownInput(container).value).toBe(markdown);
+  });
+
+  it('does not reseed live mode when rehydrated defaultValue sanitizes to the current markdown', async () => {
+    const markdown = 'Saved note';
+    const { container, rerenderDefaultValue } = renderEditorWithControls(markdown);
+
+    const editor = await screen.findByLabelText('Description live editor');
+
+    rerenderDefaultValue(
+      [markdown, '', ':::preq-choice', 'question: Keep existing note?', ':::'].join('\n'),
+    );
+
+    await waitFor(() => {
+      expect(getHiddenMarkdownInput(container).value).toBe(markdown);
+    });
+    expect(screen.getByLabelText('Description live editor')).toBe(editor);
+  });
+
+  it('clears dirty state when defaultValue rehydrates the user edit', async () => {
+    const { container, onContentChange, rerenderDefaultValue } =
+      renderEditorWithControls('Saved note');
+
+    await screen.findByLabelText('Description live editor');
+    fireEvent.click(screen.getByRole('radio', { name: 'Markdown' }));
+
+    const textarea = await screen.findByLabelText('Description markdown source');
+    fireEvent.change(textarea, { target: { value: 'User edit' } });
+
+    expect(onContentChange).toHaveBeenCalledWith('User edit');
+    expect(getHiddenMarkdownInput(container).value).toBe('User edit');
+
+    rerenderDefaultValue(
+      ['User edit', '', ':::preq-choice', 'question: Keep existing note?', ':::'].join('\n'),
+    );
+
+    await waitFor(() => {
+      expect(getHiddenMarkdownInput(container).value).toBe('User edit');
+    });
+    expect(screen.getByLabelText('Description markdown source')).toBe(textarea);
+
+    rerenderDefaultValue('Server replacement');
+
+    await waitFor(() => {
+      expect(getHiddenMarkdownInput(container).value).toBe('Server replacement');
+    });
+    expect(
+      (screen.getByLabelText('Description markdown source') as HTMLTextAreaElement).value,
+    ).toBe('Server replacement');
+  });
+
+  it('keeps an external update when defaultValue still has the old markdown', async () => {
+    const { container, onExternalUpdateApplied, rerenderExternalUpdate } =
+      renderEditorWithControls('Saved note');
+
+    rerenderExternalUpdate({ markdown: 'External note', version: 1 });
+
+    await waitFor(() => {
+      expect(onExternalUpdateApplied).toHaveBeenCalledWith('External note');
+    });
+    expect(getHiddenMarkdownInput(container).value).toBe('External note');
   });
 });
