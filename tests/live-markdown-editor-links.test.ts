@@ -93,6 +93,23 @@ describe('LiveMarkdownEditor links', () => {
     expect(source).toContain('<LiveBackspacePlugin />');
   });
 
+  it('registers live checklist shortcuts before generic markdown shortcuts', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/components/live-markdown-editor.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('function LiveChecklistShortcutPlugin()');
+    expect(source).toContain('KEY_SPACE_COMMAND');
+    expect(source).toContain('$applyLiveChecklistShortcut(');
+    expect(source).toContain('function LiveChecklistSourcePlugin()');
+    expect(source).toContain('<LiveChecklistSourcePlugin />');
+    expect(source).toContain('<LiveChecklistShortcutPlugin />');
+    expect(source.indexOf('<LiveChecklistShortcutPlugin />')).toBeLessThan(
+      source.indexOf('<MarkdownShortcutPlugin transformers={MARKDOWN_SHORTCUT_TRANSFORMERS} />'),
+    );
+  });
+
   it('lets non-list Shift+Tab escape live tab indentation handling', () => {
     const source = readFileSync(
       join(process.cwd(), 'app/components/live-markdown-editor.tsx'),

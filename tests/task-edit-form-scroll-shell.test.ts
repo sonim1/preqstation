@@ -342,14 +342,10 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(taskDispatchSendRule).toContain('background: var(--ui-accent);');
   });
 
-  it('keeps live markdown editing inline while preserving empty-list affordances', () => {
+  it('keeps live markdown editing inline without an empty list highlight lane', () => {
     const emptyListRule = getRuleBody(
       globalCss,
       ".live-editor-input [data-live-editor-empty='true']",
-    );
-    const emptyListLaneRule = getRuleBody(
-      globalCss,
-      ".live-editor-input [data-live-editor-empty='true']::after",
     );
 
     expect(globalCss).not.toContain('.live-editor-active-source');
@@ -361,8 +357,22 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(globalCss).toContain('--live-editor-heading-marker-color:');
     expect(emptyListRule).toContain('min-height:');
     expect(emptyListRule).toContain('position: relative;');
-    expect(emptyListLaneRule).toContain("content: '';");
-    expect(emptyListLaneRule).toContain('border-radius:');
-    expect(emptyListLaneRule).toContain('background:');
+    expect(globalCss).not.toContain(".live-editor-input [data-live-editor-empty='true']::after");
+  });
+
+  it('renders live checklist markers at form-checkbox scale', () => {
+    const sharedRule = getRuleBody(
+      globalCss,
+      '.live-editor-li-unchecked::before,\n.live-editor-li-checked::before',
+    );
+    const uncheckedRule = getRuleBody(globalCss, '.live-editor-li-unchecked::before');
+    const checkedRule = getRuleBody(globalCss, '.live-editor-li-checked::before');
+
+    expect(sharedRule).toContain("content: '';");
+    expect(sharedRule).toContain('width: 16px;');
+    expect(sharedRule).toContain('height: 16px;');
+    expect(sharedRule).toContain('border:');
+    expect(uncheckedRule).not.toContain('☐');
+    expect(checkedRule).not.toContain('☑');
   });
 });
