@@ -414,12 +414,29 @@ function ensureParagraphAfterCodeNode(codeNode: CodeNode) {
   codeNode.insertAfter(paragraph);
   return paragraph;
 }
+
+function hasDeliberateMarkdownBlankLine(markdown: string) {
+  const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+
+  return lines.some((line, index) => {
+    if (line.trim() !== '') return false;
+    if (index === 0 || index === lines.length - 1) return false;
+    return lines[index - 1].trim() !== '' && lines[index + 1].trim() !== '';
+  });
+}
+
+function shouldPreserveLiveMarkdownNewLines(markdown: string) {
+  return (
+    hasDeliberateMarkdownBlankLine(markdown) || getOrderedListBlocksForImport(markdown).length > 1
+  );
+}
+
 function InitializeFromMarkdownPlugin({ markdown }: { markdown: string }) {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
     editor.update(() => {
-      const shouldPreserveNewLines = getOrderedListBlocksForImport(markdown).length > 1;
+      const shouldPreserveNewLines = shouldPreserveLiveMarkdownNewLines(markdown);
       $convertFromMarkdownString(
         markdown,
         MARKDOWN_TRANSFORMERS,
