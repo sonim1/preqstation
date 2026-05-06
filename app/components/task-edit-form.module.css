@@ -163,6 +163,19 @@
   padding: clamp(0.875rem, 1.4vw, 1rem);
 }
 
+.skeletonNotesEditor {
+  flex: 1 1 auto;
+  min-height: clamp(14rem, 34vh, 24rem);
+}
+
+.skeletonActivityRow {
+  height: clamp(3.5rem, 8vh, 4.5rem);
+}
+
+.skeletonPromptPreview {
+  height: clamp(5.5rem, 14vh, 7rem);
+}
+
 .sectionHeader {
   min-width: 0;
 }
