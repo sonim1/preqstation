@@ -871,7 +871,7 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
             value={draft}
             onChange={(event) => setDraft(event.currentTarget.value)}
           />
-          <Group justify="space-between" gap="sm">
+          <Group justify="space-between" gap="sm" wrap="wrap">
             <Text size="xs" c="dimmed">
               New comments queue an agent follow-up; task status stays unchanged.
             </Text>
