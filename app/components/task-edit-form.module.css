@@ -39,9 +39,10 @@
   flex: 1 1 auto;
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
   min-height: 0;
   min-width: 0;
+  max-width: 100%;
 }
 
 .sidebar {
@@ -50,6 +51,7 @@
   min-height: 0;
   align-content: start;
   min-width: 0;
+  max-width: 100%;
 }
 
 .mainColumn {
@@ -64,15 +66,18 @@
   display: grid;
   align-content: start;
   min-width: 0;
+  max-width: 100%;
 }
 
 .metadataSection {
   min-width: 0;
+  max-width: 100%;
   display: block;
 }
 
 .notesCard {
   min-width: 0;
+  max-width: 100%;
   display: flex;
   min-height: var(--task-edit-section-min-height);
 }
@@ -137,6 +142,7 @@
 
 .activityCard {
   min-width: 0;
+  max-width: 100%;
   padding: 0;
   display: block;
 }
@@ -416,7 +422,7 @@
   line-height: 1.25;
 }
 
-@container (max-width: 74em) {
+@container (max-width: 82em) {
   .shell {
     grid-template-columns: 1fr;
   }
@@ -439,10 +445,17 @@
     display: flex;
   }
 
+  .shell {
+    display: flex;
+    flex-direction: column;
+    grid-template-columns: 1fr;
+  }
+
   .dispatchRail,
   .metadataSection,
   .notesCard,
   .activityCard {
+    max-width: 100%;
     padding: 0;
   }
 

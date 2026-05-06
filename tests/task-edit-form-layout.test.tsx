@@ -55,6 +55,12 @@ vi.mock('@/lib/notifications', () => ({
 import { TaskEditForm } from '@/app/components/task-edit-form';
 
 type RenderOverrides = Partial<{
+  title: string;
+  projectId: string | null;
+  projects: Array<{ id: string; name: string }>;
+  labels: Array<{ id: string; name: string; color: string | null }>;
+  labelIds: string[];
+  todoLabels: Array<{ id: string; name: string; color: string | null }>;
   status: string;
   workLogs: Array<{
     id: string;
@@ -83,11 +89,11 @@ function renderTaskEditForm(overrides: RenderOverrides = {}) {
         editableTodo={{
           id: 'task-1',
           taskKey: 'PROJ-245',
-          title: 'Edit task panel refresh',
+          title: overrides.title ?? 'Edit task panel refresh',
           note: '## Context\nTask note',
-          projectId: null,
-          labelIds: [],
-          labels: [],
+          projectId: overrides.projectId ?? null,
+          labelIds: overrides.labelIds ?? [],
+          labels: overrides.labels ?? [],
           taskPriority: 'none',
           status: overrides.status ?? 'hold',
           engine: null,
@@ -103,8 +109,8 @@ function renderTaskEditForm(overrides: RenderOverrides = {}) {
             },
           ],
         }}
-        projects={[]}
-        todoLabels={[]}
+        projects={overrides.projects ?? []}
+        todoLabels={overrides.todoLabels ?? []}
         taskPriorityOptions={[{ value: 'none', label: 'None' }]}
         updateTodoAction={async () => ({ ok: true })}
       />
@@ -173,5 +179,31 @@ describe('app/components/task-edit-form layout', () => {
     expect(html).toContain('data-panel="task-edit-sidebar"');
     expect(html).toContain('data-panel="task-edit-metadata"');
     expect(html).toContain('Task settings');
+  });
+
+  it('keeps long identity and labels in the sidebar while notes and activity stay in order', () => {
+    const longProjectName = 'Global payment operations project with a very long display name';
+    const longLabelName = 'customer-escalation-with-a-long-label-name';
+    const html = renderTaskEditForm({
+      title: 'Edit task panel refresh with an unusually long task title',
+      projectId: 'project-1',
+      projects: [{ id: 'project-1', name: longProjectName }],
+      labelIds: ['label-1'],
+      labels: [{ id: 'label-1', name: longLabelName, color: '#228be6' }],
+      todoLabels: [{ id: 'label-1', name: longLabelName, color: '#228be6' }],
+    });
+
+    expect(html).toContain(longProjectName);
+    expect(html).toContain(longLabelName);
+    expect(html).toContain('data-panel="task-edit-settings-card"');
+    expect(html.indexOf('data-panel="task-edit-sidebar"')).toBeLessThan(
+      html.indexOf(longProjectName),
+    );
+    expect(html.indexOf('data-panel="task-edit-settings-card"')).toBeLessThan(
+      html.indexOf(longLabelName),
+    );
+    expect(html.indexOf('data-panel="task-edit-notes-primary"')).toBeLessThan(
+      html.indexOf('data-panel="task-edit-activity"'),
+    );
   });
 });
