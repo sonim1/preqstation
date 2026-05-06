@@ -144,6 +144,36 @@ describe('app/components/task-edit-panel', () => {
     expect(html).not.toContain('data-testid="task-edit-form"');
   });
 
+  it('matches the loaded edit form layout order while loading task detail', () => {
+    taskEditFormControllerMock.mockReturnValue(buildController());
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <TaskEditPanel {...BASE_PROPS} isLoading />
+      </MantineProvider>,
+    );
+
+    expect(html).toContain('data-testid="task-edit-loading-shell"');
+    expect(html).toContain('data-layout="task-edit-shell"');
+    expect(html).toContain('data-panel="task-edit-main-column"');
+    expect(html).toContain('data-panel="task-edit-sidebar"');
+    expect(html).toContain('data-panel="task-edit-dispatch"');
+    expect(html).toContain('data-panel="task-edit-metadata"');
+    expect(html).toContain('data-panel="task-edit-notes-primary"');
+    expect(html).toContain('data-panel="task-edit-activity"');
+    expect(html.indexOf('data-panel="task-edit-main-column"')).toBeLessThan(
+      html.indexOf('data-panel="task-edit-sidebar"'),
+    );
+    expect(html.indexOf('data-panel="task-edit-notes-primary"')).toBeLessThan(
+      html.indexOf('data-panel="task-edit-activity"'),
+    );
+    expect(html.indexOf('data-panel="task-edit-sidebar"')).toBeLessThan(
+      html.indexOf('data-panel="task-edit-dispatch"'),
+    );
+    expect(html.indexOf('data-panel="task-edit-dispatch"')).toBeLessThan(
+      html.indexOf('data-panel="task-edit-metadata"'),
+    );
+  });
+
   it('renders the edit form once detail is ready', () => {
     taskEditFormControllerMock.mockReturnValue(buildController());
     const html = renderToStaticMarkup(
