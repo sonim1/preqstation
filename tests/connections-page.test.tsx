@@ -270,6 +270,78 @@ describe('app/(workspace)/(main)/connections/page', () => {
     expect(html).not.toContain('Restore');
   });
 
+  it('hides expired client connections and browser sessions from the connections page', async () => {
+    mocked.listOwnerMcpConnections.mockResolvedValueOnce([
+      {
+        id: 'active-connection',
+        clientId: 'client-1',
+        displayName: 'Codex',
+        redirectUri: 'http://127.0.0.1:3456/callback',
+        engine: 'codex',
+        lastUsedAt: new Date('2026-03-25T10:30:00.000Z'),
+        expiresAt: new Date('2026-03-30T15:45:00.000Z'),
+        revokedAt: null,
+        createdAt: new Date('2026-03-20T12:00:00.000Z'),
+        client: {
+          clientName: 'Codex',
+        },
+      },
+      {
+        id: 'expired-connection',
+        clientId: 'client-2',
+        displayName: 'Expired Claude bridge',
+        redirectUri: 'http://127.0.0.1:4567/callback',
+        engine: null,
+        lastUsedAt: new Date('2026-03-25T09:30:00.000Z'),
+        expiresAt: new Date('2026-03-25T11:00:00.000Z'),
+        revokedAt: null,
+        createdAt: new Date('2026-03-19T12:00:00.000Z'),
+        client: {
+          clientName: 'Expired Claude bridge',
+        },
+      },
+    ]);
+    mocked.listOwnerBrowserSessions.mockResolvedValueOnce([
+      {
+        id: 'active-browser-session',
+        ownerId: 'owner-1',
+        ipAddress: '203.0.113.10',
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        browserName: 'Chrome',
+        osName: 'macOS',
+        lastUsedAt: new Date('2026-03-25T10:30:00.000Z'),
+        expiresAt: new Date('2026-03-30T15:45:00.000Z'),
+        revokedAt: null,
+        createdAt: new Date('2026-03-20T12:00:00.000Z'),
+        updatedAt: new Date('2026-03-25T10:30:00.000Z'),
+      },
+      {
+        id: 'expired-browser-session',
+        ownerId: 'owner-1',
+        ipAddress: '198.51.100.20',
+        userAgent:
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        browserName: 'Expired Chrome',
+        osName: 'Windows',
+        lastUsedAt: new Date('2026-03-25T09:30:00.000Z'),
+        expiresAt: new Date('2026-03-25T11:00:00.000Z'),
+        revokedAt: null,
+        createdAt: new Date('2026-03-19T12:00:00.000Z'),
+        updatedAt: new Date('2026-03-25T09:30:00.000Z'),
+      },
+    ]);
+
+    const html = await renderConnectionsPage();
+
+    expect(html).toContain('Codex');
+    expect(html).toContain('Chrome');
+    expect(html.match(/1 total/g) ?? []).toHaveLength(2);
+    expect(html).not.toContain('Expired Claude bridge');
+    expect(html).not.toContain('Expired Chrome');
+    expect(html).not.toContain('198.51.100.20');
+  });
+
   it('renders the page as a single editorial flow instead of stacked card panels', async () => {
     mocked.listOwnerMcpConnections.mockResolvedValueOnce([
       {
@@ -381,8 +453,9 @@ describe('app/(workspace)/(main)/connections/page', () => {
 
     const html = await renderConnectionsPage();
 
-    expect(html).toContain('1 connection needs attention');
-    expect(html).toContain('3 total');
+    expect(html).toContain('1 connection expires soon');
+    expect(html).toContain('2 total');
+    expect(html).not.toContain('Claude desktop bridge');
     expect(html).not.toContain('Gemini desktop bridge');
     expect(html).not.toContain('summaryChip');
   });
@@ -515,6 +588,62 @@ describe('app/(workspace)/(main)/connections/page', () => {
     expect(html).toContain('Unknown');
     expect(html).toContain('Connected');
     expect(html).toContain('Last used');
+  });
+
+  it('shows connected client names without the Engine prefix', async () => {
+    mocked.listOwnerMcpConnections.mockResolvedValueOnce([
+      {
+        id: 'connection-1',
+        clientId: 'client-1',
+        displayName: 'Codex',
+        redirectUri: 'http://127.0.0.1:3456/callback',
+        engine: 'codex',
+        lastUsedAt: new Date('2026-03-25T10:30:00.000Z'),
+        expiresAt: new Date('2026-03-30T15:45:00.000Z'),
+        revokedAt: null,
+        createdAt: new Date('2026-03-20T12:00:00.000Z'),
+        client: {
+          clientName: 'Codex',
+        },
+      },
+      {
+        id: 'connection-2',
+        clientId: 'client-2',
+        displayName: 'Hermes Telegram',
+        redirectUri: 'http://127.0.0.1:4567/hermes/callback',
+        engine: null,
+        lastUsedAt: new Date('2026-03-25T10:30:00.000Z'),
+        expiresAt: new Date('2026-03-30T15:45:00.000Z'),
+        revokedAt: null,
+        createdAt: new Date('2026-03-20T12:00:00.000Z'),
+        client: {
+          clientName: 'Hermes Telegram',
+        },
+      },
+      {
+        id: 'connection-3',
+        clientId: 'client-3',
+        displayName: 'OpenClaw launcher',
+        redirectUri: 'http://127.0.0.1:5678/callback',
+        engine: null,
+        lastUsedAt: new Date('2026-03-25T10:30:00.000Z'),
+        expiresAt: new Date('2026-03-30T15:45:00.000Z'),
+        revokedAt: null,
+        createdAt: new Date('2026-03-20T12:00:00.000Z'),
+        client: {
+          clientName: 'OpenClaw launcher',
+        },
+      },
+    ]);
+
+    const html = await renderConnectionsPage();
+
+    expect(html).toContain('Codex');
+    expect(html).toContain('Hermes');
+    expect(html).toContain('Openclaw');
+    expect(html).not.toContain('Engine Codex');
+    expect(html).not.toContain('Engine Hermes');
+    expect(html).not.toContain('Engine Openclaw');
   });
 
   it('renders client connections inside a focused table shell instead of grouped list sections', async () => {
@@ -665,8 +794,8 @@ describe('app/(workspace)/(main)/connections/page', () => {
     );
     expect(html).toContain('<thead');
     expect(html).toContain('<tbody');
-    expect(html.match(/scope="row"/g)).toHaveLength(3);
-    expect(html.match(/dataCellLabel/g)).toHaveLength(6);
+    expect(html.match(/scope="row"/g)).toHaveLength(2);
+    expect(html.match(/dataCellLabel/g)).toHaveLength(4);
     expect(html).not.toContain('role="listitem"');
   });
 
@@ -679,7 +808,7 @@ describe('app/(workspace)/(main)/connections/page', () => {
         redirectUri: 'http://127.0.0.1:3456/callback',
         engine: null,
         lastUsedAt: new Date('2026-03-25T10:30:00.000Z'),
-        expiresAt: new Date('2026-03-25T10:00:00.000Z'),
+        expiresAt: new Date('2026-03-27T12:00:00.000Z'),
         revokedAt: null,
         createdAt: new Date('2026-03-20T12:00:00.000Z'),
         client: {

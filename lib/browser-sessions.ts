@@ -97,6 +97,10 @@ export async function createBrowserSession(input: {
       const [updated] = await client
         .update(browserSessions)
         .set({
+          ipAddress,
+          userAgent,
+          browserName,
+          osName,
           lastUsedAt: now,
           expiresAt,
           revokedAt: null,
