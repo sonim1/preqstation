@@ -66,6 +66,7 @@ export async function revokeAllConnectionsAction() {
     revalidatePath('/api-keys');
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
+    if (error instanceof Response) return;
     console.error('[revokeAllConnectionsAction] failed:', error);
     throw error;
   }
@@ -93,6 +94,7 @@ export async function revokeAllBrowserSessionsAction() {
     revalidatePath('/connections');
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
+    if (error instanceof Response) return;
     console.error('[revokeAllBrowserSessionsAction] failed:', error);
     throw error;
   }
