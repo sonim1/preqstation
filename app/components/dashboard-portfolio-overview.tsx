@@ -228,7 +228,7 @@ export function DashboardPortfolioOverview({
         overlapSize,
         bucket: project.bucket,
         title: `${project.projectKey} · ${project.name} · ${project.openTaskCount} open`,
-        ariaLabel: `${project.projectKey} ${project.name} ${project.openTaskCount} open tasks`,
+        ariaLabel: `Open ${project.name} board`,
         isCluster: false,
         projectKey: project.projectKey,
         clusterProjectKeys: null,
@@ -341,9 +341,7 @@ export function DashboardPortfolioOverview({
                         'data-matrix-cluster': project.isCluster ? 'true' : undefined,
                         'data-cluster-projects': project.clusterProjectKeys ?? undefined,
                         'data-matrix-project-ids': project.linkedProjectIds,
-                        'aria-label': project.isCluster
-                          ? project.ariaLabel
-                          : `Open ${project.projectKey} board`,
+                        'aria-label': project.ariaLabel,
                       };
 
                       if (!project.projectKey) {

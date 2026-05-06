@@ -635,9 +635,9 @@ describe('app/components/dashboard-operator-desk', () => {
     const html = renderDesk();
 
     expect(html).toContain('href="/board/RISK"');
-    expect(html).toContain('aria-label="Open RISK board"');
     expect(html).toContain('aria-label="Open Risk Project board"');
-    expect(html).toContain('aria-label="Open Risk Project activity board"');
+    expect(html).not.toContain('aria-label="Open RISK board"');
+    expect(html).not.toContain('aria-label="Open Risk Project activity board"');
     expect(html).toContain('href="/board/PREQ"');
     expect(html).toContain('aria-label="Open Preq board"');
   });

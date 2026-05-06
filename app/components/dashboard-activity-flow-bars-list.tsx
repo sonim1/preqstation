@@ -75,7 +75,7 @@ export function DashboardActivityFlowBarsList({ projects }: DashboardActivityFlo
               href={`/board/${activityBar.projectKey}`}
               className={classes.portfolioActivityBarLabel}
               data-activity-bar-label={activityBar.name}
-              aria-label={`Open ${activityBar.name} activity board`}
+              aria-label={`Open ${activityBar.name} board`}
             >
               {activityBar.name}
             </Link>
