@@ -1724,7 +1724,7 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   padding: 14px;
   outline: none;
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.5;
   color: var(--mantine-color-text);
   caret-color: currentColor;
 }
@@ -1735,7 +1735,7 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
 
 .live-editor-input [data-live-editor-empty='true'] {
   position: relative;
-  min-height: 1.7rem;
+  min-height: 1.5em;
 }
 
 .live-editor-placeholder {
@@ -1758,7 +1758,7 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   color: var(--mantine-color-text);
   resize: vertical;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.5;
   font-family:
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
     monospace;
@@ -1773,7 +1773,8 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
 }
 
 .live-editor-paragraph {
-  margin: 0 0 10px;
+  margin: 0;
+  min-height: 1.5em;
 }
 
 .live-editor-h1,

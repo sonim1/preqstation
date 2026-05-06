@@ -146,6 +146,65 @@ describe('LiveMarkdownEditor spacing reconciliation', () => {
     expect(onContentChange).not.toHaveBeenCalled();
   });
 
+  it('preserves deliberate blank lines between paragraphs during bootstrap', async () => {
+    const markdown = 'First paragraph\n\nSecond paragraph';
+    const { container, onContentChange } = renderEditor(markdown);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Description live editor').textContent).toContain(
+        'Second paragraph',
+      );
+    });
+
+    const paragraphs = container.querySelectorAll('.live-editor-paragraph');
+    // We expect 3 paragraphs: "First paragraph", empty paragraph for \n\n, and "Second paragraph"
+    expect(paragraphs.length).toBeGreaterThanOrEqual(3);
+
+    const middleParagraph = Array.from(paragraphs).find((p) => p.textContent?.trim() === '');
+    expect(middleParagraph).toBeDefined();
+
+    expect(getHiddenMarkdownInput(container).value).toBe(markdown);
+    expect(onContentChange).not.toHaveBeenCalled();
+  });
+
+  it('preserves deliberate blank line runs between paragraphs during bootstrap', async () => {
+    const markdown = 'First paragraph\n\n\nSecond paragraph';
+    const { container, onContentChange } = renderEditor(markdown);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Description live editor').textContent).toContain(
+        'Second paragraph',
+      );
+    });
+
+    const emptyParagraphs = Array.from(container.querySelectorAll('.live-editor-paragraph')).filter(
+      (p) => p.textContent?.trim() === '',
+    );
+    expect(emptyParagraphs.length).toBeGreaterThanOrEqual(2);
+
+    expect(getHiddenMarkdownInput(container).value).toBe(markdown);
+    expect(onContentChange).not.toHaveBeenCalled();
+  });
+
+  it('maintains deliberate blank lines when switching modes', async () => {
+    const markdown = 'First paragraph\n\nSecond paragraph';
+    const { container } = renderEditor(markdown);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Description live editor').textContent).toContain(
+        'Second paragraph',
+      );
+    });
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Markdown' }));
+
+    await waitFor(() => {
+      const textarea = screen.getByLabelText('Description markdown source') as HTMLTextAreaElement;
+      expect(textarea.value).toBe(markdown);
+    });
+    expect(getHiddenMarkdownInput(container).value).toBe(markdown);
+  });
+
   it('keeps tight list-to-paragraph spacing when switching from live to markdown mode', async () => {
     const markdown = '1. First item\nText right below';
     const { container } = renderEditor(markdown);

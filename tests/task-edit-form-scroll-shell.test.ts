@@ -356,6 +356,8 @@ describe('task edit modal scroll-shell CSS regressions', () => {
   });
 
   it('keeps live markdown editing inline without an empty list highlight lane', () => {
+    const editorInputRule = getRuleBody(globalCss, '.live-editor-input');
+    const paragraphRule = getRuleBody(globalCss, '.live-editor-paragraph');
     const emptyListRule = getRuleBody(
       globalCss,
       ".live-editor-input [data-live-editor-empty='true']",
@@ -368,7 +370,13 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     );
     expect(globalCss).toContain("[data-live-editor-heading-source='h3']");
     expect(globalCss).toContain('--live-editor-heading-marker-color:');
-    expect(emptyListRule).toContain('min-height:');
+
+    expect(editorInputRule).toContain('line-height: 1.5;');
+
+    expect(paragraphRule).toContain('margin: 0;');
+    expect(paragraphRule).toContain('min-height: 1.5em;');
+
+    expect(emptyListRule).toContain('min-height: 1.5em;');
     expect(emptyListRule).toContain('position: relative;');
     expect(globalCss).not.toContain(".live-editor-input [data-live-editor-empty='true']::after");
   });

@@ -414,12 +414,38 @@ function ensureParagraphAfterCodeNode(codeNode: CodeNode) {
   codeNode.insertAfter(paragraph);
   return paragraph;
 }
+
+function hasDeliberateMarkdownBlankLine(markdown: string) {
+  const lines = markdown.replace(/\r\n/g, '\n').split('\n');
+  const firstContentLine = lines.findIndex((line) => line.trim() !== '');
+  let lastContentLine = -1;
+
+  for (let index = lines.length - 1; index >= 0; index -= 1) {
+    if (lines[index].trim() !== '') {
+      lastContentLine = index;
+      break;
+    }
+  }
+
+  if (firstContentLine === -1) return false;
+
+  return lines
+    .slice(firstContentLine + 1, lastContentLine)
+    .some((line) => line.trim() === '');
+}
+
+function shouldPreserveLiveMarkdownNewLines(markdown: string) {
+  return (
+    hasDeliberateMarkdownBlankLine(markdown) || getOrderedListBlocksForImport(markdown).length > 1
+  );
+}
+
 function InitializeFromMarkdownPlugin({ markdown }: { markdown: string }) {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
     editor.update(() => {
-      const shouldPreserveNewLines = getOrderedListBlocksForImport(markdown).length > 1;
+      const shouldPreserveNewLines = shouldPreserveLiveMarkdownNewLines(markdown);
       $convertFromMarkdownString(
         markdown,
         MARKDOWN_TRANSFORMERS,
