@@ -41,7 +41,6 @@ function renderEditor(defaultValue: string) {
         label="Description"
         defaultValue={defaultValue}
         onContentChange={onContentChange}
-        mode="live"
         autoFocus={false}
       />
     </MantineProvider>,
