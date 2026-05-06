@@ -125,11 +125,14 @@ describe('app/components/task-edit-form notes mode state', () => {
         note: 'Saved on server',
       }),
     );
+    const initialKey = resolveTaskEditNotesEditorKey('PROJ-189', 0);
+    const rehydratedKey = resolveTaskEditNotesEditorKey('PROJ-189', 0);
 
     expect(noteRevisions.note).not.toBe(initialRevisions.note);
-    expect(resolveTaskEditNotesEditorKey('PROJ-189', 0)).toBe(
-      resolveTaskEditNotesEditorKey('PROJ-189', 0),
+    expect(`note:PROJ-189:${initialRevisions.note}:0`).not.toBe(
+      `note:PROJ-189:${noteRevisions.note}:0`,
     );
+    expect(rehydratedKey).toBe(initialKey);
   });
 
   it('resets the notes editor when task identity or restored draft revision changes', () => {
