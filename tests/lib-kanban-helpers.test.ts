@@ -303,6 +303,64 @@ describe('kanban-helpers', () => {
       expect(result.next.todo[0].runState).toBe('queued');
       expect(result.next.todo[0].runStateUpdatedAt).toBe('2026-03-13T12:05:00.000Z');
     });
+
+    it('sets the Hermes dispatch target when queueing optimistically', () => {
+      const columns = {
+        ...emptyColumns(),
+        todo: [
+          makeTask({
+            id: '1',
+            taskKey: 'PROJ-1',
+            status: 'todo',
+            sortOrder: 'a0',
+            archivedAt: '2026-03-10T10:00:00.000Z',
+            dispatchTarget: null,
+          }),
+        ],
+      };
+
+      const result = queueTaskExecutionOptimistically(
+        columns,
+        'PROJ-1',
+        '2026-03-13T12:05:00.000Z',
+        'hermes-telegram',
+      );
+
+      expect(result.changed).toBe(true);
+      expect(result.next.todo[0]).toEqual(
+        expect.objectContaining({
+          runState: 'queued',
+          runStateUpdatedAt: '2026-03-13T12:05:00.000Z',
+          archivedAt: null,
+          dispatchTarget: 'hermes-telegram',
+        }),
+      );
+    });
+
+    it('sets the OpenClaw Telegram dispatch target when queueing optimistically', () => {
+      const columns = {
+        ...emptyColumns(),
+        todo: [
+          makeTask({
+            id: '1',
+            taskKey: 'PROJ-1',
+            status: 'todo',
+            sortOrder: 'a0',
+            dispatchTarget: 'hermes-telegram',
+          }),
+        ],
+      };
+
+      const result = queueTaskExecutionOptimistically(
+        columns,
+        'PROJ-1',
+        '2026-03-13T12:05:00.000Z',
+        'telegram',
+      );
+
+      expect(result.changed).toBe(true);
+      expect(result.next.todo[0].dispatchTarget).toBe('telegram');
+    });
   });
 
   describe('resolveDisplayEngine', () => {

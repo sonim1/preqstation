@@ -129,12 +129,19 @@ export function moveTask(
   return { changed: true, next };
 }
 
-function applyQueuedTaskState(task: KanbanTask, queuedAt: string) {
+function applyQueuedTaskState(
+  task: KanbanTask,
+  queuedAt: string,
+  dispatchTarget?: TaskDispatchTarget | null,
+) {
+  const nextDispatchTarget = normalizeTaskDispatchTarget(dispatchTarget);
+
   return {
     ...task,
     runState: 'queued' as const,
     runStateUpdatedAt: queuedAt,
     archivedAt: null,
+    ...(nextDispatchTarget ? { dispatchTarget: nextDispatchTarget } : null),
   };
 }
 
@@ -142,6 +149,7 @@ export function queueTaskExecutionOptimistically(
   columns: KanbanColumns,
   taskKey: string,
   queuedAt: string,
+  dispatchTarget?: TaskDispatchTarget | null,
 ) {
   const source = allStatuses.find((status) =>
     columns[status].some((task) => task.taskKey === taskKey),
@@ -152,12 +160,13 @@ export function queueTaskExecutionOptimistically(
   const sourceTask = sourceIndex >= 0 ? columns[source][sourceIndex] : null;
   if (!sourceTask) return { changed: false, next: columns };
 
-  const nextTask = applyQueuedTaskState(sourceTask, queuedAt);
+  const nextTask = applyQueuedTaskState(sourceTask, queuedAt, dispatchTarget);
   const changed =
     sourceTask.status !== nextTask.status ||
     sourceTask.runState !== nextTask.runState ||
     sourceTask.runStateUpdatedAt !== nextTask.runStateUpdatedAt ||
-    sourceTask.archivedAt !== nextTask.archivedAt;
+    sourceTask.archivedAt !== nextTask.archivedAt ||
+    sourceTask.dispatchTarget !== nextTask.dispatchTarget;
   if (!changed) return { changed: false, next: columns };
 
   return {

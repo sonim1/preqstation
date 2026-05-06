@@ -29,7 +29,11 @@ type KanbanColumnProps = {
   editHrefJoiner: string;
   telegramEnabled?: boolean;
   router: AppRouterInstance;
-  onTaskQueued?: (taskKey: string, queuedAt: string) => void;
+  onTaskQueued?: (
+    taskKey: string,
+    queuedAt: string,
+    dispatchTarget: KanbanTask['dispatchTarget'],
+  ) => void;
   onOpenTaskEditor?: (task: KanbanTask) => void;
   onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
   onDeleteTask: (taskId: string) => void;
@@ -56,7 +60,11 @@ type KanbanColumnTaskCardProps = {
   editHrefJoiner: string;
   telegramEnabled: boolean;
   router: AppRouterInstance;
-  onTaskQueued?: (taskKey: string, queuedAt: string) => void;
+  onTaskQueued?: (
+    taskKey: string,
+    queuedAt: string,
+    dispatchTarget: KanbanTask['dispatchTarget'],
+  ) => void;
   onOpenTaskEditor?: (task: KanbanTask) => void;
   onQuickMoveTask: (taskId: string, targetStatus: KanbanStatus) => void;
   onDeleteTask: (taskId: string) => void;

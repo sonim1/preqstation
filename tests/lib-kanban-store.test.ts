@@ -160,6 +160,20 @@ describe('lib/kanban-store', () => {
     expect(store.getState().focusedTask?.runStateUpdatedAt).toBe('2026-03-30T13:10:00.000Z');
   });
 
+  it('syncs optimistic dispatch target to board snapshot and focused task', () => {
+    const store = createKanbanStore({
+      columns: buildColumns(),
+      focusedTask: buildFocusedTask(),
+    });
+
+    store
+      .getState()
+      .applyOptimisticRunState('PROJ-255', '2026-03-30T13:10:00.000Z', 'hermes-telegram');
+
+    expect(store.getState().tasksByKey['PROJ-255']?.dispatchTarget).toBe('hermes-telegram');
+    expect(store.getState().focusedTask?.dispatchTarget).toBe('hermes-telegram');
+  });
+
   it('uses newer server run state when hydrating after optimistic queued state', () => {
     const store = createKanbanStore({
       columns: buildColumns(),

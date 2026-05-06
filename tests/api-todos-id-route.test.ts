@@ -197,6 +197,23 @@ describe('app/api/todos/[id]/route', () => {
     );
   });
 
+  it('PATCH preserves dispatch target in board and focused task responses', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValue({
+      ...existingTask,
+      dispatchTarget: 'hermes-telegram',
+    });
+
+    const response = await PATCH(patchRequest({ title: 'Task B' }), {
+      params: Promise.resolve({ id: 'todo-1' }),
+    });
+
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.boardTask.dispatchTarget).toBe('hermes-telegram');
+    expect(body.focusedTask.dispatchTarget).toBe('hermes-telegram');
+  });
+
   it('GET returns focused task detail for targeted drawer refresh', async () => {
     mocked.db.query.tasks.findFirst.mockResolvedValueOnce({
       ...existingTask,
