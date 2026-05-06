@@ -82,12 +82,14 @@ describe('task edit modal scroll-shell CSS regressions', () => {
 
     expect(shellRule).toContain('--task-edit-section-min-height: clamp(30rem, 62vh, 44rem);');
     expect(shellRule).toContain('grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);');
+    expect(shellRule).toContain('min-width: 0;');
     expect(sidebarRule).toContain('display: grid;');
     expect(sidebarRule).toContain('align-content: start;');
     expect(sidebarRule).toContain('min-width: 0;');
     expect(mainColumnRule).toContain('display: grid;');
     expect(mainColumnRule).toContain('grid-template-rows: minmax(0, 1fr) auto;');
     expect(mainColumnRule).toContain('min-height: 0;');
+    expect(mainColumnRule).toContain('min-width: 0;');
     expect(dispatchRailRule).toContain('display: grid;');
     expect(dispatchRailRule).toContain('align-content: start;');
     expect(dispatchRailRule).not.toContain('min-height: var(--task-edit-section-min-height);');
@@ -145,12 +147,21 @@ describe('task edit modal scroll-shell CSS regressions', () => {
   it('renders task settings as a compact card inside the metadata rail', () => {
     const metaHeaderRule = getRuleBody(taskEditFormCss, '.metaHeader');
     const settingsPanelRule = getRuleBody(taskEditFormCss, '.settingsPanel');
+    const taskIdentityRowRule = getRuleBody(taskEditFormCss, '.taskIdentityRow');
+    const projectNameRule = getRuleBody(taskEditFormCss, '.projectName');
+    const settingsControlsRule = getRuleBody(taskEditFormCss, '.settingsControls');
+    const labelShortcutButtonRule = getRuleBody(taskEditFormCss, '.labelShortcutButton');
+    const labelShortcutInlineListRule = getRuleBody(taskEditFormCss, '.labelShortcutInlineList');
+    const priorityShortcutLabelRule = getRuleBody(taskEditFormCss, '.priorityShortcutLabel');
+    const priorityShortcutButtonRule = getRuleBody(taskEditFormCss, '.priorityShortcutButton');
     const settingsDividerRule = getRuleBody(taskEditFormCss, '.settingsDivider');
 
     expect(metaHeaderRule).toContain('display: grid;');
     expect(metaHeaderRule).toContain('gap:');
     expect(metaHeaderRule).toContain('padding: 0;');
     expect(settingsPanelRule).toContain('gap: 0.875rem;');
+    expect(settingsPanelRule).toContain('max-width: 100%;');
+    expect(settingsPanelRule).toContain('overflow-wrap: anywhere;');
     expect(settingsPanelRule).toContain(
       'border: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);',
     );
@@ -162,6 +173,17 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(settingsDividerRule).toContain(
       'border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 20%);',
     );
+    expect(taskIdentityRowRule).toContain('max-width: 100%;');
+    expect(taskIdentityRowRule).toContain('flex-wrap: wrap;');
+    expect(projectNameRule).toContain('max-width: 100%;');
+    expect(projectNameRule).toContain('overflow-wrap: anywhere;');
+    expect(settingsControlsRule).toContain('max-width: 100%;');
+    expect(labelShortcutButtonRule).toContain('max-width: 100%;');
+    expect(labelShortcutInlineListRule).toContain('min-width: 0;');
+    expect(labelShortcutInlineListRule).toContain('max-width: 100%;');
+    expect(priorityShortcutLabelRule).toContain('overflow-wrap: anywhere;');
+    expect(priorityShortcutLabelRule).not.toContain('white-space: nowrap;');
+    expect(priorityShortcutButtonRule).toContain('max-width: 100%;');
     expect(taskEditFormCss).not.toContain('box-shadow: var(--ui-elevation-1);');
   });
 

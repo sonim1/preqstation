@@ -182,6 +182,7 @@ vi.mock('next/navigation', () => ({
 
 import {
   calculateTaskPanelResizeOffset,
+  clampTaskPanelResizeOffset,
   clampTaskPanelSize,
   readTaskPanelStoredSize,
   resolveTaskPanelFullscreenState,
@@ -520,6 +521,23 @@ describe('TaskPanelModal', () => {
     ).toEqual({ x: -50, y: 50 });
   });
 
+  it('clamps resize offsets inside the available viewport gutter', () => {
+    expect(
+      clampTaskPanelResizeOffset(
+        { x: 140, y: -120 },
+        { width: 720, height: 520 },
+        { width: 1000, height: 700 },
+      ),
+    ).toEqual({ x: 116, y: -66 });
+    expect(
+      clampTaskPanelResizeOffset(
+        { x: 60, y: 40 },
+        { width: 720, height: 520 },
+        { width: 760, height: 560 },
+      ),
+    ).toEqual({ x: 0, y: 0 });
+  });
+
   it('uses a stable fallback size for the first render and hydrates stored size after mount', async () => {
     const dom = installDom({ width: 1000, height: 700 });
     window.localStorage.setItem(
@@ -696,6 +714,59 @@ describe('TaskPanelModal', () => {
       expect(latestResizableProps.maxWidth).toBe(852);
       expect(latestResizableProps.maxHeight).toBe(602);
       expect(latestResizableProps.size).toEqual({ width: 852, height: 602 });
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
+  it('clamps the panel offset when the viewport changes after a desktop resize', async () => {
+    const dom = installDom({ width: 1000, height: 700 });
+
+    try {
+      render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      act(() => {
+        resizableMock.mock.calls[0]?.[0].onResizeStop?.(
+          null,
+          'bottomRight',
+          {
+            offsetWidth: 720,
+            offsetHeight: 520,
+          },
+          {
+            width: 120,
+            height: 80,
+          },
+        );
+      });
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 60, top: 40 });
+      });
+
+      dom.resizeTo(760, 560);
+
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      await waitFor(() => {
+        const latestResizableProps = resizableMock.mock.calls.at(-1)?.[0];
+
+        expect(latestResizableProps.size).toEqual({ width: 720, height: 520 });
+        expect(latestResizableProps.style).toEqual({ left: 0, top: 0 });
+      });
     } finally {
       cleanup();
       dom.restore();

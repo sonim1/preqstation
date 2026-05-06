@@ -174,6 +174,26 @@ export function clampTaskPanelSize(
   };
 }
 
+export function clampTaskPanelResizeOffset(
+  offset: TaskPanelOffset,
+  size: TaskPanelSize,
+  viewport: TaskPanelViewport,
+): TaskPanelOffset {
+  const maxOffsetX = Math.max(
+    0,
+    (viewport.width - size.width - TASK_PANEL_RESIZE_VIEWPORT_GUTTER) / 2,
+  );
+  const maxOffsetY = Math.max(
+    0,
+    (viewport.height - size.height - TASK_PANEL_RESIZE_VIEWPORT_GUTTER) / 2,
+  );
+
+  return {
+    x: Math.min(Math.max(offset.x, -maxOffsetX), maxOffsetX),
+    y: Math.min(Math.max(offset.y, -maxOffsetY), maxOffsetY),
+  };
+}
+
 export function calculateTaskPanelResizeOffset(
   baseOffset: TaskPanelOffset,
   direction: ResizeDirection,
@@ -291,6 +311,11 @@ export function TaskPanelModal({
   const [resizeOffset, setResizeOffset] = useState<TaskPanelOffset>({ x: 0, y: 0 });
   const resizeStartOffsetRef = useRef<TaskPanelOffset>({ x: 0, y: 0 });
   const clampedResizableSize = clampTaskPanelSize(resizableSize, viewport);
+  const clampedResizeOffset = clampTaskPanelResizeOffset(
+    resizeOffset,
+    clampedResizableSize,
+    viewport,
+  );
 
   useEffect(() => {
     return () => {
@@ -386,13 +411,18 @@ export function TaskPanelModal({
       return;
     }
 
-    setResizeOffset(calculateTaskPanelResizeOffset(resizeStartOffsetRef.current, direction, delta));
-
+    const currentViewport = getTaskPanelViewport();
     const nextSize = clampTaskPanelSize(
       { width: ref.offsetWidth, height: ref.offsetHeight },
-      getTaskPanelViewport(),
+      currentViewport,
+    );
+    const nextOffset = clampTaskPanelResizeOffset(
+      calculateTaskPanelResizeOffset(resizeStartOffsetRef.current, direction, delta),
+      nextSize,
+      currentViewport,
     );
 
+    setResizeOffset(nextOffset);
     setResizableSize(nextSize);
     writeTaskPanelStoredSize(resizableStorageKey, window.localStorage, nextSize);
   }
@@ -489,11 +519,11 @@ export function TaskPanelModal({
           maxHeight={resizeBounds.maxHeight}
           size={clampedResizableSize}
           style={{
-            left: resizeOffset.x,
-            top: resizeOffset.y,
+            left: clampedResizeOffset.x,
+            top: clampedResizeOffset.y,
           }}
           onResizeStart={(_event, _direction) => {
-            resizeStartOffsetRef.current = resizeOffset;
+            resizeStartOffsetRef.current = clampedResizeOffset;
           }}
           onResize={(_event, direction, ref, delta) => {
             const offset = calculateTaskPanelResizeOffset(
