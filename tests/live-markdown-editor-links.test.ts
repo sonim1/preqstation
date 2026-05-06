@@ -110,6 +110,19 @@ describe('LiveMarkdownEditor links', () => {
     );
   });
 
+  it('does not force selection back when passive checklist source sync collapses', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/components/live-markdown-editor.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('options: { selectStart?: boolean } = {}');
+    expect(source).toContain('if (selectStart) {\n    listItem.selectStart();\n  }');
+    expect(
+      source.match(/\$collapseLiveChecklistSourceNode\(sourceNode, \{ selectStart: false \}\)/g),
+    ).toHaveLength(2);
+  });
+
   it('lets non-list Shift+Tab escape live tab indentation handling', () => {
     const source = readFileSync(
       join(process.cwd(), 'app/components/live-markdown-editor.tsx'),

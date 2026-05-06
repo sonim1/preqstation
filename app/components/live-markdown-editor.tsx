@@ -338,16 +338,22 @@ function appendChildrenSkippingLeadingCharacters(
   }
 }
 
-function $collapseLiveChecklistSourceNode(source: ReturnType<typeof $createParagraphNode>) {
+function $collapseLiveChecklistSourceNode(
+  source: ReturnType<typeof $createParagraphNode>,
+  options: { selectStart?: boolean } = {},
+) {
   const parsed = parseLiveChecklistMarker(source.getTextContent());
   if (!parsed) return source;
 
+  const { selectStart = true } = options;
   const list = $createListNode('check');
   const listItem = $createListItemNode(parsed.checked);
   list.append(listItem);
   appendChildrenSkippingLeadingCharacters(source, listItem, parsed.markerLength);
   source.replace(list);
-  listItem.selectStart();
+  if (selectStart) {
+    listItem.selectStart();
+  }
   return listItem;
 }
 
@@ -806,7 +812,7 @@ function LiveChecklistSourcePlugin() {
           if (sourceKeyToCollapse) {
             const sourceNode = $getNodeByKey(sourceKeyToCollapse);
             if ($isParagraphNode(sourceNode)) {
-              $collapseLiveChecklistSourceNode(sourceNode);
+              $collapseLiveChecklistSourceNode(sourceNode, { selectStart: false });
             }
           }
 
@@ -834,7 +840,7 @@ function LiveChecklistSourcePlugin() {
           () => {
             const sourceNode = $getNodeByKey(sourceKey);
             if ($isParagraphNode(sourceNode)) {
-              $collapseLiveChecklistSourceNode(sourceNode);
+              $collapseLiveChecklistSourceNode(sourceNode, { selectStart: false });
             }
             activeSourceKeyRef.current = null;
           },
