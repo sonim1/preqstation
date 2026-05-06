@@ -103,7 +103,8 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(mainColumnRule).toContain('grid-template-rows: auto auto auto;');
     expect(mainColumnRule).toContain('align-content: start;');
     expect(mainColumnRule).toContain('max-width: 100%;');
-    expect(mainColumnRule).toContain('min-height: 0;');
+    expect(mainColumnRule).toContain('height: fit-content;');
+    expect(mainColumnRule).not.toContain('min-height: 0;');
     expect(mainColumnRule).toContain('min-width: 0;');
     expect(dispatchRailRule).toContain('display: grid;');
     expect(dispatchRailRule).toContain('align-content: start;');
