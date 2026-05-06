@@ -445,6 +445,65 @@ describe('app/components/ready-qa-actions', () => {
     });
   });
 
+  it('clears a queued subset prompt when reopening QA runs with all ready tasks selected', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        ok: true,
+        run: {
+          ...createRun(1),
+          id: 'run-456',
+          status: 'queued',
+          taskKeys: ['PROJ-1'],
+          reportMarkdown: null,
+          startedAt: null,
+          finishedAt: null,
+        },
+      }),
+    });
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      value: fetchMock,
+    });
+
+    render(
+      <MantineProvider>
+        <ReadyQaActionsAny
+          projectId="project-1"
+          projectKey="ALPHA"
+          projectName="Project One"
+          branchName="release/mobile"
+          readyCount={2}
+          readyTasks={readyTasks}
+          telegramEnabled
+          initialRuns={[]}
+        />
+      </MantineProvider>,
+    );
+
+    fireEvent.click(screen.getByLabelText('Include PROJ-2 in QA'));
+    fireEvent.click(screen.getByText('Queue QA'));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Dispatch prompt').textContent).toContain(
+        'qa_task_keys="PROJ-1"',
+      );
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open QA runs' }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Dispatch prompt').textContent).toBe(
+        'Queue QA to generate an executable dispatch prompt for the current ready tasks.',
+      );
+    });
+    expect((screen.getByLabelText('Include PROJ-1 in QA') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText('Include PROJ-2 in QA') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText('Copy dispatch prompt') as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+  });
+
   it('shows only Telegram QA targets when both transports are available', () => {
     const html = renderToStaticMarkup(
       <MantineProvider>

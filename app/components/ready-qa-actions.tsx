@@ -217,6 +217,7 @@ export function ReadyQaActions({
 
   function openRunsModal() {
     setSelectedTaskKeys(readyTasks.map((task) => task.taskKey));
+    setQueuedQaPrompt(null);
     setOpened(true);
   }
 
