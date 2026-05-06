@@ -98,6 +98,31 @@ describe('app/hooks/use-task-offline-draft', () => {
     expect(result.current.canRestoreDraft).toBe(false);
   });
 
+  it('keeps the draft revision stable when same-task autosave rehydrates the server note', async () => {
+    const { result, rerender } = renderHook(
+      ({ serverNote }) => useTaskOfflineDraft('PROJ-310', '원본 제목', serverNote, true),
+      {
+        initialProps: {
+          serverNote: '## Server note',
+        },
+      },
+    );
+
+    await waitFor(() => {
+      expect(result.current.draftNote).toBe('## Server note');
+    });
+    const initialDraftRevision = result.current.draftRevision;
+
+    rerender({
+      serverNote: '## Saved from autosave',
+    });
+
+    await waitFor(() => {
+      expect(result.current.draftNote).toBe('## Saved from autosave');
+    });
+    expect(result.current.draftRevision).toBe(initialDraftRevision);
+  });
+
   it('suppresses a stale draft conflict when the saved draft already matches the latest server note', async () => {
     mocked.getDraft.mockResolvedValue({
       updatedAt: '2026-04-28T15:00:00.000Z',
@@ -226,6 +251,7 @@ describe('app/hooks/use-task-offline-draft', () => {
     expect(result.current.draftTitle).toBe('원본 제목');
     expect(result.current.draftNote).toBe('## Server note');
     expect(result.current.hasNoteConflict).toBe(true);
+    const preRestoreDraftRevision = result.current.draftRevision;
 
     act(() => {
       result.current.restoreDraft();
@@ -235,6 +261,7 @@ describe('app/hooks/use-task-offline-draft', () => {
       expect(result.current.draftTitle).toBe('로컬 초안 제목');
     });
     expect(result.current.draftNote).toBe('## Local rewrite');
+    expect(result.current.draftRevision).toBe(preRestoreDraftRevision + 1);
     expect(result.current.hasNoteConflict).toBe(false);
     expect(result.current.canRestoreDraft).toBe(false);
   });

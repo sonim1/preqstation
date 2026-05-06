@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   applyTaskEditNotesModeChange,
+  resolveTaskEditNotesEditorKey,
   resolveTaskEditNotesMode,
   type TaskEditNotesModeState,
 } from '@/app/components/task-edit-form';
@@ -115,6 +116,32 @@ describe('app/components/task-edit-form notes mode state', () => {
 
     expect(noteRevisions.note).not.toBe(initialRevisions.note);
     expect(resolveTaskEditNotesMode(currentState, 'PROJ-189')).toBe('markdown');
+  });
+
+  it('keeps the notes editor mounted when same-task blur autosave rehydrates saved note content', () => {
+    const initialRevisions = buildTaskEditFieldRevisions(buildEditableTodo());
+    const noteRevisions = buildTaskEditFieldRevisions(
+      buildEditableTodo({
+        note: 'Saved on server',
+      }),
+    );
+    const initialKey = resolveTaskEditNotesEditorKey('PROJ-189', 0);
+    const rehydratedKey = resolveTaskEditNotesEditorKey('PROJ-189', 0);
+
+    expect(noteRevisions.note).not.toBe(initialRevisions.note);
+    expect(`note:PROJ-189:${initialRevisions.note}:0`).not.toBe(
+      `note:PROJ-189:${noteRevisions.note}:0`,
+    );
+    expect(rehydratedKey).toBe(initialKey);
+  });
+
+  it('resets the notes editor when task identity or restored draft revision changes', () => {
+    expect(resolveTaskEditNotesEditorKey('PROJ-189', 0)).not.toBe(
+      resolveTaskEditNotesEditorKey('PROJ-190', 0),
+    );
+    expect(resolveTaskEditNotesEditorKey('PROJ-189', 0)).not.toBe(
+      resolveTaskEditNotesEditorKey('PROJ-189', 1),
+    );
   });
 
   it('resets to live mode when the task identity changes', () => {

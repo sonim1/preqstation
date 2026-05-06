@@ -81,7 +81,6 @@ export function useTaskOfflineDraft(
       setDraftBaseTitleFingerprint(nextDraft.baseTitleFingerprint);
       setDraftTitle(nextDraft.title);
       setDraftNote(nextDraft.note);
-      setDraftRevision((currentRevision) => currentRevision + 1);
     };
 
     void Promise.resolve().then(async () => {
