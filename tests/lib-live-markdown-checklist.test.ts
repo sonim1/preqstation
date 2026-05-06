@@ -31,10 +31,10 @@ describe('lib/live-markdown-checklist', () => {
   });
 
   it('treats every marker character and the final marker space as source editing range', () => {
-    for (let cursor = 0; cursor <= 5; cursor += 1) {
+    for (let cursor = 0; cursor <= 6; cursor += 1) {
       expect(isCursorInsideLiveChecklistMarker(cursor)).toBe(true);
     }
 
-    expect(isCursorInsideLiveChecklistMarker(6)).toBe(false);
+    expect(isCursorInsideLiveChecklistMarker(7)).toBe(false);
   });
 });

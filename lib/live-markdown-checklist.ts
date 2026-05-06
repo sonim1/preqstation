@@ -18,5 +18,5 @@ export function parseLiveChecklistMarker(line: string): LiveChecklistMarker | nu
 }
 
 export function isCursorInsideLiveChecklistMarker(cursorInLine: number): boolean {
-  return cursorInLine >= 0 && cursorInLine < LIVE_CHECKLIST_MARKER_LENGTH;
+  return cursorInLine >= 0 && cursorInLine <= LIVE_CHECKLIST_MARKER_LENGTH;
 }

@@ -2,7 +2,13 @@
 
 import { CodeHighlightNode, CodeNode, registerCodeHighlighting } from '@lexical/code';
 import { AutoLinkNode, LinkNode } from '@lexical/link';
-import { $createListItemNode, $createListNode, ListItemNode, ListNode } from '@lexical/list';
+import {
+  $createListItemNode,
+  $createListNode,
+  $isListItemNode,
+  ListItemNode,
+  ListNode,
+} from '@lexical/list';
 import {
   $convertFromMarkdownString,
   $convertToMarkdownString,
@@ -351,7 +357,7 @@ function $revealChecklistAsLiveSource(listItemNode: ListItemNode) {
   paragraph.append($createTextNode(marker));
   paragraph.append(...listItemNode.getChildren());
   listItemNode.replace(paragraph);
-  paragraph.selectStart();
+  paragraph.select(6, 6);
   return paragraph;
 }
 
@@ -780,7 +786,7 @@ function LiveChecklistSourcePlugin() {
           return;
         }
 
-        if (blockNode instanceof ListItemNode && blockNode.getChecked() !== undefined) {
+        if ($isListItemNode(blockNode) && blockNode.getChecked() !== undefined) {
           if (resolveListItemCursor(selection, blockNode).cursor === 0) {
             checklistItemKeyToReveal = blockNode.getKey();
           }
@@ -806,10 +812,9 @@ function LiveChecklistSourcePlugin() {
 
           if (checklistItemKeyToReveal) {
             const checklistItemNode = $getNodeByKey(checklistItemKeyToReveal);
-            activeSourceKeyRef.current =
-              checklistItemNode instanceof ListItemNode
-                ? $revealChecklistAsLiveSource(checklistItemNode).getKey()
-                : null;
+            activeSourceKeyRef.current = $isListItemNode(checklistItemNode)
+              ? $revealChecklistAsLiveSource(checklistItemNode).getKey()
+              : null;
             return;
           }
 
