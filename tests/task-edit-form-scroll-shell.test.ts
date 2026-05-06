@@ -11,6 +11,10 @@ const taskEditFormCss = fs.readFileSync(
   path.join(process.cwd(), 'app/components/task-edit-form.module.css'),
   'utf8',
 );
+const taskEditFormSource = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/task-edit-form.tsx'),
+  'utf8',
+);
 const globalCss = fs.readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
 
 function getRuleBody(css: string, selector: string) {
@@ -124,10 +128,16 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(notesCardRule).toContain('display: flex;');
     expect(notesCardRule).toContain('min-height: var(--task-edit-section-min-height);');
     expect(notesCardRule).toContain('max-width: 100%;');
-    expect(activityCardRule).toContain('padding: 0;');
+    expect(activityCardRule).not.toContain('padding:');
     expect(activityCardRule).toContain('max-width: 100%;');
     expect(activityCardRule).toContain('min-height: auto;');
     expect(activityCardRule).toContain('overflow-wrap: anywhere;');
+    expect(taskEditFormSource).toMatch(
+      /className=\{`\$\{classes\.activityCard\} \$\{classes\.sectionSurface\}`\}[\s\S]*data-panel="task-edit-comments"/,
+    );
+    expect(taskEditFormSource).toMatch(
+      /className=\{`\$\{classes\.activityCard\} \$\{classes\.sectionSurface\}`\}[\s\S]*data-panel="task-edit-activity"/,
+    );
     expect(getRuleBody(taskEditFormCss, '.commentCard')).toContain('overflow-wrap: anywhere;');
     expect(notesContentRule).toContain('display: flex;');
     expect(notesContentRule).toContain('flex: 1 1 auto;');
@@ -150,6 +160,9 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     );
     expect(taskEditFormCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.dispatchRail[\s\S]*padding:\s*0;/,
+    );
+    expect(taskEditFormCss).toMatch(
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.activityCard[\s\S]*padding:\s*0;/,
     );
     expect(taskEditFormCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.shell\s*\{[\s\S]*display:\s*flex;[\s\S]*flex-direction:\s*column;/,

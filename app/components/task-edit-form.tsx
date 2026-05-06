@@ -845,7 +845,10 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
   }
 
   return (
-    <section className={classes.activityCard} data-panel="task-edit-comments">
+    <section
+      className={`${classes.activityCard} ${classes.sectionSurface}`}
+      data-panel="task-edit-comments"
+    >
       <Stack gap="md">
         <SectionHeading
           title="Comments"
@@ -1219,7 +1222,10 @@ function TaskEditFormContent({
 
             {!isOffline ? <TaskCommentsSection taskKey={taskKey} /> : null}
 
-            <section className={classes.activityCard} data-panel="task-edit-activity">
+            <section
+              className={`${classes.activityCard} ${classes.sectionSurface}`}
+              data-panel="task-edit-activity"
+            >
               <Stack gap="md">
                 <SectionHeading
                   title="Activity"
