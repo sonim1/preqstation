@@ -182,6 +182,38 @@ describe('LiveMarkdownEditor spacing reconciliation', () => {
     expect(screen.getByLabelText('Description live editor')).toBe(editor);
   });
 
+  it('clears dirty state when defaultValue rehydrates the user edit', async () => {
+    const { container, onContentChange, rerenderDefaultValue } =
+      renderEditorWithControls('Saved note');
+
+    await screen.findByLabelText('Description live editor');
+    fireEvent.click(screen.getByRole('radio', { name: 'Markdown' }));
+
+    const textarea = await screen.findByLabelText('Description markdown source');
+    fireEvent.change(textarea, { target: { value: 'User edit' } });
+
+    expect(onContentChange).toHaveBeenCalledWith('User edit');
+    expect(getHiddenMarkdownInput(container).value).toBe('User edit');
+
+    rerenderDefaultValue(
+      ['User edit', '', ':::preq-choice', 'question: Keep existing note?', ':::'].join('\n'),
+    );
+
+    await waitFor(() => {
+      expect(getHiddenMarkdownInput(container).value).toBe('User edit');
+    });
+    expect(screen.getByLabelText('Description markdown source')).toBe(textarea);
+
+    rerenderDefaultValue('Server replacement');
+
+    await waitFor(() => {
+      expect(getHiddenMarkdownInput(container).value).toBe('Server replacement');
+    });
+    expect(
+      (screen.getByLabelText('Description markdown source') as HTMLTextAreaElement).value,
+    ).toBe('Server replacement');
+  });
+
   it('keeps an external update when defaultValue still has the old markdown', async () => {
     const { container, onExternalUpdateApplied, rerenderExternalUpdate } =
       renderEditorWithControls('Saved note');
