@@ -446,9 +446,7 @@
   }
 
   .shell {
-    display: flex;
-    flex-direction: column;
-    max-width: 100%;
+    grid-template-columns: 1fr;
   }
 
   .dispatchRail,
