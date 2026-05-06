@@ -858,12 +858,12 @@ describe('TaskPanelModal', () => {
     expect(html).toContain('aria-label="Exit full screen for Edit Task dialog"');
   });
 
-  it('restores stored desktop fullscreen when the URL does not include fullscreen=1', () => {
+  it('restores stored desktop fullscreen when the URL does not include fullscreen=1', async () => {
     const dom = installDom({ width: 1000, height: 700 });
     window.localStorage.setItem('preqstation:task-edit-panel:fullscreen:v1', 'true');
 
     try {
-      const html = renderToStaticMarkup(
+      render(
         <TaskPanelModal
           opened={true}
           title="Edit Task"
@@ -874,13 +874,16 @@ describe('TaskPanelModal', () => {
         </TaskPanelModal>,
       );
 
-      expect(html).toContain('data-full-screen="true"');
+      await waitFor(() => {
+        expect(modalMock.mock.calls.at(-1)?.[0].fullScreen).toBe(true);
+      });
     } finally {
+      cleanup();
       dom.restore();
     }
   });
 
-  it('lets fullscreen=1 override a stored desktop fullscreen preference', () => {
+  it('lets fullscreen=1 override a stored desktop fullscreen preference', async () => {
     const dom = installDom({ width: 1000, height: 700 });
     window.localStorage.setItem('preqstation:task-edit-panel:fullscreen:v1', 'false');
     useSearchParamsMock.mockReturnValue(
@@ -888,7 +891,7 @@ describe('TaskPanelModal', () => {
     );
 
     try {
-      renderToStaticMarkup(
+      render(
         <TaskPanelModal
           opened={true}
           title="Edit Task"
@@ -899,8 +902,11 @@ describe('TaskPanelModal', () => {
         </TaskPanelModal>,
       );
 
-      expect(modalMock.mock.calls.at(-1)?.[0].fullScreen).toBe(true);
+      await waitFor(() => {
+        expect(modalMock.mock.calls.at(-1)?.[0].fullScreen).toBe(true);
+      });
     } finally {
+      cleanup();
       dom.restore();
     }
   });
@@ -989,6 +995,67 @@ describe('TaskPanelModal', () => {
         'false',
       );
     } finally {
+      dom.restore();
+    }
+  });
+
+  it('keeps desktop fullscreen off after exit when storage persistence fails', async () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    window.localStorage.setItem('preqstation:task-edit-panel:fullscreen:v1', 'true');
+    useSearchParamsMock.mockReturnValue(
+      new URLSearchParams('panel=task-edit&taskId=PROJ-335&fullscreen=1'),
+    );
+    const setItemSpy = vi.spyOn(window.Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('quota exceeded');
+    });
+
+    try {
+      const { rerender } = render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/dashboard?panel=task-edit&taskId=PROJ-335"
+          fullscreenStorageKey="preqstation:task-edit-panel:fullscreen:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      await waitFor(() => {
+        expect(modalMock.mock.calls.at(-1)?.[0].fullScreen).toBe(true);
+      });
+
+      const actionIconProps = actionIconMock.mock.calls.at(-1)?.[0] as
+        | React.ButtonHTMLAttributes<HTMLButtonElement>
+        | undefined;
+
+      await act(async () => {
+        actionIconProps?.onClick?.({ preventDefault() {} } as React.MouseEvent<HTMLButtonElement>);
+      });
+
+      expect(replaceMock).toHaveBeenCalledWith('/dashboard?panel=task-edit&taskId=PROJ-335');
+      expect(window.localStorage.getItem('preqstation:task-edit-panel:fullscreen:v1')).toBe(
+        'true',
+      );
+
+      useSearchParamsMock.mockReturnValue(new URLSearchParams('panel=task-edit&taskId=PROJ-335'));
+      rerender(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/dashboard?panel=task-edit&taskId=PROJ-335"
+          fullscreenStorageKey="preqstation:task-edit-panel:fullscreen:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      await waitFor(() => {
+        expect(modalMock.mock.calls.at(-1)?.[0].fullScreen).toBe(false);
+      });
+    } finally {
+      setItemSpy.mockRestore();
+      cleanup();
       dom.restore();
     }
   });
