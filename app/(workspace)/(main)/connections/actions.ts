@@ -65,7 +65,7 @@ export async function revokeAllConnectionsAction() {
     revalidatePath('/api-keys');
   } catch (error) {
     if (error instanceof Response) return;
-    return;
+    throw error;
   }
 }
 
@@ -91,7 +91,7 @@ export async function revokeAllBrowserSessionsAction() {
     revalidatePath('/connections');
   } catch (error) {
     if (error instanceof Response) return;
-    return;
+    throw error;
   }
 }
 
