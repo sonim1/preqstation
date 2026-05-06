@@ -56,6 +56,15 @@ describe('lib/markdown', () => {
     );
   });
 
+  it('preserves tight checklist-to-paragraph spacing', () => {
+    expect(preserveTightMarkdownSpacing('- [ ] item\nParagraph', '- [ ] item\n\nParagraph')).toBe(
+      '- [ ] item\nParagraph',
+    );
+    expect(preserveTightMarkdownSpacing('- [x] item\nParagraph', '- [x] item\n\nParagraph')).toBe(
+      '- [x] item\nParagraph',
+    );
+  });
+
   it('does not collapse heading spacing before lists or code fences', () => {
     expect(preserveTightMarkdownSpacing('## Title\n\n- item', '## Title\n\n- item')).toBe(
       '## Title\n\n- item',
