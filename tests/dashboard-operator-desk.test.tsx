@@ -128,7 +128,7 @@ const sampleFocusTodos = [
     taskPriority: 'high',
     status: 'todo',
     focusedAt: null,
-    project: { name: 'Preq' },
+    project: { name: 'Preq', projectKey: 'PREQ' },
     labels: [],
     engine: 'codex',
     runState: 'running',
@@ -143,7 +143,7 @@ const sampleFocusTodos = [
     taskPriority: 'medium',
     status: 'todo',
     focusedAt: null,
-    project: { name: 'Portal' },
+    project: { name: 'Portal', projectKey: 'PORTAL' },
     labels: [],
     engine: null,
     runState: null,
@@ -161,7 +161,7 @@ const sampleReadyTodos = [
     taskPriority: 'low',
     status: 'ready',
     focusedAt: null,
-    project: { name: 'Preq' },
+    project: { name: 'Preq', projectKey: 'PREQ' },
     labels: [],
     engine: null,
     runState: null,
@@ -177,7 +177,7 @@ const sampleOverflowReadyTodos = [
     taskPriority: 'medium',
     status: 'ready',
     focusedAt: null,
-    project: { name: 'Portal' },
+    project: { name: 'Portal', projectKey: 'PORTAL' },
     labels: [],
     engine: null,
     runState: null,
@@ -189,7 +189,7 @@ const sampleOverflowReadyTodos = [
     taskPriority: 'medium',
     status: 'ready',
     focusedAt: null,
-    project: { name: 'General' },
+    project: null,
     labels: [],
     engine: null,
     runState: null,
@@ -201,7 +201,7 @@ const sampleOverflowReadyTodos = [
     taskPriority: 'low',
     status: 'ready',
     focusedAt: null,
-    project: { name: 'Preq' },
+    project: { name: 'Preq', projectKey: 'PREQ' },
     labels: [],
     engine: null,
     runState: null,
@@ -213,7 +213,7 @@ const sampleOverflowReadyTodos = [
     taskPriority: 'low',
     status: 'ready',
     focusedAt: null,
-    project: { name: 'General' },
+    project: null,
     labels: [],
     engine: null,
     runState: null,
@@ -225,7 +225,7 @@ const sampleOverflowReadyTodos = [
     taskPriority: 'medium',
     status: 'ready',
     focusedAt: null,
-    project: { name: 'Preq' },
+    project: { name: 'Preq', projectKey: 'PREQ' },
     labels: [],
     engine: null,
     runState: null,
@@ -397,7 +397,7 @@ const edgeOverlappingPortfolioOverview = {
 } satisfies DashboardPortfolioOverviewData;
 
 function renderDesk(options?: {
-  readyTodos?: typeof sampleReadyTodos;
+  readyTodos?: Array<(typeof sampleOverflowReadyTodos)[number]>;
   readyCount?: number;
   portfolioOverview?: DashboardPortfolioOverviewData;
 }) {
@@ -631,6 +631,28 @@ describe('app/components/dashboard-operator-desk', () => {
     expect(hasMoreReadyTodos(5, INITIAL_VISIBLE_READY_TODOS)).toBe(false);
   });
 
+  it('links single-project dashboard labels to the project board', () => {
+    const html = renderDesk();
+
+    expect(html).toContain('href="/board/RISK"');
+    expect(html).toContain('aria-label="Open RISK board"');
+    expect(html).toContain('aria-label="Open Risk Project board"');
+    expect(html).toContain('aria-label="Open Risk Project activity board"');
+    expect(html).toContain('href="/board/PREQ"');
+    expect(html).toContain('aria-label="Open Preq board"');
+  });
+
+  it('keeps General task labels as plain text', () => {
+    const html = renderDesk({
+      readyTodos: sampleOverflowReadyTodos,
+      readyCount: 6,
+    });
+
+    expect(html).toContain('General');
+    expect(html).not.toContain('href="/board/General"');
+    expect(html).not.toContain('href="/board/"');
+  });
+
   it('collapses exact matrix overlaps into one cluster point with a visible count', () => {
     const html = renderDesk({
       portfolioOverview: overlappingPortfolioOverview,
@@ -646,6 +668,8 @@ describe('app/components/dashboard-operator-desk', () => {
     expect(html).toContain('CLB · Cluster B · 3 open"');
     expect(html).not.toContain('aria-label="CLA Cluster A 3 open tasks"');
     expect(html).not.toContain('aria-label="CLB Cluster B 3 open tasks"');
+    expect(html).not.toContain('aria-label="Open CLA board"');
+    expect(html).not.toContain('aria-label="Open CLB board"');
   });
 
   it('uses the same cluster behavior when the exact overlap sits on the matrix edge', () => {
