@@ -74,9 +74,6 @@ export async function createBrowserSession(input: {
     const existing = await client.query.browserSessions.findFirst({
       where: and(
         eq(browserSessions.ownerId, input.ownerId),
-        ipAddress === null
-          ? isNull(browserSessions.ipAddress)
-          : eq(browserSessions.ipAddress, ipAddress),
         userAgent === null
           ? isNull(browserSessions.userAgent)
           : eq(browserSessions.userAgent, userAgent),
@@ -97,6 +94,10 @@ export async function createBrowserSession(input: {
       const [updated] = await client
         .update(browserSessions)
         .set({
+          ipAddress,
+          userAgent,
+          browserName,
+          osName,
           lastUsedAt: now,
           expiresAt,
           revokedAt: null,

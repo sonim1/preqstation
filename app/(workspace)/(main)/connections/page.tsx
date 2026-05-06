@@ -98,6 +98,8 @@ function inferEngineLabel(values: Array<string | null | undefined>) {
     .join(' ')
     .toLowerCase();
 
+  if (haystack.includes('hermes')) return 'Hermes';
+  if (haystack.includes('openclaw')) return 'Openclaw';
   if (haystack.includes('claude')) return ENGINE_LABELS['claude-code'];
   if (haystack.includes('gemini')) return ENGINE_LABELS['gemini-cli'];
   if (haystack.includes('codex') || haystack.includes('openai') || haystack.includes('chatgpt')) {
@@ -378,9 +380,13 @@ export default async function ConnectionsPage(props?: {
     listOwnerBrowserSessions(owner.id),
     getUserSetting(owner.id, SETTING_KEYS.TIMEZONE),
   ]);
-  const visibleConnections = connections.filter((connection) => !connection.revokedAt);
-  const visibleBrowserSessions = browserSessions.filter((session) => !session.revokedAt);
   const now = getCurrentTimeMs();
+  const visibleConnections = connections.filter(
+    (connection) => !connection.revokedAt && !isConnectionExpired(connection, now),
+  );
+  const visibleBrowserSessions = browserSessions.filter(
+    (session) => !session.revokedAt && !isConnectionExpired(session, now),
+  );
   const summary = getConnectionSummary(visibleConnections, now);
   const sortedConnections = sortConnectionsForTable(visibleConnections, now);
   const browserSessionSummary = getBrowserSessionSummary(visibleBrowserSessions, now);
@@ -504,7 +510,7 @@ export default async function ConnectionsPage(props?: {
                                       className={`${styles.dataCellMeta} ${engineLabel === 'Unknown' ? styles.mutedText : ''}`}
                                       size="xs"
                                     >
-                                      Engine {engineLabel}
+                                      {engineLabel}
                                     </Text>
                                     <Text
                                       className={`${styles.dataCellMeta} ${styles.mutedText}`}

@@ -124,14 +124,62 @@ describe('lib/browser-sessions', () => {
     expect(mocked.ownerClient.query.browserSessions.findFirst).toHaveBeenCalledOnce();
     expect(mocked.ownerClient.insert).not.toHaveBeenCalled();
     expect(mocked.updateSet).toHaveBeenCalledWith({
-      expiresAt: new Date('2026-04-02T08:45:00.000Z'),
+      ipAddress: '203.0.113.10',
+      userAgent: CHROME_MAC_UA,
+      browserName: 'Chrome',
+      osName: 'macOS',
       lastUsedAt: now,
+      expiresAt: new Date('2026-04-02T08:45:00.000Z'),
       revokedAt: null,
     });
     expect(session).toEqual(
       expect.objectContaining({
         id: 'browser-session-existing',
         lastUsedAt: now,
+      }),
+    );
+  });
+
+  it('reuses an active browser session when only the IP address changes', async () => {
+    const now = new Date('2026-03-26T08:45:00.000Z');
+    const expectedExpiry = new Date('2026-04-02T08:45:00.000Z');
+    const existingSession = buildBrowserSession({
+      id: 'browser-session-existing',
+      ipAddress: '203.0.113.10',
+      lastUsedAt: new Date('2026-03-25T12:00:00.000Z'),
+      expiresAt: new Date('2026-04-01T12:00:00.000Z'),
+    });
+    mocked.ownerClient.query.browserSessions.findFirst.mockResolvedValueOnce(existingSession);
+    mocked.updateReturning.mockResolvedValueOnce([
+      buildBrowserSession({
+        id: 'browser-session-existing',
+        ipAddress: '198.51.100.25',
+        lastUsedAt: now,
+        expiresAt: expectedExpiry,
+      }),
+    ]);
+
+    const session = await createBrowserSession({
+      ownerId: 'owner-1',
+      ipAddress: '198.51.100.25',
+      userAgent: CHROME_MAC_UA,
+      now,
+    });
+
+    expect(mocked.ownerClient.insert).not.toHaveBeenCalled();
+    expect(mocked.updateSet).toHaveBeenCalledWith({
+      ipAddress: '198.51.100.25',
+      userAgent: CHROME_MAC_UA,
+      browserName: 'Chrome',
+      osName: 'macOS',
+      lastUsedAt: now,
+      expiresAt: expectedExpiry,
+      revokedAt: null,
+    });
+    expect(session).toEqual(
+      expect.objectContaining({
+        id: 'browser-session-existing',
+        ipAddress: '198.51.100.25',
       }),
     );
   });
