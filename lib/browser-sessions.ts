@@ -74,6 +74,9 @@ export async function createBrowserSession(input: {
     const existing = await client.query.browserSessions.findFirst({
       where: and(
         eq(browserSessions.ownerId, input.ownerId),
+        ipAddress === null
+          ? isNull(browserSessions.ipAddress)
+          : eq(browserSessions.ipAddress, ipAddress),
         userAgent === null
           ? isNull(browserSessions.userAgent)
           : eq(browserSessions.userAgent, userAgent),
