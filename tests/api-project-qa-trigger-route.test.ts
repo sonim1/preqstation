@@ -135,8 +135,23 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
     mocked.writeAuditLog.mockResolvedValue(undefined);
   });
 
-  it('creates a queued QA run and sends the Telegram command', async () => {
-    const response = await POST(postRequest(), {
+  it('creates a queued QA run for the selected ready tasks and sends the Telegram command', async () => {
+    mocked.createQueuedQaRun.mockResolvedValueOnce({
+      id: 'run-123',
+      projectId: 'project-1',
+      branchName: 'main',
+      status: 'queued',
+      engine: 'claude-code',
+      targetUrl: null,
+      taskKeys: ['PROJ-2'],
+      summary: { total: 0, critical: 0, high: 0, medium: 0, low: 0 },
+      reportMarkdown: null,
+      createdAt: '2026-03-18T10:00:00.000Z',
+      startedAt: null,
+      finishedAt: null,
+    });
+
+    const response = await POST(postRequest({ taskKeys: ['PROJ-2'] }), {
       params: Promise.resolve({ id: 'project-1' }),
     });
 
@@ -146,7 +161,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
       run: expect.objectContaining({
         id: 'run-123',
         branchName: 'main',
-        taskKeys: ['PROJ-1', 'PROJ-2'],
+        taskKeys: ['PROJ-2'],
       }),
     });
     expect(mocked.createQueuedQaRun).toHaveBeenCalledWith(
@@ -155,14 +170,14 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
         projectId: 'project-1',
         branchName: 'main',
         engine: 'claude-code',
-        taskKeys: ['PROJ-1', 'PROJ-2'],
+        taskKeys: ['PROJ-2'],
       },
       expect.anything(),
     );
     expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
       'bot-token',
       '123456',
-      '!/skill preqstation-dispatch qa PROJ using claude-code branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
+      '!/skill preqstation-dispatch qa PROJ using claude-code branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-2"',
       { normalizeCommand: true },
     );
     expect(mocked.writeAuditLog).toHaveBeenCalledWith(
@@ -184,7 +199,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
       telegram_chat_id: '123456',
     });
 
-    await POST(postRequest({ engine: 'gemini-cli' }), {
+    await POST(postRequest({ engine: 'gemini-cli', taskKeys: ['PROJ-1', 'PROJ-2'] }), {
       params: Promise.resolve({ id: 'project-1' }),
     });
 
@@ -212,9 +227,16 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
       hermes_telegram_chat_id: '7654321',
     });
 
-    await POST(postRequest({ engine: 'codex', dispatchTarget: 'hermes-telegram' }), {
-      params: Promise.resolve({ id: 'project-1' }),
-    });
+    await POST(
+      postRequest({
+        engine: 'codex',
+        dispatchTarget: 'hermes-telegram',
+        taskKeys: ['PROJ-1', 'PROJ-2'],
+      }),
+      {
+        params: Promise.resolve({ id: 'project-1' }),
+      },
+    );
 
     expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
       'bot-token',
@@ -232,6 +254,17 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
     );
   });
 
+  it('uses ready board order for the selected task scope', async () => {
+    await POST(postRequest({ taskKeys: ['PROJ-2', 'PROJ-1'] }), {
+      params: Promise.resolve({ id: 'project-1' }),
+    });
+
+    expect(mocked.createQueuedQaRun).toHaveBeenCalledWith(
+      expect.objectContaining({ taskKeys: ['PROJ-1', 'PROJ-2'] }),
+      expect.anything(),
+    );
+  });
+
   it('falls back to Claude Code when no request engine is provided', async () => {
     mocked.getUserSettings.mockResolvedValueOnce({
       engine_default: 'codex',
@@ -240,7 +273,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
       telegram_chat_id: '123456',
     });
 
-    await POST(postRequest(), {
+    await POST(postRequest({ taskKeys: ['PROJ-1', 'PROJ-2'] }), {
       params: Promise.resolve({ id: 'project-1' }),
     });
 
@@ -259,7 +292,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
   it('returns 400 when the project has no ready tasks', async () => {
     mocked.db.query.tasks.findMany.mockResolvedValueOnce([]);
 
-    const response = await POST(postRequest(), {
+    const response = await POST(postRequest({ taskKeys: ['PROJ-1'] }), {
       params: Promise.resolve({ id: 'project-1' }),
     });
 
@@ -268,10 +301,45 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
     expect(mocked.createQueuedQaRun).not.toHaveBeenCalled();
   });
 
+  it('returns 400 when no task keys are selected', async () => {
+    const response = await POST(postRequest({ taskKeys: [] }), {
+      params: Promise.resolve({ id: 'project-1' }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'Select at least one ready task for QA' });
+    expect(mocked.createQueuedQaRun).not.toHaveBeenCalled();
+    expect(mocked.sendTelegramMessage).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when task keys are omitted', async () => {
+    const response = await POST(postRequest(), {
+      params: Promise.resolve({ id: 'project-1' }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'Select at least one ready task for QA' });
+    expect(mocked.createQueuedQaRun).not.toHaveBeenCalled();
+    expect(mocked.sendTelegramMessage).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when selected task keys are not ready tasks in this project', async () => {
+    const response = await POST(postRequest({ taskKeys: ['PROJ-999'] }), {
+      params: Promise.resolve({ id: 'project-1' }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: 'Selected QA tasks must be ready tasks in this project',
+    });
+    expect(mocked.createQueuedQaRun).not.toHaveBeenCalled();
+    expect(mocked.sendTelegramMessage).not.toHaveBeenCalled();
+  });
+
   it('returns a clear 503 when QA run storage is unavailable', async () => {
     mocked.qaRunsStorageAvailable.mockResolvedValueOnce(false);
 
-    const response = await POST(postRequest(), {
+    const response = await POST(postRequest({ taskKeys: ['PROJ-1', 'PROJ-2'] }), {
       params: Promise.resolve({ id: 'project-1' }),
     });
 

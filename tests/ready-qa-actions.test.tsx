@@ -1,3 +1,6 @@
+// @vitest-environment jsdom
+
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -114,23 +117,42 @@ class MemoryStorage implements Storage {
   }
 }
 
-const originalWindow = globalThis.window;
+const originalLocalStorage = globalThis.window?.localStorage;
+const originalFetch = globalThis.fetch;
 
 describe('app/components/ready-qa-actions', () => {
   let localStorage: MemoryStorage;
 
   beforeEach(() => {
     localStorage = new MemoryStorage();
-    Object.defineProperty(globalThis, 'window', {
+    Object.defineProperty(globalThis.window, 'localStorage', {
       configurable: true,
-      value: { localStorage },
+      value: localStorage,
+    });
+    Object.defineProperty(globalThis.window, 'matchMedia', {
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
     });
   });
 
   afterEach(() => {
-    Object.defineProperty(globalThis, 'window', {
+    cleanup();
+    Object.defineProperty(globalThis.window, 'localStorage', {
       configurable: true,
-      value: originalWindow,
+      value: originalLocalStorage,
+    });
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      value: originalFetch,
     });
   });
 
@@ -140,6 +162,7 @@ describe('app/components/ready-qa-actions', () => {
     projectName?: string;
     branchName: string;
     readyCount: number;
+    readyTasks?: Array<{ taskKey: string; title: string }>;
     telegramEnabled: boolean;
     hermesTelegramEnabled?: boolean;
     defaultEngine?: string | null;
@@ -181,6 +204,11 @@ describe('app/components/ready-qa-actions', () => {
       finishedAt: `2026-03-${String(id).padStart(2, '0')}T10:03:00.000Z`,
     };
   }
+
+  const readyTasks = [
+    { taskKey: 'PROJ-1', title: 'One' },
+    { taskKey: 'PROJ-2', title: 'Two' },
+  ];
 
   it('returns the report markdown as the QA run copy text', () => {
     expect(
@@ -331,6 +359,90 @@ describe('app/components/ready-qa-actions', () => {
     expect(html).toContain('aria-label="Copy QA report for run-123"');
     expect(html).toContain('data-tooltip-label="Copy report"');
     expect(formatReadyQaScopeLabel(2, KITCHEN_TERMINOLOGY)).toBe('2 ready tickets');
+  });
+
+  it('renders ready tasks with select all and clear all controls', () => {
+    render(
+      <MantineProvider>
+        <ReadyQaActionsAny
+          projectId="project-1"
+          projectKey="ALPHA"
+          projectName="Project One"
+          branchName="release/mobile"
+          readyCount={2}
+          readyTasks={readyTasks}
+          telegramEnabled
+          initialRuns={[]}
+        />
+      </MantineProvider>,
+    );
+
+    expect((screen.getByLabelText('Include PROJ-1 in QA') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText('Include PROJ-2 in QA') as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByText('One')).toBeTruthy();
+    expect(screen.getByText('Two')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear all ready tasks' }));
+
+    expect((screen.getByLabelText('Include PROJ-1 in QA') as HTMLInputElement).checked).toBe(false);
+    expect((screen.getByLabelText('Include PROJ-2 in QA') as HTMLInputElement).checked).toBe(false);
+    expect((screen.getByText('Queue QA').closest('button') as HTMLButtonElement).disabled).toBe(
+      true,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Select all ready tasks' }));
+
+    expect((screen.getByLabelText('Include PROJ-1 in QA') as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText('Include PROJ-2 in QA') as HTMLInputElement).checked).toBe(true);
+  });
+
+  it('posts only the selected ready task keys when queueing QA', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({
+        ok: true,
+        run: {
+          ...createRun(1),
+          id: 'run-456',
+          status: 'queued',
+          taskKeys: ['PROJ-1'],
+          reportMarkdown: null,
+          startedAt: null,
+          finishedAt: null,
+        },
+      }),
+    });
+    Object.defineProperty(globalThis, 'fetch', {
+      configurable: true,
+      value: fetchMock,
+    });
+
+    render(
+      <MantineProvider>
+        <ReadyQaActionsAny
+          projectId="project-1"
+          projectKey="ALPHA"
+          projectName="Project One"
+          branchName="release/mobile"
+          readyCount={2}
+          readyTasks={readyTasks}
+          telegramEnabled
+          initialRuns={[]}
+        />
+      </MantineProvider>,
+    );
+
+    fireEvent.click(screen.getByLabelText('Include PROJ-2 in QA'));
+    fireEvent.click(screen.getByText('Queue QA'));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+    expect(JSON.parse(fetchMock.mock.calls[0]?.[1]?.body as string)).toEqual({
+      engine: 'claude-code',
+      dispatchTarget: 'telegram',
+      taskKeys: ['PROJ-1'],
+    });
   });
 
   it('shows only Telegram QA targets when both transports are available', () => {

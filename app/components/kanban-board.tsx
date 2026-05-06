@@ -875,7 +875,10 @@ export function KanbanBoard({
             projectKey={readyQaConfig.projectKey}
             projectName={readyQaConfig.projectName}
             branchName={readyQaConfig.branchName}
-            readyCount={columns.ready.length}
+            readyTasks={columns.ready.map((task) => ({
+              taskKey: task.taskKey,
+              title: task.title,
+            }))}
             telegramEnabled={telegramEnabled}
             hermesTelegramEnabled={hermesTelegramEnabled}
             initialRuns={readyQaConfig.runs}
