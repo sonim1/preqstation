@@ -58,40 +58,40 @@ function getHiddenMarkdownInput(container: HTMLElement) {
 
 describe('LiveMarkdownEditor spacing reconciliation', () => {
   it('does not autosave a blank line between an ordered list and following paragraph during bootstrap', async () => {
-    const markdown = '1. 첫 항목\n바로 아래 텍스트';
+    const markdown = '1. First item\nText right below';
     const { container, onContentChange } = renderEditor(markdown);
 
     await waitFor(() => {
       expect(screen.getByLabelText('Description live editor').textContent).toContain(
-        '바로 아래 텍스트',
+        'Text right below',
       );
     });
 
     expect(getHiddenMarkdownInput(container).value).toBe(markdown);
-    expect(onContentChange).not.toHaveBeenCalledWith('1. 첫 항목\n\n바로 아래 텍스트');
+    expect(onContentChange).not.toHaveBeenCalled();
   });
 
   it('does not autosave a blank line between a checklist item and following paragraph during bootstrap', async () => {
-    const markdown = '- [ ] 체크 항목\n바로 아래 텍스트';
+    const markdown = '- [ ] Checklist item\nText right below';
     const { container, onContentChange } = renderEditor(markdown);
 
     await waitFor(() => {
       expect(screen.getByLabelText('Description live editor').textContent).toContain(
-        '바로 아래 텍스트',
+        'Text right below',
       );
     });
 
     expect(getHiddenMarkdownInput(container).value).toBe(markdown);
-    expect(onContentChange).not.toHaveBeenCalledWith('- [ ] 체크 항목\n\n바로 아래 텍스트');
+    expect(onContentChange).not.toHaveBeenCalled();
   });
 
   it('keeps tight list-to-paragraph spacing when switching from live to markdown mode', async () => {
-    const markdown = '1. 첫 항목\n바로 아래 텍스트';
+    const markdown = '1. First item\nText right below';
     const { container } = renderEditor(markdown);
 
     await waitFor(() => {
       expect(screen.getByLabelText('Description live editor').textContent).toContain(
-        '바로 아래 텍스트',
+        'Text right below',
       );
     });
 
