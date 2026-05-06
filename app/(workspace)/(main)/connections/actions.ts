@@ -8,6 +8,7 @@ import {
   revokeActiveOwnerMcpConnections,
   setMcpConnectionRevokedState,
 } from '@/lib/mcp/connections';
+import { isNextRedirectError } from '@/lib/next-utils';
 import { requireOwnerUser } from '@/lib/owner';
 
 async function updateConnectionRevokedState(formData: FormData, revoked: boolean): Promise<void> {
@@ -64,7 +65,8 @@ export async function revokeAllConnectionsAction() {
     revalidatePath('/connections');
     revalidatePath('/api-keys');
   } catch (error) {
-    if (error instanceof Response) return;
+    if (isNextRedirectError(error)) throw error;
+    console.error('[revokeAllConnectionsAction] failed:', error);
     throw error;
   }
 }
@@ -90,7 +92,8 @@ export async function revokeAllBrowserSessionsAction() {
 
     revalidatePath('/connections');
   } catch (error) {
-    if (error instanceof Response) return;
+    if (isNextRedirectError(error)) throw error;
+    console.error('[revokeAllBrowserSessionsAction] failed:', error);
     throw error;
   }
 }
