@@ -17,6 +17,7 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@tabler/icons-react', () => ({
   IconPlugConnected: () => null,
+  IconTrash: () => <svg data-icon="trash" />,
   IconLayoutGrid: () => null,
   IconCircleCheck: () => null,
   IconClockExclamation: () => null,
@@ -32,15 +33,35 @@ vi.mock('@/app/(workspace)/(main)/connections/connections-confirm-actions', () =
     className,
     'aria-label': ariaLabel,
     style,
+    formId,
+    confirmTitle,
+    confirmMessage,
+    confirmLabel,
+    title,
     variant,
   }: {
     children: React.ReactNode;
     className?: string;
     'aria-label'?: string;
+    formId?: string;
+    confirmTitle?: string;
+    confirmMessage?: string;
+    confirmLabel?: string;
+    title?: string;
     style?: React.CSSProperties;
     variant?: string;
   }) => (
-    <button className={className} aria-label={ariaLabel} data-variant={variant} style={style}>
+    <button
+      className={className}
+      aria-label={ariaLabel}
+      data-form-id={formId}
+      data-confirm-title={confirmTitle}
+      data-confirm-message={confirmMessage}
+      data-confirm-label={confirmLabel}
+      data-variant={variant}
+      title={title}
+      style={style}
+    >
       {children}
     </button>
   ),
@@ -105,11 +126,15 @@ vi.mock('@/app/(workspace)/(main)/connections/connections-page.module.css', () =
     statusCell: 'statusCell',
     actionCell: 'actionCell',
     actionGroup: 'actionGroup',
+    sectionActions: 'sectionActions',
     actionButton: 'actionButton',
+    bulkActionButton: 'bulkActionButton',
   },
 }));
 
 vi.mock('@/app/(workspace)/(main)/connections/actions', () => ({
+  revokeAllBrowserSessionsAction: vi.fn(),
+  revokeAllConnectionsAction: vi.fn(),
   revokeBrowserSessionAction: vi.fn(),
   revokeConnectionAction: vi.fn(),
 }));
@@ -340,6 +365,91 @@ describe('app/(workspace)/(main)/connections/page', () => {
     expect(html).not.toContain('Expired Claude bridge');
     expect(html).not.toContain('Expired Chrome');
     expect(html).not.toContain('198.51.100.20');
+  });
+
+  it('renders revoke-all actions only for visible connected clients and browser sessions', async () => {
+    mocked.listOwnerMcpConnections.mockResolvedValueOnce([
+      {
+        id: 'connection-1',
+        clientId: 'client-1',
+        displayName: 'Codex',
+        redirectUri: 'http://127.0.0.1:3456/callback',
+        engine: 'codex',
+        lastUsedAt: new Date('2026-03-25T10:30:00.000Z'),
+        expiresAt: new Date('2026-03-30T15:45:00.000Z'),
+        revokedAt: null,
+        createdAt: new Date('2026-03-20T12:00:00.000Z'),
+        client: {
+          clientName: 'Codex',
+        },
+      },
+    ]);
+    mocked.listOwnerBrowserSessions.mockResolvedValueOnce([
+      {
+        id: 'browser-session-1',
+        ownerId: 'owner-1',
+        ipAddress: '203.0.113.10',
+        userAgent:
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        browserName: 'Chrome',
+        osName: 'macOS',
+        lastUsedAt: new Date('2026-03-25T10:30:00.000Z'),
+        expiresAt: new Date('2026-03-30T15:45:00.000Z'),
+        revokedAt: null,
+        createdAt: new Date('2026-03-20T12:00:00.000Z'),
+        updatedAt: new Date('2026-03-25T10:30:00.000Z'),
+      },
+    ]);
+
+    const html = await renderConnectionsPage();
+
+    expect(html).toContain('aria-label="Revoke all connected clients"');
+    expect(html).toContain('data-form-id="revoke-all-connections"');
+    expect(html).toContain('data-confirm-title="Revoke all connected clients"');
+    expect(html).toContain(
+      'data-confirm-message="Revoke all 1 connected client? This client will lose access immediately."',
+    );
+    expect(html).toContain('aria-label="Revoke all browser sessions"');
+    expect(html).toContain('data-form-id="revoke-all-browser-sessions"');
+    expect(html).toContain('data-confirm-title="Revoke all browser sessions"');
+    expect(html).toContain(
+      'data-confirm-message="Revoke all 1 browser session? This browser will need to sign in again."',
+    );
+  });
+
+  it('does not render revoke-all actions for empty sections', async () => {
+    const html = await renderConnectionsPage();
+
+    expect(html).not.toContain('aria-label="Revoke all connected clients"');
+    expect(html).not.toContain('aria-label="Revoke all browser sessions"');
+    expect(html).not.toContain('revoke-all-connections');
+    expect(html).not.toContain('revoke-all-browser-sessions');
+  });
+
+  it('uses trash icons for individual revoke buttons while keeping accessible labels', async () => {
+    mocked.listOwnerMcpConnections.mockResolvedValueOnce([
+      {
+        id: 'connection-1',
+        clientId: 'client-1',
+        displayName: 'Codex',
+        redirectUri: 'http://127.0.0.1:3456/callback',
+        engine: 'codex',
+        lastUsedAt: new Date('2026-03-25T10:30:00.000Z'),
+        expiresAt: new Date('2026-03-30T15:45:00.000Z'),
+        revokedAt: null,
+        createdAt: new Date('2026-03-20T12:00:00.000Z'),
+        client: {
+          clientName: 'Codex',
+        },
+      },
+    ]);
+
+    const html = await renderConnectionsPage();
+
+    expect(html).toContain('aria-label="Revoke Codex connection"');
+    expect(html).toContain('title="Revoke Codex connection"');
+    expect(html).toContain('data-icon="trash"');
+    expect(html).not.toContain('>Revoke</button>');
   });
 
   it('renders the page as a single editorial flow instead of stacked card panels', async () => {

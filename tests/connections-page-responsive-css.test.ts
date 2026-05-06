@@ -26,6 +26,14 @@ describe('connections-page responsive CSS', () => {
     );
   });
 
+  it('keeps section header actions aligned and able to wrap on narrow viewports', () => {
+    expect(css).toMatch(/\.sectionActions\s*\{[\s\S]*justify-content:\s*flex-end;/);
+    expect(css).toMatch(/\.bulkActionButton\s*\{[\s\S]*min-height:\s*var\(--ui-hit-touch-min\);/);
+    expect(css).toMatch(
+      /@media\s*\(max-width:\s*56rem\)\s*\{[\s\S]*\.sectionActions\s*\{[\s\S]*justify-content:\s*flex-start;/,
+    );
+  });
+
   it('allows long connection metadata to wrap without blowing out table cells', () => {
     expect(css).toMatch(
       /\.dataCellMeta\s*\{[\s\S]*word-break:\s*break-word;[\s\S]*overflow-wrap:\s*anywhere;/,

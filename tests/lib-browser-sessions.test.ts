@@ -1,4 +1,4 @@
-import { and, eq, gte, isNull } from 'drizzle-orm';
+import { and, eq, gt, gte, isNull } from 'drizzle-orm';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const CHROME_MAC_UA =
@@ -31,6 +31,7 @@ import {
   createBrowserSession,
   getBrowserSessionForOwner,
   listOwnerBrowserSessions,
+  revokeActiveOwnerBrowserSessions,
   revokeBrowserSession,
   touchBrowserSession,
 } from '@/lib/browser-sessions';
@@ -224,5 +225,30 @@ describe('lib/browser-sessions', () => {
       revokedAt,
     });
     expect(mocked.updateSet).toHaveBeenLastCalledWith({ revokedAt });
+  });
+
+  it('bulk revokes only active non-expired owner browser sessions', async () => {
+    const now = new Date('2026-03-26T09:00:00.000Z');
+    const revokedAt = new Date('2026-03-26T10:30:00.000Z');
+    mocked.updateReturning.mockResolvedValueOnce([
+      { id: 'browser-session-1' },
+      { id: 'browser-session-2' },
+    ]);
+
+    const revoked = await revokeActiveOwnerBrowserSessions({
+      ownerId: 'owner-1',
+      now,
+      revokedAt,
+    });
+
+    expect(mocked.updateSet).toHaveBeenCalledWith({ revokedAt });
+    expect(mocked.updateWhere).toHaveBeenCalledWith(
+      and(
+        eq(browserSessions.ownerId, 'owner-1'),
+        isNull(browserSessions.revokedAt),
+        gt(browserSessions.expiresAt, now),
+      ),
+    );
+    expect(revoked).toEqual([{ id: 'browser-session-1' }, { id: 'browser-session-2' }]);
   });
 });
