@@ -292,7 +292,9 @@ export function TaskPanelModal({
     fromHref: string;
     value: boolean;
   } | null>(null);
-  const [storedDesktopFullScreen, setStoredDesktopFullScreen] = useState<boolean | null>(null);
+  const [storedDesktopFullScreenOverride, setStoredDesktopFullScreenOverride] = useState<
+    boolean | null
+  >(null);
   const isMountedRef = useRef(true);
   const pendingCloseActionRef = useRef<(() => void) | null>(null);
   const currentSearch = searchParams.toString();
@@ -302,6 +304,11 @@ export function TaskPanelModal({
       ? optimisticDesktopFullScreen.value
       : null;
   const urlDesktopFullScreen = searchParams.get('fullscreen') === '1';
+  const storedDesktopFullScreen =
+    isMobile || !fullscreenStorageKey || typeof window === 'undefined'
+      ? null
+      : (storedDesktopFullScreenOverride ??
+        readTaskPanelStoredFullscreen(fullscreenStorageKey, window.localStorage));
   const { isDesktopFullScreen, modalFullScreen } = resolveTaskPanelFullscreenState({
     isMobile: Boolean(isMobile),
     optimisticDesktopFullScreen: activeOptimisticDesktopFullScreen,
@@ -339,17 +346,6 @@ export function TaskPanelModal({
       isMountedRef.current = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (isMobile || !fullscreenStorageKey || typeof window === 'undefined') {
-      setStoredDesktopFullScreen(null);
-      return;
-    }
-
-    setStoredDesktopFullScreen(
-      readTaskPanelStoredFullscreen(fullscreenStorageKey, window.localStorage),
-    );
-  }, [fullscreenStorageKey, isMobile]);
 
   useEffect(() => {
     if (!isResizeEnabled || typeof window === 'undefined') {
@@ -474,7 +470,7 @@ export function TaskPanelModal({
                   value: nextDesktopFullScreen,
                 });
                 if (fullscreenStorageKey && typeof window !== 'undefined') {
-                  setStoredDesktopFullScreen(nextDesktopFullScreen);
+                  setStoredDesktopFullScreenOverride(nextDesktopFullScreen);
                   writeTaskPanelStoredFullscreen(
                     fullscreenStorageKey,
                     window.localStorage,
