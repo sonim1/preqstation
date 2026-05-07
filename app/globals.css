@@ -3108,7 +3108,7 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 @container (min-width: 25rem) {
   .task-dispatch-panel {
     grid-template-columns: 14rem minmax(0, 1fr);
-    align-items: flex-start;
+    align-items: start;
   }
 }
 
