@@ -473,7 +473,7 @@ export function KanbanBoard({
     title: string;
   } | null>(null);
   const columnsRef = useRef(columns);
-  const appliedFocusTabRef = useRef<string | null>(null);
+  const appliedFocusTabRef = useRef<{ status: KanbanStatus; taskKey: string } | null>(null);
   const persistQueueRef = useRef<QueuedKanbanMutation[]>([]);
   const isPersistingRef = useRef(false);
   const archiveRequestIdRef = useRef(0);
@@ -490,15 +490,21 @@ export function KanbanBoard({
       return;
     }
 
-    if (appliedFocusTabRef.current === focusedTaskKey) {
+    const location = findTaskLocation(columns, focusedTaskKey);
+    if (
+      appliedFocusTabRef.current?.taskKey === focusedTaskKey &&
+      appliedFocusTabRef.current.status === location?.status
+    ) {
       return;
     }
 
-    const location = findTaskLocation(columns, focusedTaskKey);
     if (location) {
       if (isMobile) {
         setActiveTab(location.status);
-        appliedFocusTabRef.current = focusedTaskKey;
+        appliedFocusTabRef.current = {
+          status: location.status,
+          taskKey: focusedTaskKey,
+        };
       }
     }
   }, [columns, focusedTaskKey, isMobile]);

@@ -962,7 +962,8 @@
   }
 
   .kanbanRunWaveLayer1,
-  .kanbanRunWaveLayer2 {
+  .kanbanRunWaveLayer2,
+  .kanbanCard.isFocused {
     animation: none;
   }
 }

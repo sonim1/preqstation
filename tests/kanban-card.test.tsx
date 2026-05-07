@@ -227,6 +227,12 @@ describe('app/components/kanban-card', () => {
     expect(cardsCss).toMatch(/\.kanbanRunWaveLayer2\s*\{[\s\S]*animation:\s*kanbanWaveLoop/);
   });
 
+  it('disables focused card pulse animation for reduced motion', () => {
+    expect(cardsCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.kanbanCard\.isFocused\s*\{[\s\S]*animation:\s*none;/,
+    );
+  });
+
   it('keeps the wave band geometry tied to top-clearance variables', () => {
     expect(cardsCss).toMatch(
       /\.kanbanRunWaveBand\s*\{[\s\S]*top:\s*calc\(var\(--wave-band-top\)\s*-\s*var\(--wave-band-top-clearance\)\);[\s\S]*height:\s*calc\(var\(--wave-height\)\s*\+\s*var\(--wave-band-top-clearance\)\);/,
