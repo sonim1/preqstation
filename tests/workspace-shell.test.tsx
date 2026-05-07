@@ -178,6 +178,12 @@ describe('app/components/workspace-shell', () => {
     expect(html).not.toContain('Toggle color scheme');
   });
 
+  it('matches the desktop account avatar size to the 44px navbar controls', () => {
+    expect(workspaceShellSource).toMatch(
+      /className="workspace-avatar-trigger"[\s\S]*<Avatar color="blue" radius="xl" size=\{44\}>/,
+    );
+  });
+
   it('gives the mobile burger button an explicit accessible name while closed', () => {
     const html = renderWorkspaceShell(true);
 
