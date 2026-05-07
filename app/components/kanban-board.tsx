@@ -454,7 +454,7 @@ export function KanbanBoard({
   const openFocusedTaskFromBoardTask = useOpenFocusedTaskFromBoardTask();
   const setKanbanReconciliationPaused = useSetKanbanReconciliationPaused();
   const columns = useKanbanColumns();
-  const [focusedTaskKey, setFocusedTaskKey] = useState<string | null>(null);
+  const focusedTaskKey = searchParams.get('focus');
   const [isPending, startTransition] = useTransition();
   const [saveError, setSaveError] = useState<string | null>(null);
   const [archiveDrawerOpened, setArchiveDrawerOpened] = useState(false);
@@ -485,24 +485,23 @@ export function KanbanBoard({
   const [activeTab, setActiveTab] = useState<string>('inbox');
 
   useEffect(() => {
-    const focus = searchParams.get('focus');
-    setFocusedTaskKey(focus);
-
-    if (!focus) {
+    if (!focusedTaskKey) {
       appliedFocusTabRef.current = null;
       return;
     }
 
-    if (!isMobile || appliedFocusTabRef.current === focus) {
+    if (appliedFocusTabRef.current === focusedTaskKey) {
       return;
     }
 
-    const location = findTaskLocation(columnsRef.current, focus);
+    const location = findTaskLocation(columns, focusedTaskKey);
     if (location) {
-      setActiveTab(location.status);
-      appliedFocusTabRef.current = focus;
+      if (isMobile) {
+        setActiveTab(location.status);
+        appliedFocusTabRef.current = focusedTaskKey;
+      }
     }
-  }, [searchParams, isMobile]);
+  }, [columns, focusedTaskKey, isMobile]);
 
   const boardFlowStatuses = useMemo(() => getBoardFlowStatuses(), []);
   const visibleBoardStatuses = useMemo(() => getVisibleBoardStatuses(columns), [columns]);
