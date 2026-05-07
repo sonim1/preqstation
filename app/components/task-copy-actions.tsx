@@ -404,124 +404,128 @@ export function TaskCopyActions({
       </div>
 
       <div className="task-dispatch-panel">
-        <DispatchSegmentedControl
-          label="Engine"
-          groupLabel="Engine"
-          groupClassName="task-dispatch-engine-segments"
-          disabled={isSending}
-          onSelect={(value) => {
-            const nextEngine = getEngineConfig(value);
-            if (nextEngine) {
-              selectEngine(nextEngine);
-            }
-          }}
-          options={engineOptions.map((engineOption) => {
-            const selected = selectedEngine?.key === engineOption.key;
-            const label = getEngineShortLabel(engineOption);
+        <div className="task-dispatch-main">
+          <DispatchSegmentedControl
+            label="Engine"
+            groupLabel="Engine"
+            groupClassName="task-dispatch-engine-segments"
+            disabled={isSending}
+            onSelect={(value) => {
+              const nextEngine = getEngineConfig(value);
+              if (nextEngine) {
+                selectEngine(nextEngine);
+              }
+            }}
+            options={engineOptions.map((engineOption) => {
+              const selected = selectedEngine?.key === engineOption.key;
+              const label = getEngineShortLabel(engineOption);
 
-            return {
-              value: engineOption.key,
-              selected,
-              ariaLabel: selected ? `Selected engine: ${label}` : `Select engine: ${label}`,
-              content: (
-                <>
-                  <span
-                    className="task-dispatch-engine-icon"
-                    aria-hidden="true"
-                    data-engine-icon={engineOption.key}
-                    style={
-                      {
-                        '--engine-color': engineOption.iconColor,
-                        '--engine-icon': `url(${engineOption.icon})`,
-                      } as CSSProperties
-                    }
-                  />
-                  <span>{label}</span>
-                </>
-              ),
-            };
-          })}
-        />
-
-        <DispatchSegmentedControl
-          label="Target"
-          groupLabel="Target"
-          groupClassName="task-dispatch-target-segments"
-          disabled={isSending}
-          onSelect={(value) => selectAction(value)}
-          options={availableActions.map((action) => {
-            const selected = effectiveAction === action;
-            const label = getTaskEditDispatchActionLabel(action);
-
-            return {
-              value: action,
-              selected,
-              ariaLabel: selected ? `Selected target: ${label}` : `Select target: ${label}`,
-              content:
-                action === 'send-telegram' ? (
-                  <span className="task-dispatch-target-option">
-                    <span className="task-dispatch-target-emoji" aria-hidden="true">
-                      🦞
-                    </span>
-                    <span>Telegram</span>
-                  </span>
-                ) : (
-                  <span className="task-dispatch-target-option">
-                    <Image
-                      className="task-dispatch-target-logo"
-                      src="/icons/hermes-agent.png"
-                      alt=""
-                      width={16}
-                      height={16}
+              return {
+                value: engineOption.key,
+                selected,
+                ariaLabel: selected ? `Selected engine: ${label}` : `Select engine: ${label}`,
+                content: (
+                  <>
+                    <span
+                      className="task-dispatch-engine-icon"
                       aria-hidden="true"
+                      data-engine-icon={engineOption.key}
+                      style={
+                        {
+                          '--engine-color': engineOption.iconColor,
+                          '--engine-icon': `url(${engineOption.icon})`,
+                        } as CSSProperties
+                      }
                     />
-                    <span>Telegram</span>
-                  </span>
+                    <span>{label}</span>
+                  </>
                 ),
-            };
-          })}
-        />
+              };
+            })}
+          />
 
-        <DispatchSegmentedControl
-          label="Mode"
-          groupLabel="Mode"
-          groupClassName="task-dispatch-mode-segments"
-          disabled={isSending}
-          onSelect={(value) => selectMode(value)}
-          options={visibleModeOptions.map((mode) => {
-            const selected = effectiveObjective === mode.key;
+          <DispatchSegmentedControl
+            label="Target"
+            groupLabel="Target"
+            groupClassName="task-dispatch-target-segments"
+            disabled={isSending}
+            onSelect={(value) => selectAction(value)}
+            options={availableActions.map((action) => {
+              const selected = effectiveAction === action;
+              const label = getTaskEditDispatchActionLabel(action);
 
-            return {
-              value: mode.key,
-              selected,
-              ariaLabel: selected ? `Selected mode: ${mode.label}` : `Select mode: ${mode.label}`,
-              content: <span>{mode.label}</span>,
-            };
-          })}
-        />
+              return {
+                value: action,
+                selected,
+                ariaLabel: selected ? `Selected target: ${label}` : `Select target: ${label}`,
+                content:
+                  action === 'send-telegram' ? (
+                    <span className="task-dispatch-target-option">
+                      <span className="task-dispatch-target-emoji" aria-hidden="true">
+                        🦞
+                      </span>
+                      <span>Telegram</span>
+                    </span>
+                  ) : (
+                    <span className="task-dispatch-target-option">
+                      <Image
+                        className="task-dispatch-target-logo"
+                        src="/icons/hermes-agent.png"
+                        alt=""
+                        width={16}
+                        height={16}
+                        aria-hidden="true"
+                      />
+                      <span>Telegram</span>
+                    </span>
+                  ),
+              };
+            })}
+          />
 
-        <DispatchPromptPreview
-          prompt={dispatchPrompt}
-          promptProps={{ 'data-task-dispatch-prompt': true }}
-          collapseMode="single-line"
-          onCopy={() => persistDispatchPreference()}
-        />
+          <DispatchSegmentedControl
+            label="Mode"
+            groupLabel="Mode"
+            groupClassName="task-dispatch-mode-segments"
+            disabled={isSending}
+            onSelect={(value) => selectMode(value)}
+            options={visibleModeOptions.map((mode) => {
+              const selected = effectiveObjective === mode.key;
 
-        <UnstyledButton
-          type="button"
-          aria-label="Send dispatch"
-          className="task-dispatch-send"
-          data-state={dispatchState === 'idle' ? undefined : dispatchState}
-          disabled={isSending}
-          onClick={() => {
-            void sendDispatch();
-          }}
-        >
-          <span>{getSendLabel(dispatchState)}</span>
-          <Kbd size="xs" className="task-dispatch-send-shortcut">
-            {SEND_SHORTCUT_LABEL}
-          </Kbd>
-        </UnstyledButton>
+              return {
+                value: mode.key,
+                selected,
+                ariaLabel: selected ? `Selected mode: ${mode.label}` : `Select mode: ${mode.label}`,
+                content: <span>{mode.label}</span>,
+              };
+            })}
+          />
+
+          <UnstyledButton
+            type="button"
+            aria-label="Send dispatch"
+            className="task-dispatch-send"
+            data-state={dispatchState === 'idle' ? undefined : dispatchState}
+            disabled={isSending}
+            onClick={() => {
+              void sendDispatch();
+            }}
+          >
+            <span>{getSendLabel(dispatchState)}</span>
+            <Kbd size="xs" className="task-dispatch-send-shortcut">
+              {SEND_SHORTCUT_LABEL}
+            </Kbd>
+          </UnstyledButton>
+        </div>
+
+        <div className="task-dispatch-preview">
+          <DispatchPromptPreview
+            prompt={dispatchPrompt}
+            promptProps={{ 'data-task-dispatch-prompt': true }}
+            collapseMode="single-line"
+            onCopy={() => persistDispatchPreference()}
+          />
+        </div>
 
         <Text
           component="span"

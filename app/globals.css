@@ -3011,6 +3011,7 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 }
 
 .task-dispatch-actions {
+  container-type: inline-size;
   display: grid;
   align-items: stretch;
   gap: 0.625rem;
@@ -3092,6 +3093,23 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
   gap: 0.625rem;
   width: 100%;
   min-width: 0;
+}
+
+.task-dispatch-main {
+  display: grid;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.task-dispatch-preview {
+  min-width: 0;
+}
+
+@container (min-width: 25rem) {
+  .task-dispatch-panel {
+    grid-template-columns: 14rem minmax(0, 1fr);
+    align-items: start;
+  }
 }
 
 .task-dispatch-field {
