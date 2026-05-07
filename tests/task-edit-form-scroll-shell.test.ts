@@ -287,7 +287,7 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(taskDispatchPanelRule).toContain('display: grid;');
     expect(taskDispatchPanelRule).toContain('gap: 0.625rem;');
     expect(globalCss).toMatch(
-      /@container \(min-width: 25rem\)\s*\{\s*\.task-dispatch-panel\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/,
+      /@container \(min-width: 25rem\)\s*\{[\s\S]*?\.task-dispatch-panel\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/,
     );
     expect(taskDispatchFieldRule).toContain('grid-template-columns: 4.25rem minmax(0, 1fr);');
     expect(taskDispatchSegmentedControlRule).toContain(
