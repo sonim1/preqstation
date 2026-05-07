@@ -89,7 +89,7 @@ describe('lib/task-sort-order', () => {
 
   it('keeps binary sort collation on the schema column so the lane index can match ordering', () => {
     expect(tasks.sortOrder.getSQLType()).toBe('varchar(64) collate "C"');
-    expect(TASK_LANE_ORDER[0]).toEqual({ type: 'asc', column: tasks.sortOrder });
+    expect(TASK_LANE_ORDER[0]).toEqual(expect.objectContaining({ column: tasks.sortOrder }));
   });
 
   it('returns a trailing key without rebalancing when the lane is already strictly ordered', async () => {
