@@ -29,6 +29,7 @@ vi.mock('next/link', () => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: () => router,
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock('@/lib/match-media', () => ({

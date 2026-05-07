@@ -64,6 +64,7 @@ vi.mock('next/link', () => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: () => router,
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock('@/app/components/kanban-store-provider', () => ({
@@ -247,7 +248,7 @@ function mockMobileBoardState(params: {
 }
 
 function runHydrationEffect() {
-  const hydrationEffect = useEffectMock.mock.calls[2]?.[0];
+  const hydrationEffect = useEffectMock.mock.calls[3]?.[0];
   if (typeof hydrationEffect !== 'function') {
     throw new Error('Expected the server snapshot hydration effect to be registered.');
   }

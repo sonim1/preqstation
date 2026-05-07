@@ -10,7 +10,9 @@ const useRefMock = vi.hoisted(() => vi.fn());
 const useCallbackMock = vi.hoisted(() => vi.fn());
 const useTransitionMock = vi.hoisted(() => vi.fn());
 const useKanbanColumnsMock = vi.hoisted(() => vi.fn());
+const useSearchParamsMock = vi.hoisted(() => vi.fn(() => new URLSearchParams()));
 const setKanbanReconciliationPausedMock = vi.hoisted(() => vi.fn());
+const kanbanBoardMobilePropsMock = vi.hoisted(() => vi.fn());
 const router = vi.hoisted(() => ({
   refresh: vi.fn(),
 }));
@@ -49,6 +51,7 @@ vi.mock('@tabler/icons-react', () => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: () => router,
+  useSearchParams: () => useSearchParamsMock(),
 }));
 
 vi.mock('@/lib/kanban-persistence', () => ({
@@ -86,7 +89,10 @@ vi.mock('@/app/components/kanban-archive-drawer', () => ({
 }));
 
 vi.mock('@/app/components/kanban-board-mobile', () => ({
-  KanbanBoardMobile: () => null,
+  KanbanBoardMobile: (props: Record<string, unknown>) => {
+    kanbanBoardMobilePropsMock(props);
+    return null;
+  },
 }));
 
 vi.mock('@/app/components/kanban-column', () => ({
@@ -229,6 +235,24 @@ function mockBoardState(params: {
   });
 }
 
+function treeHasFocusedTaskKey(node: unknown, focusedTaskKey: string): boolean {
+  if (!node || typeof node !== 'object') {
+    return false;
+  }
+
+  const element = node as { props?: { children?: unknown; focusedTaskKey?: unknown } };
+  if (element.props?.focusedTaskKey === focusedTaskKey) {
+    return true;
+  }
+
+  const children = element.props?.children;
+  if (Array.isArray(children)) {
+    return children.some((child) => treeHasFocusedTaskKey(child, focusedTaskKey));
+  }
+
+  return treeHasFocusedTaskKey(children, focusedTaskKey);
+}
+
 describe('app/components/kanban-board mobile tab selection', () => {
   beforeEach(() => {
     vi.unstubAllGlobals();
@@ -239,11 +263,223 @@ describe('app/components/kanban-board mobile tab selection', () => {
     useCallbackMock.mockReset();
     useTransitionMock.mockReset();
     useKanbanColumnsMock.mockReset();
+    useSearchParamsMock.mockReset();
+    kanbanBoardMobilePropsMock.mockReset();
     router.refresh.mockReset();
 
     useMemoMock.mockImplementation((factory: () => unknown) => factory());
     useCallbackMock.mockImplementation(<T,>(callback: T) => callback);
     useTransitionMock.mockReturnValue([false, vi.fn()]);
+    useSearchParamsMock.mockReturnValue(new URLSearchParams());
+  });
+
+  it('derives the focused task key without syncing it into component state', () => {
+    const searchParams = new URLSearchParams('focus=PROJ-2');
+    const columns = {
+      ...emptyColumns(),
+      todo: [makeTask({ id: '2', taskKey: 'PROJ-2', status: 'todo' })],
+    };
+    const setActiveTab = vi.fn();
+    const setIsMobile = vi.fn();
+
+    useSearchParamsMock.mockReturnValue(searchParams);
+    mockBoardState({ columns, activeTab: 'inbox', setActiveTab, setIsMobile });
+    useEffectMock.mockImplementation(() => {});
+
+    const tree = KanbanBoard({
+      initialInboxTasks: columns.inbox,
+      initialTodoTasks: columns.todo,
+      initialHoldTasks: columns.hold,
+      initialReadyTasks: columns.ready,
+      initialDoneTasks: columns.done,
+      initialArchivedTasks: columns.archived,
+      editHrefBase: '/board',
+      projectOptions: [],
+      labelOptions: [],
+      selectedProject: null,
+      enginePresets: null,
+    });
+
+    expect(treeHasFocusedTaskKey(tree, 'PROJ-2')).toBe(true);
+  });
+
+  it('does not reapply the focused mobile tab after the focus has been processed', () => {
+    const searchParams = new URLSearchParams('focus=PROJ-2');
+    const columns = {
+      ...emptyColumns(),
+      todo: [makeTask({ id: '2', taskKey: 'PROJ-2', status: 'todo' })],
+    };
+    const updatedColumns = {
+      ...columns,
+      inbox: [makeTask({ id: '1', taskKey: 'PROJ-1', status: 'inbox' })],
+    };
+    const setActiveTab = vi.fn();
+    const setIsMobile = vi.fn();
+    const effects: Array<() => void> = [];
+    const appliedFocusTabRef = {
+      current: null as { status: KanbanTask['status']; taskKey: string } | null,
+    };
+    let nullRefCount = 0;
+
+    useSearchParamsMock.mockReturnValue(searchParams);
+    mockBoardState({ columns, activeTab: 'inbox', setActiveTab, setIsMobile });
+    useRefMock.mockImplementation((initialValue: unknown) => {
+      if (initialValue === columns) {
+        return { current: updatedColumns };
+      }
+      if (initialValue === null) {
+        nullRefCount += 1;
+        if (nullRefCount === 1) {
+          return appliedFocusTabRef;
+        }
+      }
+      if (Array.isArray(initialValue)) {
+        return { current: initialValue };
+      }
+      if (typeof initialValue === 'boolean') {
+        return { current: initialValue };
+      }
+      return {
+        current: {
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          clientWidth: 0,
+          scrollLeft: 0,
+          scrollWidth: 0,
+        },
+      };
+    });
+    useEffectMock.mockImplementation((effect: () => void) => {
+      effects.push(effect);
+    });
+
+    KanbanBoard({
+      initialInboxTasks: columns.inbox,
+      initialTodoTasks: columns.todo,
+      initialHoldTasks: columns.hold,
+      initialReadyTasks: columns.ready,
+      initialDoneTasks: columns.done,
+      initialArchivedTasks: columns.archived,
+      editHrefBase: '/board',
+      projectOptions: [],
+      labelOptions: [],
+      selectedProject: null,
+      enginePresets: null,
+    });
+
+    vi.stubGlobal('window', {
+      matchMedia: vi.fn(() => ({ matches: true })),
+    });
+
+    for (const effect of effects) {
+      effect();
+    }
+
+    for (const effect of effects) {
+      effect();
+    }
+
+    expect(setActiveTab).toHaveBeenCalledTimes(1);
+    expect(setActiveTab).toHaveBeenCalledWith('todo');
+  });
+
+  it('reapplies the focused mobile tab when the focused task moves columns', () => {
+    const searchParams = new URLSearchParams('focus=PROJ-2');
+    const columns = {
+      ...emptyColumns(),
+      todo: [makeTask({ id: '2', taskKey: 'PROJ-2', status: 'todo' })],
+    };
+    const movedColumns = {
+      ...emptyColumns(),
+      ready: [makeTask({ id: '2', taskKey: 'PROJ-2', status: 'ready' })],
+    };
+    const setActiveTab = vi.fn();
+    const setIsMobile = vi.fn();
+    const effects: Array<() => void> = [];
+    const appliedFocusTabRef = {
+      current: null as { status: KanbanTask['status']; taskKey: string } | null,
+    };
+
+    useSearchParamsMock.mockReturnValue(searchParams);
+    useEffectMock.mockImplementation((effect: () => void) => {
+      effects.push(effect);
+    });
+
+    const mockRefs = (currentColumns: KanbanColumns) => {
+      let nullRefCount = 0;
+
+      useRefMock.mockImplementation((initialValue: unknown) => {
+        if (initialValue === currentColumns) {
+          return { current: currentColumns };
+        }
+        if (initialValue === null) {
+          nullRefCount += 1;
+          if (nullRefCount === 1) {
+            return appliedFocusTabRef;
+          }
+        }
+        if (Array.isArray(initialValue)) {
+          return { current: initialValue };
+        }
+        if (typeof initialValue === 'boolean') {
+          return { current: initialValue };
+        }
+        return {
+          current: {
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            clientWidth: 0,
+            scrollLeft: 0,
+            scrollWidth: 0,
+          },
+        };
+      });
+    };
+
+    mockBoardState({ columns, activeTab: 'inbox', setActiveTab, setIsMobile });
+    mockRefs(columns);
+
+    const firstFocusEffectIndex = effects.length;
+    KanbanBoard({
+      initialInboxTasks: columns.inbox,
+      initialTodoTasks: columns.todo,
+      initialHoldTasks: columns.hold,
+      initialReadyTasks: columns.ready,
+      initialDoneTasks: columns.done,
+      initialArchivedTasks: columns.archived,
+      editHrefBase: '/board',
+      projectOptions: [],
+      labelOptions: [],
+      selectedProject: null,
+      enginePresets: null,
+    });
+
+    effects[firstFocusEffectIndex]?.();
+
+    useStateMock.mockReset();
+    useKanbanColumnsMock.mockReset();
+    mockBoardState({ columns: movedColumns, activeTab: 'todo', setActiveTab, setIsMobile });
+    mockRefs(movedColumns);
+
+    const secondFocusEffectIndex = effects.length;
+    KanbanBoard({
+      initialInboxTasks: movedColumns.inbox,
+      initialTodoTasks: movedColumns.todo,
+      initialHoldTasks: movedColumns.hold,
+      initialReadyTasks: movedColumns.ready,
+      initialDoneTasks: movedColumns.done,
+      initialArchivedTasks: movedColumns.archived,
+      editHrefBase: '/board',
+      projectOptions: [],
+      labelOptions: [],
+      selectedProject: null,
+      enginePresets: null,
+    });
+
+    effects[secondFocusEffectIndex]?.();
+
+    expect(setActiveTab).toHaveBeenNthCalledWith(1, 'todo');
+    expect(setActiveTab).toHaveBeenNthCalledWith(2, 'ready');
   });
 
   it('keeps the selected mobile tab when that column is empty', () => {

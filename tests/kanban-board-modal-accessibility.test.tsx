@@ -66,6 +66,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({
     refresh: vi.fn(),
   }),
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock('@/app/components/board-search-context', () => ({
