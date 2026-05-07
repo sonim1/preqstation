@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, ne, sql } from 'drizzle-orm';
 
 import { tasks } from '@/lib/db/schema';
 import type { DbClientOrTx } from '@/lib/db/types';
@@ -21,7 +21,7 @@ export type LaneTaskRow = {
 };
 
 export const TASK_LANE_ORDER = [
-  asc(tasks.sortOrder),
+  sql`${tasks.sortOrder} collate "C" asc`,
   asc(tasks.dueAt),
   desc(tasks.createdAt),
   asc(tasks.id),
