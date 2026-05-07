@@ -3,7 +3,7 @@
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 import { Badge, Group, Paper, Title } from '@mantine/core';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 
 import { KanbanEmptyLane } from '@/app/components/kanban-empty-lane';
 import type { EnginePresets, KanbanStatus, KanbanTask } from '@/lib/kanban-helpers';
@@ -49,6 +49,7 @@ type KanbanColumnProps = {
   enginePresets?: EnginePresets | null;
   headerActions?: ReactNode;
   className?: string;
+  focusedTaskKey?: string | null;
 };
 
 type KanbanColumnTaskCardProps = {
@@ -78,6 +79,7 @@ type KanbanColumnTaskCardProps = {
     labelOptions: Array<{ id: string; name: string; color: string }>,
   ) => void;
   enginePresets?: EnginePresets | null;
+  isFocused?: boolean;
 };
 
 function KanbanColumnTaskCard({
@@ -98,9 +100,17 @@ function KanbanColumnTaskCard({
   onUpdateTaskLabels,
   onProjectLabelOptionsChange,
   enginePresets,
+  isFocused,
 }: KanbanColumnTaskCardProps) {
   const isStaleQueued = useStaleQueuedTask(task.runState, task.runStateUpdatedAt);
   const editHref = `${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(task.taskKey)}`;
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isFocused && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isFocused]);
 
   return (
     <Draggable
@@ -111,7 +121,10 @@ function KanbanColumnTaskCard({
     >
       {(provided, snapshot) => (
         <Paper
-          ref={provided.innerRef}
+          ref={(node) => {
+            provided.innerRef(node);
+            cardRef.current = node as HTMLDivElement;
+          }}
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           style={{
@@ -126,6 +139,7 @@ function KanbanColumnTaskCard({
             cardStyles.kanbanCard,
             task.status === 'hold' || isStaleQueued ? cardStyles.kanbanCardHold : null,
             snapshot.isDragging ? cardStyles.isDragging : null,
+            isFocused ? cardStyles.isFocused : null,
           ]
             .filter(Boolean)
             .join(' ')}
@@ -196,6 +210,7 @@ export function KanbanColumn({
   enginePresets,
   headerActions,
   className,
+  focusedTaskKey,
 }: KanbanColumnProps) {
   const terminology = useTerminology();
   const label = statusLabel ?? boardStatusLabel(status, terminology);
@@ -252,6 +267,7 @@ export function KanbanColumn({
                   onUpdateTaskLabels={onUpdateTaskLabels}
                   onProjectLabelOptionsChange={onProjectLabelOptionsChange}
                   enginePresets={enginePresets}
+                  isFocused={task.taskKey === focusedTaskKey || task.id === focusedTaskKey}
                 />
               ))}
               {provided.placeholder}

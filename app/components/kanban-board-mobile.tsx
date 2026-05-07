@@ -92,6 +92,7 @@ type KanbanBoardMobileProps = {
   actionIsland?: ReactNode;
   saveError: string | null;
   enginePresets?: EnginePresets | null;
+  focusedTaskKey?: string | null;
 };
 
 type KanbanBoardMobileTaskCardProps = {
@@ -118,6 +119,7 @@ type KanbanBoardMobileTaskCardProps = {
     labelOptions: Array<{ id: string; name: string; color: string }>,
   ) => void;
   enginePresets?: EnginePresets | null;
+  isFocused?: boolean;
 };
 
 function KanbanBoardMobileTaskCard({
@@ -135,11 +137,20 @@ function KanbanBoardMobileTaskCard({
   onUpdateTaskLabels,
   onProjectLabelOptionsChange,
   enginePresets,
+  isFocused,
 }: KanbanBoardMobileTaskCardProps) {
   const isStaleQueued = useStaleQueuedTask(task.runState, task.runStateUpdatedAt);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isFocused && cardRef.current) {
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [isFocused]);
 
   return (
     <Paper
+      ref={cardRef}
       p={0}
       radius={6}
       className={[
@@ -147,6 +158,7 @@ function KanbanBoardMobileTaskCard({
         cardStyles.kanbanCard,
         task.status === 'hold' || isStaleQueued ? cardStyles.kanbanCardHold : null,
         'kanban-mobile-card',
+        isFocused ? cardStyles.isFocused : null,
       ]
         .filter(Boolean)
         .join(' ')}
@@ -213,6 +225,7 @@ export function KanbanBoardMobile({
   actionIsland,
   saveError,
   enginePresets,
+  focusedTaskKey,
 }: KanbanBoardMobileProps) {
   const terminology = useTerminology();
   const mobileStatuses = getMobileBoardStatuses(columns, activeTab);
@@ -377,6 +390,9 @@ export function KanbanBoardMobile({
                             onUpdateTaskLabels={onUpdateTaskLabels}
                             onProjectLabelOptionsChange={onProjectLabelOptionsChange}
                             enginePresets={enginePresets}
+                            isFocused={
+                              task.taskKey === focusedTaskKey || task.id === focusedTaskKey
+                            }
                           />
                         );
                       })

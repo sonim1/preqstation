@@ -10,7 +10,7 @@ import {
   IconSettings,
 } from '@tabler/icons-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   type Dispatch,
   type SetStateAction,
@@ -449,10 +449,12 @@ export function KanbanBoard({
   );
   const resolvedArchivedCount = archivedCount ?? resolvedServerColumns.archived.length;
   const router = useRouter();
+  const searchParams = useSearchParams();
   const kanbanStore = useKanbanStoreApi();
   const openFocusedTaskFromBoardTask = useOpenFocusedTaskFromBoardTask();
   const setKanbanReconciliationPaused = useSetKanbanReconciliationPaused();
   const columns = useKanbanColumns();
+  const [focusedTaskKey, setFocusedTaskKey] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [saveError, setSaveError] = useState<string | null>(null);
   const [archiveDrawerOpened, setArchiveDrawerOpened] = useState(false);
@@ -480,6 +482,19 @@ export function KanbanBoard({
 
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('inbox');
+
+  useEffect(() => {
+    const focus = searchParams.get('focus');
+    setFocusedTaskKey(focus);
+
+    if (focus) {
+      const location = findTaskLocation(columns, focus);
+      if (location && isMobile) {
+        setActiveTab(location.status);
+      }
+    }
+  }, [searchParams, columns, isMobile]);
+
   const boardFlowStatuses = useMemo(() => getBoardFlowStatuses(), []);
   const visibleBoardStatuses = useMemo(() => getVisibleBoardStatuses(columns), [columns]);
   const readyQaTasks = useMemo(
@@ -1366,6 +1381,7 @@ export function KanbanBoard({
             saveError={saveError}
             enginePresets={enginePresets}
             onOpenTaskEditor={openTaskEditor}
+            focusedTaskKey={focusedTaskKey}
             actionIsland={renderActionIsland(
               'kanban-action-island-anchor kanban-mobile-action-island-anchor',
             )}
@@ -1420,6 +1436,7 @@ export function KanbanBoard({
                       enginePresets={enginePresets}
                       onOpenTaskEditor={openTaskEditor}
                       headerActions={headerActions}
+                      focusedTaskKey={focusedTaskKey}
                     />
                   );
                 })}

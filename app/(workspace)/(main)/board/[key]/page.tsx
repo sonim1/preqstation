@@ -24,7 +24,7 @@ import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 
 type ProjectBoardPageProps = {
   params: Promise<{ key: string }>;
-  searchParams: Promise<{ panel?: string; taskId?: string }>;
+  searchParams: Promise<{ panel?: string; taskId?: string; focus?: string }>;
 };
 
 const BOARD_AUX_QUERY_TIMEOUT_MS = 800;

@@ -89,9 +89,11 @@ export function getMobileBoardStatuses(columns: Pick<KanbanColumns, 'hold'>, act
   return getVisibleBoardStatuses(columns, activeTab);
 }
 
-export function findTaskLocation(columns: KanbanColumns, taskId: string) {
+export function findTaskLocation(columns: KanbanColumns, identifier: string) {
   for (const status of allStatuses) {
-    const index = columns[status].findIndex((task) => task.id === taskId);
+    const index = columns[status].findIndex(
+      (task) => task.id === identifier || task.taskKey === identifier,
+    );
     if (index >= 0) return { status, index };
   }
 
