@@ -180,7 +180,9 @@ function sortTaskKeysForStatus(
   return [...taskKeys]
     .map((taskKey) => tasksByKey[taskKey])
     .filter((task): task is KanbanTask => Boolean(task) && task.status === status)
-    .sort((left, right) => left.sortOrder.localeCompare(right.sortOrder))
+    .sort((left, right) =>
+      left.sortOrder < right.sortOrder ? -1 : left.sortOrder > right.sortOrder ? 1 : 0,
+    )
     .map((task) => task.taskKey);
 }
 

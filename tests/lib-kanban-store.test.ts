@@ -98,6 +98,29 @@ describe('lib/kanban-store', () => {
     expect(store.getState().tasksByKey['PROJ-255']?.title).toBe('Reconciled title');
   });
 
+  it('keeps appended fractional sort keys at the bottom after upserting snapshots', () => {
+    const store = createKanbanStore({
+      columns: {
+        ...buildColumns(),
+        todo: [
+          buildTask({ id: 'task-1', taskKey: 'PROJ-255', sortOrder: 'aY' }),
+          buildTask({ id: 'task-2', taskKey: 'PROJ-256', sortOrder: 'aZ' }),
+        ],
+      },
+      focusedTask: buildFocusedTask(),
+    });
+
+    store.getState().upsertSnapshots([
+      buildTask({
+        id: 'task-3',
+        taskKey: 'PROJ-257',
+        sortOrder: 'aa',
+      }),
+    ]);
+
+    expect(store.getState().columnTaskKeys.todo).toEqual(['PROJ-255', 'PROJ-256', 'PROJ-257']);
+  });
+
   it('removes a task from the board state and clears focused detail when needed', () => {
     const store = createKanbanStore({
       columns: buildColumns(),
