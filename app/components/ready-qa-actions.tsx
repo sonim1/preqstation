@@ -356,153 +356,157 @@ export function ReadyQaActions({
             </div>
 
             <div className="task-dispatch-panel">
-              <DispatchSegmentedControl
-                label="Engine"
-                groupLabel="Engine"
-                groupClassName="task-dispatch-engine-segments"
-                disabled={isSubmitting}
-                onSelect={(value) => {
-                  setSelectedEngine(value);
-                  setQueuedQaPrompt(null);
-                }}
-                options={QA_ENGINE_OPTIONS.map((engine) => {
-                  const selected = selectedEngineConfig.key === engine.key;
-                  const label = getEngineShortLabel(engine);
+              <div className="task-dispatch-main">
+                <DispatchSegmentedControl
+                  label="Engine"
+                  groupLabel="Engine"
+                  groupClassName="task-dispatch-engine-segments"
+                  disabled={isSubmitting}
+                  onSelect={(value) => {
+                    setSelectedEngine(value);
+                    setQueuedQaPrompt(null);
+                  }}
+                  options={QA_ENGINE_OPTIONS.map((engine) => {
+                    const selected = selectedEngineConfig.key === engine.key;
+                    const label = getEngineShortLabel(engine);
 
-                  return {
-                    value: engine.key,
-                    selected,
-                    ariaLabel: selected ? `Selected engine: ${label}` : `Select engine: ${label}`,
-                    content: (
-                      <>
-                        <span
-                          className="task-dispatch-engine-icon"
-                          aria-hidden="true"
-                          data-engine-icon={engine.key}
-                          style={
-                            {
-                              '--engine-color': engine.iconColor,
-                              '--engine-icon': `url(${engine.icon})`,
-                            } as CSSProperties
-                          }
-                        />
-                        <span>{label}</span>
-                      </>
-                    ),
-                  };
-                })}
-              />
-
-              <DispatchSegmentedControl
-                label="Target"
-                groupLabel="Target"
-                groupClassName="task-dispatch-target-segments"
-                disabled={isSubmitting}
-                onSelect={(value) => {
-                  setSelectedTarget(value);
-                  setQueuedQaPrompt(null);
-                }}
-                options={availableTargets.map((option) => {
-                  const selected = effectiveTarget === option.value;
-                  const label = getQaTargetLabel(option.value);
-
-                  return {
-                    value: option.value,
-                    selected,
-                    ariaLabel: selected ? `Selected target: ${label}` : `Select target: ${label}`,
-                    content:
-                      option.value === 'telegram' ? (
-                        <span className="task-dispatch-target-option">
-                          <span className="task-dispatch-target-emoji" aria-hidden="true">
-                            🦞
-                          </span>
-                          <span>Telegram</span>
-                        </span>
-                      ) : (
-                        <span className="task-dispatch-target-option">
-                          <Image
-                            className="task-dispatch-target-logo"
-                            src="/icons/hermes-agent.png"
-                            alt=""
-                            width={16}
-                            height={16}
+                    return {
+                      value: engine.key,
+                      selected,
+                      ariaLabel: selected ? `Selected engine: ${label}` : `Select engine: ${label}`,
+                      content: (
+                        <>
+                          <span
+                            className="task-dispatch-engine-icon"
                             aria-hidden="true"
+                            data-engine-icon={engine.key}
+                            style={
+                              {
+                                '--engine-color': engine.iconColor,
+                                '--engine-icon': `url(${engine.icon})`,
+                              } as CSSProperties
+                            }
                           />
-                          <span>Telegram</span>
-                        </span>
+                          <span>{label}</span>
+                        </>
                       ),
-                  };
-                })}
-              />
+                    };
+                  })}
+                />
 
-              <div className="ready-qa-task-picker">
-                <Group justify="space-between" align="center" gap="xs">
-                  <Text size="xs" fw={700} className="task-dispatch-field-label">
-                    Scope
-                  </Text>
-                  <Group gap={6}>
-                    <Button
-                      type="button"
-                      variant="subtle"
-                      size="compact-xs"
-                      aria-label="Select all ready tasks"
-                      disabled={isSubmitting || readyCount === 0}
-                      onClick={selectAllReadyTasks}
-                    >
-                      Select all
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="subtle"
-                      size="compact-xs"
-                      aria-label="Clear all ready tasks"
-                      disabled={isSubmitting || readyCount === 0}
-                      onClick={clearReadyTasks}
-                    >
-                      Clear all
-                    </Button>
+                <DispatchSegmentedControl
+                  label="Target"
+                  groupLabel="Target"
+                  groupClassName="task-dispatch-target-segments"
+                  disabled={isSubmitting}
+                  onSelect={(value) => {
+                    setSelectedTarget(value);
+                    setQueuedQaPrompt(null);
+                  }}
+                  options={availableTargets.map((option) => {
+                    const selected = effectiveTarget === option.value;
+                    const label = getQaTargetLabel(option.value);
+
+                    return {
+                      value: option.value,
+                      selected,
+                      ariaLabel: selected ? `Selected target: ${label}` : `Select target: ${label}`,
+                      content:
+                        option.value === 'telegram' ? (
+                          <span className="task-dispatch-target-option">
+                            <span className="task-dispatch-target-emoji" aria-hidden="true">
+                              🦞
+                            </span>
+                            <span>Telegram</span>
+                          </span>
+                        ) : (
+                          <span className="task-dispatch-target-option">
+                            <Image
+                              className="task-dispatch-target-logo"
+                              src="/icons/hermes-agent.png"
+                              alt=""
+                              width={16}
+                              height={16}
+                              aria-hidden="true"
+                            />
+                            <span>Telegram</span>
+                          </span>
+                        ),
+                    };
+                  })}
+                />
+
+                <div className="ready-qa-task-picker">
+                  <Group justify="space-between" align="center" gap="xs">
+                    <Text size="xs" fw={700} className="task-dispatch-field-label">
+                      Scope
+                    </Text>
+                    <Group gap={6}>
+                      <Button
+                        type="button"
+                        variant="subtle"
+                        size="compact-xs"
+                        aria-label="Select all ready tasks"
+                        disabled={isSubmitting || readyCount === 0}
+                        onClick={selectAllReadyTasks}
+                      >
+                        Select all
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="subtle"
+                        size="compact-xs"
+                        aria-label="Clear all ready tasks"
+                        disabled={isSubmitting || readyCount === 0}
+                        onClick={clearReadyTasks}
+                      >
+                        Clear all
+                      </Button>
+                    </Group>
                   </Group>
-                </Group>
-                <Stack gap={6}>
-                  {readyTasks.map((task) => (
-                    <Checkbox
-                      key={task.taskKey}
-                      checked={selectedTaskKeys.includes(task.taskKey)}
-                      disabled={isSubmitting}
-                      label={
-                        <span className="ready-qa-task-label">
-                          <Code>{task.taskKey}</Code>
-                          <span>{task.title}</span>
-                        </span>
-                      }
-                      aria-label={`Include ${task.taskKey} in QA`}
-                      onChange={() => toggleReadyTask(task.taskKey)}
-                    />
-                  ))}
-                </Stack>
-                <Text size="xs" c="dimmed">
-                  {selectedReadyCount} of {readyCount} ready {terminology.task.pluralLower}{' '}
-                  selected.
-                </Text>
+                  <Stack gap={6}>
+                    {readyTasks.map((task) => (
+                      <Checkbox
+                        key={task.taskKey}
+                        checked={selectedTaskKeys.includes(task.taskKey)}
+                        disabled={isSubmitting}
+                        label={
+                          <span className="ready-qa-task-label">
+                            <Code>{task.taskKey}</Code>
+                            <span>{task.title}</span>
+                          </span>
+                        }
+                        aria-label={`Include ${task.taskKey} in QA`}
+                        onChange={() => toggleReadyTask(task.taskKey)}
+                      />
+                    ))}
+                  </Stack>
+                  <Text size="xs" c="dimmed">
+                    {selectedReadyCount} of {readyCount} ready {terminology.task.pluralLower}{' '}
+                    selected.
+                  </Text>
+                </div>
+
+                <UnstyledButton
+                  type="button"
+                  className="task-dispatch-send"
+                  disabled={!canQueueQa || isSubmitting}
+                  onClick={() => {
+                    void runQa();
+                  }}
+                >
+                  <span>{isSubmitting ? 'Queueing' : 'Queue QA'}</span>
+                </UnstyledButton>
               </div>
 
-              <DispatchPromptPreview
-                prompt={qaPreview}
-                copyDisabled={!queuedQaPrompt}
-                copyTooltipLabel={QUEUED_QA_PROMPT_HELP}
-                onCopy={() => showSuccessNotification('Dispatch prompt copied.')}
-              />
-
-              <UnstyledButton
-                type="button"
-                className="task-dispatch-send"
-                disabled={!canQueueQa || isSubmitting}
-                onClick={() => {
-                  void runQa();
-                }}
-              >
-                <span>{isSubmitting ? 'Queueing' : 'Queue QA'}</span>
-              </UnstyledButton>
+              <div className="task-dispatch-preview">
+                <DispatchPromptPreview
+                  prompt={qaPreview}
+                  copyDisabled={!queuedQaPrompt}
+                  copyTooltipLabel={QUEUED_QA_PROMPT_HELP}
+                  onCopy={() => showSuccessNotification('Dispatch prompt copied.')}
+                />
+              </div>
             </div>
           </div>
 

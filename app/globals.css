@@ -3094,6 +3094,23 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
   min-width: 0;
 }
 
+.task-dispatch-main {
+  display: grid;
+  gap: 0.625rem;
+  min-width: 0;
+}
+
+.task-dispatch-preview {
+  min-width: 0;
+}
+
+@container (min-width: 25rem) {
+  .task-dispatch-panel {
+    grid-template-columns: 14rem minmax(0, 1fr);
+    align-items: flex-start;
+  }
+}
+
 .task-dispatch-field {
   display: grid;
   grid-template-columns: 4.25rem minmax(0, 1fr);
