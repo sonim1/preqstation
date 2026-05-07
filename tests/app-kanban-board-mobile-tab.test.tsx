@@ -10,6 +10,7 @@ const useRefMock = vi.hoisted(() => vi.fn());
 const useCallbackMock = vi.hoisted(() => vi.fn());
 const useTransitionMock = vi.hoisted(() => vi.fn());
 const useKanbanColumnsMock = vi.hoisted(() => vi.fn());
+const useSearchParamsMock = vi.hoisted(() => vi.fn(() => new URLSearchParams()));
 const setKanbanReconciliationPausedMock = vi.hoisted(() => vi.fn());
 const router = vi.hoisted(() => ({
   refresh: vi.fn(),
@@ -49,6 +50,7 @@ vi.mock('@tabler/icons-react', () => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: () => router,
+  useSearchParams: () => useSearchParamsMock(),
 }));
 
 vi.mock('@/lib/kanban-persistence', () => ({
@@ -239,11 +241,49 @@ describe('app/components/kanban-board mobile tab selection', () => {
     useCallbackMock.mockReset();
     useTransitionMock.mockReset();
     useKanbanColumnsMock.mockReset();
+    useSearchParamsMock.mockReset();
     router.refresh.mockReset();
 
     useMemoMock.mockImplementation((factory: () => unknown) => factory());
     useCallbackMock.mockImplementation(<T,>(callback: T) => callback);
     useTransitionMock.mockReturnValue([false, vi.fn()]);
+    useSearchParamsMock.mockReturnValue(new URLSearchParams());
+  });
+
+  it('does not subscribe the focused mobile tab effect to column changes', () => {
+    const searchParams = new URLSearchParams('focus=PROJ-2');
+    const columns = {
+      ...emptyColumns(),
+      todo: [makeTask({ id: '2', taskKey: 'PROJ-2', status: 'todo' })],
+    };
+    const setActiveTab = vi.fn();
+    const setIsMobile = vi.fn();
+    const effectDeps: unknown[][] = [];
+
+    useSearchParamsMock.mockReturnValue(searchParams);
+    mockBoardState({ columns, activeTab: 'inbox', setActiveTab, setIsMobile });
+    useEffectMock.mockImplementation((_effect: () => void, deps?: unknown[]) => {
+      if (deps) effectDeps.push(deps);
+    });
+
+    KanbanBoard({
+      initialInboxTasks: columns.inbox,
+      initialTodoTasks: columns.todo,
+      initialHoldTasks: columns.hold,
+      initialReadyTasks: columns.ready,
+      initialDoneTasks: columns.done,
+      initialArchivedTasks: columns.archived,
+      editHrefBase: '/board',
+      projectOptions: [],
+      labelOptions: [],
+      selectedProject: null,
+      enginePresets: null,
+    });
+
+    const focusEffectDeps = effectDeps.find((deps) => deps.includes(searchParams));
+
+    expect(focusEffectDeps).toBeDefined();
+    expect(focusEffectDeps).not.toContain(columns);
   });
 
   it('keeps the selected mobile tab when that column is empty', () => {
