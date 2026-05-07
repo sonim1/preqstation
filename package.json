@@ -38,7 +38,7 @@
     "@tabler/icons-react": "^3.38.0",
     "any-ascii": "^0.3.3",
     "bcryptjs": "^3.0.3",
-    "drizzle-orm": "^0.45.1",
+    "drizzle-orm": "^0.45.2",
     "fractional-indexing": "^3.2.0",
     "idb": "^8.0.3",
     "lexical": "^0.22.0",
