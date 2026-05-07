@@ -3011,6 +3011,7 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 }
 
 .task-dispatch-actions {
+  container-type: inline-size;
   display: grid;
   align-items: stretch;
   gap: 0.625rem;
