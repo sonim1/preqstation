@@ -3,6 +3,7 @@ import {
   type AnyPgColumn,
   bigserial,
   boolean,
+  customType,
   date,
   index,
   integer,
@@ -14,7 +15,6 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
-  varchar,
 } from 'drizzle-orm/pg-core';
 
 import { tsvector } from '@/lib/db/pg-types';
@@ -22,6 +22,13 @@ import type { ProjectBackgroundCredit } from '@/lib/project-backgrounds';
 import type { TaskArtifact } from '@/lib/task-artifacts';
 
 const currentAppUserId = sql`nullif(current_setting('app.user_id', true), '')`;
+const binaryVarchar = customType<{ data: string; driverData: string; config: { length: number } }>(
+  {
+    dataType(config) {
+      return `varchar(${config?.length ?? 64}) collate "C"`;
+    },
+  },
+);
 
 function appUserMatches(column: AnyPgColumn) {
   return sql`${column}::text = ${currentAppUserId}`;
@@ -374,7 +381,7 @@ export const tasks = pgTable(
     searchVector: tsvector('search_vector'),
     dueAt: timestamp('due_at', { withTimezone: true, precision: 6 }),
     focusedAt: timestamp('focused_at', { withTimezone: true, precision: 6 }),
-    sortOrder: varchar('sort_order', { length: 64 }).notNull().default('a0'),
+    sortOrder: binaryVarchar('sort_order', { length: 64 }).notNull().default('a0'),
     archivedAt: timestamp('archived_at', { withTimezone: true, precision: 6 }),
     createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 })

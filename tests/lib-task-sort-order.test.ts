@@ -20,6 +20,7 @@ vi.mock('drizzle-orm', async (importOriginal) => {
   };
 });
 
+import { tasks } from '@/lib/db/schema';
 import { resolveAppendSortOrder, TASK_LANE_ORDER } from '@/lib/task-sort-order';
 
 type LaneRow = {
@@ -84,6 +85,11 @@ function createClient(rows: LaneRow[]) {
 describe('lib/task-sort-order', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('keeps binary sort collation on the schema column so the lane index can match ordering', () => {
+    expect(tasks.sortOrder.getSQLType()).toBe('varchar(64) collate "C"');
+    expect(TASK_LANE_ORDER[0]).toEqual({ type: 'asc', column: tasks.sortOrder });
   });
 
   it('returns a trailing key without rebalancing when the lane is already strictly ordered', async () => {
