@@ -232,6 +232,7 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 | `POST`   | `/api/telegram/send/insight`        | Send project insight to the OpenClaw or Hermes Telegram channel       |
 | `POST`   | `/api/telegram/test`                | Test Telegram connection                                              |
 | `POST`   | `/api/send-to-openclaw`             | Legacy OpenClaw message relay                                         |
+| `GET`    | `/api/hello`                        | Internal test route returning plain text hello                        |
 | `GET`    | `/api/work-logs/:id`                | Get work log entry                                                    |
 | `DELETE` | `/api/work-logs/:id`                | Delete work log entry                                                 |
 
