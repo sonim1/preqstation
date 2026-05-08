@@ -184,12 +184,22 @@ vi.mock('@/app/components/task-panel-modal', () => ({
     children,
     title,
     closeHref,
+    fullscreenStorageKey,
+    resizableStorageKey,
   }: {
     children: React.ReactNode;
     title: string;
     closeHref: string;
+    fullscreenStorageKey?: string;
+    resizableStorageKey?: string;
   }) => (
-    <div data-testid="task-panel-modal" data-title={title} data-close-href={closeHref}>
+    <div
+      data-testid="task-panel-modal"
+      data-title={title}
+      data-close-href={closeHref}
+      data-fullscreen-storage-key={fullscreenStorageKey ?? ''}
+      data-resizable-storage-key={resizableStorageKey ?? ''}
+    >
       {children}
     </div>
   ),
@@ -774,6 +784,10 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('data-testid="task-panel-modal"');
     expect(html).toContain('data-title="Edit Project"');
     expect(html).toContain('data-close-href="/projects"');
+    expect(html).toContain(
+      'data-fullscreen-storage-key="preqstation:project-edit-panel:fullscreen:v1"',
+    );
+    expect(html).toContain('data-resizable-storage-key="preqstation:project-edit-panel:size:v1"');
     expect(html).toContain('data-testid="project-edit-panel"');
     expect(html).toContain('data-project-name="Project One"');
     expect(html).not.toContain('/dashboard?panel=project-edit');

@@ -468,7 +468,7 @@ describe('TaskPanelModal', () => {
     }
   });
 
-  it('updates the panel offset directly on the resizing element during desktop resize', () => {
+  it('clamps the panel offset directly on the resizing element during desktop resize', async () => {
     const dom = installDom({ width: 1000, height: 700 });
 
     try {
@@ -484,19 +484,35 @@ describe('TaskPanelModal', () => {
         </TaskPanelModal>,
       );
 
-      const resizeRef = document.createElement('div');
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].maxWidth).toBe(952);
+      });
 
-      resizableMock.mock.calls[0]?.[0].onResizeStart?.(null, 'bottomRight', {
+      const resizeRef = document.createElement('div');
+      Object.defineProperty(resizeRef, 'offsetWidth', {
+        configurable: true,
+        value: 720,
+      });
+      Object.defineProperty(resizeRef, 'offsetHeight', {
+        configurable: true,
+        value: 520,
+      });
+      const querySelectorSpy = vi.spyOn(document, 'querySelector');
+      querySelectorSpy.mockClear();
+      const latestResizableProps = resizableMock.mock.calls.at(-1)?.[0];
+
+      latestResizableProps.onResizeStart?.(null, 'bottomRight', {
         offsetWidth: 720,
         offsetHeight: 520,
       });
-      resizableMock.mock.calls[0]?.[0].onResize?.(null, 'bottomRight', resizeRef, {
-        width: 120,
-        height: 80,
+      latestResizableProps.onResize?.(null, 'bottomRight', resizeRef, {
+        width: 400,
+        height: 240,
       });
 
-      expect(resizeRef.style.left).toBe('60px');
-      expect(resizeRef.style.top).toBe('40px');
+      expect(resizeRef.style.left).toBe('116px');
+      expect(resizeRef.style.top).toBe('66px');
+      expect(querySelectorSpy).not.toHaveBeenCalled();
     } finally {
       cleanup();
       dom.restore();
@@ -1105,9 +1121,7 @@ describe('TaskPanelModal', () => {
       });
 
       expect(replaceMock).toHaveBeenCalledWith('/dashboard?panel=task-edit&taskId=PROJ-335');
-      expect(window.localStorage.getItem('preqstation:task-edit-panel:fullscreen:v1')).toBe(
-        'true',
-      );
+      expect(window.localStorage.getItem('preqstation:task-edit-panel:fullscreen:v1')).toBe('true');
 
       useSearchParamsMock.mockReturnValue(new URLSearchParams('panel=task-edit&taskId=PROJ-335'));
       rerender(

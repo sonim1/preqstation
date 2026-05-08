@@ -9,6 +9,10 @@ import { LinkButton } from '@/app/components/link-button';
 import { OpenClawGuide } from '@/app/components/openclaw-guide';
 import panelStyles from '@/app/components/panels.module.css';
 import { ProjectEditPanel } from '@/app/components/panels/project-edit-panel';
+import {
+  PROJECT_EDIT_PANEL_FULLSCREEN_STORAGE_KEY,
+  PROJECT_EDIT_PANEL_RESIZE_STORAGE_KEY,
+} from '@/app/components/project-edit-modal';
 import { TaskPanelModal } from '@/app/components/task-panel-modal';
 import { WorkspacePageHeader } from '@/app/components/workspace-page-header';
 import { updateProject as runUpdateProjectAction } from '@/lib/actions/project-actions';
@@ -568,7 +572,14 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
       </Stack>
 
       {activePanel === 'project-edit' && editingProject ? (
-        <TaskPanelModal opened={true} title="Edit Project" closeHref="/projects" size="58rem">
+        <TaskPanelModal
+          opened={true}
+          title="Edit Project"
+          closeHref="/projects"
+          size="58rem"
+          fullscreenStorageKey={PROJECT_EDIT_PANEL_FULLSCREEN_STORAGE_KEY}
+          resizableStorageKey={PROJECT_EDIT_PANEL_RESIZE_STORAGE_KEY}
+        >
           <ProjectEditPanel selectedProject={editingProject} updateProjectAction={updateProject} />
         </TaskPanelModal>
       ) : null}
