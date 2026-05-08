@@ -468,7 +468,7 @@ describe('TaskPanelModal', () => {
     }
   });
 
-  it('clamps the panel offset directly on the resizing element during desktop resize', () => {
+  it('clamps the panel offset directly on the resizing element during desktop resize', async () => {
     const dom = installDom({ width: 1000, height: 700 });
 
     try {
@@ -484,6 +484,10 @@ describe('TaskPanelModal', () => {
         </TaskPanelModal>,
       );
 
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].maxWidth).toBe(952);
+      });
+
       const resizeRef = document.createElement('div');
       Object.defineProperty(resizeRef, 'offsetWidth', {
         configurable: true,
@@ -493,18 +497,22 @@ describe('TaskPanelModal', () => {
         configurable: true,
         value: 520,
       });
+      const querySelectorSpy = vi.spyOn(document, 'querySelector');
+      querySelectorSpy.mockClear();
+      const latestResizableProps = resizableMock.mock.calls.at(-1)?.[0];
 
-      resizableMock.mock.calls[0]?.[0].onResizeStart?.(null, 'bottomRight', {
+      latestResizableProps.onResizeStart?.(null, 'bottomRight', {
         offsetWidth: 720,
         offsetHeight: 520,
       });
-      resizableMock.mock.calls[0]?.[0].onResize?.(null, 'bottomRight', resizeRef, {
+      latestResizableProps.onResize?.(null, 'bottomRight', resizeRef, {
         width: 400,
         height: 240,
       });
 
       expect(resizeRef.style.left).toBe('116px');
       expect(resizeRef.style.top).toBe('66px');
+      expect(querySelectorSpy).not.toHaveBeenCalled();
     } finally {
       cleanup();
       dom.restore();
