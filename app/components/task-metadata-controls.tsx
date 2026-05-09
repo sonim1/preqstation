@@ -20,7 +20,13 @@ const TASK_PRIORITY_DETAIL: Record<TaskPriority, string> = {
 
 export function TaskPriorityMark({ priority }: { priority: TaskPriority }) {
   if (priority === 'none') {
-    return <span className={classes.priorityNoneDot} aria-hidden="true" />;
+    return (
+      <span
+        className={classes.priorityNoneDot}
+        data-task-priority-none-dot="true"
+        aria-hidden="true"
+      />
+    );
   }
 
   return <TaskPriorityIcon priority={priority} size={14} />;

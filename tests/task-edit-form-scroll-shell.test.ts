@@ -235,6 +235,7 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(projectNameRule).toContain('overflow-wrap: anywhere;');
     expect(settingsControlsRule).toContain('max-width: 100%;');
     expect(priorityLabelRule).toContain('line-height: 1.55;');
+    expect(priorityLabelRule).toContain('overflow-wrap: anywhere;');
     expect(priorityTriggerRule).toContain('width: 100%;');
     expect(priorityTriggerRule).toContain('min-width: 0;');
     expect(taskEditFormCss).not.toContain('box-shadow: var(--ui-elevation-1);');

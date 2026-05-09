@@ -307,7 +307,7 @@ describe('app/components/task-edit-form answer selection', () => {
     expect(runStateSelectProps).toBeUndefined();
     const priorityTriggerIndex = html.indexOf('data-task-priority-value="none"');
     const noPriorityLabelIndex = html.indexOf('>No priority</span>', priorityTriggerIndex);
-    const noPriorityDotIndex = html.indexOf('aria-hidden="true"', priorityTriggerIndex);
+    const noPriorityDotIndex = html.indexOf('data-task-priority-none-dot="true"', priorityTriggerIndex);
 
     expect(html).toContain('type="hidden" name="taskPriority" value="none"');
     expect(html).toContain('data-task-priority-value="none"');
