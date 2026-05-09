@@ -283,12 +283,16 @@ describe('TaskFormPanel layout', () => {
   it('groups priority radio menu items for assistive technologies', async () => {
     renderTaskFormPanelClient();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ticket priority' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ticket priority: No priority' }));
 
     const group = await screen.findByRole('group', { name: 'Ticket priority' });
 
-    expect(group.contains(screen.getByRole('menuitemradio', { name: 'No priority' }))).toBe(true);
-    expect(group.contains(screen.getByRole('menuitemradio', { name: 'High' }))).toBe(true);
+    expect(
+      group.contains(screen.getByRole('menuitemradio', { name: 'No priority No marker on card' })),
+    ).toBe(true);
+    expect(
+      group.contains(screen.getByRole('menuitemradio', { name: 'High Important, visible on card' })),
+    ).toBe(true);
   });
 
   it('resets the selected priority after a successful submission state', async () => {
@@ -297,8 +301,10 @@ describe('TaskFormPanel layout', () => {
 
     expect(priorityInput?.value).toBe('none');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Ticket priority' }));
-    fireEvent.click(await screen.findByRole('menuitemradio', { name: 'High' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ticket priority: No priority' }));
+    fireEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'High Important, visible on card' }),
+    );
 
     await waitFor(() => {
       expect(priorityInput?.value).toBe('high');

@@ -298,7 +298,7 @@ describe('app/components/task-edit-form', () => {
         projectId: 'project-1',
         selectedLabelIds: [],
         labelOptions: [],
-        triggerAriaLabel: 'Labels',
+        triggerAriaLabel: 'Edit labels for OpenClaw 기능 UI수정',
         triggerLabel: 'Labels',
         emptyStateLabel: 'Select labels',
         searchPlaceholder: 'Search labels',

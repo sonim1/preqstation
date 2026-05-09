@@ -29,7 +29,7 @@ export function TaskPriorityMark({ priority }: { priority: TaskPriority }) {
     );
   }
 
-  return <TaskPriorityIcon priority={priority} size={14} />;
+  return <TaskPriorityIcon priority={priority} size={14} aria-hidden="true" />;
 }
 
 type TaskMetadataPriorityPickerProps = {
@@ -93,7 +93,7 @@ function TaskMetadataPriorityPickerInner({
           <UnstyledButton
             type="button"
             className={classes.priorityTrigger}
-            aria-label={label}
+            aria-label={`${label}: ${selectedLabel}`}
             disabled={disabled}
             data-opened={opened ? 'true' : undefined}
             data-task-priority-value={selectedPriority}
@@ -119,7 +119,6 @@ function TaskMetadataPriorityPickerInner({
                   key={priority}
                   role="menuitemradio"
                   aria-checked={isSelected}
-                  aria-label={TASK_PRIORITY_LABEL[priority]}
                   data-task-priority-option="true"
                   data-task-priority-value={priority}
                   leftSection={
@@ -135,6 +134,7 @@ function TaskMetadataPriorityPickerInner({
                     <span className={classes.priorityOptionLabel}>
                       {TASK_PRIORITY_LABEL[priority]}
                     </span>
+                    {' '}
                     <span className={classes.priorityOptionDetail}>
                       {TASK_PRIORITY_DETAIL[priority]}
                     </span>

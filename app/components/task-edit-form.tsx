@@ -1135,7 +1135,7 @@ function TaskEditFormContent({
                       selectedLabelIds={selectedLabelIds}
                       selectedLabels={selectedLabels}
                       projectId={projectId}
-                      triggerAriaLabel="Labels"
+                      triggerAriaLabel={`Edit labels for ${editableTodo.title}`}
                       triggerLabel="Labels"
                       emptyStateLabel="Select labels"
                       searchPlaceholder="Search labels"
