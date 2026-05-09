@@ -7,7 +7,6 @@ import {
   Button,
   Group,
   Loader,
-  Menu,
   SegmentedControl,
   Stack,
   Text,
@@ -15,14 +14,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
-import {
-  IconAlertCircle,
-  IconCheck,
-  IconChevronDown,
-  IconCopy,
-  IconInfoCircle,
-  IconX,
-} from '@tabler/icons-react';
+import { IconAlertCircle, IconCheck, IconCopy, IconInfoCircle, IconX } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import {
   type ReactNode,
@@ -40,7 +32,7 @@ import { MarkdownViewer } from '@/app/components/markdown-viewer';
 import { useOfflineStatus } from '@/app/components/offline-status-provider';
 import { StatusHistoryBreadcrumb } from '@/app/components/status-history-breadcrumb';
 import { TaskCopyActions } from '@/app/components/task-copy-actions';
-import { TaskPriorityIcon } from '@/app/components/task-priority-icon';
+import { TaskMetadataPriorityPicker } from '@/app/components/task-metadata-controls';
 import { WorkLogTimeline } from '@/app/components/work-log-timeline';
 import { shouldFlushAutoSaveOnBlur, useAutoSave } from '@/app/hooks/use-auto-save';
 import { useTaskOfflineDraft } from '@/app/hooks/use-task-offline-draft';
@@ -55,15 +47,9 @@ import {
   shouldHydrateTaskEditRevision,
   type TaskEditFieldRevisions,
 } from '@/lib/task-edit-sync';
-import {
-  parseTaskPriority,
-  resolveTaskLabelSwatchColor,
-  TASK_PRIORITY_LABEL,
-  type TaskPriority,
-} from '@/lib/task-meta';
+import { parseTaskPriority } from '@/lib/task-meta';
 import { buildTaskNoteFingerprint } from '@/lib/task-note-fingerprint';
 
-import cardStyles from './cards.module.css';
 import classes from './task-edit-form.module.css';
 import { TaskLabelPicker } from './task-label-picker';
 import { useTerminology } from './terminology-provider';
@@ -144,15 +130,6 @@ type TaskComment = {
   created_at: string;
 };
 
-const TASK_PRIORITY_DETAIL: Record<TaskPriority, string> = {
-  highest: 'Escalated, unblock first',
-  high: 'Important, visible on card',
-  medium: 'Useful, not urgent',
-  none: 'No marker on card',
-  low: 'Defer if needed',
-  lowest: 'Parking lot',
-};
-
 function formatTaskCommentTimestamp(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) {
@@ -205,205 +182,6 @@ function SectionHeading({ title, helpText, aside }: SectionHeadingProps) {
         </div>
       </div>
       {aside}
-    </div>
-  );
-}
-
-type TaskEditLabelShortcutProps = {
-  disabled?: boolean;
-  labelOptions: TaskEditLabelOption[];
-  selectedLabelIds: string[];
-  selectedLabels: TaskEditLabelOption[];
-  projectId: string | null;
-  taskTitle: string;
-  onChange: (labelIds: string[]) => void;
-  onOptionsChange?: (labelOptions: TaskEditLabelOption[]) => void;
-};
-
-function TaskEditLabelShortcut({
-  disabled = false,
-  labelOptions,
-  selectedLabelIds,
-  selectedLabels,
-  projectId,
-  taskTitle,
-  onChange,
-  onOptionsChange,
-}: TaskEditLabelShortcutProps) {
-  const renderLabelInline = (label: TaskEditLabelOption) => (
-    <>
-      <span
-        className={cardStyles.kanbanLabelHash}
-        aria-hidden="true"
-        style={{ color: resolveTaskLabelSwatchColor(label.color) }}
-      >
-        #
-      </span>
-      <span className={cardStyles.kanbanLabelName}>{label.name}</span>
-    </>
-  );
-
-  return (
-    <div className={classes.labelShortcutField} data-task-edit-label-shortcut="true">
-      <Text component="div" size="sm" fw={500} className={classes.labelShortcutLabel}>
-        Labels
-      </Text>
-      <TaskLabelPicker
-        labelOptions={labelOptions}
-        selectedLabelIds={selectedLabelIds}
-        selectedLabels={selectedLabels}
-        projectId={projectId}
-        disabled={disabled}
-        triggerAriaLabel={`Edit labels for ${taskTitle}`}
-        onChange={onChange}
-        onOptionsChange={onOptionsChange}
-        renderTrigger={({ hasSelectedLabels, selectedLabels: triggerLabels }) => (
-          <span
-            className={`${cardStyles.kanbanLabelShortcutButton} ${classes.labelShortcutButton}`}
-            data-kanban-label-shortcut={hasSelectedLabels ? 'labels' : 'empty'}
-          >
-            {hasSelectedLabels ? (
-              <span
-                className={`${cardStyles.kanbanLabelShortcutSurface} ${classes.labelShortcutInlineList}`}
-              >
-                {triggerLabels.map((label) => (
-                  <span
-                    key={label.id}
-                    className={cardStyles.kanbanLabelText}
-                    data-task-edit-label="true"
-                  >
-                    {renderLabelInline(label)}
-                  </span>
-                ))}
-              </span>
-            ) : (
-              <span
-                className={`${cardStyles.kanbanLabelShortcutEmpty} ${classes.labelShortcutPlus}`}
-                data-task-edit-empty-label-trigger="true"
-              >
-                +
-              </span>
-            )}
-          </span>
-        )}
-      />
-    </div>
-  );
-}
-
-type TaskEditPriorityShortcutProps = {
-  disabled?: boolean;
-  initialPriority: string;
-  priorityOptions: Array<{ value: string; label: string }>;
-  renderKey: string;
-  taskTitle: string;
-  onChange: () => void;
-};
-
-function TaskEditPriorityMark({ priority }: { priority: TaskPriority }) {
-  if (priority === 'none') {
-    return (
-      <span
-        className={classes.priorityShortcutNoneDot}
-        data-task-edit-priority-none-dot="true"
-        aria-hidden="true"
-      />
-    );
-  }
-
-  return <TaskPriorityIcon priority={priority} size={14} />;
-}
-
-function TaskEditPriorityShortcut({
-  disabled = false,
-  initialPriority,
-  priorityOptions,
-  renderKey,
-  taskTitle,
-  onChange,
-}: TaskEditPriorityShortcutProps) {
-  const [selectedPriority, setSelectedPriority] = useState(parseTaskPriority(initialPriority));
-  const parsedPriorityOptions = priorityOptions.reduce<TaskPriority[]>((options, option) => {
-    const priority = parseTaskPriority(option.value);
-
-    return options.includes(priority) ? options : [...options, priority];
-  }, []);
-  const menuPriorities =
-    parsedPriorityOptions.length > 0 ? parsedPriorityOptions : [parseTaskPriority(initialPriority)];
-  const selectedLabel = TASK_PRIORITY_LABEL[selectedPriority];
-
-  const selectPriority = (priority: TaskPriority) => {
-    if (disabled) {
-      return;
-    }
-
-    setSelectedPriority(priority);
-    onChange();
-  };
-
-  return (
-    <div className={classes.priorityShortcutField} data-task-edit-priority-shortcut="true">
-      <Text component="div" size="sm" fw={500} className={classes.priorityShortcutLabel}>
-        Task priority
-      </Text>
-      <input type="hidden" name="taskPriority" value={selectedPriority} />
-      <Menu position="bottom-start" shadow="md" withinPortal>
-        <Menu.Target>
-          <UnstyledButton
-            key={`priority-trigger:${renderKey}`}
-            type="button"
-            className={classes.priorityShortcutButton}
-            aria-label={`Edit priority for ${taskTitle}`}
-            disabled={disabled}
-            data-task-edit-priority-trigger="true"
-            data-task-edit-priority-value={selectedPriority}
-          >
-            <span className={classes.priorityShortcutValue}>
-              <TaskEditPriorityMark priority={selectedPriority} />
-              <span>{selectedLabel}</span>
-            </span>
-            <IconChevronDown
-              size={13}
-              aria-hidden="true"
-              className={classes.priorityShortcutChevron}
-            />
-          </UnstyledButton>
-        </Menu.Target>
-
-        <Menu.Dropdown>
-          {menuPriorities.map((priority) => {
-            const isSelected = priority === selectedPriority;
-
-            return (
-              <Menu.Item
-                key={priority}
-                role="menuitemradio"
-                aria-checked={isSelected}
-                data-task-priority-value={priority}
-                leftSection={
-                  <span className={classes.priorityShortcutMenuIcon}>
-                    <TaskEditPriorityMark priority={priority} />
-                  </span>
-                }
-                rightSection={isSelected ? <IconCheck size={14} /> : null}
-                onClick={() => {
-                  selectPriority(priority);
-                }}
-                disabled={disabled}
-              >
-                <span className={classes.priorityShortcutMenuText}>
-                  <span className={classes.priorityShortcutMenuLabel}>
-                    {TASK_PRIORITY_LABEL[priority]}
-                  </span>
-                  <span className={classes.priorityShortcutMenuDetail}>
-                    {TASK_PRIORITY_DETAIL[priority]}
-                  </span>
-                </span>
-              </Menu.Item>
-            );
-          })}
-        </Menu.Dropdown>
-      </Menu>
     </div>
   );
 }
@@ -1350,14 +1128,17 @@ function TaskEditFormContent({
                   <div className={classes.settingsDivider} />
 
                   <Stack gap="lg" className={classes.settingsControls}>
-                    <TaskEditLabelShortcut
+                    <TaskLabelPicker
                       disabled={isOffline}
                       key={`labels:${labelRenderKey ?? fieldRenderKey}`}
                       labelOptions={labelOptions}
                       selectedLabelIds={selectedLabelIds}
                       selectedLabels={selectedLabels}
                       projectId={projectId}
-                      taskTitle={editableTodo.title}
+                      triggerAriaLabel="Labels"
+                      triggerLabel="Labels"
+                      emptyStateLabel="Select labels"
+                      searchPlaceholder="Search labels"
                       onChange={(value) => {
                         setSelectedLabelIds(value);
                         triggerSave(0);
@@ -1368,13 +1149,12 @@ function TaskEditFormContent({
                         }
                       }}
                     />
-                    <TaskEditPriorityShortcut
+                    <TaskMetadataPriorityPicker
                       disabled={isOffline}
                       key={`priority:${priorityRenderKey ?? fieldRenderKey}`}
                       initialPriority={taskPriority}
                       priorityOptions={taskPriorityOptions}
-                      renderKey={priorityRenderKey ?? fieldRenderKey}
-                      taskTitle={editableTodo.title}
+                      label={`${terminology.task.singular} priority`}
                       onChange={() => triggerSave(0)}
                     />
                   </Stack>
