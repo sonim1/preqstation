@@ -206,4 +206,20 @@ describe('app/components/task-edit-form layout', () => {
       html.indexOf('data-panel="task-edit-activity"'),
     );
   });
+
+  it('uses the default label trigger and shared priority control in task settings', () => {
+    const html = renderTaskEditForm({
+      projectId: 'project-1',
+      projects: [{ id: 'project-1', name: 'Project Manager' }],
+      labelIds: ['label-1'],
+      labels: [{ id: 'label-1', name: 'Frontend', color: '#228be6' }],
+      todoLabels: [{ id: 'label-1', name: 'Frontend', color: '#228be6' }],
+    });
+
+    expect(html).toContain('data-task-label-trigger="default"');
+    expect(html).toContain('name="taskPriority"');
+    expect(html).toContain('data-task-priority-value="none"');
+    expect(html).not.toContain('data-task-edit-label-shortcut="true"');
+    expect(html).not.toContain('data-task-edit-priority-shortcut="true"');
+  });
 });

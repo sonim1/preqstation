@@ -1,6 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
 import { MantineProvider } from '@mantine/core';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -157,11 +154,6 @@ vi.mock('@/lib/notifications', () => ({
 
 import { TaskEditForm } from '@/app/components/task-edit-form';
 
-const taskEditFormCss = fs.readFileSync(
-  path.join(process.cwd(), 'app/components/task-edit-form.module.css'),
-  'utf8',
-);
-
 function renderTaskEditForm(
   note: string | null,
   overrides: Partial<{
@@ -313,20 +305,15 @@ describe('app/components/task-edit-form answer selection', () => {
 
     expect(prioritySelectProps).toBeUndefined();
     expect(runStateSelectProps).toBeUndefined();
-    const priorityTriggerIndex = html.indexOf('data-task-edit-priority-trigger="true"');
+    const priorityTriggerIndex = html.indexOf('data-task-priority-value="none"');
     const noPriorityLabelIndex = html.indexOf('>No priority</span>', priorityTriggerIndex);
-    const noPriorityDotIndex = html.indexOf(
-      'data-task-edit-priority-none-dot="true"',
-      priorityTriggerIndex,
-    );
+    const noPriorityDotIndex = html.indexOf('data-task-priority-none-dot="true"', priorityTriggerIndex);
 
-    expect(html).toContain('data-task-edit-priority-shortcut="true"');
     expect(html).toContain('type="hidden" name="taskPriority" value="none"');
+    expect(html).toContain('data-task-priority-value="none"');
     expect(html).toContain('>No priority</span>');
-    expect(html).toContain('data-task-edit-priority-none-dot="true"');
     expect(noPriorityDotIndex).toBeGreaterThan(priorityTriggerIndex);
     expect(noPriorityDotIndex).toBeLessThan(noPriorityLabelIndex);
-    expect(html).not.toContain('data-task-edit-priority-none-plus="true"');
     expect(html).toContain('type="hidden" name="runState" value="queued"');
   });
 
@@ -347,20 +334,12 @@ describe('app/components/task-edit-form answer selection', () => {
       .find((props) => props.taskPriorityValue === 'lowest');
 
     expect(prioritySelectProps).toBeUndefined();
-    expect(html).toContain('data-task-edit-priority-shortcut="true"');
-    expect(html).toContain('data-task-edit-priority-trigger="true"');
+    expect(html).toContain('data-task-priority-value="high"');
     expect(html).toContain('type="hidden" name="taskPriority" value="high"');
-    expect(html).toContain('aria-label="High"');
     expect(html).toContain('>High</span>');
     expect(html).toContain('Important, visible on card');
     expect(html).toContain('Parking lot');
     expect(html).not.toContain('data-slot="select:taskPriority"');
-    expect(taskEditFormCss).toMatch(
-      /\.priorityShortcutButton\s*\{[\s\S]*width:\s*100%;[\s\S]*min-height:\s*2\.875rem;[\s\S]*justify-content:\s*space-between;[\s\S]*padding:\s*0\.625rem 0\.75rem;[\s\S]*border:\s*1px solid color-mix\(in srgb, var\(--ui-border\), transparent 18%\);[\s\S]*background:\s*color-mix\(in srgb, var\(--ui-surface-strong\), transparent 48%\);[\s\S]*transition:[\s\S]*background-color 120ms ease,[\s\S]*border-color 120ms ease,[\s\S]*color 120ms ease;/,
-    );
-    expect(taskEditFormCss).toMatch(
-      /\.priorityShortcutButton:hover,\s*\.priorityShortcutButton:focus-visible\s*\{[\s\S]*border-color:\s*color-mix\(in srgb, var\(--ui-accent\), var\(--ui-border\) 58%\);[\s\S]*background:\s*color-mix\(in srgb, var\(--ui-accent-soft\), var\(--ui-surface-strong\) 42%\);/,
-    );
     expect(highItemProps).toEqual(
       expect.objectContaining({
         ariaChecked: true,
@@ -390,7 +369,7 @@ describe('app/components/task-edit-form answer selection', () => {
     expect(triggerSaveMock).toHaveBeenCalledWith(0);
   });
 
-  it('renders every selected task label inline in the edit form shortcut', () => {
+  it('renders selected task labels with the default edit form label trigger', () => {
     const html = renderTaskEditForm('## Context\nPlain markdown note', {
       labelIds: ['label-ui', 'label-bug', 'label-ops'],
       labels: [
@@ -406,36 +385,26 @@ describe('app/components/task-edit-form answer selection', () => {
       ],
     });
 
-    expect(html).toContain('data-task-edit-label-shortcut="true"');
-    expect(html).toContain('data-kanban-label-shortcut="labels"');
+    expect(html).toContain('data-task-label-trigger="default"');
     expect(html).toContain('type="hidden" name="labelIds" value="label-ui"');
     expect(html).toContain('type="hidden" name="labelIds" value="label-bug"');
     expect(html).toContain('type="hidden" name="labelIds" value="label-ops"');
-    expect(html).toContain('>#</span>');
-    expect(html).toContain('style="color:#228be6"');
-    expect(html).toContain('>UI</span>');
-    expect(html).toContain('>Bug</span>');
-    expect(html).toContain('>Ops</span>');
+    expect(html).toContain('>UI, Bug, Ops</span>');
     expect(html).not.toContain('data-kanban-label-summary="true"');
     expect(html).not.toContain('>+2</span>');
     expect(html).not.toContain('data-slot="multiselect:Labels"');
   });
 
-  it('uses a bare plus trigger for empty task labels without input chrome', () => {
+  it('uses the default empty label trigger in task settings', () => {
     const html = renderTaskEditForm('## Context\nPlain markdown note', {
       todoLabels: [{ id: 'label-ui', name: 'UI', color: '#228be6' }],
     });
 
-    expect(html).toContain('data-kanban-label-shortcut="empty"');
-    expect(html).toContain('data-task-edit-empty-label-trigger="true"');
-    expect(html).toContain('>+</span>');
-    expect(taskEditFormCss).toMatch(/\.labelShortcutField\s*\{[\s\S]*align-items:\s*flex-start;/);
-    expect(taskEditFormCss).toMatch(/\.labelShortcutButton\s*\{[\s\S]*min-height:\s*2\.375rem;/);
-    expect(taskEditFormCss).toMatch(
-      /\.labelShortcutButton\[data-kanban-label-shortcut='empty'\]\s*\{[\s\S]*width:\s*2\.25rem;[\s\S]*height:\s*2\.25rem;[\s\S]*border-radius:\s*999px;[\s\S]*background:\s*color-mix\(in srgb, var\(--ui-accent-soft\), white 24%\);[\s\S]*box-shadow:\s*inset 0 0 0 1px color-mix\(in srgb, var\(--ui-border\), transparent 12%\);/,
-    );
-    expect(taskEditFormCss).toMatch(
-      /\.labelShortcutPlus\s*\{[\s\S]*font-size:\s*1\.25rem;[\s\S]*font-weight:\s*600;/,
-    );
+    expect(html).toContain('data-task-label-trigger="default"');
+    expect(html).toContain('>Select labels</span>');
+    expect(html).toContain('>Labels</span>');
+    expect(html).not.toContain('data-kanban-label-shortcut="empty"');
+    expect(html).not.toContain('data-task-edit-empty-label-trigger="true"');
+    expect(html).not.toContain('>+</span>');
   });
 });

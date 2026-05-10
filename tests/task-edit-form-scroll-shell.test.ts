@@ -11,6 +11,10 @@ const taskEditFormCss = fs.readFileSync(
   path.join(process.cwd(), 'app/components/task-edit-form.module.css'),
   'utf8',
 );
+const taskMetadataControlsCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/task-metadata-controls.module.css'),
+  'utf8',
+);
 const taskEditFormSource = fs.readFileSync(
   path.join(process.cwd(), 'app/components/task-edit-form.tsx'),
   'utf8',
@@ -204,10 +208,8 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     const taskIdentityRowRule = getRuleBody(taskEditFormCss, '.taskIdentityRow');
     const projectNameRule = getRuleBody(taskEditFormCss, '.projectName');
     const settingsControlsRule = getRuleBody(taskEditFormCss, '.settingsControls');
-    const labelShortcutButtonRule = getRuleBody(taskEditFormCss, '.labelShortcutButton');
-    const labelShortcutInlineListRule = getRuleBody(taskEditFormCss, '.labelShortcutInlineList');
-    const priorityShortcutLabelRule = getRuleBody(taskEditFormCss, '.priorityShortcutLabel');
-    const priorityShortcutButtonRule = getRuleBody(taskEditFormCss, '.priorityShortcutButton');
+    const priorityLabelRule = getRuleBody(taskMetadataControlsCss, '.priorityLabel');
+    const priorityTriggerRule = getRuleBody(taskMetadataControlsCss, '.priorityTrigger');
     const settingsDividerRule = getRuleBody(taskEditFormCss, '.settingsDivider');
 
     expect(metaHeaderRule).toContain('display: grid;');
@@ -232,12 +234,10 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(projectNameRule).toContain('max-width: 100%;');
     expect(projectNameRule).toContain('overflow-wrap: anywhere;');
     expect(settingsControlsRule).toContain('max-width: 100%;');
-    expect(labelShortcutButtonRule).toContain('max-width: 100%;');
-    expect(labelShortcutInlineListRule).toContain('min-width: 0;');
-    expect(labelShortcutInlineListRule).toContain('max-width: 100%;');
-    expect(priorityShortcutLabelRule).toContain('overflow-wrap: anywhere;');
-    expect(priorityShortcutLabelRule).not.toContain('white-space: nowrap;');
-    expect(priorityShortcutButtonRule).toContain('max-width: 100%;');
+    expect(priorityLabelRule).toContain('line-height: 1.55;');
+    expect(priorityLabelRule).toContain('overflow-wrap: anywhere;');
+    expect(priorityTriggerRule).toContain('width: 100%;');
+    expect(priorityTriggerRule).toContain('min-width: 0;');
     expect(taskEditFormCss).not.toContain('box-shadow: var(--ui-elevation-1);');
   });
 

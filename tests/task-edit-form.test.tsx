@@ -18,6 +18,7 @@ const useOfflineStatusMock = vi.hoisted(() => vi.fn());
 const useTaskOfflineDraftMock = vi.hoisted(() => vi.fn());
 const setTaskEditRefreshBlockedMock = vi.hoisted(() => vi.fn());
 const taskLabelPickerPropsMock = vi.hoisted(() => vi.fn());
+const taskMetadataPriorityPickerPropsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('react', async () => {
   const actual = await vi.importActual<typeof import('react')>('react');
@@ -89,6 +90,57 @@ vi.mock('@/app/components/task-label-picker', () => ({
   TaskLabelPicker: (props: Record<string, unknown>) => {
     taskLabelPickerPropsMock(props);
     return React.createElement('div', { 'data-component': 'TaskLabelPicker' });
+  },
+}));
+
+vi.mock('@/app/components/task-metadata-controls', () => ({
+  TaskMetadataPriorityPicker: (props: {
+    initialPriority?: string;
+    label: string;
+    name?: string;
+    priorityOptions: Array<{ value: string; label: string }>;
+    onChange?: (priority: string) => void;
+  }) => {
+    taskMetadataPriorityPickerPropsMock(props);
+    const [selectedPriority, setSelectedPriority] = React.useState(props.initialPriority ?? 'none');
+
+    return React.createElement(
+      'div',
+      { 'data-component': 'TaskMetadataPriorityPicker' },
+      React.createElement('input', {
+        type: 'hidden',
+        name: props.name ?? 'taskPriority',
+        value: selectedPriority,
+        readOnly: true,
+      }),
+      React.createElement(
+        'button',
+        {
+          type: 'button',
+          'aria-label': props.label,
+          'data-task-priority-value': selectedPriority,
+        },
+        selectedPriority,
+      ),
+      props.priorityOptions.map((option) =>
+        React.createElement(
+          'button',
+          {
+            key: option.value,
+            type: 'button',
+            role: 'menuitemradio',
+            'aria-checked': selectedPriority === option.value,
+            'aria-label': option.label,
+            'data-task-priority-value': option.value,
+            onClick: () => {
+              setSelectedPriority(option.value);
+              props.onChange?.(option.value);
+            },
+          },
+          option.label,
+        ),
+      ),
+    );
   },
 }));
 
@@ -175,6 +227,7 @@ describe('app/components/task-edit-form', () => {
     useActionStateMock.mockReset();
     setTaskEditRefreshBlockedMock.mockReset();
     taskLabelPickerPropsMock.mockReset();
+    taskMetadataPriorityPickerPropsMock.mockReset();
 
     useActionStateMock.mockReturnValue([null, formAction]);
     useBoardOfflineSyncMock.mockReturnValue(null);
@@ -233,16 +286,93 @@ describe('app/components/task-edit-form', () => {
     expect(html).not.toContain('Ticket content (Markdown)');
   });
 
-  it('wires the shared task label picker with the editable task project and selected labels', () => {
+  it('wires the shared task label picker with the default trigger metadata', () => {
     renderTaskEditForm();
 
-    expect(taskLabelPickerPropsMock).toHaveBeenCalledWith(
+    const labelPickerProps = taskLabelPickerPropsMock.mock.calls[0]?.[0] as
+      | Record<string, unknown>
+      | undefined;
+
+    expect(labelPickerProps).toEqual(
       expect.objectContaining({
         projectId: 'project-1',
         selectedLabelIds: [],
         labelOptions: [],
+        triggerAriaLabel: 'Edit labels for OpenClaw 기능 UI수정',
+        triggerLabel: 'Labels',
+        emptyStateLabel: 'Select labels',
+        searchPlaceholder: 'Search labels',
       }),
     );
+    expect(labelPickerProps).not.toHaveProperty('renderTrigger');
+  });
+
+  it('updates task priority through the shared picker and triggers immediate autosave', async () => {
+    const triggerSave = vi.fn();
+    useAutoSaveMock.mockReturnValueOnce({
+      markDirty: vi.fn(),
+      triggerSave,
+      flushSave: vi.fn(),
+      syncSnapshot: vi.fn(),
+      status: 'idle',
+      isDirty: false,
+      isDirtyRef: { current: false },
+    });
+
+    render(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'OpenClaw 기능 UI수정',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: [],
+              labels: [],
+              taskPriority: 'none',
+              status: 'todo',
+              engine: 'codex',
+              dispatchTarget: null,
+              runState: null,
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[
+              { value: 'none', label: 'None' },
+              { value: 'high', label: 'High' },
+            ]}
+            updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
+            branchName="task/proj-187/openclaw-gineung-uisujeong"
+            telegramEnabled
+          />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    const priorityInput = document.querySelector<HTMLInputElement>('input[name="taskPriority"]');
+
+    expect(priorityInput?.value).toBe('none');
+    expect(taskMetadataPriorityPickerPropsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        initialPriority: 'none',
+        label: 'Ticket priority',
+        priorityOptions: [
+          { value: 'none', label: 'None' },
+          { value: 'high', label: 'High' },
+        ],
+      }),
+    );
+
+    fireEvent.click(await screen.findByRole('menuitemradio', { name: 'High' }));
+
+    await waitFor(() => {
+      expect(priorityInput?.value).toBe('high');
+    });
+    expect(triggerSave).toHaveBeenCalledWith(0);
   });
 
   it('keeps notes editable offline while disabling server-only edit panel controls', () => {
