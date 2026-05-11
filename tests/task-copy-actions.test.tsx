@@ -88,6 +88,10 @@ const originalLocalStorageDescriptor = Object.getOwnPropertyDescriptor(
   'localStorage',
 );
 const originalMatchMediaDescriptor = Object.getOwnPropertyDescriptor(originalWindow, 'matchMedia');
+const originalClipboardDescriptor = Object.getOwnPropertyDescriptor(
+  originalWindow.navigator,
+  'clipboard',
+);
 const legacyClaudeDispatchAction = ['send', 'claude-code'].join('-');
 
 function renderTaskCopyActions(props: Partial<React.ComponentProps<typeof TaskCopyActions>> = {}) {
@@ -138,6 +142,11 @@ describe('app/components/task-copy-actions', () => {
       Object.defineProperty(originalWindow, 'matchMedia', originalMatchMediaDescriptor);
     } else {
       Reflect.deleteProperty(originalWindow, 'matchMedia');
+    }
+    if (originalClipboardDescriptor) {
+      Object.defineProperty(originalWindow.navigator, 'clipboard', originalClipboardDescriptor);
+    } else {
+      Reflect.deleteProperty(originalWindow.navigator, 'clipboard');
     }
   });
 
