@@ -162,14 +162,12 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(taskEditFormCss).toMatch(
       /@container \(max-width: 82em\)\s*\{[\s\S]*\.shell\s*\{[\s\S]*--task-edit-section-min-height:\s*clamp\(22rem,\s*48vh,\s*34rem\);/,
     );
-    expect(taskEditFormCss).toMatch(
-      /@container \(max-width: 82em\)\s*\{[\s\S]*\.sidebar\[data-layout='with-dispatch'\]\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);[\s\S]*align-items:\s*start;/,
-    );
+    expect(taskEditFormCss).not.toContain(".sidebar[data-layout='with-dispatch']");
     expect(taskEditFormCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.dispatchRail[\s\S]*padding:\s*0;/,
     );
     expect(taskEditFormCss).toMatch(
-      /@media \(max-width: 48em\)\s*\{[\s\S]*\.sidebar\[data-layout='with-dispatch'\]\s*\{[\s\S]*grid-template-columns:\s*1fr;/,
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.sidebar\s*\{[\s\S]*grid-template-columns:\s*1fr;/,
     );
     expect(taskEditFormCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.activityCard[\s\S]*padding:\s*0;/,
@@ -292,9 +290,10 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(getRuleBody(globalCss, '.task-dispatch-actions')).toContain('display: grid;');
     expect(taskDispatchPanelRule).toContain('display: grid;');
     expect(taskDispatchPanelRule).toContain('gap: 0.625rem;');
-    expect(globalCss).toMatch(
-      /@container \(min-width: 25rem\)\s*\{[\s\S]*?\.task-dispatch-panel\s*\{[^}]*grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\);/,
+    expect(globalCss).not.toMatch(
+      /@container \(min-width: 25rem\)\s*\{[\s\S]*?\.task-dispatch-panel\s*\{/,
     );
+    expect(taskDispatchPanelRule).not.toContain('grid-template-columns: repeat(2');
     expect(taskDispatchFieldRule).toContain('grid-template-columns: 4.25rem minmax(0, 1fr);');
     expect(taskDispatchSegmentedControlRule).toContain(
       'grid-template-columns: repeat(3, minmax(0, 1fr));',

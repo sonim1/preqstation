@@ -158,6 +158,12 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('<textarea');
     expect(html).toContain('aria-label="Copy dispatch prompt"');
     expect(html).toContain('aria-label="Send dispatch"');
+    expect(html.indexOf('task-dispatch-mode-segments')).toBeLessThan(
+      html.indexOf('data-task-dispatch-prompt'),
+    );
+    expect(html.indexOf('data-task-dispatch-prompt')).toBeLessThan(
+      html.indexOf('aria-label="Send dispatch"'),
+    );
     expect(html).toContain('Cmd+Enter');
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');

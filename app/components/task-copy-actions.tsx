@@ -501,6 +501,15 @@ export function TaskCopyActions({
             })}
           />
 
+          <div className="task-dispatch-preview">
+            <DispatchPromptPreview
+              prompt={dispatchPrompt}
+              promptProps={{ 'data-task-dispatch-prompt': true }}
+              collapseMode="single-line"
+              onCopy={() => persistDispatchPreference()}
+            />
+          </div>
+
           <UnstyledButton
             type="button"
             aria-label="Send dispatch"
@@ -516,15 +525,6 @@ export function TaskCopyActions({
               {SEND_SHORTCUT_LABEL}
             </Kbd>
           </UnstyledButton>
-        </div>
-
-        <div className="task-dispatch-preview">
-          <DispatchPromptPreview
-            prompt={dispatchPrompt}
-            promptProps={{ 'data-task-dispatch-prompt': true }}
-            collapseMode="single-line"
-            onCopy={() => persistDispatchPreference()}
-          />
         </div>
 
         <Text
