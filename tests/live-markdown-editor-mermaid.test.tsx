@@ -132,6 +132,9 @@ describe('LiveMarkdownEditor mermaid diagrams', () => {
       );
     });
 
+    expect(
+      (container.querySelector('.live-editor-mermaid-block .mermaid') as HTMLElement).style.display,
+    ).toBe('none');
     expect(getHiddenMarkdownInput(container).value).toBe(markdown);
   });
 });

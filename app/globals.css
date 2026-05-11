@@ -1912,7 +1912,7 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   margin-top: 8px;
   overflow-x: auto;
   border: 1px solid var(--ui-border);
-  border-radius: 6px;
+  border-radius: var(--mantine-radius-sm);
   padding: 10px 12px;
   font-family: var(--mantine-font-family-monospace);
   font-size: 12px;

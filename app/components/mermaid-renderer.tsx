@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 let mermaidInitialized = false;
 
@@ -23,7 +23,6 @@ type MermaidDiagramProps = {
 };
 
 export function MermaidDiagram({ source, className = 'mermaid' }: MermaidDiagramProps) {
-  const id = useId();
   const diagramRef = useRef<HTMLPreElement | null>(null);
   const [hasError, setHasError] = useState(false);
 
@@ -51,8 +50,12 @@ export function MermaidDiagram({ source, className = 'mermaid' }: MermaidDiagram
   }, [source]);
 
   return (
-    <div className="live-editor-mermaid" data-mermaid-preview-id={id}>
-      <pre ref={diagramRef} className={className}>
+    <div className="live-editor-mermaid">
+      <pre
+        ref={diagramRef}
+        className={className}
+        style={hasError ? { display: 'none' } : undefined}
+      >
         {source}
       </pre>
       {hasError ? <pre className="live-editor-mermaid-source">{source}</pre> : null}
