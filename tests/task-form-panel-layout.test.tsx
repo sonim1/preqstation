@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { MantineProvider } from '@mantine/core';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -224,6 +227,20 @@ function renderTaskFormPanelClient() {
   return render(taskFormPanelElement());
 }
 
+const taskFormPanelCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/panels/task-form-panel.module.css'),
+  'utf8',
+);
+
+function getRuleBody(css: string, selector: string) {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = css.match(
+    new RegExp(`(?:^|})\\s*[^{}]*${escapedSelector}[^{}]*\\{([\\s\\S]*?)\\}`),
+  );
+
+  return match?.[1] ?? '';
+}
+
 beforeEach(() => {
   actionStateMock.current = null;
 });
@@ -234,16 +251,36 @@ afterEach(() => {
 });
 
 describe('TaskFormPanel layout', () => {
-  it('renders setup, notes, and metadata sections instead of a single unstructured stack', () => {
+  it('renders add task controls directly on the panel surface without card wrapper semantics', () => {
     const html = renderTaskFormPanel();
+    const setupIndex = html.indexOf('data-panel="task-form-setup"');
+    const notesIndex = html.indexOf('data-panel="task-form-notes"');
+    const metadataIndex = html.indexOf('data-panel="task-form-metadata"');
 
     expect(html).toContain('data-layout="task-form-workbench"');
     expect(html).toContain('Ticket setup');
     expect(html).toContain('Notes');
     expect(html).toContain('Ticket metadata');
-    expect(html).toContain('data-panel="task-form-setup"');
-    expect(html).toContain('data-panel="task-form-notes"');
-    expect(html).toContain('data-panel="task-form-metadata"');
+    expect(setupIndex).toBeGreaterThan(-1);
+    expect(setupIndex).toBeLessThan(notesIndex);
+    expect(notesIndex).toBeLessThan(metadataIndex);
+    expect(html.indexOf('data-slot="task-label-picker"')).toBeLessThan(
+      html.indexOf('name="taskPriority"'),
+    );
+    expect(html.indexOf('name="taskPriority"')).toBeLessThan(html.indexOf('Create Ticket'));
+  });
+
+  it('does not style add task sections as nested cards', () => {
+    for (const selector of ['.setupSection', '.notesSection', '.metaSection']) {
+      const ruleBody = getRuleBody(taskFormPanelCss, selector);
+
+      expect(ruleBody).not.toBe('');
+      expect(ruleBody).not.toContain('border:');
+      expect(ruleBody).not.toContain('border-radius:');
+      expect(ruleBody).not.toContain('box-shadow:');
+      expect(ruleBody).not.toContain('backdrop-filter:');
+      expect(ruleBody).not.toContain('background:');
+    }
   });
 
   it('keeps the markdown editor in the primary notes panel ahead of metadata controls', () => {
@@ -291,7 +328,9 @@ describe('TaskFormPanel layout', () => {
       group.contains(screen.getByRole('menuitemradio', { name: 'No priority No marker on card' })),
     ).toBe(true);
     expect(
-      group.contains(screen.getByRole('menuitemradio', { name: 'High Important, visible on card' })),
+      group.contains(
+        screen.getByRole('menuitemradio', { name: 'High Important, visible on card' }),
+      ),
     ).toBe(true);
   });
 

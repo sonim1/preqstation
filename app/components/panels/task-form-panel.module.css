@@ -3,19 +3,10 @@
   gap: 1rem;
 }
 
-.setupCard,
-.notesCard,
-.metaCard {
-  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 10%);
-  border-radius: var(--mantine-radius-lg);
-  background: var(--ui-surface);
-  box-shadow: var(--ui-elevation-1);
-  backdrop-filter: blur(10px);
-  padding: clamp(0.95rem, 2vw, 1.2rem);
-}
-
-.notesCard {
-  background: var(--ui-surface-soft);
+.setupSection,
+.notesSection,
+.metaSection {
+  min-width: 0;
 }
 
 .columns {
@@ -59,11 +50,5 @@
 @media (max-width: 48em) {
   .workbench {
     gap: 0.85rem;
-  }
-
-  .setupCard,
-  .notesCard,
-  .metaCard {
-    padding: 1rem;
   }
 }
