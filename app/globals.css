@@ -1689,6 +1689,21 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   min-width: 0;
 }
 
+.markdown-output .mermaid {
+  margin: 10px 0;
+  min-width: 320px;
+  overflow-x: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--mantine-radius-sm);
+  background: rgba(255, 255, 255, 0.72);
+  padding: 12px;
+}
+
+.markdown-output .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
 .markdown-output code {
   background: var(--mantine-color-indigo-0);
   border-radius: 6px;
@@ -2351,6 +2366,10 @@ html[data-mantine-color-scheme='dark'] .kanban-archive-trigger {
 html[data-mantine-color-scheme='dark'] .markdown-output code,
 html[data-mantine-color-scheme='dark'] .live-editor-code {
   background: rgba(129, 154, 255, 0.26);
+}
+
+html[data-mantine-color-scheme='dark'] .markdown-output .mermaid {
+  background: color-mix(in srgb, var(--ui-surface-strong), white 6%);
 }
 
 html[data-mantine-color-scheme='dark'] .live-editor-code-block {

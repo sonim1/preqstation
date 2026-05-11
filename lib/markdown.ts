@@ -48,6 +48,10 @@ type MarkdownBlock =
       content: string;
       type: 'paragraph';
     }
+  | {
+      content: string;
+      type: 'mermaid';
+    }
   | MarkdownList;
 
 type MarkdownList = {
@@ -245,7 +249,10 @@ function parseMarkdownBlocks(source: string) {
     return true;
   }
 
-  for (const rawLine of source.split('\n')) {
+  const lines = source.split('\n');
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const rawLine = lines[index];
     if (!rawLine.trim()) {
       resetListState();
       continue;
@@ -286,6 +293,22 @@ function parseMarkdownBlocks(source: string) {
     }
 
     resetListState();
+
+    if (indentWidth === 0 && /^```mermaid(?:\s.*)?$/.test(content.trim())) {
+      const mermaidLines: string[] = [];
+      let cursor = index + 1;
+
+      while (cursor < lines.length && lines[cursor].trim() !== '```') {
+        mermaidLines.push(lines[cursor]);
+        cursor += 1;
+      }
+
+      if (cursor < lines.length) {
+        blocks.push({ type: 'mermaid', content: mermaidLines.join('\n') });
+        index = cursor;
+        continue;
+      }
+    }
 
     if (indentWidth === 0) {
       const heading = content.match(/^(#{1,6})\s+(.+)$/);
@@ -569,6 +592,10 @@ export function renderMarkdownToHtml(markdown?: string | null) {
 
       if (block.type === 'list') {
         return renderList(block);
+      }
+
+      if (block.type === 'mermaid') {
+        return `<pre class="mermaid">${escapeHtml(block.content)}</pre>`;
       }
 
       return `<p>${formatInline(block.content)}</p>`;

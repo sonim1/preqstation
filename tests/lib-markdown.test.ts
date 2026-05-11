@@ -182,4 +182,23 @@ describe('lib/markdown', () => {
     expect(html).not.toContain('Inbox screenshot');
     expect(html).not.toContain('Artifacts:');
   });
+
+  it('renders mermaid fenced code blocks for client-side hydration', () => {
+    const html = compactHtml(
+      renderMarkdownToHtml('```mermaid\ngraph TD\n  A[Start] --> B[Done]\n```'),
+    );
+
+    expect(html).toContain('<pre class="mermaid">');
+    expect(html).toContain('graph TD');
+    expect(html).toContain('A[Start] --&gt; B[Done]');
+  });
+
+  it('keeps checklist indexes stable around mermaid blocks', () => {
+    const html = compactHtml(
+      renderMarkdownToHtml('- [ ] before\n```mermaid\ngraph TD\nA --> B\n```\n- [ ] after'),
+    );
+
+    expect(html).toContain('data-task-index="0"');
+    expect(html).toContain('data-task-index="1"');
+  });
 });
