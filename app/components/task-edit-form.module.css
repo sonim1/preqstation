@@ -341,7 +341,7 @@
     min-height: auto;
   }
 
-  .sidebar {
+  .sidebar[data-layout] {
     grid-template-columns: 1fr;
   }
 
