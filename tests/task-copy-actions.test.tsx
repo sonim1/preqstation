@@ -150,6 +150,8 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain('role="button"');
     expect(html).toContain('aria-label="Dispatch prompt"');
+    expect(html).toContain('task-dispatch-prompt-shell');
+    expect(html).not.toContain('task-dispatch-preview');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('data-collapsible="true"');
     expect(html).not.toContain('role="textbox"');

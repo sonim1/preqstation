@@ -501,14 +501,11 @@ export function TaskCopyActions({
             })}
           />
 
-          <div className="task-dispatch-preview">
-            <DispatchPromptPreview
-              prompt={dispatchPrompt}
-              promptProps={{ 'data-task-dispatch-prompt': true }}
-              collapseMode="single-line"
-              onCopy={() => persistDispatchPreference()}
-            />
-          </div>
+          <DispatchPromptPreview
+            prompt={dispatchPrompt}
+            promptProps={{ 'data-task-dispatch-prompt': true }}
+            collapseMode="single-line"
+          />
 
           <UnstyledButton
             type="button"
