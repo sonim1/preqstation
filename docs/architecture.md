@@ -211,8 +211,8 @@ When such a block is parsed, supported entries (`image`, `video`, or `document` 
 
 #### Markdown rendering
 
-Task notes and QA report markdown render fenced Mermaid diagrams when the block uses a top-level
-`mermaid` code fence:
+Task notes, the live markdown editor, and QA report markdown render fenced Mermaid diagrams when
+the block uses a top-level `mermaid` code fence:
 
 ````markdown
 ```mermaid

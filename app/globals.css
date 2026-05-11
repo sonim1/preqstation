@@ -1889,6 +1889,36 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   margin: 0;
 }
 
+.live-editor-mermaid-block {
+  margin: 8px 0;
+}
+
+.live-editor-mermaid-block .mermaid {
+  margin: 0;
+  min-width: 320px;
+  overflow-x: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--mantine-color-white);
+  padding: 12px;
+}
+
+.live-editor-mermaid-block .mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.live-editor-mermaid-source {
+  margin-top: 8px;
+  overflow-x: auto;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--mantine-radius-sm);
+  padding: 10px 12px;
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 12px;
+  white-space: pre;
+}
+
 .live-editor-tokenComment {
   color: #6a9955;
 }
@@ -2369,6 +2399,10 @@ html[data-mantine-color-scheme='dark'] .live-editor-code {
 }
 
 html[data-mantine-color-scheme='dark'] .markdown-output .mermaid {
+  background: color-mix(in srgb, var(--ui-surface-strong), white 6%);
+}
+
+html[data-mantine-color-scheme='dark'] .live-editor-mermaid-block .mermaid {
   background: color-mix(in srgb, var(--ui-surface-strong), white 6%);
 }
 

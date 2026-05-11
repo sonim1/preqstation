@@ -3,14 +3,13 @@
 import { Anchor, Badge, Group, Paper, Stack, Text } from '@mantine/core';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
+import { renderMermaidNodes } from '@/app/components/mermaid-renderer';
 import {
   extractMarkdownArtifacts,
   renderMarkdownToHtml,
   toggleChecklistItem,
 } from '@/lib/markdown';
 import { mergeTaskArtifacts, type TaskArtifact } from '@/lib/task-artifacts';
-
-let mermaidInitialized = false;
 
 type MarkdownPersistence = {
   endpoint: string;
@@ -38,6 +37,7 @@ export function MarkdownViewer({
   const bodyRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- keep editable checklist markdown synced with prop updates
     setSource(markdown || '');
   }, [markdown]);
 
@@ -53,18 +53,10 @@ export function MarkdownViewer({
 
     let cancelled = false;
 
-    void import('mermaid')
-      .then(({ default: mermaid }) => {
-        if (cancelled) return undefined;
-        if (!mermaidInitialized) {
-          mermaid.initialize({ securityLevel: 'strict', startOnLoad: false });
-          mermaidInitialized = true;
-        }
-        return mermaid.run({ nodes });
-      })
-      .catch((error: unknown) => {
-        console.error('Failed to render Mermaid diagram', error);
-      });
+    void renderMermaidNodes(nodes, () => cancelled).catch((error: unknown) => {
+      if (cancelled) return;
+      console.error('Failed to render Mermaid diagram', error);
+    });
 
     return () => {
       cancelled = true;
