@@ -11,6 +11,7 @@ import {
   normalizeTaskCommentRunState,
   renderTaskCommentWorkLogDetail,
   serializeTaskComment,
+  syncTaskRunStateFromComments,
 } from '@/lib/task-comments';
 
 type CommentAuth = { ownerId: string; ownerEmail: string | null };
@@ -91,6 +92,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         })
         .where(and(eq(taskComments.ownerId, auth.ownerId), eq(taskComments.id, id)))
         .returning();
+
+      if (runState) {
+        await syncTaskRunStateFromComments({
+          client,
+          ownerId: auth.ownerId,
+          taskId: existing.taskId,
+        });
+      }
 
       if (runState === 'failed') {
         await client.insert(workLogs).values({
