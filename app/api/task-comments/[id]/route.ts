@@ -93,7 +93,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         .where(and(eq(taskComments.ownerId, auth.ownerId), eq(taskComments.id, id)))
         .returning();
 
-      if (runState) {
+      if (runState && runState !== existing.runState) {
         await syncTaskRunStateFromComments({
           client,
           ownerId: auth.ownerId,

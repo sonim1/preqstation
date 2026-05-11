@@ -109,4 +109,19 @@ describe('app/api/task-comments/[id]/route', () => {
       runStateUpdatedAt: null,
     });
   });
+
+  it('skips task run state sync when comment run state is unchanged', async () => {
+    mocked.returningFn.mockResolvedValue([{ ...existingComment, errorMessage: 'still queued' }]);
+
+    const response = await PATCH(
+      patchRequest({ run_state: 'queued', errorMessage: 'still queued' }),
+      {
+        params: Promise.resolve({ id: 'comment-1' }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocked.db.query.tasks.findFirst).not.toHaveBeenCalled();
+    expect(mocked.db.query.taskComments.findMany).not.toHaveBeenCalled();
+  });
 });
