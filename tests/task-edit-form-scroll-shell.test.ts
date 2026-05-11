@@ -163,7 +163,13 @@ describe('task edit modal scroll-shell CSS regressions', () => {
       /@container \(max-width: 82em\)\s*\{[\s\S]*\.shell\s*\{[\s\S]*--task-edit-section-min-height:\s*clamp\(22rem,\s*48vh,\s*34rem\);/,
     );
     expect(taskEditFormCss).toMatch(
+      /@container \(max-width: 82em\)\s*\{[\s\S]*\.sidebar\[data-layout='with-dispatch'\]\s*\{[\s\S]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\);[\s\S]*align-items:\s*start;/,
+    );
+    expect(taskEditFormCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.dispatchRail[\s\S]*padding:\s*0;/,
+    );
+    expect(taskEditFormCss).toMatch(
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.sidebar\[data-layout='with-dispatch'\]\s*\{[\s\S]*grid-template-columns:\s*1fr;/,
     );
     expect(taskEditFormCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.activityCard[\s\S]*padding:\s*0;/,

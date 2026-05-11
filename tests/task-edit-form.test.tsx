@@ -270,6 +270,7 @@ describe('app/components/task-edit-form', () => {
     const html = renderTaskEditForm();
 
     expect(html).toContain('task-edit-meta-header');
+    expect(html).toContain('data-layout="with-dispatch"');
     expect(html).toContain('data-panel="task-edit-dispatch"');
     expect(html).not.toContain('task-edit-meta-actions');
     expect(html).toContain('Dispatch');
@@ -392,6 +393,7 @@ describe('app/components/task-edit-form', () => {
     );
     expect(html).not.toContain('data-panel="task-edit-comments"');
     expect(html).not.toContain('data-panel="task-edit-dispatch"');
+    expect(html).toContain('data-layout="single"');
     expect(taskCopyActionsPropsMock).not.toHaveBeenCalled();
     expect(taskLabelPickerPropsMock.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({ disabled: true }),

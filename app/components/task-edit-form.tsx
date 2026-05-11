@@ -831,6 +831,7 @@ function TaskEditFormContent({
   const [dismissedDraftWarningKey, setDismissedDraftWarningKey] = useState<string | null>(null);
   const showDraftWarning = draftWarningKey !== null && dismissedDraftWarningKey !== draftWarningKey;
   const notesMode = resolveTaskEditNotesMode(notesModeState, taskKey);
+  const showDispatchPanel = !isOffline && status !== 'archived';
   const setNotesMode = (nextMode: EditorMode) => {
     setNotesModeState((currentState) =>
       applyTaskEditNotesModeChange(currentState, nextMode, activeNotesRevision, taskKey),
@@ -1065,8 +1066,12 @@ function TaskEditFormContent({
             </section>
           </div>
 
-          <aside className={classes.sidebar} data-panel="task-edit-sidebar">
-            {!isOffline && status !== 'archived' ? (
+          <aside
+            className={classes.sidebar}
+            data-layout={showDispatchPanel ? 'with-dispatch' : 'single'}
+            data-panel="task-edit-sidebar"
+          >
+            {showDispatchPanel ? (
               <section
                 className={`${classes.dispatchRail} ${classes.sectionSurface}`}
                 data-panel="task-edit-dispatch"
