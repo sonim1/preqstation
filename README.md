@@ -1,24 +1,42 @@
-# Preq Station
+<p align="center">
+  <a href="https://preqstation.com">
+    <img src="public/brand/preqstation-app-icon.svg" alt="PreqStation" width="96" />
+  </a>
+</p>
 
-**AI Command Center for developers**
+<h1 align="center">PreqStation Core App</h1>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Node 22](https://img.shields.io/badge/Node-22-green.svg)](https://nodejs.org)
+<p align="center">
+  <strong>Task control plane, Kanban workflow, API, and MCP server for AI-agent execution.</strong>
+</p>
+
+<p align="center">
+  <a href="https://preqstation.com">Website</a> ·
+  <a href="https://preqstation.com/guide">Guide</a> ·
+  <a href="https://github.com/sonim1/preqstation">Core App</a> ·
+  <a href="https://github.com/sonim1/preqstation-dispatcher">PREQ CLI</a> ·
+  <a href="https://github.com/sonim1/preqstation-skill">Worker Skill</a>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-blue.svg" /></a>
+  <a href="https://nodejs.org"><img alt="Node 22" src="https://img.shields.io/badge/Node-22-green.svg" /></a>
+</p>
 
 ---
 
-## What is Preq Station
+## What this repo owns
 
-Preq Station is the core app and system of record in the PREQSTATION stack. It provides the Kanban board, task lifecycle, work logging, and the PREQSTATION API/MCP surfaces that coding agents use to read and update tasks programmatically.
+`preqstation` is the core app and system of record in the PreqStation stack. It owns the Kanban board, task lifecycle, work logging, owner workspace, REST API, and HTTP MCP surfaces that coding agents use to read and update tasks programmatically.
 
-PREQSTATION as a whole is a multi-surface system:
+PreqStation is a multi-surface system:
 
-- `preqstation` — core app, task lifecycle, API, architecture
-- `preqstation-dispatcher` — optional dispatcher path that launches coding agents in isolated worktrees
-- `preqstation-skill` — worker/runtime setup for Claude Code, Codex, and Gemini
-- `preqstation-lp` — umbrella onboarding and public guide
+- [`preqstation`](https://github.com/sonim1/preqstation) — core app, task lifecycle, API, MCP, and architecture
+- [`preqstation-dispatcher`](https://github.com/sonim1/preqstation-dispatcher) — PREQ CLI for operator-host setup, project mapping, health checks, and direct or integration-based dispatch
+- [`preqstation-skill`](https://github.com/sonim1/preqstation-skill) — worker/runtime setup for Claude Code, Codex, and Gemini
+- [`preqstation-landingpage`](https://github.com/sonim1/preqstation-landingpage) — public website and guide
 
-If you are new to the system, start with the landing/guide surface first, then return here for the core app and architecture details.
+If you are new to the system, start with the [public guide](https://preqstation.com/guide), then return here for core app and architecture details.
 
 ---
 
@@ -71,8 +89,8 @@ npm install
 # 4. Apply database migrations
 npm run db:migrate
 
-# 5. Provision the owner user in PostgreSQL
-# See docs/setup.md for the bcrypt + SQL steps
+# 5. Create or verify the owner account
+# Fresh installs guide you through owner setup; see docs/setup.md for manual setup details
 
 # 6. Start the development server
 npm run dev
@@ -173,7 +191,7 @@ user to restore them manually.
 
 ## API
 
-Preq Station exposes two agent integration surfaces.
+PreqStation exposes two agent integration surfaces.
 
 - **REST API** for shell helpers and direct automation
 - **MCP over HTTP** at `/mcp` for Claude Code / Codex with OAuth login
@@ -181,7 +199,7 @@ Preq Station exposes two agent integration surfaces.
 ### REST API
 
 - Base path: `/api/tasks`
-- Auth: `Authorization: Bearer <api-token>` for direct REST automation and legacy shell-helper flows
+- Auth: `Authorization: Bearer <token>` for direct REST automation and legacy shell-helper flows
 - Manage OAuth-backed agent installs from `/connections`
 
 Endpoints:
@@ -209,15 +227,15 @@ See [`docs/architecture.md`](docs/architecture.md) for the current API and workf
 
 For first-time system onboarding, prefer:
 
-- `preqstation-lp` for the umbrella guide and recommended reading order
-- `preqstation-skill` for worker/runtime setup
-- `preqstation-dispatcher` for the optional dispatcher path
+- [PreqStation Guide](https://preqstation.com/guide) for the umbrella guide and recommended reading order
+- [`preqstation-skill`](https://github.com/sonim1/preqstation-skill) for worker/runtime setup
+- [`preqstation-dispatcher`](https://github.com/sonim1/preqstation-dispatcher) for PREQ CLI setup and dispatcher automation
 
 ---
 
 ## Security
 
-Preq Station is designed for a single owner. All routes require authentication and all data is scoped to that owner at the database level in PostgreSQL.
+PreqStation is designed for a single owner. All routes require authentication and all data is scoped to that owner at the database level in PostgreSQL.
 
 Key policies:
 
