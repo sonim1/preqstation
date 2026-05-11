@@ -95,6 +95,7 @@ import {
   shouldPreserveLiveHeadingSourceOnBackspace,
 } from '@/lib/live-markdown-heading-source';
 import {
+  $replaceMermaidCodeNode,
   $replaceMermaidCodeNodes,
   LIVE_MERMAID_TRANSFORMER,
   LiveMermaidNode,
@@ -562,6 +563,18 @@ function CodeHighlightingPlugin() {
 
   useEffect(() => {
     return registerCodeHighlighting(editor);
+  }, [editor]);
+
+  return null;
+}
+
+function LiveMermaidCodeNodeTransformPlugin() {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    return editor.registerNodeTransform(CodeNode, (node) => {
+      $replaceMermaidCodeNode(node);
+    });
   }, [editor]);
 
   return null;
@@ -1340,6 +1353,7 @@ export function LiveMarkdownEditor({
             <LiveBackspacePlugin />
             <MarkdownShortcutPlugin transformers={MARKDOWN_SHORTCUT_TRANSFORMERS} />
             <CodeHighlightingPlugin />
+            <LiveMermaidCodeNodeTransformPlugin />
             <CodeBlockExitPlugin />
             <LiveHeadingSourcePlugin />
             <LiveChecklistSourcePlugin />

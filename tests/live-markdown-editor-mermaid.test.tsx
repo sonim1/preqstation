@@ -1,5 +1,8 @@
 /* @vitest-environment jsdom */
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { MantineProvider } from '@mantine/core';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -76,6 +79,18 @@ function getHiddenMarkdownInput(container: HTMLElement) {
 }
 
 describe('LiveMarkdownEditor mermaid diagrams', () => {
+  it('registers Mermaid code node conversion for live edits', () => {
+    const source = readFileSync(
+      join(process.cwd(), 'app/components/live-markdown-editor.tsx'),
+      'utf8',
+    );
+
+    expect(source).toContain('function LiveMermaidCodeNodeTransformPlugin()');
+    expect(source).toContain('editor.registerNodeTransform(CodeNode');
+    expect(source).toContain('$replaceMermaidCodeNode(node)');
+    expect(source).toContain('<LiveMermaidCodeNodeTransformPlugin />');
+  });
+
   it('renders mermaid fences as live diagrams while preserving markdown source', async () => {
     const markdown = '```mermaid\nflowchart LR\n  A --> B\n```';
     const { container } = renderEditor(markdown);

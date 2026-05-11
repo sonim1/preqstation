@@ -84,10 +84,15 @@ export function $isLiveMermaidNode(node: LexicalNode | null | undefined): node i
   return node instanceof LiveMermaidNode;
 }
 
+export function $replaceMermaidCodeNode(node: CodeNode) {
+  if (node.getLanguage() !== 'mermaid') return;
+  node.replace($createLiveMermaidNode(node.getTextContent()));
+}
+
 export function $replaceMermaidCodeNodes() {
   for (const child of $getRoot().getChildren()) {
-    if (child instanceof CodeNode && child.getLanguage() === 'mermaid') {
-      child.replace($createLiveMermaidNode(child.getTextContent()));
+    if (child instanceof CodeNode) {
+      $replaceMermaidCodeNode(child);
     }
   }
 }
