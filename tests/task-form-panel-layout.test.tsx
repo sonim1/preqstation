@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { MantineProvider } from '@mantine/core';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -173,6 +176,25 @@ vi.mock('@/lib/notifications', () => ({
 import { TaskFormPanel } from '@/app/components/panels/task-form-panel';
 import taskFormPanelStyles from '@/app/components/panels/task-form-panel.module.css';
 
+const taskFormPanelCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/panels/task-form-panel.module.css'),
+  'utf8',
+);
+
+function getRuleBody(css: string, selector: string) {
+  const selectorIndex = css.indexOf(selector);
+  expect(selectorIndex).toBeGreaterThanOrEqual(0);
+
+  const ruleStart = css.lastIndexOf('}', selectorIndex) + 1;
+  const bodyStart = css.indexOf('{', selectorIndex);
+  const bodyEnd = css.indexOf('}', selectorIndex);
+
+  expect(bodyStart).toBeGreaterThan(ruleStart);
+  expect(bodyEnd).toBeGreaterThan(bodyStart);
+
+  return css.slice(bodyStart + 1, bodyEnd);
+}
+
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
@@ -266,6 +288,18 @@ describe('TaskFormPanel layout', () => {
     expect(document.querySelector('[data-panel="task-form-metadata"]')?.className).toContain(
       taskFormPanelStyles.metaSection,
     );
+  });
+
+  it('keeps flat task form sections free of card surface styling', () => {
+    const ruleBody = getRuleBody(taskFormPanelCss, '.notesSection');
+
+    expect(ruleBody).not.toContain('border:');
+    expect(ruleBody).not.toContain('border-radius:');
+    expect(ruleBody).not.toContain('box-shadow:');
+    expect(ruleBody).not.toContain('backdrop-filter:');
+    expect(ruleBody).not.toContain('background:');
+    expect(ruleBody).not.toContain('background-color:');
+    expect(ruleBody).not.toContain('background-image:');
   });
 
   it('keeps the markdown editor in the primary notes panel ahead of metadata controls', () => {
