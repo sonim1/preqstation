@@ -72,7 +72,7 @@ export function TaskFormPanel({
       ))}
 
       <div className={classes.workbench} data-layout="task-form-workbench">
-        <section className={classes.setupCard} data-panel="task-form-setup">
+        <section className={classes.setupSection} data-panel="task-form-setup">
           <Stack gap="md">
             <div className={classes.sectionHeader}>
               <Text component="h2" fw={700} size="sm" className={classes.sectionTitle}>
@@ -109,7 +109,7 @@ export function TaskFormPanel({
         </section>
 
         <div className={classes.columns}>
-          <section className={classes.notesCard} data-panel="task-form-notes">
+          <section className={classes.notesSection} data-panel="task-form-notes">
             <Stack gap="md">
               <div className={classes.sectionHeader}>
                 <Text component="h2" fw={700} size="sm" className={classes.sectionTitle}>
@@ -128,7 +128,7 @@ export function TaskFormPanel({
             </Stack>
           </section>
 
-          <section className={classes.metaCard} data-panel="task-form-metadata">
+          <section className={classes.metaSection} data-panel="task-form-metadata">
             <Stack gap="md">
               <div className={classes.sectionHeader}>
                 <Text component="h2" fw={700} size="sm" className={classes.sectionTitle}>
