@@ -1361,4 +1361,166 @@ describe('app/components/task-edit-form', () => {
     expect(await screen.findAllByText('No comments yet.')).toHaveLength(2);
     expect(screen.getByRole('status').textContent).toBe('No comments yet.');
   });
+
+  it('labels fallback comment icons and author metadata by author type', async () => {
+    const effects: Array<() => void | (() => void)> = [];
+    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
+      effects.push(effect);
+    });
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        comments: [
+          {
+            id: 'comment-agent-1',
+            author_type: 'agent',
+            author_name: null,
+            body: 'Agent comment body.',
+            run_state: null,
+            engine: null,
+            created_at: '2026-05-05T00:00:00.000Z',
+          },
+          {
+            id: 'comment-system-1',
+            author_type: 'system',
+            author_name: null,
+            body: 'System comment body.',
+            run_state: null,
+            engine: 'future-engine',
+            created_at: '2026-05-05T00:00:00.000Z',
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'OpenClaw 기능 UI수정',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: [],
+              labels: [],
+              taskPriority: 'none',
+              status: 'todo',
+              engine: 'codex',
+              dispatchTarget: 'hermes-telegram',
+              runState: null,
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
+            updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
+          />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    await act(async () => {
+      effects.at(-1)?.();
+    });
+
+    expect(await screen.findByLabelText('Agent comment')).toBeTruthy();
+    expect(await screen.findByLabelText('System comment')).toBeTruthy();
+    expect(
+      screen
+        .getByText('Agent')
+        .closest('[data-comment-author]')
+        ?.getAttribute('data-comment-author'),
+    ).toBe('agent');
+    expect(
+      screen
+        .getByText('System')
+        .closest('[data-comment-author]')
+        ?.getAttribute('data-comment-author'),
+    ).toBe('system');
+  });
+
+  it('announces when a comment refresh starts', async () => {
+    const effects: Array<() => void | (() => void)> = [];
+    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
+      effects.push(effect);
+    });
+    let finishRefresh:
+      | ((value: { ok: boolean; json: () => Promise<{ comments: unknown[] }> }) => void)
+      | undefined;
+    const refreshPromise = new Promise<{
+      ok: boolean;
+      json: () => Promise<{ comments: unknown[] }>;
+    }>((resolve) => {
+      finishRefresh = resolve;
+    });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          comments: [
+            {
+              id: 'comment-agent-1',
+              author_type: 'agent',
+              author_name: 'Codex',
+              body: 'I checked this.',
+              run_state: null,
+              engine: 'codex',
+              created_at: '2026-05-05T00:00:00.000Z',
+            },
+          ],
+        }),
+      })
+      .mockReturnValueOnce(refreshPromise);
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'OpenClaw 기능 UI수정',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: [],
+              labels: [],
+              taskPriority: 'none',
+              status: 'todo',
+              engine: 'codex',
+              dispatchTarget: 'hermes-telegram',
+              runState: null,
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
+            updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
+          />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    await act(async () => {
+      effects.at(-1)?.();
+    });
+    expect((await screen.findByRole('status')).textContent).toBe('Loaded 1 comment.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('status').textContent).toBe('Loading comments.');
+    });
+
+    finishRefresh?.({
+      ok: true,
+      json: async () => ({ comments: [] }),
+    });
+  });
 });

@@ -588,7 +588,7 @@ function TaskCommentIdentity({ comment }: { comment: TaskComment }) {
   }
 
   return (
-    <Group gap="xs" className={classes.commentIdentity} data-comment-author="agent">
+    <Group gap="xs" className={classes.commentIdentity} data-comment-author={comment.author_type}>
       {engineConfig ? (
         <span
           className={`${classes.commentIcon} ${classes.commentEngineIcon}`}
@@ -604,7 +604,7 @@ function TaskCommentIdentity({ comment }: { comment: TaskComment }) {
       ) : (
         <span
           className={`${classes.commentIcon} ${classes.commentSystemIcon}`}
-          aria-label="System comment"
+          aria-label={`${authorLabel} comment`}
         />
       )}
       <Text size="xs" fw={700} className={classes.commentAuthorName}>
@@ -625,6 +625,7 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
   const loadComments = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setStatusMessage('Loading comments.');
     try {
       const response = await fetch(`/api/todos/${encodeURIComponent(taskKey)}/comments`, {
         cache: 'no-store',
