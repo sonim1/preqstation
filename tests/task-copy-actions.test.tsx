@@ -1,3 +1,6 @@
+// @vitest-environment jsdom
+
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -80,6 +83,15 @@ class MemoryStorage implements Storage {
 }
 
 const originalWindow = globalThis.window;
+const originalLocalStorageDescriptor = Object.getOwnPropertyDescriptor(
+  originalWindow,
+  'localStorage',
+);
+const originalMatchMediaDescriptor = Object.getOwnPropertyDescriptor(originalWindow, 'matchMedia');
+const originalClipboardDescriptor = Object.getOwnPropertyDescriptor(
+  originalWindow.navigator,
+  'clipboard',
+);
 const legacyClaudeDispatchAction = ['send', 'claude-code'].join('-');
 
 function renderTaskCopyActions(props: Partial<React.ComponentProps<typeof TaskCopyActions>> = {}) {
@@ -102,17 +114,40 @@ describe('app/components/task-copy-actions', () => {
 
   beforeEach(() => {
     localStorage = new MemoryStorage();
-    Object.defineProperty(globalThis, 'window', {
+    Object.defineProperty(originalWindow, 'localStorage', {
       configurable: true,
-      value: { localStorage },
+      value: localStorage,
+    });
+    Object.defineProperty(originalWindow, 'matchMedia', {
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
     });
   });
 
   afterEach(() => {
-    Object.defineProperty(globalThis, 'window', {
-      configurable: true,
-      value: originalWindow,
-    });
+    cleanup();
+    if (originalLocalStorageDescriptor) {
+      Object.defineProperty(originalWindow, 'localStorage', originalLocalStorageDescriptor);
+    }
+    if (originalMatchMediaDescriptor) {
+      Object.defineProperty(originalWindow, 'matchMedia', originalMatchMediaDescriptor);
+    } else {
+      Reflect.deleteProperty(originalWindow, 'matchMedia');
+    }
+    if (originalClipboardDescriptor) {
+      Object.defineProperty(originalWindow.navigator, 'clipboard', originalClipboardDescriptor);
+    } else {
+      Reflect.deleteProperty(originalWindow.navigator, 'clipboard');
+    }
   });
 
   it('renders a flat dispatch review flow with a static prompt preview', () => {
@@ -150,6 +185,8 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('aria-pressed="true"');
     expect(html).toContain('role="button"');
     expect(html).toContain('aria-label="Dispatch prompt"');
+    expect(html).toContain('task-dispatch-prompt-shell');
+    expect(html).not.toContain('task-dispatch-preview');
     expect(html).toContain('aria-expanded="false"');
     expect(html).toContain('data-collapsible="true"');
     expect(html).not.toContain('role="textbox"');
@@ -158,6 +195,12 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('<textarea');
     expect(html).toContain('aria-label="Copy dispatch prompt"');
     expect(html).toContain('aria-label="Send dispatch"');
+    expect(html.indexOf('task-dispatch-mode-segments')).toBeLessThan(
+      html.indexOf('data-task-dispatch-prompt'),
+    );
+    expect(html.indexOf('data-task-dispatch-prompt')).toBeLessThan(
+      html.indexOf('aria-label="Send dispatch"'),
+    );
     expect(html).toContain('Cmd+Enter');
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');
@@ -175,6 +218,39 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Send to Telegram');
     expect(html).not.toContain('Copy Telegram');
     expect(html).not.toContain('Selected action:');
+  });
+
+  it('persists the current dispatch preference when copying the prompt', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+        />
+      </MantineProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy dispatch prompt' }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(
+      JSON.parse(window.localStorage.getItem(TASK_DISPATCH_PREFERENCES_STORAGE) ?? '{}'),
+    ).toEqual({
+      todo: {
+        engine: 'codex',
+        action: 'send-telegram',
+        objective: 'implement',
+      },
+    });
   });
 
   it('falls back to the status mode when stored mode is not available for the column', () => {

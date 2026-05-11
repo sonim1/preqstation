@@ -3158,13 +3158,6 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
   min-width: 0;
 }
 
-@container (min-width: 25rem) {
-  .task-dispatch-panel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-  }
-}
-
 .task-dispatch-field {
   display: grid;
   grid-template-columns: 4.25rem minmax(0, 1fr);

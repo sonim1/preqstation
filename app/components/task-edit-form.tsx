@@ -1144,11 +1144,7 @@ function TaskEditFormContent({
             </section>
           </div>
 
-          <aside
-            className={classes.sidebar}
-            data-layout={showDispatchPanel ? 'with-dispatch' : 'single'}
-            data-panel="task-edit-sidebar"
-          >
+          <aside className={classes.sidebar} data-panel="task-edit-sidebar">
             {showDispatchPanel ? (
               <section
                 className={`${classes.dispatchRail} ${classes.sectionSurface}`}
