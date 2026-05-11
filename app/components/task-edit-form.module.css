@@ -306,6 +306,11 @@
     min-height: auto;
   }
 
+  .sidebar[data-layout='with-dispatch'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
   .notesCard {
     min-height: var(--task-edit-section-min-height);
   }
@@ -334,6 +339,10 @@
     gap: 1rem;
     height: auto;
     min-height: auto;
+  }
+
+  .sidebar {
+    grid-template-columns: 1fr;
   }
 
   .dispatchRail,
