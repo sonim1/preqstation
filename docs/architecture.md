@@ -209,6 +209,21 @@ Artifacts:
 
 When such a block is parsed, supported entries (`image`, `video`, or `document` with a safe URL) move into the structured `artifacts` field and are removed from the stored markdown body. The `0022_task_artifacts` migration adds non-null JSONB `artifacts` columns to `tasks` and `qa_runs` with `[]` defaults, so existing rows migrate without backfill work and begin returning an empty artifacts array until new artifacts are stored.
 
+#### Markdown rendering
+
+Task notes and QA report markdown render fenced Mermaid diagrams when the block uses a top-level
+`mermaid` code fence:
+
+````markdown
+```mermaid
+graph TD
+  A[Start] --> B[Done]
+```
+````
+
+Mermaid diagrams render in the browser with Mermaid strict security mode. Indented Mermaid fences
+and unterminated fences are treated as normal markdown text.
+
 Authenticated REST handlers await the scoped DB call inside their route `try` blocks so PostgreSQL constraint/RLS errors are translated into HTTP responses instead of escaping the handler promise.
 
 #### Internal APIs (Session cookie)
