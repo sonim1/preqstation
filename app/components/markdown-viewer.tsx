@@ -1,7 +1,7 @@
 'use client';
 
 import { Anchor, Badge, Group, Paper, Stack, Text } from '@mantine/core';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import {
   extractMarkdownArtifacts,
@@ -9,6 +9,8 @@ import {
   toggleChecklistItem,
 } from '@/lib/markdown';
 import { mergeTaskArtifacts, type TaskArtifact } from '@/lib/task-artifacts';
+
+let mermaidInitialized = false;
 
 type MarkdownPersistence = {
   endpoint: string;
@@ -33,9 +35,9 @@ export function MarkdownViewer({
   const [source, setSource] = useState(markdown || '');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const bodyRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- source is also modified by checklist toggle, not purely derived
     setSource(markdown || '');
   }, [markdown]);
 
@@ -44,6 +46,30 @@ export function MarkdownViewer({
     () => mergeTaskArtifacts(structuredArtifacts, extractMarkdownArtifacts(source)),
     [source, structuredArtifacts],
   );
+
+  useEffect(() => {
+    const nodes = Array.from(bodyRef.current?.querySelectorAll<HTMLElement>('.mermaid') ?? []);
+    if (nodes.length === 0) return undefined;
+
+    let cancelled = false;
+
+    void import('mermaid')
+      .then(({ default: mermaid }) => {
+        if (cancelled) return undefined;
+        if (!mermaidInitialized) {
+          mermaid.initialize({ securityLevel: 'strict', startOnLoad: false });
+          mermaidInitialized = true;
+        }
+        return mermaid.run({ nodes });
+      })
+      .catch((error: unknown) => {
+        console.error('Failed to render Mermaid diagram', error);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [html]);
 
   async function persistChecklist(nextSource: string, previousSource: string) {
     if (!persistence) return;
@@ -67,6 +93,7 @@ export function MarkdownViewer({
   const body =
     mode === 'artifacts' ? null : (
       <div
+        ref={bodyRef}
         className={className}
         style={isPending ? { opacity: 0.6, pointerEvents: 'none' } : undefined}
         onChange={(event) => {

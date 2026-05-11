@@ -48,6 +48,10 @@ type MarkdownBlock =
       content: string;
       type: 'paragraph';
     }
+  | {
+      content: string;
+      type: 'mermaid';
+    }
   | MarkdownList;
 
 type MarkdownList = {
@@ -64,6 +68,7 @@ type MarkdownListItem = {
 
 const checklistItemRegex = /^[-*]\s+\[( |x|X)\]\s+(.+)$/;
 const bulletListItemRegex = /^[-*]\s+(.+)$/;
+const mermaidFenceOpenRegex = /^(`{3,})mermaid(?:[ \t].*)?$/;
 
 type HeadingParagraphBoundary = {
   blankLineCount: number;
@@ -87,6 +92,10 @@ function countLeadingIndent(value: string) {
   }
 
   return width;
+}
+
+function removeOpeningIndent(line: string, openingIndent: string) {
+  return line.startsWith(openingIndent) ? line.slice(openingIndent.length) : line;
 }
 
 function isMarkdownHeadingLine(line: string) {
@@ -245,7 +254,10 @@ function parseMarkdownBlocks(source: string) {
     return true;
   }
 
-  for (const rawLine of source.split('\n')) {
+  const lines = source.split('\n');
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const rawLine = lines[index];
     if (!rawLine.trim()) {
       resetListState();
       continue;
@@ -286,6 +298,24 @@ function parseMarkdownBlocks(source: string) {
     }
 
     resetListState();
+
+    const mermaidFenceOpen = content.trimEnd().match(mermaidFenceOpenRegex);
+    if (mermaidFenceOpen) {
+      const mermaidLines: string[] = [];
+      const mermaidFenceCloseRegex = new RegExp(`^\\s*\`{${mermaidFenceOpen[1].length},}\\s*$`);
+      let cursor = index + 1;
+
+      while (cursor < lines.length && !mermaidFenceCloseRegex.test(lines[cursor])) {
+        mermaidLines.push(removeOpeningIndent(lines[cursor], leadingWhitespace));
+        cursor += 1;
+      }
+
+      if (cursor < lines.length) {
+        blocks.push({ type: 'mermaid', content: mermaidLines.join('\n') });
+        index = cursor;
+        continue;
+      }
+    }
 
     if (indentWidth === 0) {
       const heading = content.match(/^(#{1,6})\s+(.+)$/);
@@ -569,6 +599,10 @@ export function renderMarkdownToHtml(markdown?: string | null) {
 
       if (block.type === 'list') {
         return renderList(block);
+      }
+
+      if (block.type === 'mermaid') {
+        return `<pre class="mermaid">${escapeHtml(block.content)}</pre>`;
       }
 
       return `<p>${formatInline(block.content)}</p>`;

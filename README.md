@@ -32,6 +32,7 @@ If you are new to the system, start with the landing/guide surface first, then r
 - **Connections** — review and revoke OAuth/MCP clients from `/connections`
 - **Command Palette** — keyboard-driven navigation via Mantine Spotlight
 - **Today Focus** — pin tasks to surface daily priorities
+- **Markdown task notes** — render checklists, artifacts, and fenced Mermaid diagrams
 - **Activity tracking** — work logs linked to projects and tasks
 - **Audit logs** — immutable record of all mutations
 - **Security events** — login allow/deny and authorization failure logging
