@@ -1,9 +1,11 @@
 'use client';
 
-import { SimpleGrid } from '@mantine/core';
+import { Paper, SimpleGrid, Stack } from '@mantine/core';
 import { useEffect, useState } from 'react';
 
 import { useOfflineStatus } from '@/app/components/offline-status-provider';
+import panelStyles from '@/app/components/panels.module.css';
+import { WorkspacePageHeader } from '@/app/components/workspace-page-header';
 import { getSnapshot, putSnapshot } from '@/lib/offline/snapshot-store';
 
 import { ProjectPortfolioCard, type ProjectPortfolioCardSummary } from './project-portfolio-card';
@@ -28,25 +30,40 @@ function hasProjectCards(snapshot: ProjectsOfflineSnapshotPayload) {
 
 function OfflineProjectsView({ snapshot }: { snapshot: ProjectsOfflineSnapshotPayload }) {
   return (
-    <div data-projects-offline-snapshot="true">
-      <div className={styles.summaryStrip}>
-        {snapshot.summaryStrip.map((item) => (
-          <div key={item.label} className={styles.summaryPill}>
-            <strong>{item.value}</strong>
-            <span>{item.label}</span>
-          </div>
-        ))}
-      </div>
+    <Stack gap="md" className="dashboard-stack" data-projects-offline-snapshot="true">
+      <WorkspacePageHeader
+        title="Projects"
+        description="Resume where work last moved. Keep the whole portfolio visible."
+      />
 
-      {snapshot.featuredCard ? (
-        <div className={styles.topFeature} data-portfolio-featured="true">
-          <ProjectPortfolioCard
-            card={snapshot.featuredCard}
-            deleteAction={noopAction}
-            pauseAction={noopAction}
-          />
-        </div>
-      ) : null}
+      <div className={styles.topGrid}>
+        <Paper
+          withBorder
+          radius="md"
+          p={{ base: 'sm', sm: 'lg' }}
+          className={`${panelStyles.sectionPanel} ${styles.topSection}`}
+          data-projects-offline-container="true"
+        >
+          <div className={styles.summaryStrip}>
+            {snapshot.summaryStrip.map((item) => (
+              <div key={item.label} className={styles.summaryPill}>
+                <strong>{item.value}</strong>
+                <span>{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </Paper>
+
+        {snapshot.featuredCard ? (
+          <div className={styles.topFeature} data-portfolio-featured="true">
+            <ProjectPortfolioCard
+              card={snapshot.featuredCard}
+              deleteAction={noopAction}
+              pauseAction={noopAction}
+            />
+          </div>
+        ) : null}
+      </div>
 
       {snapshot.resumeCards.length > 0 ? (
         <section className={styles.portfolioSection} data-project-section="resume">
@@ -77,7 +94,7 @@ function OfflineProjectsView({ snapshot }: { snapshot: ProjectsOfflineSnapshotPa
           </SimpleGrid>
         </section>
       ) : null}
-    </div>
+    </Stack>
   );
 }
 

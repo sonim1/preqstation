@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 
-import { render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { MantineProvider } from '@mantine/core';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import type React from 'react';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const getSnapshotMock = vi.hoisted(() => vi.fn());
 const putSnapshotMock = vi.hoisted(() => vi.fn());
@@ -51,7 +53,31 @@ function card(projectKey: string, name: string): ProjectPortfolioCardSummary {
   };
 }
 
+function renderWithMantine(ui: React.ReactNode) {
+  return render(<MantineProvider>{ui}</MantineProvider>);
+}
+
 describe('app/(workspace)/(main)/projects/projects-offline-hydrator', () => {
+  beforeAll(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
     useOfflineStatusMock.mockReturnValue({ online: true });
@@ -60,7 +86,7 @@ describe('app/(workspace)/(main)/projects/projects-offline-hydrator', () => {
   });
 
   it('stores the current projects page snapshot while online', async () => {
-    render(
+    renderWithMantine(
       <ProjectsOfflineHydrator
         snapshot={{
           featuredCard: card('PROJ', 'Project One'),
@@ -98,7 +124,7 @@ describe('app/(workspace)/(main)/projects/projects-offline-hydrator', () => {
       },
     });
 
-    render(
+    renderWithMantine(
       <ProjectsOfflineHydrator
         snapshot={{
           featuredCard: null,
@@ -113,5 +139,36 @@ describe('app/(workspace)/(main)/projects/projects-offline-hydrator', () => {
 
     expect(await screen.findByText('CACH Cached Project')).toBeTruthy();
     expect(screen.queryByText('No projects yet')).toBeNull();
+  });
+
+  it('keeps the projects page header and content shell while offline', async () => {
+    useOfflineStatusMock.mockReturnValue({ online: false });
+    getSnapshotMock.mockResolvedValue({
+      payload: {
+        featuredCard: card('CACH', 'Cached Project'),
+        resumeCards: [],
+        quietCards: [],
+        summaryStrip: [{ label: 'Live projects', value: 1 }],
+      },
+    });
+
+    renderWithMantine(
+      <ProjectsOfflineHydrator
+        snapshot={{
+          featuredCard: null,
+          resumeCards: [],
+          quietCards: [],
+          summaryStrip: [],
+        }}
+      >
+        <div>No projects yet</div>
+      </ProjectsOfflineHydrator>,
+    );
+
+    expect(await screen.findByRole('heading', { name: 'Projects' })).toBeTruthy();
+    expect(
+      screen.getByText('Resume where work last moved. Keep the whole portfolio visible.'),
+    ).toBeTruthy();
+    expect(document.querySelector('[data-projects-offline-container="true"]')).toBeTruthy();
   });
 });

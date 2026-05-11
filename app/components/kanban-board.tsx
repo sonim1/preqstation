@@ -1126,19 +1126,21 @@ export function KanbanBoard({
       if (located) {
         const task = columnsRef.current[located.status][located.index];
         if (!task) return;
+        if (!online && located.status === 'archived') return;
         setDeleteConfirm({ taskId: task.id, taskKey: task.taskKey, title: task.title });
         return;
       }
 
       const archivedTask = archivedDrawerState.tasks.find((task) => task.id === taskId);
       if (!archivedTask) return;
+      if (!online) return;
       setDeleteConfirm({
         taskId: archivedTask.id,
         taskKey: archivedTask.taskKey,
         title: archivedTask.title,
       });
     },
-    [archivedDrawerState.tasks],
+    [archivedDrawerState.tasks, online],
   );
 
   const deleteTask = useCallback(
@@ -1534,6 +1536,7 @@ export function KanbanBoard({
         nextOffset={archivedDrawerState.nextOffset}
         loadMoreError={archiveLoadMoreError}
         isPending={isPending}
+        deleteDisabled={!online}
         onQueryChange={(value) => {
           setArchiveLoadMoreError(null);
           setArchiveQuery(value);

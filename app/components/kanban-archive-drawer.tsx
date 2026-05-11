@@ -23,6 +23,7 @@ type KanbanArchiveDrawerProps = {
   nextOffset: number;
   loadMoreError: string | null;
   isPending: boolean;
+  deleteDisabled?: boolean;
   onQueryChange: (value: string) => void;
   onRestore: (taskId: string, targetStatus: KanbanStatus) => void;
   onDelete: (taskId: string) => void;
@@ -41,6 +42,7 @@ export function KanbanArchiveDrawer({
   nextOffset,
   loadMoreError,
   isPending,
+  deleteDisabled = false,
   onQueryChange,
   onRestore,
   onDelete,
@@ -140,7 +142,7 @@ export function KanbanArchiveDrawer({
                       leftSection={<IconTrash size={14} />}
                       color="red"
                       onClick={() => onDelete(task.id)}
-                      disabled={isPending}
+                      disabled={isPending || deleteDisabled}
                     >
                       Delete
                     </Menu.Item>
