@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { MantineProvider } from '@mantine/core';
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,7 +12,6 @@ const refreshMock = vi.hoisted(() => vi.fn());
 const taskCopyActionsPropsMock = vi.hoisted(() => vi.fn());
 const liveMarkdownEditorPropsMock = vi.hoisted(() => vi.fn());
 const useAutoSaveMock = vi.hoisted(() => vi.fn());
-const useEffectMock = vi.hoisted(() => vi.fn());
 const useBoardOfflineSyncMock = vi.hoisted(() => vi.fn());
 const useOfflineStatusMock = vi.hoisted(() => vi.fn());
 const useTaskOfflineDraftMock = vi.hoisted(() => vi.fn());
@@ -25,7 +24,6 @@ vi.mock('react', async () => {
   return {
     ...actual,
     useActionState: useActionStateMock,
-    useEffect: useEffectMock,
   };
 });
 
@@ -148,13 +146,14 @@ import { TaskEditForm } from '@/app/components/task-edit-form';
 import { TerminologyProvider } from '@/app/components/terminology-provider';
 import { KITCHEN_TERMINOLOGY } from '@/lib/terminology';
 
-function renderTaskEditForm(
+function taskEditFormElement(
   overrides: Partial<{
     onTaskQueued: (taskKey: string, queuedAt: string) => void;
     onDispatchQueued: () => void;
+    onTaskUpdated: (tasks: { boardTask?: unknown; focusedTask?: unknown }) => void;
   }> = {},
 ) {
-  return renderToStaticMarkup(
+  return (
     <MantineProvider>
       <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
         <TaskEditForm
@@ -183,8 +182,28 @@ function renderTaskEditForm(
           {...overrides}
         />
       </TerminologyProvider>
-    </MantineProvider>,
+    </MantineProvider>
   );
+}
+
+function renderTaskEditForm(
+  overrides: Partial<{
+    onTaskQueued: (taskKey: string, queuedAt: string) => void;
+    onDispatchQueued: () => void;
+    onTaskUpdated: (tasks: { boardTask?: unknown; focusedTask?: unknown }) => void;
+  }> = {},
+) {
+  return renderToStaticMarkup(taskEditFormElement(overrides));
+}
+
+function renderTaskEditFormClient(
+  overrides: Partial<{
+    onTaskQueued: (taskKey: string, queuedAt: string) => void;
+    onDispatchQueued: () => void;
+    onTaskUpdated: (tasks: { boardTask?: unknown; focusedTask?: unknown }) => void;
+  }> = {},
+) {
+  return render(taskEditFormElement(overrides));
 }
 
 describe('app/components/task-edit-form', () => {
@@ -223,7 +242,6 @@ describe('app/components/task-edit-form', () => {
     useBoardOfflineSyncMock.mockReset();
     useOfflineStatusMock.mockReset();
     useTaskOfflineDraftMock.mockReset();
-    useEffectMock.mockReset();
     useActionStateMock.mockReset();
     setTaskEditRefreshBlockedMock.mockReset();
     taskLabelPickerPropsMock.mockReset();
@@ -258,7 +276,6 @@ describe('app/components/task-edit-form', () => {
       updateNoteDraft: vi.fn(),
       updateTitleDraft: vi.fn(),
     });
-    useEffectMock.mockImplementation(() => undefined);
     vi.stubGlobal('requestAnimationFrame', ((callback: FrameRequestCallback) => {
       callback(0);
       return 1;
@@ -776,10 +793,6 @@ describe('app/components/task-edit-form', () => {
   });
 
   it('auto-saves a non-conflicting draft through the update action without showing the restore warning', async () => {
-    const effects: Array<() => void | (() => void)> = [];
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
     const clearDraft = vi.fn();
     const updateTodoAction = vi.fn(async (_prevState: unknown, formData: FormData) => ({
       ok: true as const,
@@ -873,10 +886,6 @@ describe('app/components/task-edit-form', () => {
     titleInput.value = 'Visible title';
     form.appendChild(titleInput);
 
-    for (const effect of effects) {
-      effect();
-    }
-
     await waitFor(() => {
       expect(updateTodoAction).toHaveBeenCalledTimes(1);
     });
@@ -899,10 +908,6 @@ describe('app/components/task-edit-form', () => {
   });
 
   it('does not replay the same auto-save draft after a successful save re-render', async () => {
-    const effects: Array<() => void | (() => void)> = [];
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
     const clearDraft = vi.fn();
     const autoSaveDraft = {
       title: 'Offline rename',
@@ -982,31 +987,20 @@ describe('app/components/task-edit-form', () => {
 
     const { rerender } = render(renderForm(vi.fn()));
 
-    for (const effect of effects) {
-      effect();
-    }
-
     await waitFor(() => {
       expect(updateTodoAction).toHaveBeenCalledTimes(1);
     });
     expect(clearDraft).toHaveBeenCalledTimes(1);
 
-    effects.length = 0;
     rerender(renderForm(vi.fn()));
-    for (const effect of effects) {
-      effect();
-    }
-    await Promise.resolve();
+    await waitFor(() => {
+      expect(updateTodoAction).toHaveBeenCalledTimes(1);
+    });
 
     expect(updateTodoAction).toHaveBeenCalledTimes(1);
   });
 
-  it('blocks polling while the task form has unsaved edits', () => {
-    const effects: Array<() => void | (() => void)> = [];
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
-
+  it('blocks polling while the task form has unsaved edits', async () => {
     useAutoSaveMock.mockReturnValueOnce({
       markDirty: vi.fn(),
       triggerSave: vi.fn(),
@@ -1017,12 +1011,12 @@ describe('app/components/task-edit-form', () => {
       isDirtyRef: { current: true },
     });
 
-    renderTaskEditForm();
-    effects[0]?.();
+    renderTaskEditFormClient();
 
-    expect(setTaskEditRefreshBlockedMock).toHaveBeenCalledWith(true);
+    await waitFor(() => {
+      expect(setTaskEditRefreshBlockedMock).toHaveBeenCalledWith(true);
+    });
 
-    effects.length = 0;
     setTaskEditRefreshBlockedMock.mockClear();
     useAutoSaveMock.mockReturnValueOnce({
       markDirty: vi.fn(),
@@ -1034,18 +1028,14 @@ describe('app/components/task-edit-form', () => {
       isDirtyRef: { current: false },
     });
 
-    renderTaskEditForm();
-    effects[0]?.();
+    renderTaskEditFormClient();
 
-    expect(setTaskEditRefreshBlockedMock).toHaveBeenCalledWith(false);
+    await waitFor(() => {
+      expect(setTaskEditRefreshBlockedMock).toHaveBeenCalledWith(false);
+    });
   });
 
-  it('keeps polling blocked while autosave transitions from dirty to saving', () => {
-    const effects: Array<() => void | (() => void)> = [];
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
-
+  it('keeps polling blocked while autosave transitions from dirty to saving', async () => {
     useAutoSaveMock.mockReturnValueOnce({
       markDirty: vi.fn(),
       triggerSave: vi.fn(),
@@ -1056,10 +1046,11 @@ describe('app/components/task-edit-form', () => {
       isDirtyRef: { current: true },
     });
 
-    renderTaskEditForm();
-    const firstCleanup = effects[0]?.();
+    const { rerender } = renderTaskEditFormClient();
+    await waitFor(() => {
+      expect(setTaskEditRefreshBlockedMock).toHaveBeenLastCalledWith(true);
+    });
 
-    effects.length = 0;
     useAutoSaveMock.mockReturnValueOnce({
       markDirty: vi.fn(),
       triggerSave: vi.fn(),
@@ -1070,12 +1061,12 @@ describe('app/components/task-edit-form', () => {
       isDirtyRef: { current: false },
     });
 
-    firstCleanup?.();
-    renderTaskEditForm();
-    effects[0]?.();
+    rerender(taskEditFormElement());
 
     expect(setTaskEditRefreshBlockedMock.mock.calls).not.toContainEqual([false]);
-    expect(setTaskEditRefreshBlockedMock).toHaveBeenLastCalledWith(true);
+    await waitFor(() => {
+      expect(setTaskEditRefreshBlockedMock).toHaveBeenLastCalledWith(true);
+    });
   });
 
   it('applies queued state before closing the modal after a successful dispatch send', () => {
@@ -1141,75 +1132,33 @@ describe('app/components/task-edit-form', () => {
     );
   });
 
-  it('refreshes the current route after a successful save when board reconciliation is unavailable', () => {
-    const effects: Array<() => void | (() => void)> = [];
+  it('refreshes the current route after a successful save when board reconciliation is unavailable', async () => {
     useActionStateMock.mockReturnValue([{ ok: true }, formAction]);
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
 
-    renderTaskEditForm();
-    effects.forEach((effect) => {
-      effect();
-    });
+    renderTaskEditFormClient();
 
-    expect(refreshMock).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(refreshMock).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('does not refresh the route when a board-level task update callback is present', () => {
-    const effects: Array<() => void | (() => void)> = [];
+  it('does not refresh the route when a board-level task update callback is present', async () => {
     const onTaskUpdated = vi.fn();
     useActionStateMock.mockReturnValue([{ ok: true }, formAction]);
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
+
+    renderTaskEditFormClient({ onTaskUpdated });
+
+    await waitFor(() => {
+      expect(onTaskUpdated).toHaveBeenCalledWith({
+        boardTask: undefined,
+        focusedTask: undefined,
+      });
     });
 
-    renderToStaticMarkup(
-      <MantineProvider>
-        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
-          <TaskEditForm
-            editableTodo={{
-              id: '1',
-              taskKey: 'PROJ-187',
-              title: 'OpenClaw 기능 UI수정',
-              note: 'Move the actions into the form meta header.',
-              projectId: 'project-1',
-              labelIds: [],
-              labels: [],
-              taskPriority: 'none',
-              status: 'todo',
-              engine: 'codex',
-              dispatchTarget: null,
-              runState: null,
-              runStateUpdatedAt: null,
-              workLogs: [],
-            }}
-            projects={[{ id: 'project-1', name: 'Project Manager' }]}
-            todoLabels={[]}
-            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
-            updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
-            onTaskUpdated={onTaskUpdated}
-          />
-        </TerminologyProvider>
-      </MantineProvider>,
-    );
-
-    effects.forEach((effect) => {
-      effect();
-    });
-
-    expect(onTaskUpdated).toHaveBeenCalledWith({
-      boardTask: undefined,
-      focusedTask: undefined,
-    });
     expect(refreshMock).not.toHaveBeenCalled();
   });
 
   it('submits UI comments through the queued dispatch flow', async () => {
-    const effects: Array<() => void | (() => void)> = [];
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -1287,10 +1236,6 @@ describe('app/components/task-edit-form', () => {
       </MantineProvider>,
     );
 
-    await act(async () => {
-      effects.at(-1)?.();
-    });
-
     expect(await screen.findByLabelText('Codex CLI comment')).toBeTruthy();
     expect(screen.queryByText('done')).toBeNull();
 
@@ -1313,10 +1258,6 @@ describe('app/components/task-edit-form', () => {
   });
 
   it('announces the empty comments state through a polite status', async () => {
-    const effects: Array<() => void | (() => void)> = [];
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
     const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -1354,19 +1295,11 @@ describe('app/components/task-edit-form', () => {
       </MantineProvider>,
     );
 
-    await act(async () => {
-      effects.at(-1)?.();
-    });
-
     expect(await screen.findAllByText('No comments yet.')).toHaveLength(2);
     expect(screen.getByRole('status').textContent).toBe('No comments yet.');
   });
 
   it('labels fallback comment icons and author metadata by author type', async () => {
-    const effects: Array<() => void | (() => void)> = [];
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
     const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -1423,10 +1356,6 @@ describe('app/components/task-edit-form', () => {
       </MantineProvider>,
     );
 
-    await act(async () => {
-      effects.at(-1)?.();
-    });
-
     expect(await screen.findByLabelText('Agent comment')).toBeTruthy();
     expect(await screen.findByLabelText('System comment')).toBeTruthy();
     expect(
@@ -1444,10 +1373,6 @@ describe('app/components/task-edit-form', () => {
   });
 
   it('announces when a comment refresh starts', async () => {
-    const effects: Array<() => void | (() => void)> = [];
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
     let finishRefresh:
       | ((value: { ok: boolean; json: () => Promise<{ comments: unknown[] }> }) => void)
       | undefined;
@@ -1507,9 +1432,6 @@ describe('app/components/task-edit-form', () => {
       </MantineProvider>,
     );
 
-    await act(async () => {
-      effects.at(-1)?.();
-    });
     expect((await screen.findByRole('status')).textContent).toBe('Loaded 1 comment.');
 
     fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
