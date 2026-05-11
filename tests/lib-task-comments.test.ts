@@ -64,15 +64,21 @@ describe('syncTaskRunStateFromComments', () => {
     });
   });
 
-  it('clears task run state when no active comments remain', async () => {
+  it('preserves running task execution state when no active comments remain', async () => {
     mocked.db.query.tasks.findFirst.mockResolvedValue({ runState: 'running' });
 
     await sync({ now: new Date('2026-05-11T12:02:00.000Z') });
 
-    expect(mocked.setFn).toHaveBeenCalledWith({
-      runState: null,
-      runStateUpdatedAt: null,
-    });
+    expect(mocked.db.update).not.toHaveBeenCalled();
+  });
+
+  it('preserves running task execution state when only queued comments remain', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValue({ runState: 'running' });
+    mocked.db.query.taskComments.findMany.mockResolvedValue([{ runState: 'queued' }]);
+
+    await sync({ now: new Date('2026-05-11T12:02:00.000Z') });
+
+    expect(mocked.db.update).not.toHaveBeenCalled();
   });
 
   it('does not rewrite the task when the aggregate run state is unchanged', async () => {

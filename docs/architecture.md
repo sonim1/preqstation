@@ -177,7 +177,7 @@ Coding agent checks task status via preq_get_task, then:
 | `POST`   | `/api/work-logs`             | Create work log entry                                                  |
 | `GET`    | `/api/health`                | Health check (no auth)                                                 |
 
-Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `archived`. External task payloads can also include `run_state` (`queued` / `running` / `null`) plus `run_state_updated_at`. Task APIs reject legacy status aliases, and internal todo APIs accept `labelIds` only.
+Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `archived`. External task payloads can also include `run_state` (`queued` / `running` / `null`) plus `run_state_updated_at`. Creating or updating task comments with `run_state` synchronizes an aggregate comment state onto the parent task only when it raises the visible task run state; it does not clear or downgrade a task state that may be owned by normal execution. Task APIs reject legacy status aliases, and internal todo APIs accept `labelIds` only.
 
 #### Artifacts
 

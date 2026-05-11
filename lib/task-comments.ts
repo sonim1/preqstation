@@ -47,6 +47,13 @@ export function serializeTaskComment(comment: TaskCommentRow) {
 }
 
 type TaskCommentRunStateClient = Pick<typeof db, 'query' | 'update'>;
+type SyncedTaskRunState = 'queued' | 'running' | null;
+
+function taskRunStateRank(runState: SyncedTaskRunState) {
+  if (runState === 'running') return 2;
+  if (runState === 'queued') return 1;
+  return 0;
+}
 
 export async function syncTaskRunStateFromComments({
   client,
@@ -80,7 +87,14 @@ export async function syncTaskRunStateFromComments({
       ? 'queued'
       : null;
 
-  if (!task || task.runState === nextRunState) return nextRunState;
+  if (!task) return nextRunState;
+  const currentRunState = task.runState as SyncedTaskRunState;
+  if (
+    currentRunState === nextRunState ||
+    taskRunStateRank(currentRunState) > taskRunStateRank(nextRunState)
+  ) {
+    return currentRunState;
+  }
 
   await client
     .update(tasks)

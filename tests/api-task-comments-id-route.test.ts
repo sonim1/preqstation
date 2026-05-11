@@ -94,7 +94,7 @@ describe('app/api/task-comments/[id]/route', () => {
     );
   });
 
-  it('clears task run state after done when no active comments remain', async () => {
+  it('preserves running task execution state after done when no active comments remain', async () => {
     mocked.db.query.tasks.findFirst.mockResolvedValue({ runState: 'running' });
     mocked.db.query.taskComments.findMany.mockResolvedValue([]);
     mocked.returningFn.mockResolvedValue([{ ...existingComment, runState: 'done' }]);
@@ -104,7 +104,12 @@ describe('app/api/task-comments/[id]/route', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(mocked.setFn).toHaveBeenCalledWith({
+    expect(mocked.setFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runState: 'done',
+      }),
+    );
+    expect(mocked.setFn).not.toHaveBeenCalledWith({
       runState: null,
       runStateUpdatedAt: null,
     });

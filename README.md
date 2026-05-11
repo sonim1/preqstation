@@ -193,7 +193,7 @@ Endpoints:
 | `PATCH`  | `/api/tasks/:id` | Update a task                                |
 | `DELETE` | `/api/tasks/:id` | Delete a task                                |
 
-Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `archived`. Task payloads can also include execution fields `run_state` and `run_state_updated_at` so API clients can distinguish workflow position from live agent activity. Full task payloads include an `artifacts` array for persisted task outputs such as screenshots, videos, documents, and links; `POST /api/tasks`, `PATCH /api/tasks/:id`, and QA-run updates accept up to 50 artifact objects.
+Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `archived`. Task payloads can also include execution fields `run_state` and `run_state_updated_at` so API clients can distinguish workflow position from live agent activity. Creating or updating task comments with `run_state` can raise the parent task state from `null` to `queued` or `running`, but comment sync does not downgrade an existing task execution state. Full task payloads include an `artifacts` array for persisted task outputs such as screenshots, videos, documents, and links; `POST /api/tasks`, `PATCH /api/tasks/:id`, and QA-run updates accept up to 50 artifact objects.
 
 ### MCP over HTTP
 
