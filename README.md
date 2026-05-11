@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://preqstation.com">
-    <img src="https://raw.githubusercontent.com/sonim1/preqstation-landingpage/main/apps/landing/public/brand/logo.webp" alt="PreqStation" width="96" />
+    <img src="public/brand/preqstation-app-icon.svg" alt="PreqStation" width="96" />
   </a>
 </p>
 
