@@ -1,6 +1,7 @@
-import { desc } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 
-import { taskComments } from '@/lib/db/schema';
+import type { db } from '@/lib/db';
+import { taskComments, tasks } from '@/lib/db/schema';
 
 export const TASK_COMMENT_RUN_STATES = ['queued', 'working', 'done', 'failed'] as const;
 export const TASK_COMMENT_AUTHOR_TYPES = ['user', 'agent', 'system'] as const;
@@ -43,6 +44,53 @@ export function serializeTaskComment(comment: TaskCommentRow) {
     created_at: comment.createdAt.toISOString(),
     updated_at: comment.updatedAt.toISOString(),
   };
+}
+
+type TaskCommentRunStateClient = Pick<typeof db, 'query' | 'update'>;
+
+export async function syncTaskRunStateFromComments({
+  client,
+  ownerId,
+  taskId,
+  now = new Date(),
+}: {
+  client: TaskCommentRunStateClient;
+  ownerId: string;
+  taskId: string;
+  now?: Date;
+}) {
+  const [task, activeComments] = await Promise.all([
+    client.query.tasks.findFirst({
+      where: and(eq(tasks.ownerId, ownerId), eq(tasks.id, taskId)),
+      columns: { runState: true },
+    }),
+    client.query.taskComments.findMany({
+      where: and(
+        eq(taskComments.ownerId, ownerId),
+        eq(taskComments.taskId, taskId),
+        inArray(taskComments.runState, ['queued', 'working']),
+      ),
+      columns: { runState: true },
+    }),
+  ]);
+
+  const nextRunState = activeComments.some((comment) => comment.runState === 'working')
+    ? 'running'
+    : activeComments.some((comment) => comment.runState === 'queued')
+      ? 'queued'
+      : null;
+
+  if (!task || task.runState === nextRunState) return nextRunState;
+
+  await client
+    .update(tasks)
+    .set({
+      runState: nextRunState,
+      runStateUpdatedAt: nextRunState ? now : null,
+    })
+    .where(and(eq(tasks.ownerId, ownerId), eq(tasks.id, taskId)));
+
+  return nextRunState;
 }
 
 export function renderTaskCommentWorkLogDetail(params: {

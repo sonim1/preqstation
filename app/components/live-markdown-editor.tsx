@@ -95,6 +95,12 @@ import {
   shouldPreserveLiveHeadingSourceOnBackspace,
 } from '@/lib/live-markdown-heading-source';
 import {
+  $replaceMermaidCodeNode,
+  $replaceMermaidCodeNodes,
+  LIVE_MERMAID_TRANSFORMER,
+  LiveMermaidNode,
+} from '@/lib/live-markdown-mermaid';
+import {
   applyMarkdownEnterShortcut,
   applyMarkdownShiftTabShortcut,
   applyMarkdownTabShortcut,
@@ -137,13 +143,16 @@ const LIVE_MARKDOWN_HEADING_TRANSFORMER: ElementTransformer = {
   },
 };
 
-const MARKDOWN_TRANSFORMERS: Transformer[] = TRANSFORMERS.flatMap((transformer) =>
-  transformer === HEADING
-    ? [LIVE_HEADING_SOURCE_TRANSFORMER, LIVE_MARKDOWN_HEADING_TRANSFORMER]
-    : transformer === UNORDERED_LIST
-      ? [CHECK_LIST, transformer]
-      : [transformer],
-);
+const MARKDOWN_TRANSFORMERS: Transformer[] = [
+  LIVE_MERMAID_TRANSFORMER,
+  ...TRANSFORMERS.flatMap((transformer) =>
+    transformer === HEADING
+      ? [LIVE_HEADING_SOURCE_TRANSFORMER, LIVE_MARKDOWN_HEADING_TRANSFORMER]
+      : transformer === UNORDERED_LIST
+        ? [CHECK_LIST, transformer]
+        : [transformer],
+  ),
+];
 
 const MARKDOWN_SHORTCUT_TRANSFORMERS: Transformer[] = MARKDOWN_TRANSFORMERS.filter(
   (transformer) =>
@@ -429,9 +438,7 @@ function hasDeliberateMarkdownBlankLine(markdown: string) {
 
   if (firstContentLine === -1) return false;
 
-  return lines
-    .slice(firstContentLine + 1, lastContentLine)
-    .some((line) => line.trim() === '');
+  return lines.slice(firstContentLine + 1, lastContentLine).some((line) => line.trim() === '');
 }
 
 function shouldPreserveLiveMarkdownNewLines(markdown: string) {
@@ -452,6 +459,7 @@ function InitializeFromMarkdownPlugin({ markdown }: { markdown: string }) {
         undefined,
         shouldPreserveNewLines,
       );
+      $replaceMermaidCodeNodes();
     });
   }, [editor, markdown]);
 
@@ -555,6 +563,18 @@ function CodeHighlightingPlugin() {
 
   useEffect(() => {
     return registerCodeHighlighting(editor);
+  }, [editor]);
+
+  return null;
+}
+
+function LiveMermaidCodeNodeTransformPlugin() {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    return editor.registerNodeTransform(CodeNode, (node) => {
+      $replaceMermaidCodeNode(node);
+    });
   }, [editor]);
 
   return null;
@@ -1190,6 +1210,7 @@ export function LiveMarkdownEditor({
         CodeNode,
         CodeHighlightNode,
         LiveHeadingSourceNode,
+        LiveMermaidNode,
         LinkNode,
         AutoLinkNode,
       ],
@@ -1332,6 +1353,7 @@ export function LiveMarkdownEditor({
             <LiveBackspacePlugin />
             <MarkdownShortcutPlugin transformers={MARKDOWN_SHORTCUT_TRANSFORMERS} />
             <CodeHighlightingPlugin />
+            <LiveMermaidCodeNodeTransformPlugin />
             <CodeBlockExitPlugin />
             <LiveHeadingSourcePlugin />
             <LiveChecklistSourcePlugin />

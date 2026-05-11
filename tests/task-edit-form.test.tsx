@@ -12,7 +12,6 @@ const refreshMock = vi.hoisted(() => vi.fn());
 const taskCopyActionsPropsMock = vi.hoisted(() => vi.fn());
 const liveMarkdownEditorPropsMock = vi.hoisted(() => vi.fn());
 const useAutoSaveMock = vi.hoisted(() => vi.fn());
-const useEffectMock = vi.hoisted(() => vi.fn());
 const useBoardOfflineSyncMock = vi.hoisted(() => vi.fn());
 const useOfflineStatusMock = vi.hoisted(() => vi.fn());
 const useTaskOfflineDraftMock = vi.hoisted(() => vi.fn());
@@ -25,7 +24,6 @@ vi.mock('react', async () => {
   return {
     ...actual,
     useActionState: useActionStateMock,
-    useEffect: useEffectMock,
   };
 });
 
@@ -148,13 +146,14 @@ import { TaskEditForm } from '@/app/components/task-edit-form';
 import { TerminologyProvider } from '@/app/components/terminology-provider';
 import { KITCHEN_TERMINOLOGY } from '@/lib/terminology';
 
-function renderTaskEditForm(
+function taskEditFormElement(
   overrides: Partial<{
     onTaskQueued: (taskKey: string, queuedAt: string) => void;
     onDispatchQueued: () => void;
+    onTaskUpdated: (tasks: { boardTask?: unknown; focusedTask?: unknown }) => void;
   }> = {},
 ) {
-  return renderToStaticMarkup(
+  return (
     <MantineProvider>
       <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
         <TaskEditForm
@@ -183,8 +182,28 @@ function renderTaskEditForm(
           {...overrides}
         />
       </TerminologyProvider>
-    </MantineProvider>,
+    </MantineProvider>
   );
+}
+
+function renderTaskEditForm(
+  overrides: Partial<{
+    onTaskQueued: (taskKey: string, queuedAt: string) => void;
+    onDispatchQueued: () => void;
+    onTaskUpdated: (tasks: { boardTask?: unknown; focusedTask?: unknown }) => void;
+  }> = {},
+) {
+  return renderToStaticMarkup(taskEditFormElement(overrides));
+}
+
+function renderTaskEditFormClient(
+  overrides: Partial<{
+    onTaskQueued: (taskKey: string, queuedAt: string) => void;
+    onDispatchQueued: () => void;
+    onTaskUpdated: (tasks: { boardTask?: unknown; focusedTask?: unknown }) => void;
+  }> = {},
+) {
+  return render(taskEditFormElement(overrides));
 }
 
 describe('app/components/task-edit-form', () => {
@@ -223,7 +242,6 @@ describe('app/components/task-edit-form', () => {
     useBoardOfflineSyncMock.mockReset();
     useOfflineStatusMock.mockReset();
     useTaskOfflineDraftMock.mockReset();
-    useEffectMock.mockReset();
     useActionStateMock.mockReset();
     setTaskEditRefreshBlockedMock.mockReset();
     taskLabelPickerPropsMock.mockReset();
@@ -258,7 +276,6 @@ describe('app/components/task-edit-form', () => {
       updateNoteDraft: vi.fn(),
       updateTitleDraft: vi.fn(),
     });
-    useEffectMock.mockImplementation(() => undefined);
     vi.stubGlobal('requestAnimationFrame', ((callback: FrameRequestCallback) => {
       callback(0);
       return 1;
@@ -779,10 +796,6 @@ describe('app/components/task-edit-form', () => {
   });
 
   it('auto-saves a non-conflicting draft through the update action without showing the restore warning', async () => {
-    const effects: Array<() => void | (() => void)> = [];
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
     const clearDraft = vi.fn();
     const updateTodoAction = vi.fn(async (_prevState: unknown, formData: FormData) => ({
       ok: true as const,
@@ -876,10 +889,6 @@ describe('app/components/task-edit-form', () => {
     titleInput.value = 'Visible title';
     form.appendChild(titleInput);
 
-    for (const effect of effects) {
-      effect();
-    }
-
     await waitFor(() => {
       expect(updateTodoAction).toHaveBeenCalledTimes(1);
     });
@@ -902,10 +911,6 @@ describe('app/components/task-edit-form', () => {
   });
 
   it('does not replay the same auto-save draft after a successful save re-render', async () => {
-    const effects: Array<() => void | (() => void)> = [];
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
     const clearDraft = vi.fn();
     const autoSaveDraft = {
       title: 'Offline rename',
@@ -985,31 +990,20 @@ describe('app/components/task-edit-form', () => {
 
     const { rerender } = render(renderForm(vi.fn()));
 
-    for (const effect of effects) {
-      effect();
-    }
-
     await waitFor(() => {
       expect(updateTodoAction).toHaveBeenCalledTimes(1);
     });
     expect(clearDraft).toHaveBeenCalledTimes(1);
 
-    effects.length = 0;
     rerender(renderForm(vi.fn()));
-    for (const effect of effects) {
-      effect();
-    }
-    await Promise.resolve();
+    await waitFor(() => {
+      expect(updateTodoAction).toHaveBeenCalledTimes(1);
+    });
 
     expect(updateTodoAction).toHaveBeenCalledTimes(1);
   });
 
-  it('blocks polling while the task form has unsaved edits', () => {
-    const effects: Array<() => void | (() => void)> = [];
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
-
+  it('blocks polling while the task form has unsaved edits', async () => {
     useAutoSaveMock.mockReturnValueOnce({
       markDirty: vi.fn(),
       triggerSave: vi.fn(),
@@ -1020,12 +1014,12 @@ describe('app/components/task-edit-form', () => {
       isDirtyRef: { current: true },
     });
 
-    renderTaskEditForm();
-    effects[0]?.();
+    renderTaskEditFormClient();
 
-    expect(setTaskEditRefreshBlockedMock).toHaveBeenCalledWith(true);
+    await waitFor(() => {
+      expect(setTaskEditRefreshBlockedMock).toHaveBeenCalledWith(true);
+    });
 
-    effects.length = 0;
     setTaskEditRefreshBlockedMock.mockClear();
     useAutoSaveMock.mockReturnValueOnce({
       markDirty: vi.fn(),
@@ -1037,18 +1031,14 @@ describe('app/components/task-edit-form', () => {
       isDirtyRef: { current: false },
     });
 
-    renderTaskEditForm();
-    effects[0]?.();
+    renderTaskEditFormClient();
 
-    expect(setTaskEditRefreshBlockedMock).toHaveBeenCalledWith(false);
+    await waitFor(() => {
+      expect(setTaskEditRefreshBlockedMock).toHaveBeenCalledWith(false);
+    });
   });
 
-  it('keeps polling blocked while autosave transitions from dirty to saving', () => {
-    const effects: Array<() => void | (() => void)> = [];
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
-
+  it('keeps polling blocked while autosave transitions from dirty to saving', async () => {
     useAutoSaveMock.mockReturnValueOnce({
       markDirty: vi.fn(),
       triggerSave: vi.fn(),
@@ -1059,10 +1049,11 @@ describe('app/components/task-edit-form', () => {
       isDirtyRef: { current: true },
     });
 
-    renderTaskEditForm();
-    const firstCleanup = effects[0]?.();
+    const { rerender } = renderTaskEditFormClient();
+    await waitFor(() => {
+      expect(setTaskEditRefreshBlockedMock).toHaveBeenLastCalledWith(true);
+    });
 
-    effects.length = 0;
     useAutoSaveMock.mockReturnValueOnce({
       markDirty: vi.fn(),
       triggerSave: vi.fn(),
@@ -1073,12 +1064,12 @@ describe('app/components/task-edit-form', () => {
       isDirtyRef: { current: false },
     });
 
-    firstCleanup?.();
-    renderTaskEditForm();
-    effects[0]?.();
+    rerender(taskEditFormElement());
 
     expect(setTaskEditRefreshBlockedMock.mock.calls).not.toContainEqual([false]);
-    expect(setTaskEditRefreshBlockedMock).toHaveBeenLastCalledWith(true);
+    await waitFor(() => {
+      expect(setTaskEditRefreshBlockedMock).toHaveBeenLastCalledWith(true);
+    });
   });
 
   it('applies queued state before closing the modal after a successful dispatch send', () => {
@@ -1144,30 +1135,82 @@ describe('app/components/task-edit-form', () => {
     );
   });
 
-  it('refreshes the current route after a successful save when board reconciliation is unavailable', () => {
-    const effects: Array<() => void | (() => void)> = [];
+  it('refreshes the current route after a successful save when board reconciliation is unavailable', async () => {
     useActionStateMock.mockReturnValue([{ ok: true }, formAction]);
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
-    });
 
-    renderTaskEditForm();
-    effects.forEach((effect) => {
-      effect();
-    });
+    renderTaskEditFormClient();
 
-    expect(refreshMock).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(refreshMock).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it('does not refresh the route when a board-level task update callback is present', () => {
-    const effects: Array<() => void | (() => void)> = [];
+  it('does not refresh the route when a board-level task update callback is present', async () => {
     const onTaskUpdated = vi.fn();
     useActionStateMock.mockReturnValue([{ ok: true }, formAction]);
-    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
-      effects.push(effect);
+
+    renderTaskEditFormClient({ onTaskUpdated });
+
+    await waitFor(() => {
+      expect(onTaskUpdated).toHaveBeenCalledWith({
+        boardTask: undefined,
+        focusedTask: undefined,
+      });
     });
 
-    renderToStaticMarkup(
+    expect(refreshMock).not.toHaveBeenCalled();
+  });
+
+  it('submits UI comments through the queued dispatch flow', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          comments: [
+            {
+              id: 'comment-agent-1',
+              author_type: 'agent',
+              author_name: 'Codex',
+              body: 'I checked this.',
+              run_state: 'done',
+              engine: 'codex',
+              created_at: '2026-05-05T00:00:00.000Z',
+            },
+          ],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          comment: {
+            id: 'comment-1',
+            task_id: '1',
+            project_id: 'project-1',
+            parent_comment_id: null,
+            author_type: 'user',
+            author_name: 'Owner',
+            body: 'Please check this',
+            run_state: 'queued',
+            run_state_updated_at: '2026-05-05T00:00:00.000Z',
+            engine: 'codex',
+            dispatch_target: 'hermes-telegram',
+            error_message: null,
+            metadata: null,
+            created_at: '2026-05-05T00:00:00.000Z',
+            updated_at: '2026-05-05T00:00:00.000Z',
+          },
+          dispatch: {
+            objective: 'comment',
+            task_key: 'PROJ-187',
+            comment_id: 'comment-1',
+            dispatch_target: 'hermes-telegram',
+          },
+        }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
       <MantineProvider>
         <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
           <TaskEditForm
@@ -1182,7 +1225,7 @@ describe('app/components/task-edit-form', () => {
               taskPriority: 'none',
               status: 'todo',
               engine: 'codex',
-              dispatchTarget: null,
+              dispatchTarget: 'hermes-telegram',
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
@@ -1191,50 +1234,37 @@ describe('app/components/task-edit-form', () => {
             todoLabels={[]}
             taskPriorityOptions={[{ value: 'none', label: 'None' }]}
             updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
-            onTaskUpdated={onTaskUpdated}
           />
         </TerminologyProvider>
       </MantineProvider>,
     );
 
-    effects.forEach((effect) => {
-      effect();
-    });
+    expect(await screen.findByLabelText('Codex CLI comment')).toBeTruthy();
+    expect(screen.queryByText('done')).toBeNull();
 
-    expect(onTaskUpdated).toHaveBeenCalledWith({
-      boardTask: undefined,
-      focusedTask: undefined,
+    fireEvent.change(screen.getByLabelText('Add task comment'), {
+      target: { value: 'Please check this' },
     });
-    expect(refreshMock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Add comment' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/todos/PROJ-187/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: 'Please check this' }),
+      });
+    });
+    expect(await screen.findByText('Owner')).toBeTruthy();
+    expect(await screen.findByText('Comment queued.')).toBeTruthy();
+    expect(screen.queryByText('queued')).toBeNull();
+    expect(screen.getByLabelText('User comment')).toBeTruthy();
   });
 
-  it('submits UI comments through the queued dispatch flow', async () => {
+  it('announces the empty comments state through a polite status', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        comment: {
-          id: 'comment-1',
-          task_id: '1',
-          project_id: 'project-1',
-          parent_comment_id: null,
-          author_type: 'user',
-          author_name: 'Owner',
-          body: 'Please check this',
-          run_state: 'queued',
-          run_state_updated_at: '2026-05-05T00:00:00.000Z',
-          engine: 'codex',
-          dispatch_target: 'hermes-telegram',
-          error_message: null,
-          metadata: null,
-          created_at: '2026-05-05T00:00:00.000Z',
-          updated_at: '2026-05-05T00:00:00.000Z',
-        },
-        dispatch: {
-          objective: 'comment',
-          task_key: 'PROJ-187',
-          comment_id: 'comment-1',
-          dispatch_target: 'hermes-telegram',
-        },
+        comments: [],
       }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -1268,18 +1298,154 @@ describe('app/components/task-edit-form', () => {
       </MantineProvider>,
     );
 
-    fireEvent.change(screen.getByLabelText('Add task comment'), {
-      target: { value: 'Please check this' },
+    expect(await screen.findAllByText('No comments yet.')).toHaveLength(2);
+    expect(screen.getByRole('status').textContent).toBe('No comments yet.');
+  });
+
+  it('labels fallback comment icons and author metadata by author type', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        comments: [
+          {
+            id: 'comment-agent-1',
+            author_type: 'agent',
+            author_name: null,
+            body: 'Agent comment body.',
+            run_state: null,
+            engine: null,
+            created_at: '2026-05-05T00:00:00.000Z',
+          },
+          {
+            id: 'comment-system-1',
+            author_type: 'system',
+            author_name: null,
+            body: 'System comment body.',
+            run_state: null,
+            engine: 'future-engine',
+            created_at: '2026-05-05T00:00:00.000Z',
+          },
+        ],
+      }),
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Add comment' }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'OpenClaw 기능 UI수정',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: [],
+              labels: [],
+              taskPriority: 'none',
+              status: 'todo',
+              engine: 'codex',
+              dispatchTarget: 'hermes-telegram',
+              runState: null,
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
+            updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
+          />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    expect(await screen.findByLabelText('Agent comment')).toBeTruthy();
+    expect(await screen.findByLabelText('System comment')).toBeTruthy();
+    expect(
+      screen
+        .getByText('Agent')
+        .closest('[data-comment-author]')
+        ?.getAttribute('data-comment-author'),
+    ).toBe('agent');
+    expect(
+      screen
+        .getByText('System')
+        .closest('[data-comment-author]')
+        ?.getAttribute('data-comment-author'),
+    ).toBe('system');
+  });
+
+  it('announces when a comment refresh starts', async () => {
+    let finishRefresh:
+      | ((value: { ok: boolean; json: () => Promise<{ comments: unknown[] }> }) => void)
+      | undefined;
+    const refreshPromise = new Promise<{
+      ok: boolean;
+      json: () => Promise<{ comments: unknown[] }>;
+    }>((resolve) => {
+      finishRefresh = resolve;
+    });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          comments: [
+            {
+              id: 'comment-agent-1',
+              author_type: 'agent',
+              author_name: 'Codex',
+              body: 'I checked this.',
+              run_state: null,
+              engine: 'codex',
+              created_at: '2026-05-05T00:00:00.000Z',
+            },
+          ],
+        }),
+      })
+      .mockReturnValueOnce(refreshPromise);
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'OpenClaw 기능 UI수정',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: [],
+              labels: [],
+              taskPriority: 'none',
+              status: 'todo',
+              engine: 'codex',
+              dispatchTarget: 'hermes-telegram',
+              runState: null,
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
+            updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
+          />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    expect((await screen.findByRole('status')).textContent).toBe('Loaded 1 comment.');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/todos/PROJ-187/comments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body: 'Please check this' }),
-      });
+      expect(screen.getByRole('status').textContent).toBe('Loading comments.');
     });
-    expect(await screen.findByText('queued')).toBeTruthy();
+
+    finishRefresh?.({
+      ok: true,
+      json: async () => ({ comments: [] }),
+    });
   });
 });

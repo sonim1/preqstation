@@ -4,6 +4,8 @@ import { TEST_BASE_URL } from './test-utils';
 
 const mocked = vi.hoisted(() => {
   const returningFn = vi.fn();
+  const whereFn = vi.fn().mockReturnValue({ returning: returningFn });
+  const setFn = vi.fn().mockReturnValue({ where: whereFn });
   const valuesFn = vi.fn().mockReturnValue({ returning: returningFn });
 
   return {
@@ -20,10 +22,12 @@ const mocked = vi.hoisted(() => {
         taskComments: { findMany: vi.fn() },
       },
       insert: vi.fn().mockReturnValue({ values: valuesFn }),
-      update: vi.fn(),
+      update: vi.fn().mockReturnValue({ set: setFn }),
       transaction: vi.fn(),
     },
     returningFn,
+    setFn,
+    whereFn,
     valuesFn,
   };
 });
@@ -101,6 +105,10 @@ describe('app/api/tasks/[id]/comments/route', () => {
     mocked.decryptTelegramToken.mockResolvedValue('bot-token');
     mocked.sendTelegramMessage.mockResolvedValue({ ok: true });
     mocked.writeAuditLog.mockResolvedValue(undefined);
+    mocked.db.query.taskComments.findMany.mockResolvedValue([{ runState: 'queued' }]);
+    mocked.db.update.mockReturnValue({ set: mocked.setFn });
+    mocked.setFn.mockReturnValue({ where: mocked.whereFn });
+    mocked.whereFn.mockReturnValue({ returning: mocked.returningFn });
   });
 
   it('queues a dispatched comment and sends Hermes Telegram by default', async () => {
@@ -114,6 +122,12 @@ describe('app/api/tasks/[id]/comments/route', () => {
         runState: 'queued',
         engine: 'codex',
         dispatchTarget: 'hermes-telegram',
+      }),
+    );
+    expect(mocked.setFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runState: 'queued',
+        runStateUpdatedAt: expect.any(Date),
       }),
     );
     expect(mocked.resolveTelegramDispatchConfig).toHaveBeenCalledWith({}, 'hermes');
@@ -166,6 +180,7 @@ describe('app/api/tasks/[id]/comments/route', () => {
     expect(mocked.valuesFn).toHaveBeenCalledWith(
       expect.objectContaining({ runState: null, dispatchTarget: 'hermes-telegram' }),
     );
+    expect(mocked.db.update).not.toHaveBeenCalled();
     expect(mocked.sendTelegramMessage).not.toHaveBeenCalled();
     expect(await response.json()).toEqual(
       expect.objectContaining({
@@ -173,5 +188,67 @@ describe('app/api/tasks/[id]/comments/route', () => {
         dispatch: null,
       }),
     );
+  });
+
+  it('clears task run state when comment dispatch fails and no active comments remain', async () => {
+    mocked.resolveTelegramDispatchConfig.mockReturnValueOnce({
+      enabled: false,
+      encryptedToken: null,
+      chatId: null,
+    });
+    mocked.db.query.taskComments.findMany
+      .mockResolvedValueOnce([{ runState: 'queued' }])
+      .mockResolvedValueOnce([]);
+    mocked.returningFn
+      .mockResolvedValueOnce([
+        {
+          id: 'comment-1',
+          ownerId: 'owner-1',
+          projectId: 'project-1',
+          taskId: 'task-1',
+          parentCommentId: null,
+          authorType: 'user',
+          authorName: 'owner@example.com',
+          body: '댓글 확인해주세요',
+          runState: 'queued',
+          runStateUpdatedAt: new Date('2026-05-06T15:00:00.000Z'),
+          engine: 'codex',
+          dispatchTarget: 'hermes-telegram',
+          errorMessage: null,
+          metadata: null,
+          createdAt: new Date('2026-05-06T15:00:00.000Z'),
+          updatedAt: new Date('2026-05-06T15:00:00.000Z'),
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: 'comment-1',
+          ownerId: 'owner-1',
+          projectId: 'project-1',
+          taskId: 'task-1',
+          parentCommentId: null,
+          authorType: 'user',
+          authorName: 'owner@example.com',
+          body: '댓글 확인해주세요',
+          runState: 'failed',
+          runStateUpdatedAt: new Date('2026-05-06T15:01:00.000Z'),
+          engine: 'codex',
+          dispatchTarget: 'hermes-telegram',
+          errorMessage: 'Telegram is not fully configured or disabled',
+          metadata: null,
+          createdAt: new Date('2026-05-06T15:00:00.000Z'),
+          updatedAt: new Date('2026-05-06T15:01:00.000Z'),
+        },
+      ]);
+
+    const response = await POST(postRequest({ body: '댓글 확인해주세요' }), {
+      params: Promise.resolve({ id: 'PQST-74' }),
+    });
+
+    expect(response.status).toBe(201);
+    expect(mocked.setFn).toHaveBeenCalledWith({
+      runState: null,
+      runStateUpdatedAt: null,
+    });
   });
 });
