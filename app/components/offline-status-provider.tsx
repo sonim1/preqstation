@@ -12,20 +12,39 @@ const OfflineStatusContext = createContext<OfflineStatusContextValue>({
   online: true,
 });
 
+const OFFLINE_PING_TIMEOUT_MS = 15_000;
+
 export async function resolveOfflineStatus(fetcher: typeof fetch = fetch) {
   if (typeof navigator === 'undefined' || !navigator.onLine) {
     return false;
   }
 
+  const controller = new AbortController();
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
   try {
-    const response = await fetcher('/api/ping', {
-      credentials: 'same-origin',
-      cache: 'no-store',
+    const timeout = new Promise<never>((_resolve, reject) => {
+      timeoutId = setTimeout(() => {
+        controller.abort();
+        reject(new Error('Offline ping timed out.'));
+      }, OFFLINE_PING_TIMEOUT_MS);
     });
+    const response = await Promise.race([
+      fetcher('/api/ping', {
+        credentials: 'same-origin',
+        cache: 'no-store',
+        signal: controller.signal,
+      }),
+      timeout,
+    ]);
     const payload = (await response.json().catch(() => null)) as { ok?: boolean } | null;
     return response.ok && payload?.ok === true;
   } catch {
     return false;
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 }
 

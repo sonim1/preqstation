@@ -1160,6 +1160,15 @@ export function KanbanBoard({
           onArchivedCountChange?.((current) => Math.max(0, current - 1));
         }
 
+        if (!online && boardOfflineSync) {
+          void boardOfflineSync.queueTaskMove({
+            taskKey: targetTask.taskKey,
+            status: 'archived',
+            sortOrder: targetTask.sortOrder,
+          });
+          return;
+        }
+
         enqueuePersist({
           run: async () => {
             const response = await fetch(`/api/todos/${encodeURIComponent(targetTask.taskKey)}`, {
@@ -1182,6 +1191,15 @@ export function KanbanBoard({
       setArchivedDrawerState((current) => removeArchivedDrawerTaskState(current, taskId));
       onArchivedCountChange?.((current) => Math.max(0, current - 1));
 
+      if (!online && boardOfflineSync) {
+        void boardOfflineSync.queueTaskMove({
+          taskKey: archivedTask.taskKey,
+          status: 'archived',
+          sortOrder: archivedTask.sortOrder,
+        });
+        return;
+      }
+
       enqueuePersist({
         run: async () => {
           const response = await fetch(`/api/todos/${encodeURIComponent(archivedTask.taskKey)}`, {
@@ -1194,9 +1212,11 @@ export function KanbanBoard({
     },
     [
       archivedDrawerState.tasks,
+      boardOfflineSync,
       enqueuePersist,
       kanbanStore,
       onArchivedCountChange,
+      online,
       readColumnsFromStore,
     ],
   );

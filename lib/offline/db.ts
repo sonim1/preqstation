@@ -17,7 +17,7 @@ export type OfflineDraftRecord = {
 
 export type OfflineSnapshotRecord<TPayload = unknown> = {
   id: string;
-  kind: 'board' | 'task';
+  kind: 'board' | 'projects' | 'task';
   entityKey: string;
   payload: TPayload;
   updatedAt: string;

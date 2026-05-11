@@ -5,6 +5,9 @@ import { IconDots } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useCallback, useRef, useState } from 'react';
 
+import { useOfflineStatus } from '@/app/components/offline-status-provider';
+import { showErrorNotification } from '@/lib/notifications';
+
 type ProjectCardMenuProps = {
   canPause?: boolean;
   editHref: string;
@@ -20,23 +23,33 @@ export function ProjectCardMenu({
   projectId,
   projectName,
 }: ProjectCardMenuProps) {
+  const { online } = useOfflineStatus();
   const [opened, { open, close }] = useDisclosure(false);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
 
   const handlePauseProject = useCallback(() => {
+    if (!online) {
+      showErrorNotification('Project actions are available after reconnecting.');
+      return;
+    }
     if (!pauseFormId) return;
     const form = document.getElementById(pauseFormId) as HTMLFormElement | null;
     form?.requestSubmit();
-  }, [pauseFormId]);
+  }, [online, pauseFormId]);
 
   const handleConfirmDelete = useCallback(() => {
+    if (!online) {
+      showErrorNotification('Project actions are available after reconnecting.');
+      close();
+      return;
+    }
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     const form = document.getElementById(`delete-project-${projectId}`) as HTMLFormElement | null;
     form?.requestSubmit();
-  }, [projectId]);
+  }, [close, online, projectId]);
 
   return (
     <>
@@ -54,12 +67,14 @@ export function ProjectCardMenu({
         </Menu.Target>
         <Menu.Dropdown>
           {canPause && pauseFormId ? (
-            <Menu.Item onClick={handlePauseProject}>Pause project</Menu.Item>
+            <Menu.Item disabled={!online} onClick={handlePauseProject}>
+              Pause project
+            </Menu.Item>
           ) : null}
-          <Menu.Item component={Link} href={editHref}>
+          <Menu.Item component={Link} href={editHref} disabled={!online}>
             Edit
           </Menu.Item>
-          <Menu.Item color="red" onClick={open}>
+          <Menu.Item color="red" disabled={!online} onClick={open}>
             Delete
           </Menu.Item>
         </Menu.Dropdown>

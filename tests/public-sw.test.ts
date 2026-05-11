@@ -283,6 +283,30 @@ describe('public/sw.js', () => {
     expect(await response.text()).toBe('<html>cached projects</html>');
   });
 
+  it('serves cached /projects navigation when the network does not answer within 15 seconds', async () => {
+    vi.useFakeTimers();
+    const sw = await loadServiceWorker({
+      fetchMock: vi.fn(() => new Promise<Response>(() => undefined)),
+      seedCaches: [
+        {
+          name: 'preq-board-v3',
+          entries: [['https://example.com/projects', new Response('<html>cached projects</html>')]],
+        },
+      ],
+    });
+
+    const responsePromise = dispatchFetch(
+      sw.handlers.get('fetch') as Parameters<typeof dispatchFetch>[0],
+      { mode: 'navigate', url: 'https://example.com/projects' },
+    );
+
+    await vi.advanceTimersByTimeAsync(15_000);
+    const response = await responsePromise;
+
+    expect(await response.text()).toBe('<html>cached projects</html>');
+    vi.useRealTimers();
+  });
+
   it('serves the offline fallback shell for an uncached /projects navigation when the network is offline', async () => {
     const sw = await loadServiceWorker({
       fetchMock: vi.fn().mockRejectedValue(new TypeError('offline')),

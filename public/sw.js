@@ -4,6 +4,7 @@ const MANAGED_CACHES = [BOARD_CACHE, STATIC_CACHE];
 const MANAGED_CACHE_PREFIXES = ['preq-board-', 'preq-static-'];
 const OFFLINE_FALLBACK_URL = '/offline.html';
 const PRECACHED_ASSETS = ['/manifest.webmanifest', OFFLINE_FALLBACK_URL];
+const NAVIGATION_TIMEOUT_MS = 15000;
 
 function isSameOrigin(url) {
   return url.origin === self.location.origin;
@@ -51,6 +52,21 @@ async function getOfflineFallbackResponse() {
   });
 }
 
+function fetchWithTimeout(request, timeoutMs) {
+  const controller = new AbortController();
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      controller.abort();
+      reject(new Error('Navigation request timed out.'));
+    }, timeoutMs);
+  });
+
+  return Promise.race([fetch(request, { signal: controller.signal }), timeout]).finally(() => {
+    clearTimeout(timeoutId);
+  });
+}
+
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHED_ASSETS)));
@@ -86,7 +102,7 @@ self.addEventListener('fetch', (event) => {
   if (event.request.mode === 'navigate' && isManagedNavigation(url)) {
     const cacheKey = buildBoardCacheKey(url);
     event.respondWith(
-      fetch(event.request)
+      fetchWithTimeout(event.request, NAVIGATION_TIMEOUT_MS)
         .then((response) => {
           if (response.ok && !response.redirected) {
             const responseCopy = response.clone();
