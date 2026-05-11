@@ -14,27 +14,38 @@ vi.mock('next/navigation', () => ({
 }));
 
 vi.mock('@/app/components/auto-save-indicator', () => ({
-  AutoSaveIndicator: () => <div data-slot="auto-save-indicator" />,
+  AutoSaveIndicator: () => React.createElement('div', { 'data-slot': 'auto-save-indicator' }),
 }));
 
 vi.mock('@/app/components/live-markdown-editor', () => ({
-  LiveMarkdownEditor: ({ label, name }: { label: string; name: string }) => (
-    <div data-slot="live-markdown-editor" data-label={label} data-name={name} />
-  ),
+  LiveMarkdownEditor: ({ label, name }: { label: string; name: string }) =>
+    React.createElement('div', {
+      'data-slot': 'live-markdown-editor',
+      'data-label': label,
+      'data-name': name,
+    }),
 }));
 
 vi.mock('@/app/components/status-history-breadcrumb', () => ({
-  StatusHistoryBreadcrumb: () => <div data-slot="status-history-breadcrumb" />,
+  StatusHistoryBreadcrumb: () =>
+    React.createElement('div', { 'data-slot': 'status-history-breadcrumb' }),
 }));
 
 vi.mock('@/app/components/task-copy-actions', () => ({
-  TaskCopyActions: () => <div className="task-dispatch-actions" data-slot="task-copy-actions" />,
+  TaskCopyActions: () =>
+    React.createElement('div', {
+      className: 'task-dispatch-actions',
+      'data-slot': 'task-copy-actions',
+    }),
 }));
 
 vi.mock('@/app/components/work-log-timeline', () => ({
-  WorkLogTimeline: ({ logs }: { logs: Array<{ title: string }> }) => (
-    <div data-slot="work-log-timeline">{logs.map((log) => log.title).join(' | ')}</div>
-  ),
+  WorkLogTimeline: ({ logs }: { logs: Array<{ title: string }> }) =>
+    React.createElement(
+      'div',
+      { 'data-slot': 'work-log-timeline' },
+      logs.map((log) => log.title).join(' | '),
+    ),
 }));
 
 vi.mock('@/app/hooks/use-auto-save', () => ({
@@ -67,9 +78,11 @@ function renderTaskEditForm(saveStatus: 'idle' | 'saving' = 'idle') {
   });
 
   return renderToStaticMarkup(
-    <MantineProvider>
-      <TaskEditForm
-        editableTodo={{
+    React.createElement(
+      MantineProvider,
+      null,
+      React.createElement(TaskEditForm, {
+        editableTodo: {
           id: 'task-1',
           taskKey: 'PROJ-245',
           title: 'Edit task panel refresh',
@@ -91,13 +104,13 @@ function renderTaskEditForm(saveStatus: 'idle' | 'saving' = 'idle') {
               createdAt: new Date('2026-03-13T10:00:00Z'),
             },
           ],
-        }}
-        projects={[{ id: 'project-1', name: 'Project Manager' }]}
-        todoLabels={[{ id: 'label-1', name: 'Frontend', color: '#228be6' }]}
-        taskPriorityOptions={[{ value: 'none', label: 'None' }]}
-        updateTodoAction={async () => ({ ok: true })}
-      />
-    </MantineProvider>,
+        },
+        projects: [{ id: 'project-1', name: 'Project Manager' }],
+        todoLabels: [{ id: 'label-1', name: 'Frontend', color: '#228be6' }],
+        taskPriorityOptions: [{ value: 'none', label: 'None' }],
+        updateTodoAction: async () => ({ ok: true }),
+      }),
+    ),
   );
 }
 
