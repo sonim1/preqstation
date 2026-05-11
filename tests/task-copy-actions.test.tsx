@@ -1,3 +1,6 @@
+// @vitest-environment jsdom
+
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -80,6 +83,10 @@ class MemoryStorage implements Storage {
 }
 
 const originalWindow = globalThis.window;
+const originalLocalStorageDescriptor = Object.getOwnPropertyDescriptor(
+  originalWindow,
+  'localStorage',
+);
 const legacyClaudeDispatchAction = ['send', 'claude-code'].join('-');
 
 function renderTaskCopyActions(props: Partial<React.ComponentProps<typeof TaskCopyActions>> = {}) {
@@ -102,17 +109,17 @@ describe('app/components/task-copy-actions', () => {
 
   beforeEach(() => {
     localStorage = new MemoryStorage();
-    Object.defineProperty(globalThis, 'window', {
+    Object.defineProperty(originalWindow, 'localStorage', {
       configurable: true,
-      value: { localStorage },
+      value: localStorage,
     });
   });
 
   afterEach(() => {
-    Object.defineProperty(globalThis, 'window', {
-      configurable: true,
-      value: originalWindow,
-    });
+    cleanup();
+    if (originalLocalStorageDescriptor) {
+      Object.defineProperty(originalWindow, 'localStorage', originalLocalStorageDescriptor);
+    }
   });
 
   it('renders a flat dispatch review flow with a static prompt preview', () => {
@@ -183,6 +190,39 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Send to Telegram');
     expect(html).not.toContain('Copy Telegram');
     expect(html).not.toContain('Selected action:');
+  });
+
+  it('persists the current dispatch preference when copying the prompt', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+        />
+      </MantineProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Copy dispatch prompt' }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(
+      JSON.parse(window.localStorage.getItem(TASK_DISPATCH_PREFERENCES_STORAGE) ?? '{}'),
+    ).toEqual({
+      todo: {
+        engine: 'codex',
+        action: 'send-telegram',
+        objective: 'implement',
+      },
+    });
   });
 
   it('falls back to the status mode when stored mode is not available for the column', () => {
