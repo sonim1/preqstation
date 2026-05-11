@@ -37,6 +37,10 @@ export type AppliedOfflineMutation =
       previousTaskKey: string;
     }
   | {
+      kind: 'delete';
+      taskKey: string;
+    }
+  | {
       boardTask: KanbanTask;
       focusedTask: EditableBoardTask | null;
       kind: 'patch';
@@ -137,6 +141,37 @@ export async function flushOfflineMutations(
           kind: 'create',
           previousTaskKey: mutation.clientTaskKey,
           boardTask: payload.boardTask,
+        });
+        appliedCount += 1;
+        continue;
+      }
+
+      if (mutation.kind === 'delete') {
+        const response = await fetchImpl(`/api/todos/${encodeURIComponent(mutation.taskKey)}`, {
+          method: 'DELETE',
+          credentials: 'same-origin',
+        });
+
+        if (!response.ok) {
+          const message = await readErrorMessage(response);
+          const syncError = message ?? `Failed to sync offline task delete (${response.status}).`;
+          if (isPermanentOfflineMutationFailure(response.status)) {
+            await deleteOfflineMutation(mutation.id);
+            skippedError ??= syncError;
+            continue;
+          }
+
+          return {
+            appliedCount,
+            error: syncError,
+            halted: true,
+          };
+        }
+
+        await deleteOfflineMutation(mutation.id);
+        await params.onApplied?.({
+          kind: 'delete',
+          taskKey: mutation.taskKey,
         });
         appliedCount += 1;
         continue;

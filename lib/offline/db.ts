@@ -60,7 +60,17 @@ export type OfflinePatchMutationRecord = {
   taskKey: string;
 };
 
-export type OfflineMutationRecord = OfflineCreateMutationRecord | OfflinePatchMutationRecord;
+export type OfflineDeleteMutationRecord = {
+  id: string;
+  kind: 'delete';
+  createdAt: string;
+  taskKey: string;
+};
+
+export type OfflineMutationRecord =
+  | OfflineCreateMutationRecord
+  | OfflineDeleteMutationRecord
+  | OfflinePatchMutationRecord;
 
 interface OfflineDbSchema extends DBSchema {
   drafts: {

@@ -3,6 +3,7 @@ import { buildEditableBoardTaskPreview, type EditableBoardTask } from '@/lib/kan
 import {
   type OfflineCreateMutationPayload,
   type OfflineCreateMutationRecord,
+  type OfflineDeleteMutationRecord,
   type OfflineMutationRecord,
   type OfflinePatchMutationPayload,
   type OfflinePatchMutationRecord,
@@ -49,6 +50,10 @@ export function buildOfflineCreateMutationId(taskKey: string) {
 
 export function buildOfflinePatchMutationId(taskKey: string) {
   return `patch:${taskKey}`;
+}
+
+export function buildOfflineDeleteMutationId(taskKey: string) {
+  return `delete:${taskKey}`;
 }
 
 function mergeDefinedFields<T extends Record<string, unknown>>(previous: T, next: Partial<T>): T {
@@ -290,6 +295,34 @@ export async function queueOfflinePatchMutation(params: {
     taskKey: params.taskKey,
     payload: params.payload,
   });
+}
+
+export async function queueOfflineDeleteMutation(params: { taskKey: string }) {
+  const db = await openOfflineDb();
+  const createId = buildOfflineCreateMutationId(params.taskKey);
+  const patchId = buildOfflinePatchMutationId(params.taskKey);
+  const existingCreateRecord = await db.get('mutations', createId);
+
+  await db.delete('mutations', patchId);
+  if (existingCreateRecord?.kind === 'create') {
+    await db.delete('mutations', createId);
+    return null;
+  }
+
+  const deleteId = buildOfflineDeleteMutationId(params.taskKey);
+  const existingDeleteRecord = await db.get('mutations', deleteId);
+  const record: OfflineDeleteMutationRecord = {
+    id: deleteId,
+    kind: 'delete',
+    createdAt:
+      existingDeleteRecord?.kind === 'delete'
+        ? existingDeleteRecord.createdAt
+        : new Date().toISOString(),
+    taskKey: params.taskKey,
+  };
+
+  await db.put('mutations', record);
+  return record;
 }
 
 export async function deleteOfflineMutation(id: string) {

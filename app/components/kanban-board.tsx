@@ -1163,11 +1163,7 @@ export function KanbanBoard({
         }
 
         if (!online && boardOfflineSync) {
-          void boardOfflineSync.queueTaskMove({
-            taskKey: targetTask.taskKey,
-            status: 'archived',
-            sortOrder: targetTask.sortOrder,
-          });
+          void boardOfflineSync.queueTaskDelete({ taskKey: targetTask.taskKey });
           return;
         }
 
@@ -1194,11 +1190,7 @@ export function KanbanBoard({
       onArchivedCountChange?.((current) => Math.max(0, current - 1));
 
       if (!online && boardOfflineSync) {
-        void boardOfflineSync.queueTaskMove({
-          taskKey: archivedTask.taskKey,
-          status: 'archived',
-          sortOrder: archivedTask.sortOrder,
-        });
+        void boardOfflineSync.queueTaskDelete({ taskKey: archivedTask.taskKey });
         return;
       }
 
