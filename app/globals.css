@@ -1695,7 +1695,7 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   overflow-x: auto;
   border: 1px solid var(--ui-border);
   border-radius: var(--mantine-radius-sm);
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--mantine-color-white);
   padding: 12px;
 }
 

@@ -193,6 +193,25 @@ describe('lib/markdown', () => {
     expect(html).toContain('A[Start] --&gt; B[Done]');
   });
 
+  it('renders indented mermaid fenced code blocks after dedenting their content', () => {
+    const html = renderMarkdownToHtml(
+      '- Diagram\n    ```mermaid\n    graph TD\n      A[Start] --> B[Done]\n    ```',
+    );
+
+    expect(html).toContain('<pre class="mermaid">graph TD');
+    expect(html).toContain('  A[Start] --&gt; B[Done]');
+  });
+
+  it('matches mermaid closing fences with trailing spaces and opening fence length', () => {
+    const html = compactHtml(
+      renderMarkdownToHtml('````mermaid\ngraph TD\nA --> B\n````   \nAfter'),
+    );
+
+    expect(html).toContain('<pre class="mermaid">');
+    expect(html).toContain('A --&gt; B');
+    expect(html).toContain('<p>After</p>');
+  });
+
   it('keeps checklist indexes stable around mermaid blocks', () => {
     const html = compactHtml(
       renderMarkdownToHtml('- [ ] before\n```mermaid\ngraph TD\nA --> B\n```\n- [ ] after'),

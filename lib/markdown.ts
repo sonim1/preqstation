@@ -68,6 +68,7 @@ type MarkdownListItem = {
 
 const checklistItemRegex = /^[-*]\s+\[( |x|X)\]\s+(.+)$/;
 const bulletListItemRegex = /^[-*]\s+(.+)$/;
+const mermaidFenceOpenRegex = /^(`{3,})mermaid(?:[ \t].*)?$/;
 
 type HeadingParagraphBoundary = {
   blankLineCount: number;
@@ -91,6 +92,10 @@ function countLeadingIndent(value: string) {
   }
 
   return width;
+}
+
+function removeOpeningIndent(line: string, openingIndent: string) {
+  return line.startsWith(openingIndent) ? line.slice(openingIndent.length) : line;
 }
 
 function isMarkdownHeadingLine(line: string) {
@@ -294,12 +299,14 @@ function parseMarkdownBlocks(source: string) {
 
     resetListState();
 
-    if (indentWidth === 0 && /^```mermaid(?:\s.*)?$/.test(content.trim())) {
+    const mermaidFenceOpen = content.trimEnd().match(mermaidFenceOpenRegex);
+    if (mermaidFenceOpen) {
       const mermaidLines: string[] = [];
+      const mermaidFenceCloseRegex = new RegExp(`^\\s*\`{${mermaidFenceOpen[1].length},}\\s*$`);
       let cursor = index + 1;
 
-      while (cursor < lines.length && lines[cursor].trim() !== '```') {
-        mermaidLines.push(lines[cursor]);
+      while (cursor < lines.length && !mermaidFenceCloseRegex.test(lines[cursor])) {
+        mermaidLines.push(removeOpeningIndent(lines[cursor], leadingWhitespace));
         cursor += 1;
       }
 

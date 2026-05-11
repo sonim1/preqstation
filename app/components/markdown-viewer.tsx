@@ -10,6 +10,8 @@ import {
 } from '@/lib/markdown';
 import { mergeTaskArtifacts, type TaskArtifact } from '@/lib/task-artifacts';
 
+let mermaidInitialized = false;
+
 type MarkdownPersistence = {
   endpoint: string;
   field: 'note' | 'detail' | 'description';
@@ -54,7 +56,10 @@ export function MarkdownViewer({
     void import('mermaid')
       .then(({ default: mermaid }) => {
         if (cancelled) return undefined;
-        mermaid.initialize({ securityLevel: 'strict', startOnLoad: false });
+        if (!mermaidInitialized) {
+          mermaid.initialize({ securityLevel: 'strict', startOnLoad: false });
+          mermaidInitialized = true;
+        }
         return mermaid.run({ nodes });
       })
       .catch((error: unknown) => {
