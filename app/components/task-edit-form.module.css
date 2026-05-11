@@ -341,7 +341,8 @@
     min-height: auto;
   }
 
-  .sidebar[data-layout] {
+  .sidebar,
+  .sidebar[data-layout='with-dispatch'] {
     grid-template-columns: 1fr;
   }
 
