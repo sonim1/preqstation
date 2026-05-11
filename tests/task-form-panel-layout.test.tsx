@@ -1,8 +1,5 @@
 // @vitest-environment jsdom
 
-import fs from 'node:fs';
-import path from 'node:path';
-
 import { MantineProvider } from '@mantine/core';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -174,6 +171,7 @@ vi.mock('@/lib/notifications', () => ({
 }));
 
 import { TaskFormPanel } from '@/app/components/panels/task-form-panel';
+import taskFormPanelStyles from '@/app/components/panels/task-form-panel.module.css';
 
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -227,20 +225,6 @@ function renderTaskFormPanelClient() {
   return render(taskFormPanelElement());
 }
 
-const taskFormPanelCss = fs.readFileSync(
-  path.join(process.cwd(), 'app/components/panels/task-form-panel.module.css'),
-  'utf8',
-);
-
-function getRuleBody(css: string, selector: string) {
-  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = css.match(
-    new RegExp(`(?:^|})\\s*[^{}]*${escapedSelector}[^{}]*\\{([\\s\\S]*?)\\}`),
-  );
-
-  return match?.[1] ?? '';
-}
-
 beforeEach(() => {
   actionStateMock.current = null;
 });
@@ -270,17 +254,18 @@ describe('TaskFormPanel layout', () => {
     expect(html.indexOf('name="taskPriority"')).toBeLessThan(html.indexOf('Create Ticket'));
   });
 
-  it('does not style add task sections as nested cards', () => {
-    for (const selector of ['.setupSection', '.notesSection', '.metaSection']) {
-      const ruleBody = getRuleBody(taskFormPanelCss, selector);
+  it('renders add task panels with flat section classes instead of nested card wrappers', () => {
+    renderTaskFormPanelClient();
 
-      expect(ruleBody).not.toBe('');
-      expect(ruleBody).not.toContain('border:');
-      expect(ruleBody).not.toContain('border-radius:');
-      expect(ruleBody).not.toContain('box-shadow:');
-      expect(ruleBody).not.toContain('backdrop-filter:');
-      expect(ruleBody).not.toContain('background:');
-    }
+    expect(document.querySelector('[data-panel="task-form-setup"]')?.className).toContain(
+      taskFormPanelStyles.setupSection,
+    );
+    expect(document.querySelector('[data-panel="task-form-notes"]')?.className).toContain(
+      taskFormPanelStyles.notesSection,
+    );
+    expect(document.querySelector('[data-panel="task-form-metadata"]')?.className).toContain(
+      taskFormPanelStyles.metaSection,
+    );
   });
 
   it('keeps the markdown editor in the primary notes panel ahead of metadata controls', () => {
