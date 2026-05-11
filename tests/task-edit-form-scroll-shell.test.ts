@@ -108,7 +108,7 @@ function renderTaskEditForm(saveStatus: 'idle' | 'saving' = 'idle') {
         projects: [{ id: 'project-1', name: 'Project Manager' }],
         todoLabels: [{ id: 'label-1', name: 'Frontend', color: '#228be6' }],
         taskPriorityOptions: [{ value: 'none', label: 'None' }],
-        updateTodoAction: async () => ({ ok: true }),
+        updateTodoAction: async () => ({ ok: true as const }),
       }),
     ),
   );

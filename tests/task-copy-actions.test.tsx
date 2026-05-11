@@ -87,6 +87,7 @@ const originalLocalStorageDescriptor = Object.getOwnPropertyDescriptor(
   originalWindow,
   'localStorage',
 );
+const originalMatchMediaDescriptor = Object.getOwnPropertyDescriptor(originalWindow, 'matchMedia');
 const legacyClaudeDispatchAction = ['send', 'claude-code'].join('-');
 
 function renderTaskCopyActions(props: Partial<React.ComponentProps<typeof TaskCopyActions>> = {}) {
@@ -113,12 +114,30 @@ describe('app/components/task-copy-actions', () => {
       configurable: true,
       value: localStorage,
     });
+    Object.defineProperty(originalWindow, 'matchMedia', {
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
   });
 
   afterEach(() => {
     cleanup();
     if (originalLocalStorageDescriptor) {
       Object.defineProperty(originalWindow, 'localStorage', originalLocalStorageDescriptor);
+    }
+    if (originalMatchMediaDescriptor) {
+      Object.defineProperty(originalWindow, 'matchMedia', originalMatchMediaDescriptor);
+    } else {
+      Reflect.deleteProperty(originalWindow, 'matchMedia');
     }
   });
 
