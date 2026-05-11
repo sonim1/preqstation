@@ -3,7 +3,6 @@
 import {
   ActionIcon,
   Alert,
-  Badge,
   Button,
   Group,
   Loader,
@@ -14,9 +13,17 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core';
-import { IconAlertCircle, IconCheck, IconCopy, IconInfoCircle, IconX } from '@tabler/icons-react';
+import {
+  IconAlertCircle,
+  IconCheck,
+  IconCopy,
+  IconInfoCircle,
+  IconUserCircle,
+  IconX,
+} from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import {
+  type CSSProperties,
   type ReactNode,
   useActionState,
   useCallback,
@@ -36,6 +43,7 @@ import { TaskMetadataPriorityPicker } from '@/app/components/task-metadata-contr
 import { WorkLogTimeline } from '@/app/components/work-log-timeline';
 import { shouldFlushAutoSaveOnBlur, useAutoSave } from '@/app/hooks/use-auto-save';
 import { useTaskOfflineDraft } from '@/app/hooks/use-task-offline-draft';
+import { getEngineConfig, getEngineShortLabel } from '@/lib/engine-icons';
 import { type KanbanStatus, type KanbanTask } from '@/lib/kanban-helpers';
 import type { EditableBoardTask } from '@/lib/kanban-store';
 import { showErrorNotification } from '@/lib/notifications';
@@ -126,6 +134,7 @@ type TaskComment = {
   author_type: 'user' | 'agent' | 'system';
   author_name?: string | null;
   run_state?: 'queued' | 'working' | 'done' | 'failed' | null;
+  engine?: string | null;
   parent_comment_id?: string | null;
   created_at: string;
 };
@@ -141,22 +150,6 @@ function formatTaskCommentTimestamp(value: string) {
     hour: 'numeric',
     minute: '2-digit',
   }).format(date);
-}
-
-function getTaskCommentBadgeColor(comment: TaskComment) {
-  if (comment.author_type === 'agent') {
-    return 'blue';
-  }
-  if (comment.run_state === 'failed') {
-    return 'red';
-  }
-  if (comment.run_state === 'working') {
-    return 'yellow';
-  }
-  if (comment.run_state === 'done') {
-    return 'green';
-  }
-  return 'gray';
 }
 
 function SectionHeading({ title, helpText, aside }: SectionHeadingProps) {
@@ -562,12 +555,72 @@ export function applyTaskEditNotesModeChange(
   };
 }
 
+function getTaskCommentAuthorLabel(comment: TaskComment) {
+  const authorName = comment.author_name?.trim();
+  if (authorName) return authorName;
+  if (comment.author_type === 'agent') {
+    const engineConfig = getEngineConfig(comment.engine);
+    return engineConfig ? getEngineShortLabel(engineConfig) : 'Agent';
+  }
+  if (comment.author_type === 'system') return 'System';
+  return 'User';
+}
+
+function TaskCommentIdentity({ comment }: { comment: TaskComment }) {
+  const isUserComment = comment.author_type === 'user';
+  const engineConfig = getEngineConfig(comment.engine);
+  const authorLabel = getTaskCommentAuthorLabel(comment);
+
+  if (isUserComment) {
+    return (
+      <Group gap="xs" className={classes.commentIdentity} data-comment-author="user">
+        <Text size="xs" fw={700} className={classes.commentAuthorName}>
+          {authorLabel}
+        </Text>
+        <span
+          className={`${classes.commentIcon} ${classes.commentUserIcon}`}
+          aria-label="User comment"
+        >
+          <IconUserCircle size={16} aria-hidden="true" />
+        </span>
+      </Group>
+    );
+  }
+
+  return (
+    <Group gap="xs" className={classes.commentIdentity} data-comment-author="agent">
+      {engineConfig ? (
+        <span
+          className={`${classes.commentIcon} ${classes.commentEngineIcon}`}
+          aria-label={`${engineConfig.label} comment`}
+          data-engine-icon={engineConfig.key}
+          style={
+            {
+              '--engine-color': engineConfig.iconColor,
+              '--engine-icon': `url(${engineConfig.icon})`,
+            } as CSSProperties
+          }
+        />
+      ) : (
+        <span
+          className={`${classes.commentIcon} ${classes.commentSystemIcon}`}
+          aria-label="System comment"
+        />
+      )}
+      <Text size="xs" fw={700} className={classes.commentAuthorName}>
+        {authorLabel}
+      </Text>
+    </Group>
+  );
+}
+
 function TaskCommentsSection({ taskKey }: { taskKey: string }) {
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [draft, setDraft] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState('Loading comments.');
 
   const loadComments = useCallback(async () => {
     setIsLoading(true);
@@ -583,9 +636,17 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
       if (!response.ok) {
         throw new Error(body?.error ?? 'Failed to load comments.');
       }
-      setComments(body?.comments ?? []);
+      const nextComments = body?.comments ?? [];
+      setComments(nextComments);
+      setStatusMessage(
+        nextComments.length === 0
+          ? 'No comments yet.'
+          : `Loaded ${nextComments.length} ${nextComments.length === 1 ? 'comment' : 'comments'}.`,
+      );
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : 'Failed to load comments.');
+      const message = loadError instanceof Error ? loadError.message : 'Failed to load comments.';
+      setError(message);
+      setStatusMessage(message);
     } finally {
       setIsLoading(false);
     }
@@ -617,9 +678,11 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
       }
       setDraft('');
       setComments((current) => [...current, payload.comment as TaskComment]);
+      setStatusMessage('Comment queued.');
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : 'Failed to add comment.';
       setError(message);
+      setStatusMessage(message);
       showErrorNotification(message);
     } finally {
       setIsSubmitting(false);
@@ -647,6 +710,10 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
             </Button>
           }
         />
+
+        <Text className={classes.commentStatusMessage} role="status" aria-live="polite">
+          {statusMessage}
+        </Text>
 
         <Stack gap="xs">
           <Textarea
@@ -689,22 +756,32 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
           <Stack gap="sm">
             {comments.map((comment) => (
               <Stack key={comment.id} gap="xs" className={classes.commentCard}>
-                <Group justify="space-between" gap="xs" align="center">
-                  <Group gap="xs">
-                    <Badge size="sm" variant="light" color={getTaskCommentBadgeColor(comment)}>
-                      {comment.author_type}
-                    </Badge>
-                    {comment.run_state ? (
-                      <Badge size="sm" variant="dot" color={getTaskCommentBadgeColor(comment)}>
-                        {comment.run_state}
-                      </Badge>
-                    ) : null}
-                  </Group>
-                  <Text size="xs" c="dimmed">
-                    {formatTaskCommentTimestamp(comment.created_at)}
-                  </Text>
+                <Group
+                  justify="space-between"
+                  gap="xs"
+                  align="center"
+                  className={classes.commentHeader}
+                >
+                  {comment.author_type === 'user' ? (
+                    <>
+                      <Text size="xs" c="dimmed" className={classes.commentTimestamp}>
+                        {formatTaskCommentTimestamp(comment.created_at)}
+                      </Text>
+                      <TaskCommentIdentity comment={comment} />
+                    </>
+                  ) : (
+                    <>
+                      <TaskCommentIdentity comment={comment} />
+                      <Text size="xs" c="dimmed" className={classes.commentTimestamp}>
+                        {formatTaskCommentTimestamp(comment.created_at)}
+                      </Text>
+                    </>
+                  )}
                 </Group>
-                <MarkdownViewer markdown={comment.body} className="markdown-output" />
+                <MarkdownViewer
+                  markdown={comment.body}
+                  className={`markdown-output ${classes.commentBodyMarkdown}`}
+                />
               </Stack>
             ))}
           </Stack>

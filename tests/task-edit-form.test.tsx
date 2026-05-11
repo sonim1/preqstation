@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { MantineProvider } from '@mantine/core';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -1206,32 +1206,121 @@ describe('app/components/task-edit-form', () => {
   });
 
   it('submits UI comments through the queued dispatch flow', async () => {
+    const effects: Array<() => void | (() => void)> = [];
+    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
+      effects.push(effect);
+    });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          comments: [
+            {
+              id: 'comment-agent-1',
+              author_type: 'agent',
+              author_name: 'Codex',
+              body: 'I checked this.',
+              run_state: 'done',
+              engine: 'codex',
+              created_at: '2026-05-05T00:00:00.000Z',
+            },
+          ],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          comment: {
+            id: 'comment-1',
+            task_id: '1',
+            project_id: 'project-1',
+            parent_comment_id: null,
+            author_type: 'user',
+            author_name: 'Owner',
+            body: 'Please check this',
+            run_state: 'queued',
+            run_state_updated_at: '2026-05-05T00:00:00.000Z',
+            engine: 'codex',
+            dispatch_target: 'hermes-telegram',
+            error_message: null,
+            metadata: null,
+            created_at: '2026-05-05T00:00:00.000Z',
+            updated_at: '2026-05-05T00:00:00.000Z',
+          },
+          dispatch: {
+            objective: 'comment',
+            task_key: 'PROJ-187',
+            comment_id: 'comment-1',
+            dispatch_target: 'hermes-telegram',
+          },
+        }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'OpenClaw 기능 UI수정',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: [],
+              labels: [],
+              taskPriority: 'none',
+              status: 'todo',
+              engine: 'codex',
+              dispatchTarget: 'hermes-telegram',
+              runState: null,
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
+            updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
+          />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    await act(async () => {
+      effects.at(-1)?.();
+    });
+
+    expect(await screen.findByLabelText('Codex CLI comment')).toBeTruthy();
+    expect(screen.queryByText('done')).toBeNull();
+
+    fireEvent.change(screen.getByLabelText('Add task comment'), {
+      target: { value: 'Please check this' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add comment' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/todos/PROJ-187/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: 'Please check this' }),
+      });
+    });
+    expect(await screen.findByText('Owner')).toBeTruthy();
+    expect(await screen.findByText('Comment queued.')).toBeTruthy();
+    expect(screen.queryByText('queued')).toBeNull();
+    expect(screen.getByLabelText('User comment')).toBeTruthy();
+  });
+
+  it('announces the empty comments state through a polite status', async () => {
+    const effects: Array<() => void | (() => void)> = [];
+    useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
+      effects.push(effect);
+    });
     const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        comment: {
-          id: 'comment-1',
-          task_id: '1',
-          project_id: 'project-1',
-          parent_comment_id: null,
-          author_type: 'user',
-          author_name: 'Owner',
-          body: 'Please check this',
-          run_state: 'queued',
-          run_state_updated_at: '2026-05-05T00:00:00.000Z',
-          engine: 'codex',
-          dispatch_target: 'hermes-telegram',
-          error_message: null,
-          metadata: null,
-          created_at: '2026-05-05T00:00:00.000Z',
-          updated_at: '2026-05-05T00:00:00.000Z',
-        },
-        dispatch: {
-          objective: 'comment',
-          task_key: 'PROJ-187',
-          comment_id: 'comment-1',
-          dispatch_target: 'hermes-telegram',
-        },
+        comments: [],
       }),
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -1265,18 +1354,11 @@ describe('app/components/task-edit-form', () => {
       </MantineProvider>,
     );
 
-    fireEvent.change(screen.getByLabelText('Add task comment'), {
-      target: { value: 'Please check this' },
+    await act(async () => {
+      effects.at(-1)?.();
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Add comment' }));
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/todos/PROJ-187/comments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body: 'Please check this' }),
-      });
-    });
-    expect(await screen.findByText('queued')).toBeTruthy();
+    expect(await screen.findAllByText('No comments yet.')).toHaveLength(2);
+    expect(screen.getByRole('status').textContent).toBe('No comments yet.');
   });
 });

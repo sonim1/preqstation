@@ -136,6 +136,13 @@ describe('task edit modal scroll-shell CSS regressions', () => {
     expect(activityCardRule).toContain('max-width: 100%;');
     expect(activityCardRule).toContain('min-height: auto;');
     expect(activityCardRule).toContain('overflow-wrap: anywhere;');
+    const commentBodyMarkdownRule = getRuleBody(taskEditFormCss, '.commentBodyMarkdown');
+    expect(commentBodyMarkdownRule).toContain('background: transparent;');
+    expect(commentBodyMarkdownRule).toContain('border: 0;');
+    expect(commentBodyMarkdownRule).toContain('max-width: 100%;');
+    expect(taskEditFormCss).toMatch(
+      /\.commentBodyMarkdown\s+:global\(\.mermaid\)\s*\{[\s\S]*min-width:\s*0;/,
+    );
     expect(taskEditFormSource).toMatch(
       /className=\{`\$\{classes\.activityCard\} \$\{classes\.sectionSurface\}`\}[\s\S]*data-panel="task-edit-comments"/,
     );
