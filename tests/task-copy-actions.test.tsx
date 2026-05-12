@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -109,6 +109,23 @@ function renderTaskCopyActions(props: Partial<React.ComponentProps<typeof TaskCo
   );
 }
 
+function createPendingTelegramSend() {
+  let resolveResponse: (() => void) | null = null;
+  const response = new Promise<Response>((resolve) => {
+    resolveResponse = () => {
+      resolve(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      );
+    };
+  });
+  const fetchMock = vi.fn(() => response);
+  vi.stubGlobal('fetch', fetchMock);
+  return { fetchMock, resolveResponse: () => resolveResponse?.() };
+}
+
 describe('app/components/task-copy-actions', () => {
   let localStorage: MemoryStorage;
 
@@ -135,6 +152,7 @@ describe('app/components/task-copy-actions', () => {
 
   afterEach(() => {
     cleanup();
+    vi.unstubAllGlobals();
     if (originalLocalStorageDescriptor) {
       Object.defineProperty(originalWindow, 'localStorage', originalLocalStorageDescriptor);
     }
@@ -251,6 +269,55 @@ describe('app/components/task-copy-actions', () => {
         objective: 'implement',
       },
     });
+  });
+
+  it('does not send duplicate dispatches when Mod+Enter repeats while a send is running', async () => {
+    const { fetchMock, resolveResponse } = createPendingTelegramSend();
+    const onTaskQueued = vi.fn();
+
+    render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+          onTaskQueued={onTaskQueued}
+        />
+      </MantineProvider>,
+    );
+
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          metaKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          metaKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('/api/telegram/send');
+    expect(JSON.parse(String(options.body))).toEqual({
+      taskKey: 'PROJ-224',
+      message:
+        '!/skill preqstation-dispatch implement PROJ-224 using codex branch_name="task/proj-224/move-status-test-button"',
+    });
+
+    resolveResponse();
+    await waitFor(() => expect(onTaskQueued).toHaveBeenCalledTimes(1));
   });
 
   it('falls back to the status mode when stored mode is not available for the column', () => {

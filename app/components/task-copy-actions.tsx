@@ -232,6 +232,7 @@ export function TaskCopyActions({
     resolveInitialMode(availableModes, storedPreference?.objective),
   );
   const sendDispatchRef = useRef<(() => Promise<void>) | null>(null);
+  const dispatchInFlightRef = useRef(false);
   const [dispatchState, setDispatchState] = useState<DispatchState>('idle');
   const isSending = dispatchState === 'loading';
   const availableActions = resolveTaskEditDispatchActions(
@@ -309,8 +310,9 @@ export function TaskCopyActions({
   };
 
   const sendDispatch = async () => {
-    if (isSending) return;
+    if (dispatchInFlightRef.current || isSending) return;
 
+    dispatchInFlightRef.current = true;
     setDispatchState('loading');
 
     try {
@@ -352,11 +354,12 @@ export function TaskCopyActions({
         error instanceof Error && error.message ? error.message : 'Failed to send Telegram message';
       setDispatchState('error');
       showErrorNotification(errorMessage);
+    } finally {
+      dispatchInFlightRef.current = false;
+      setTimeout(() => {
+        setDispatchState('idle');
+      }, 1500);
     }
-
-    setTimeout(() => {
-      setDispatchState('idle');
-    }, 1500);
   };
 
   useLayoutEffect(() => {
