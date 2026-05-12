@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -109,6 +109,36 @@ function renderTaskCopyActions(props: Partial<React.ComponentProps<typeof TaskCo
   );
 }
 
+function createPendingTelegramSend() {
+  const pendingSend = createTelegramSendResponse();
+  const fetchMock = vi.fn<typeof fetch>(() => pendingSend.response);
+  vi.stubGlobal('fetch', fetchMock);
+  return { fetchMock, resolveResponse: pendingSend.resolveOk };
+}
+
+function createTelegramSendResponse() {
+  let resolveResponse: (() => void) | null = null;
+  const response = new Promise<Response>((resolve) => {
+    resolveResponse = () => {
+      resolve(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      );
+    };
+  });
+  return { response, resolveOk: () => resolveResponse?.() };
+}
+
+async function resolveTelegramSend(send: ReturnType<typeof createTelegramSendResponse>) {
+  await act(async () => {
+    send.resolveOk();
+    await send.response;
+    await Promise.resolve();
+  });
+}
+
 describe('app/components/task-copy-actions', () => {
   let localStorage: MemoryStorage;
 
@@ -135,6 +165,8 @@ describe('app/components/task-copy-actions', () => {
 
   afterEach(() => {
     cleanup();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
     if (originalLocalStorageDescriptor) {
       Object.defineProperty(originalWindow, 'localStorage', originalLocalStorageDescriptor);
     }
@@ -251,6 +283,232 @@ describe('app/components/task-copy-actions', () => {
         objective: 'implement',
       },
     });
+  });
+
+  it('does not send duplicate dispatches when Mod+Enter repeats while a send is running', async () => {
+    const { fetchMock, resolveResponse } = createPendingTelegramSend();
+    const onTaskQueued = vi.fn();
+
+    render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+          onTaskQueued={onTaskQueued}
+        />
+      </MantineProvider>,
+    );
+
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          metaKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          metaKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, options] = fetchMock.mock.calls[0] ?? [];
+    expect(url).toBe('/api/telegram/send');
+    expect(JSON.parse(String(options?.body))).toEqual({
+      taskKey: 'PROJ-224',
+      message:
+        '!/skill preqstation-dispatch implement PROJ-224 using codex branch_name="task/proj-224/move-status-test-button"',
+    });
+
+    resolveResponse();
+    await waitFor(() => expect(onTaskQueued).toHaveBeenCalledTimes(1));
+  });
+
+  it('keeps a later dispatch loading when an earlier reset timer expires', async () => {
+    vi.useFakeTimers();
+    const firstSend = createTelegramSendResponse();
+    const secondSend = createTelegramSendResponse();
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockReturnValueOnce(firstSend.response)
+      .mockReturnValueOnce(secondSend.response);
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+        />
+      </MantineProvider>,
+    );
+
+    const sendButton = screen.getByRole('button', { name: 'Send dispatch' });
+
+    fireEvent.click(sendButton);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(sendButton.textContent).toContain('Sending');
+
+    await resolveTelegramSend(firstSend);
+    expect(sendButton.textContent).toContain('Sent');
+
+    fireEvent.click(sendButton);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(sendButton.textContent).toContain('Sending');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+
+    expect(sendButton.textContent).toContain('Sending');
+    expect(sendButton.matches(':disabled')).toBe(true);
+
+    await resolveTelegramSend(secondSend);
+    expect(sendButton.textContent).toContain('Sent');
+  });
+
+  it('resets dispatch state and pending reset timer when the task key changes', async () => {
+    vi.useFakeTimers();
+    const firstSend = createTelegramSendResponse();
+    const secondSend = createTelegramSendResponse();
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockReturnValueOnce(firstSend.response)
+      .mockReturnValueOnce(secondSend.response);
+    vi.stubGlobal('fetch', fetchMock);
+
+    const view = render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+        />
+      </MantineProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send dispatch' }));
+    await resolveTelegramSend(firstSend);
+    expect(screen.getByRole('button', { name: 'Send dispatch' }).textContent).toContain('Sent');
+
+    await act(async () => {
+      view.rerender(
+        <MantineProvider>
+          <TaskCopyActions
+            taskKey="PROJ-225"
+            branchName="task/proj-225/move-status-test-button"
+            status="todo"
+            engine="codex"
+            telegramEnabled
+          />
+        </MantineProvider>,
+      );
+    });
+
+    const sendButton = screen.getByRole('button', { name: 'Send dispatch' });
+    expect(sendButton.textContent).toContain('Send');
+
+    fireEvent.click(sendButton);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [url, options] = fetchMock.mock.calls[1] ?? [];
+    expect(url).toBe('/api/telegram/send');
+    expect(JSON.parse(String(options?.body)).taskKey).toBe('PROJ-225');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+
+    expect(sendButton.textContent).toContain('Sending');
+    expect(sendButton.matches(':disabled')).toBe(true);
+  });
+
+  it('keeps the next task guarded when the previous task resolves during its send', async () => {
+    vi.useFakeTimers();
+    const firstSend = createTelegramSendResponse();
+    const secondSend = createTelegramSendResponse();
+    const duplicateSend = createTelegramSendResponse();
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockReturnValueOnce(firstSend.response)
+      .mockReturnValueOnce(secondSend.response)
+      .mockReturnValueOnce(duplicateSend.response);
+    vi.stubGlobal('fetch', fetchMock);
+
+    const view = render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+        />
+      </MantineProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send dispatch' }));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      view.rerender(
+        <MantineProvider>
+          <TaskCopyActions
+            taskKey="PROJ-225"
+            branchName="task/proj-225/move-status-test-button"
+            status="todo"
+            engine="codex"
+            telegramEnabled
+          />
+        </MantineProvider>,
+      );
+    });
+
+    const sendButton = screen.getByRole('button', { name: 'Send dispatch' });
+    expect(sendButton.textContent).toContain('Send');
+
+    fireEvent.click(sendButton);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [, options] = fetchMock.mock.calls[1] ?? [];
+    expect(JSON.parse(String(options?.body)).taskKey).toBe('PROJ-225');
+    expect(sendButton.textContent).toContain('Sending');
+
+    await resolveTelegramSend(firstSend);
+    expect(sendButton.textContent).toContain('Sending');
+    expect(sendButton.matches(':disabled')).toBe(true);
+
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          metaKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+    expect(sendButton.textContent).toContain('Sending');
+
+    await resolveTelegramSend(secondSend);
   });
 
   it('falls back to the status mode when stored mode is not available for the column', () => {

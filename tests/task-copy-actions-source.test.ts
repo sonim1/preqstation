@@ -11,12 +11,21 @@ describe('task-copy-actions source', () => {
     expect(source).toContain('sendDispatchRef.current = sendDispatch;');
     expect(source).toContain('useLayoutEffect(() => {');
     expect(source).not.toContain(
-      "useEffect(() => {\n    sendDispatchRef.current = sendDispatch;\n  });",
+      'useEffect(() => {\n    sendDispatchRef.current = sendDispatch;\n  });',
     );
   });
 
   it('calls the current send handler directly from the send button', () => {
     expect(source).toContain('void sendDispatch();');
     expect(source.match(/sendDispatchRef\.current\?\.\(\)/g)).toHaveLength(1);
+  });
+
+  it('keeps the Mod+Enter listener independent of dispatch state changes', () => {
+    const keyboardEffectStart = source.indexOf('useEffect(() => {\n    const handleKeyDown');
+    const keyboardEffectEnd = source.indexOf('  if (availableModes.length');
+    const keyboardEffect = source.slice(keyboardEffectStart, keyboardEffectEnd);
+
+    expect(keyboardEffect).not.toContain('isSending');
+    expect(keyboardEffect).toContain('}, []);');
   });
 });
