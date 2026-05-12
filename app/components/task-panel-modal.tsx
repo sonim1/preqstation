@@ -289,6 +289,18 @@ function writeTaskPanelStoredFullscreen(
   }
 }
 
+function isTaskPanelHeaderInteractiveTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  return Boolean(
+    target.closest(
+      'button, a, input, select, textarea, [role="button"], [role="menu"], [role="menuitem"]',
+    ),
+  );
+}
+
 export function TaskPanelModal({
   opened,
   title,
@@ -335,7 +347,6 @@ export function TaskPanelModal({
     storedDesktopFullScreen,
     urlDesktopFullScreen,
   });
-  const nextFullScreenHref = buildFullscreenHref(pathname, currentSearch, !isDesktopFullScreen);
   const fullScreenLabel = isDesktopFullScreen
     ? `Exit full screen for ${title} dialog`
     : `Enter full screen for ${title} dialog`;
@@ -476,6 +487,35 @@ export function TaskPanelModal({
     writeTaskPanelStoredSize(resizableStorageKey, window.localStorage, nextSize);
   }
 
+  function setDesktopFullScreen(nextDesktopFullScreen: boolean) {
+    const nextHref = buildFullscreenHref(pathname, currentSearch, nextDesktopFullScreen);
+
+    setOptimisticDesktopFullScreen({
+      fromHref: nextHref,
+      value: nextDesktopFullScreen,
+    });
+
+    if (fullscreenStorageKey && typeof window !== 'undefined') {
+      setStoredDesktopFullScreenOverride(nextDesktopFullScreen);
+      writeTaskPanelStoredFullscreen(
+        fullscreenStorageKey,
+        window.localStorage,
+        nextDesktopFullScreen,
+      );
+    }
+
+    router.replace(nextHref);
+  }
+
+  function handleHeaderDoubleClick(event: React.MouseEvent<HTMLElement>) {
+    if (isMobile || isTaskPanelHeaderInteractiveTarget(event.target)) {
+      return;
+    }
+
+    event.preventDefault();
+    setDesktopFullScreen(!isDesktopFullScreen);
+  }
+
   const titleNode = (
     <div className={classes.titleRow}>
       <div className={classes.titleText}>{titleContent ?? <span>{title}</span>}</div>
@@ -493,21 +533,7 @@ export function TaskPanelModal({
               radius="md"
               aria-label={fullScreenLabel}
               onClick={() => {
-                const nextDesktopFullScreen = !isDesktopFullScreen;
-
-                setOptimisticDesktopFullScreen({
-                  fromHref: nextFullScreenHref,
-                  value: nextDesktopFullScreen,
-                });
-                if (fullscreenStorageKey && typeof window !== 'undefined') {
-                  setStoredDesktopFullScreenOverride(nextDesktopFullScreen);
-                  writeTaskPanelStoredFullscreen(
-                    fullscreenStorageKey,
-                    window.localStorage,
-                    nextDesktopFullScreen,
-                  );
-                }
-                router.replace(nextFullScreenHref);
+                setDesktopFullScreen(!isDesktopFullScreen);
               }}
             >
               {isDesktopFullScreen ? (
@@ -524,7 +550,7 @@ export function TaskPanelModal({
 
   const contentChildren = (
     <>
-      <Modal.Header className={classes.header}>
+      <Modal.Header className={classes.header} onDoubleClick={handleHeaderDoubleClick}>
         <Modal.Title className={classes.title}>{titleNode}</Modal.Title>
         <Modal.CloseButton
           aria-label={`Close ${title} dialog`}
