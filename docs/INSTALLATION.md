@@ -15,7 +15,7 @@ npm install
 npm run db:migrate
 
 # 5. Create or verify the owner account
-# Fresh installs guide you through owner setup; see docs/setup.md for manual setup details
+# Fresh installs guide you through owner setup; see setup.md for manual setup details
 
 # 6. Start the development server
 npm run dev

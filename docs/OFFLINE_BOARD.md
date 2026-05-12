@@ -7,7 +7,7 @@ online, `OfflineBoardRouteWarmer` also refreshes the current `/board` or `/board
 into the `preq-board-v2` cache so visited board routes stay warm between sync attempts. API
 responses are not cached by the service worker.
 
-Browser storage in IndexedDB (`preqstation-offline`) keeps three kinds of local state:
+Browser storage in IndexedDB (`preqstation-offline`) keeps four kinds of local state:
 
 - recent board snapshots keyed by project so `/board` can hydrate while offline
 - the latest projects-index snapshot so `/projects` can render cached project cards offline

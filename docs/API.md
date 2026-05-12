@@ -32,7 +32,7 @@ Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `a
 - Codex install: `codex mcp add preqstation --url https://<your-domain>/mcp`
 - Exposed read tools include `preq_list_projects`, `preq_list_tasks`, `preq_get_task`, and `preq_get_project_settings`
 
-See [`docs/architecture.md`](architecture.md) for the current API and workflow contract.
+See [`architecture.md`](architecture.md) for the current API and workflow contract.
 
 For first-time system onboarding, prefer:
 
