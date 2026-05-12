@@ -76,7 +76,9 @@ describe('kanban card accessibility', () => {
 
     expect(html).toContain('role="link"');
     expect(html).toContain('tabindex="0"');
-    expect(html).toContain('aria-label="Open task PROJ-inbox Accessible card"');
+    expect(html).not.toContain('aria-label="Open task');
+    expect(html).toContain('PROJ-inbox');
+    expect(html).toContain('Accessible card');
   });
 
   it('renders mobile task cards with keyboard-reachable open semantics', () => {
@@ -103,7 +105,9 @@ describe('kanban card accessibility', () => {
 
     expect(html).toContain('role="link"');
     expect(html).toContain('tabindex="0"');
-    expect(html).toContain('aria-label="Open task PROJ-inbox Accessible card"');
+    expect(html).not.toContain('aria-label="Open task');
+    expect(html).toContain('PROJ-inbox');
+    expect(html).toContain('Accessible card');
   });
 
   it('renders header actions beside the count badge without injecting body-top UI', () => {
@@ -136,6 +140,7 @@ describe('kanban card accessibility', () => {
     expect(html).not.toContain('data-slot="legacy-count"');
     expect(html).not.toContain('data-slot="legacy-body-top"');
     expect(html.indexOf('data-slot="column-menu"')).toBeLessThan(html.indexOf('Accessible card'));
-    expect(html).toContain('aria-label="Open task PROJ-ready Accessible card"');
+    expect(html).not.toContain('aria-label="Open task');
+    expect(html).toContain('PROJ-ready');
   });
 });

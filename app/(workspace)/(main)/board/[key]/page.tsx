@@ -19,7 +19,7 @@ import { normalizeTaskDispatchTarget } from '@/lib/task-dispatch';
 import { normalizeTaskIdentifier, taskWhereByIdentifier } from '@/lib/task-keys';
 import { extractTaskLabels } from '@/lib/task-labels';
 import { coerceTaskRunState, taskPriorityOptionData } from '@/lib/task-meta';
-import { listUnreadTaskNotificationTaskKeys } from '@/lib/task-notifications';
+import { enrichTasksWithUnreadStatus } from '@/lib/task-notifications';
 import { TASK_BOARD_ORDER } from '@/lib/task-sort-order';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 
@@ -181,20 +181,16 @@ export default async function ProjectBoardPage({ params, searchParams }: Project
     ]),
   );
 
-  const unreadTaskKeys = await withOwnerDb(owner.id, (client) =>
-    listUnreadTaskNotificationTaskKeys(
+  const todosWithUnreadNotifications = await withOwnerDb(owner.id, (client) =>
+    enrichTasksWithUnreadStatus(
       {
         ownerId: owner.id,
         projectId,
-        taskKeys: todos.map((task) => task.taskKey),
       },
+      todos,
       client,
     ),
   );
-  const todosWithUnreadNotifications = todos.map((task) => ({
-    ...task,
-    hasUnreadNotification: unreadTaskKeys.has(task.taskKey),
-  }));
   const kanbanTasks = groupTasksByStatus(todosWithUnreadNotifications);
   const initialArchivedCount = archivedCountRows[0]?.count ?? 0;
   const taskPriorityOptions = taskPriorityOptionData();

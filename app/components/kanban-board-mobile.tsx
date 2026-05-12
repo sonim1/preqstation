@@ -140,6 +140,7 @@ function KanbanBoardMobileTaskCard({
   isFocused,
 }: KanbanBoardMobileTaskCardProps) {
   const isStaleQueued = useStaleQueuedTask(task.runState, task.runStateUpdatedAt);
+  const hasUnreadNotification = Boolean(task.hasUnreadNotification);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -157,15 +158,16 @@ function KanbanBoardMobileTaskCard({
         cardStyles.itemCard,
         cardStyles.kanbanCard,
         task.status === 'hold' || isStaleQueued ? cardStyles.kanbanCardHold : null,
+        hasUnreadNotification ? cardStyles.kanbanCardUpdated : null,
         'kanban-mobile-card',
         isFocused ? cardStyles.isFocused : null,
       ]
         .filter(Boolean)
         .join(' ')}
       data-run-state={task.runState ?? undefined}
+      data-has-unread-notification={hasUnreadNotification ? 'true' : undefined}
       role="link"
       tabIndex={0}
-      aria-label={`Open task ${task.taskKey} ${task.title}`}
       onClick={(e) => {
         const target = e.target as HTMLElement;
         if (shouldIgnoreCardSurfaceEvent(target)) return;

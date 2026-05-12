@@ -36,6 +36,7 @@ vi.mock('@/lib/outbox', () => ({
 
 import {
   createTaskCompletionNotification,
+  enrichTasksWithUnreadStatus,
   isMissingTaskNotificationsRelationError,
   listTaskNotifications,
   listUnreadTaskNotificationTaskKeys,
@@ -354,6 +355,33 @@ describe('lib/task-notifications', () => {
     );
 
     expect(result).toEqual(new Set());
+  });
+
+  it('enriches task rows with unread notification status through the shared helper', async () => {
+    const execute = vi.fn().mockResolvedValue({
+      rows: [{ task_key: 'PROJ-328' }],
+    });
+
+    const result = await enrichTasksWithUnreadStatus(
+      {
+        ownerId: OWNER_ID,
+        projectId: PROJECT_ID,
+      },
+      [
+        { taskKey: 'PROJ-327', title: 'Read task' },
+        { taskKey: 'PROJ-328', title: 'Unread task' },
+      ],
+      { execute } as never,
+    );
+
+    expect(result).toEqual([
+      { taskKey: 'PROJ-327', title: 'Read task', hasUnreadNotification: false },
+      { taskKey: 'PROJ-328', title: 'Unread task', hasUnreadNotification: true },
+    ]);
+    expect(queryText(execute.mock.calls[0]?.[0])).toContain('task_key in');
+    expect(flattenQueryChunks(execute.mock.calls[0]?.[0])).toEqual(
+      expect.arrayContaining([OWNER_ID, PROJECT_ID, 'PROJ-327', 'PROJ-328']),
+    );
   });
 
   it('marks only the requested notification ids as read for the owner', async () => {

@@ -27,7 +27,7 @@ const getOwnerUserOrNullMock = vi.hoisted(() => vi.fn());
 const resolveProjectByKeyMock = vi.hoisted(() => vi.fn());
 const getUserSettingMock = vi.hoisted(() => vi.fn());
 const groupTasksByStatusMock = vi.hoisted(() => vi.fn());
-const listUnreadTaskNotificationTaskKeysMock = vi.hoisted(() => vi.fn());
+const enrichTasksWithUnreadStatusMock = vi.hoisted(() => vi.fn());
 
 vi.mock('next/navigation', () => ({
   notFound: vi.fn(),
@@ -64,7 +64,7 @@ vi.mock('@/lib/kanban-helpers', () => ({
 }));
 
 vi.mock('@/lib/task-notifications', () => ({
-  listUnreadTaskNotificationTaskKeys: listUnreadTaskNotificationTaskKeysMock,
+  enrichTasksWithUnreadStatus: enrichTasksWithUnreadStatusMock,
 }));
 
 vi.mock('@/lib/task-labels', () => ({
@@ -123,7 +123,13 @@ describe('board page task query', () => {
       done: [],
       archived: [],
     });
-    listUnreadTaskNotificationTaskKeysMock.mockResolvedValue(new Set());
+    enrichTasksWithUnreadStatusMock.mockImplementation(
+      async (_params: unknown, taskRows: Array<{ taskKey: string }>) =>
+        taskRows.map((task: { taskKey: string }) => ({
+          ...task,
+          hasUnreadNotification: false,
+        })),
+    );
   });
 
   it('does not apply a global task cap on the all-projects board query', async () => {
@@ -175,15 +181,24 @@ describe('board page task query', () => {
         status: 'ready',
       },
     ]);
-    listUnreadTaskNotificationTaskKeysMock.mockResolvedValueOnce(new Set(['PROJ-2']));
+    enrichTasksWithUnreadStatusMock.mockImplementationOnce(
+      async (_params: unknown, taskRows: Array<{ taskKey: string }>) =>
+        taskRows.map((task: { taskKey: string }) => ({
+          ...task,
+          hasUnreadNotification: task.taskKey === 'PROJ-2',
+        })),
+    );
 
     await BoardPage({ searchParams: Promise.resolve({}) });
 
-    expect(listUnreadTaskNotificationTaskKeysMock).toHaveBeenCalledWith(
+    expect(enrichTasksWithUnreadStatusMock).toHaveBeenCalledWith(
       {
         ownerId: 'owner-1',
-        taskKeys: ['PROJ-1', 'PROJ-2'],
       },
+      expect.arrayContaining([
+        expect.objectContaining({ taskKey: 'PROJ-1' }),
+        expect.objectContaining({ taskKey: 'PROJ-2' }),
+      ]),
       dbMock,
     );
     expect(groupTasksByStatusMock).toHaveBeenCalledWith([
@@ -205,19 +220,28 @@ describe('board page task query', () => {
         status: 'ready',
       },
     ]);
-    listUnreadTaskNotificationTaskKeysMock.mockResolvedValueOnce(new Set(['PROJ-1']));
+    enrichTasksWithUnreadStatusMock.mockImplementationOnce(
+      async (_params: unknown, taskRows: Array<{ taskKey: string }>) =>
+        taskRows.map((task: { taskKey: string }) => ({
+          ...task,
+          hasUnreadNotification: task.taskKey === 'PROJ-1',
+        })),
+    );
 
     await ProjectBoardPage({
       params: Promise.resolve({ key: 'PROJ' }),
       searchParams: Promise.resolve({}),
     });
 
-    expect(listUnreadTaskNotificationTaskKeysMock).toHaveBeenCalledWith(
+    expect(enrichTasksWithUnreadStatusMock).toHaveBeenCalledWith(
       {
         ownerId: 'owner-1',
         projectId: 'project-1',
-        taskKeys: ['PROJ-1', 'PROJ-2'],
       },
+      expect.arrayContaining([
+        expect.objectContaining({ taskKey: 'PROJ-1' }),
+        expect.objectContaining({ taskKey: 'PROJ-2' }),
+      ]),
       dbMock,
     );
     expect(groupTasksByStatusMock).toHaveBeenCalledWith([

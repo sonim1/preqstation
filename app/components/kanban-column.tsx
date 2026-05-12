@@ -149,9 +149,6 @@ function KanbanColumnTaskCard({
           data-has-unread-notification={hasUnreadNotification ? 'true' : undefined}
           role="link"
           tabIndex={snapshot.isDragging ? -1 : 0}
-          aria-label={`Open task ${task.taskKey} ${task.title}${
-            hasUnreadNotification ? ' with unread update' : ''
-          }`}
           onClick={(e) => {
             if (snapshot.isDragging) return;
             const target = e.target as HTMLElement;

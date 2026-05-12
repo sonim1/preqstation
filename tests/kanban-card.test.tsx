@@ -309,11 +309,15 @@ describe('app/components/kanban-card', () => {
       /\.kanbanCardUpdated::before\s*\{[\s\S]*position:\s*absolute;[\s\S]*left:\s*0;[\s\S]*width:\s*4px;[\s\S]*background:\s*linear-gradient\([\s\S]*var\(--ui-success\)/,
     );
     expect(cardsCss).toMatch(
+      /\.kanbanCardUpdated::before\s*\{[\s\S]*color-mix\(in srgb,\s*var\(--ui-success\),\s*black 18%\)/,
+    );
+    expect(cardsCss).not.toContain('#0f6b45');
+    expect(cardsCss).toMatch(
       /\.kanbanCardUpdated::before\s*\{[\s\S]*box-shadow:\s*0 0 16px color-mix\(in srgb,\s*var\(--ui-success\),\s*transparent 42%\);/,
     );
   });
 
-  it('renders unread update cards with the success rail class, debug attribute, and accessible label', () => {
+  it('renders unread update cards with the success rail class, debug attribute, and hidden status text', () => {
     const { desktopHtml } = renderQueuedTaskSurfaces({
       ...BASE_TASK,
       hasUnreadNotification: true,
@@ -321,9 +325,9 @@ describe('app/components/kanban-card', () => {
 
     expect(desktopHtml).toContain('kanbanCardUpdated');
     expect(desktopHtml).toContain('data-has-unread-notification="true"');
-    expect(desktopHtml).toContain(
-      'aria-label="Open task PROJ-211 Label color update with unread update"',
-    );
+    expect(desktopHtml).toContain('kanbanCardUnreadStatus');
+    expect(desktopHtml).toContain('Unread update');
+    expect(desktopHtml).not.toContain('aria-label="Open task');
   });
 
   it('renders stale queued desktop and mobile cards with the warning accent and hidden emoji', () => {

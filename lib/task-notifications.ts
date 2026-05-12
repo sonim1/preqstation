@@ -63,6 +63,11 @@ type ListUnreadTaskNotificationTaskKeysParams = {
   taskKeys: string[];
 };
 
+type EnrichTasksWithUnreadStatusParams = {
+  ownerId: string;
+  projectId?: string | null;
+};
+
 type MarkTaskNotificationsReadParams = {
   ownerId: string;
   notificationIds: string[];
@@ -329,6 +334,25 @@ export async function listUnreadTaskNotificationTaskKeys(
     }
     throw error;
   }
+}
+
+export async function enrichTasksWithUnreadStatus<TTask extends { taskKey: string }>(
+  params: EnrichTasksWithUnreadStatusParams,
+  taskRows: TTask[],
+  client: DbClientOrTx = db,
+): Promise<Array<TTask & { hasUnreadNotification: boolean }>> {
+  const unreadTaskKeys = await listUnreadTaskNotificationTaskKeys(
+    {
+      ...params,
+      taskKeys: taskRows.map((task) => task.taskKey),
+    },
+    client,
+  );
+
+  return taskRows.map((task) => ({
+    ...task,
+    hasUnreadNotification: unreadTaskKeys.has(task.taskKey),
+  }));
 }
 
 export async function markTaskNotificationsRead(

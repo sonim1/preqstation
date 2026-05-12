@@ -128,7 +128,7 @@ describe('KanbanCardContent stale queued timer', () => {
       runStateUpdatedAt: '2026-05-04T12:00:00.000Z',
     });
 
-    const card = screen.getByRole('link', { name: /Open task PROJ-211/ });
+    const card = screen.getByRole('link', { name: /PROJ-211/ });
     expect(card.className).not.toContain(cardStyles.kanbanCardHold);
 
     await act(async () => {
