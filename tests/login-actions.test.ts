@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   signInWithPassword: vi.fn(),
+  completeTwoFactorSignIn: vi.fn(),
   createOwnerAccount: vi.fn(),
   auth: vi.fn(),
   redirect: vi.fn(),
@@ -11,6 +12,7 @@ const mocked = vi.hoisted(() => ({
 
 vi.mock('@/lib/auth', () => ({
   signInWithPassword: mocked.signInWithPassword,
+  completeTwoFactorSignIn: mocked.completeTwoFactorSignIn,
   createOwnerAccount: mocked.createOwnerAccount,
   auth: mocked.auth,
 }));
@@ -35,6 +37,13 @@ function buildLoginFormData() {
   return formData;
 }
 
+function buildTwoFactorFormData() {
+  const formData = new FormData();
+  formData.set('intent', 'two-factor');
+  formData.set('totpCode', '123456');
+  return formData;
+}
+
 function buildOwnerSetupFormData() {
   const formData = new FormData();
   formData.set('email', 'owner@example.com');
@@ -46,7 +55,23 @@ function buildOwnerSetupFormData() {
 describe('app/login/actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocked.signInWithPassword.mockResolvedValue(true);
+    mocked.signInWithPassword.mockResolvedValue({
+      ok: true,
+      twoFactorRequired: false,
+      user: {
+        id: 'owner-1',
+        email: 'owner@example.com',
+        isOwner: true,
+      },
+    });
+    mocked.completeTwoFactorSignIn.mockResolvedValue({
+      ok: true,
+      user: {
+        id: 'owner-1',
+        email: 'owner@example.com',
+        isOwner: true,
+      },
+    });
     mocked.auth.mockResolvedValue({
       user: {
         id: 'owner-1',
@@ -72,6 +97,20 @@ describe('app/login/actions', () => {
     expect(mocked.redirect).toHaveBeenCalledWith('/dashboard');
   });
 
+  it('keeps MCP oauth pending while returning the 2FA challenge state', async () => {
+    mocked.signInWithPassword.mockResolvedValueOnce({
+      ok: true,
+      twoFactorRequired: true,
+      email: 'owner@example.com',
+    });
+
+    const result = await loginAction({ error: null }, buildLoginFormData());
+
+    expect(result).toEqual({ error: null, twoFactorRequired: true });
+    expect(mocked.consumeMcpLoginRequestCookie).not.toHaveBeenCalled();
+    expect(mocked.redirect).not.toHaveBeenCalled();
+  });
+
   it('continues oauth login when a pending MCP oauth request cookie exists', async () => {
     mocked.consumeMcpLoginRequestCookie.mockResolvedValueOnce({
       clientId: 'client-123',
@@ -93,6 +132,52 @@ describe('app/login/actions', () => {
     expect(mocked.redirect).toHaveBeenCalledWith(
       'https://client.example/callback?code=code-123&state=opaque-state',
     );
+  });
+
+  it('continues oauth login after successful TOTP verification', async () => {
+    mocked.consumeMcpLoginRequestCookie.mockResolvedValueOnce({
+      clientId: 'client-123',
+      redirectUri: 'https://client.example/callback',
+      state: 'opaque-state',
+      codeChallenge: 'challenge-123',
+      codeChallengeMethod: 'S256',
+    });
+
+    await loginAction({ error: null, twoFactorRequired: true }, buildTwoFactorFormData());
+
+    expect(mocked.completeTwoFactorSignIn).toHaveBeenCalledWith({
+      code: '123456',
+      path: '/login',
+    });
+    expect(mocked.issueMcpAuthorizationCode).toHaveBeenCalledWith({
+      userId: 'owner-1',
+      clientId: 'client-123',
+      codeChallenge: 'challenge-123',
+      codeChallengeMethod: 'S256',
+      redirectUri: 'https://client.example/callback',
+    });
+    expect(mocked.redirect).toHaveBeenCalledWith(
+      'https://client.example/callback?code=code-123&state=opaque-state',
+    );
+  });
+
+  it('returns an inline error and stays on the 2FA form for invalid TOTP', async () => {
+    mocked.completeTwoFactorSignIn.mockResolvedValueOnce({
+      ok: false,
+      reason: 'invalid_totp',
+    });
+
+    const result = await loginAction(
+      { error: null, twoFactorRequired: true },
+      buildTwoFactorFormData(),
+    );
+
+    expect(result).toEqual({
+      error: 'Invalid authentication code.',
+      twoFactorRequired: true,
+    });
+    expect(mocked.consumeMcpLoginRequestCookie).not.toHaveBeenCalled();
+    expect(mocked.redirect).not.toHaveBeenCalled();
   });
 
   it('redirects to /onboarding after creating the first owner account', async () => {

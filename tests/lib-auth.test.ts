@@ -26,6 +26,8 @@ const mocked = vi.hoisted(() => ({
   revokeBrowserSession: vi.fn(),
   touchBrowserSession: vi.fn(),
   getRequestContext: vi.fn(),
+  decryptTwoFactorSecret: vi.fn(),
+  verifyTotpCode: vi.fn(),
 }));
 
 vi.mock('@/lib/env', () => ({
@@ -43,11 +45,16 @@ vi.mock('@/lib/security-events', () => ({
 }));
 
 vi.mock('@/lib/browser-sessions', () => ({
-  BROWSER_SESSION_MAX_AGE_SECONDS: 60 * 60 * 24 * 7,
+  BROWSER_SESSION_MAX_AGE_SECONDS: 60 * 60 * 24 * 30,
   createBrowserSession: mocked.createBrowserSession,
   getBrowserSessionForOwner: mocked.getBrowserSessionForOwner,
   revokeBrowserSession: mocked.revokeBrowserSession,
   touchBrowserSession: mocked.touchBrowserSession,
+}));
+
+vi.mock('@/lib/two-factor', () => ({
+  decryptTwoFactorSecret: mocked.decryptTwoFactorSecret,
+  verifyTotpCode: mocked.verifyTotpCode,
 }));
 
 vi.mock('@/lib/request-context', () => ({
@@ -62,7 +69,14 @@ vi.mock('next/headers', () => ({
   cookies: vi.fn().mockResolvedValue(cookieStore),
 }));
 
-import { auth, SESSION_COOKIE_NAME, signInWithPassword, verifySessionToken } from '@/lib/auth';
+import {
+  auth,
+  completeTwoFactorSignIn,
+  SESSION_COOKIE_NAME,
+  signInWithPassword,
+  TWO_FACTOR_CHALLENGE_COOKIE_NAME,
+  verifySessionToken,
+} from '@/lib/auth';
 import { createOwnerAccount, hasOwnerAccount, signOut } from '@/lib/auth';
 import { writeSecurityEvent } from '@/lib/security-events';
 
@@ -152,7 +166,7 @@ function pastExp() {
 }
 
 function buildPersistedBrowserSession(overrides: Partial<Record<string, unknown>> = {}) {
-  const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 7 * 1000);
+  const expiresAt = new Date(Date.now() + 60 * 60 * 24 * 30 * 1000);
 
   return {
     id: 'browser-session-1',
@@ -184,6 +198,8 @@ describe('signInWithPassword', () => {
     mocked.revokeBrowserSession.mockReset();
     mocked.touchBrowserSession.mockReset();
     mocked.getRequestContext.mockReset();
+    mocked.decryptTwoFactorSecret.mockReset();
+    mocked.verifyTotpCode.mockReset();
     mocked.db.insert.mockReturnValue({
       values: mocked.insertValues,
     });
@@ -198,6 +214,8 @@ describe('signInWithPassword', () => {
       email: 'owner@example.com',
       isOwner: true,
       passwordHash: OWNER_PASSWORD_HASH,
+      twoFactorEnabled: false,
+      twoFactorSecret: null,
     });
     mocked.createBrowserSession.mockResolvedValue(buildPersistedBrowserSession());
     mocked.getBrowserSessionForOwner.mockResolvedValue(buildPersistedBrowserSession());
@@ -208,16 +226,59 @@ describe('signInWithPassword', () => {
       userAgent: TEST_USER_AGENT,
       path: '/login',
     });
+    mocked.decryptTwoFactorSecret.mockResolvedValue('JBSWY3DPEHPK3PXP');
+    mocked.verifyTotpCode.mockReturnValue(true);
     (writeSecurityEvent as ReturnType<typeof vi.fn>).mockClear();
   });
 
-  it('returns true and sets a session cookie on valid owner credentials', async () => {
+  async function createTwoFactorChallengeCookie() {
+    mocked.db.query.users.findFirst.mockResolvedValueOnce({
+      id: 'owner-1',
+      email: 'owner@example.com',
+      isOwner: true,
+      passwordHash: OWNER_PASSWORD_HASH,
+      twoFactorEnabled: true,
+      twoFactorSecret: 'encrypted-secret',
+    });
+
+    await signInWithPassword({
+      email: 'owner@example.com',
+      password: 'plaintext-password-123',
+    });
+
+    const [, challengeToken] = cookieStore.set.mock.calls[0];
+    cookieStore.set.mockClear();
+    mocked.createBrowserSession.mockClear();
+    mocked.db.query.users.findFirst.mockResolvedValue({
+      id: 'owner-1',
+      email: 'owner@example.com',
+      isOwner: true,
+      passwordHash: OWNER_PASSWORD_HASH,
+      twoFactorEnabled: true,
+      twoFactorSecret: 'encrypted-secret',
+    });
+    cookieStore.get.mockImplementation((name: string) =>
+      name === TWO_FACTOR_CHALLENGE_COOKIE_NAME ? { value: challengeToken } : undefined,
+    );
+
+    return challengeToken as string;
+  }
+
+  it('returns a password-only success result and sets a session cookie on valid owner credentials', async () => {
     const result = await signInWithPassword({
       email: 'owner@example.com',
       password: 'plaintext-password-123',
     });
 
-    expect(result).toBe(true);
+    expect(result).toEqual({
+      ok: true,
+      twoFactorRequired: false,
+      user: {
+        id: 'owner-1',
+        email: 'owner@example.com',
+        isOwner: true,
+      },
+    });
     expect(cookieStore.set).toHaveBeenCalledOnce();
     const [cookieName, cookieValue, cookieOpts] = cookieStore.set.mock.calls[0];
     expect(cookieName).toBe(SESSION_COOKIE_NAME);
@@ -227,7 +288,7 @@ describe('signInWithPassword', () => {
       httpOnly: true,
       sameSite: 'strict',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7,
+      maxAge: 60 * 60 * 24 * 30,
     });
     expect(mocked.withAdminDb).toHaveBeenCalledOnce();
   });
@@ -238,7 +299,7 @@ describe('signInWithPassword', () => {
       password: 'plaintext-password-123',
     });
 
-    expect(result).toBe(true);
+    expect(result).toEqual(expect.objectContaining({ ok: true, twoFactorRequired: false }));
     expect(mocked.createBrowserSession).toHaveBeenCalledWith(
       expect.objectContaining({
         ownerId: 'owner-1',
@@ -266,7 +327,7 @@ describe('signInWithPassword', () => {
       password: 'plaintext-password-123',
     });
 
-    expect(result).toBe(true);
+    expect(result).toEqual(expect.objectContaining({ ok: true, twoFactorRequired: false }));
     expect(cookieStore.set).toHaveBeenCalledOnce();
     const [, cookieValue] = cookieStore.set.mock.calls[0];
     const payload = await verifySessionToken(cookieValue);
@@ -279,7 +340,7 @@ describe('signInWithPassword', () => {
       password: 'wrong-password',
     });
 
-    expect(result).toBe(false);
+    expect(result).toEqual({ ok: false, reason: 'invalid_credentials' });
     expect(cookieStore.set).not.toHaveBeenCalled();
   });
 
@@ -291,7 +352,7 @@ describe('signInWithPassword', () => {
       password: 'plaintext-password-123',
     });
 
-    expect(result).toBe(false);
+    expect(result).toEqual({ ok: false, reason: 'invalid_credentials' });
     expect(cookieStore.set).not.toHaveBeenCalled();
   });
 
@@ -308,7 +369,7 @@ describe('signInWithPassword', () => {
       password: 'plaintext-password-123',
     });
 
-    expect(result).toBe(false);
+    expect(result).toEqual({ ok: false, reason: 'invalid_credentials' });
     expect(cookieStore.set).not.toHaveBeenCalled();
   });
 
@@ -334,7 +395,108 @@ describe('signInWithPassword', () => {
       password: 'plaintext-password-123',
     });
 
-    expect(result).toBe(true);
+    expect(result).toEqual(expect.objectContaining({ ok: true, twoFactorRequired: false }));
+  });
+
+  it('issues only a short-lived 2FA challenge cookie when owner 2FA is enabled', async () => {
+    mocked.db.query.users.findFirst.mockResolvedValueOnce({
+      id: 'owner-1',
+      email: 'owner@example.com',
+      isOwner: true,
+      passwordHash: OWNER_PASSWORD_HASH,
+      twoFactorEnabled: true,
+      twoFactorSecret: 'encrypted-secret',
+    });
+
+    const result = await signInWithPassword({
+      email: 'owner@example.com',
+      password: 'plaintext-password-123',
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      twoFactorRequired: true,
+      email: 'owner@example.com',
+    });
+    expect(mocked.createBrowserSession).not.toHaveBeenCalled();
+    expect(cookieStore.set).toHaveBeenCalledOnce();
+    const [cookieName, cookieValue, cookieOpts] = cookieStore.set.mock.calls[0];
+    expect(cookieName).toBe(TWO_FACTOR_CHALLENGE_COOKIE_NAME);
+    expect(cookieName).not.toBe(SESSION_COOKIE_NAME);
+    expect(typeof cookieValue).toBe('string');
+    expect(cookieOpts).toMatchObject({
+      httpOnly: true,
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 5,
+    });
+    expect(writeSecurityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'auth.2fa_challenge', outcome: 'allowed' }),
+    );
+  });
+
+  it('completes 2FA sign-in by verifying TOTP, creating a browser session, and clearing the challenge', async () => {
+    await createTwoFactorChallengeCookie();
+
+    const result = await completeTwoFactorSignIn({ code: '123456', path: '/login' });
+
+    expect(result).toEqual({
+      ok: true,
+      user: {
+        id: 'owner-1',
+        email: 'owner@example.com',
+        isOwner: true,
+      },
+    });
+    expect(mocked.decryptTwoFactorSecret).toHaveBeenCalledWith('encrypted-secret');
+    expect(mocked.verifyTotpCode).toHaveBeenCalledWith('JBSWY3DPEHPK3PXP', '123456');
+    expect(mocked.createBrowserSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ownerId: 'owner-1',
+        ipAddress: '203.0.113.10',
+        userAgent: TEST_USER_AGENT,
+      }),
+    );
+    expect(cookieStore.set).toHaveBeenCalledWith(
+      SESSION_COOKIE_NAME,
+      expect.any(String),
+      expect.objectContaining({
+        maxAge: 60 * 60 * 24 * 30,
+      }),
+    );
+    expect(cookieStore.set).toHaveBeenCalledWith(
+      TWO_FACTOR_CHALLENGE_COOKIE_NAME,
+      '',
+      expect.objectContaining({ expires: new Date(0) }),
+    );
+    expect(writeSecurityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'auth.2fa_verify', outcome: 'allowed' }),
+    );
+  });
+
+  it('rejects invalid TOTP without creating an owner session', async () => {
+    await createTwoFactorChallengeCookie();
+    mocked.verifyTotpCode.mockReturnValueOnce(false);
+
+    const result = await completeTwoFactorSignIn({ code: '000000', path: '/login' });
+
+    expect(result).toEqual({ ok: false, reason: 'invalid_totp' });
+    expect(mocked.createBrowserSession).not.toHaveBeenCalled();
+    expect(cookieStore.set).not.toHaveBeenCalledWith(
+      SESSION_COOKIE_NAME,
+      expect.any(String),
+      expect.anything(),
+    );
+    expect(writeSecurityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'auth.2fa_verify', outcome: 'blocked' }),
+    );
+  });
+
+  it('does not authenticate auth() from a 2FA challenge cookie alone', async () => {
+    await createTwoFactorChallengeCookie();
+
+    await expect(auth()).resolves.toBeNull();
+    expect(mocked.getBrowserSessionForOwner).not.toHaveBeenCalled();
   });
 });
 
@@ -412,6 +574,7 @@ describe('createOwnerAccount', () => {
         email: 'owner@example.com',
         isOwner: true,
         passwordHash: expect.any(String),
+        twoFactorEnabled: false,
       }),
     );
     expect(cookieStore.set).toHaveBeenCalledOnce();
@@ -781,6 +944,13 @@ describe('signOut', () => {
     });
     expect(cookieStore.set).toHaveBeenCalledWith(
       SESSION_COOKIE_NAME,
+      '',
+      expect.objectContaining({
+        expires: new Date(0),
+      }),
+    );
+    expect(cookieStore.set).toHaveBeenCalledWith(
+      TWO_FACTOR_CHALLENGE_COOKIE_NAME,
       '',
       expect.objectContaining({
         expires: new Date(0),

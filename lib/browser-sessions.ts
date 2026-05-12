@@ -3,7 +3,7 @@ import { and, desc, eq, gt, gte, isNull } from 'drizzle-orm';
 import { withOwnerDb } from '@/lib/db/rls';
 import { browserSessions } from '@/lib/db/schema';
 
-export const BROWSER_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+export const BROWSER_SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
 const browserSessionColumns = {
   id: true,

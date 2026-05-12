@@ -8,6 +8,8 @@ create table if not exists users (
   email text not null unique,
   name text,
   is_owner boolean not null default false,
+  two_factor_enabled boolean not null default false,
+  two_factor_secret text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

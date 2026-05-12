@@ -46,7 +46,7 @@ function buildBrowserSession(overrides: Partial<Record<string, unknown>> = {}) {
     browserName: 'Chrome',
     osName: 'macOS',
     lastUsedAt: new Date('2026-03-25T12:00:00.000Z'),
-    expiresAt: new Date('2026-04-01T12:00:00.000Z'),
+    expiresAt: new Date('2026-04-24T12:00:00.000Z'),
     revokedAt: null,
     createdAt: new Date('2026-03-25T12:00:00.000Z'),
     updatedAt: new Date('2026-03-25T12:00:00.000Z'),
@@ -78,7 +78,7 @@ describe('lib/browser-sessions', () => {
 
   it('creates an owner-scoped browser session with parsed browser and OS metadata', async () => {
     const now = new Date('2026-03-25T12:00:00.000Z');
-    const expectedExpiry = new Date('2026-04-01T12:00:00.000Z');
+    const expectedExpiry = new Date('2026-04-24T12:00:00.000Z');
 
     await createBrowserSession({
       ownerId: 'owner-1',
@@ -106,14 +106,14 @@ describe('lib/browser-sessions', () => {
     const existingSession = buildBrowserSession({
       id: 'browser-session-existing',
       lastUsedAt: new Date('2026-03-25T12:00:00.000Z'),
-      expiresAt: new Date('2026-04-01T12:00:00.000Z'),
+      expiresAt: new Date('2026-04-24T12:00:00.000Z'),
     });
     mocked.ownerClient.query.browserSessions.findFirst.mockResolvedValueOnce(existingSession);
     mocked.updateReturning.mockResolvedValueOnce([
       buildBrowserSession({
         id: 'browser-session-existing',
         lastUsedAt: now,
-        expiresAt: new Date('2026-04-02T08:45:00.000Z'),
+        expiresAt: new Date('2026-04-25T08:45:00.000Z'),
       }),
     ]);
 
@@ -145,7 +145,7 @@ describe('lib/browser-sessions', () => {
       browserName: 'Chrome',
       osName: 'macOS',
       lastUsedAt: now,
-      expiresAt: new Date('2026-04-02T08:45:00.000Z'),
+      expiresAt: new Date('2026-04-25T08:45:00.000Z'),
       revokedAt: null,
     });
     expect(session).toEqual(
@@ -158,7 +158,7 @@ describe('lib/browser-sessions', () => {
 
   it('creates a distinct browser session when only the IP address changes', async () => {
     const now = new Date('2026-03-26T08:45:00.000Z');
-    const expectedExpiry = new Date('2026-04-02T08:45:00.000Z');
+    const expectedExpiry = new Date('2026-04-25T08:45:00.000Z');
     mocked.ownerClient.query.browserSessions.findFirst.mockResolvedValueOnce(null);
     mocked.insertReturning.mockResolvedValueOnce([
       buildBrowserSession({
