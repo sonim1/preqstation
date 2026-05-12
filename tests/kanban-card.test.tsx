@@ -304,6 +304,28 @@ describe('app/components/kanban-card', () => {
     expect(cardsCss).toMatch(/\.kanbanQueuedWarningIcon\s*\{/);
   });
 
+  it('marks unread update cards with a left success accent', () => {
+    expect(cardsCss).toMatch(
+      /\.kanbanCardUpdated::before\s*\{[\s\S]*position:\s*absolute;[\s\S]*left:\s*0;[\s\S]*width:\s*4px;[\s\S]*background:\s*linear-gradient\([\s\S]*var\(--ui-success\)/,
+    );
+    expect(cardsCss).toMatch(
+      /\.kanbanCardUpdated::before\s*\{[\s\S]*box-shadow:\s*0 0 16px color-mix\(in srgb,\s*var\(--ui-success\),\s*transparent 42%\);/,
+    );
+  });
+
+  it('renders unread update cards with the success rail class, debug attribute, and accessible label', () => {
+    const { desktopHtml } = renderQueuedTaskSurfaces({
+      ...BASE_TASK,
+      hasUnreadNotification: true,
+    });
+
+    expect(desktopHtml).toContain('kanbanCardUpdated');
+    expect(desktopHtml).toContain('data-has-unread-notification="true"');
+    expect(desktopHtml).toContain(
+      'aria-label="Open task PROJ-211 Label color update with unread update"',
+    );
+  });
+
   it('renders stale queued desktop and mobile cards with the warning accent and hidden emoji', () => {
     const staleTask: KanbanTask = {
       ...BASE_TASK,

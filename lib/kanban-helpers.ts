@@ -39,6 +39,7 @@ export type KanbanTask = {
   project: { id: string; name: string; projectKey: string } | null;
   updatedAt: string;
   archivedAt: string | null;
+  hasUnreadNotification?: boolean;
   labels: Array<{ id: string; name: string; color: string }>;
 };
 
@@ -296,6 +297,7 @@ export type TaskForKanban = {
   archivedAt: Date | null;
   updatedAt: Date;
   project: { id: string; name: string; projectKey: string } | null;
+  hasUnreadNotification?: boolean | null;
   labels?: Array<{ id: string; name: string; color: string }>;
   label?: { id: string; name: string; color: string } | null;
   labelAssignments?: Array<{
@@ -323,6 +325,7 @@ export function toKanbanTask(task: TaskForKanban, status: KanbanStatus): KanbanT
     runState: coerceTaskRunState(task.runState),
     runStateUpdatedAt: task.runStateUpdatedAt ? task.runStateUpdatedAt.toISOString() : null,
     archivedAt: task.archivedAt ? task.archivedAt.toISOString() : null,
+    hasUnreadNotification: Boolean(task.hasUnreadNotification),
     updatedAt: task.updatedAt.toISOString(),
     project: task.project
       ? { id: task.project.id, name: task.project.name, projectKey: task.project.projectKey }

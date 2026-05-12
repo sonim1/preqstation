@@ -4,6 +4,7 @@ import { TEST_BASE_URL } from './test-utils';
 
 const mocked = vi.hoisted(() => ({
   requireOwnerUser: vi.fn(),
+  listUnreadTaskNotificationTaskKeys: vi.fn(),
   db: {
     query: {
       tasks: {
@@ -24,6 +25,10 @@ vi.mock('@/lib/db', () => ({
 vi.mock('@/lib/db/rls', () => ({
   withOwnerDb: async (_ownerId: string, callback: (client: Record<string, unknown>) => unknown) =>
     callback(mocked.db),
+}));
+
+vi.mock('@/lib/task-notifications', () => ({
+  listUnreadTaskNotificationTaskKeys: mocked.listUnreadTaskNotificationTaskKeys,
 }));
 
 import { GET } from '@/app/api/todos/snapshots/route';
@@ -53,11 +58,12 @@ describe('app/api/todos/snapshots/route', () => {
         labelAssignments: [],
       },
     ]);
+    mocked.listUnreadTaskNotificationTaskKeys.mockResolvedValue(new Set(['PROJ-255']));
   });
 
   it('returns lightweight card snapshots for requested task keys', async () => {
     const response = await GET(
-      new Request(`${TEST_BASE_URL}/api/todos/snapshots?taskKey=PROJ-255`),
+      new Request(`${TEST_BASE_URL}/api/todos/snapshots?taskKey=PROJ-255&projectId=project-1`),
     );
 
     expect(response.status).toBe(200);
@@ -67,9 +73,18 @@ describe('app/api/todos/snapshots/route', () => {
           taskKey: 'PROJ-255',
           title: 'Task',
           status: 'todo',
+          hasUnreadNotification: true,
         }),
       ],
     });
+    expect(mocked.listUnreadTaskNotificationTaskKeys).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        projectId: 'project-1',
+        taskKeys: ['PROJ-255'],
+      },
+      mocked.db,
+    );
     expect(mocked.db.query.tasks.findMany).toHaveBeenCalled();
   });
 });

@@ -64,6 +64,22 @@
   pointer-events: none;
 }
 
+.kanbanCardUpdated::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  z-index: 4;
+  width: 4px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-success), white 16%),
+    color-mix(in srgb, var(--ui-success), #0f6b45 18%)
+  );
+  box-shadow: 0 0 16px color-mix(in srgb, var(--ui-success), transparent 42%);
+  pointer-events: none;
+}
+
 .kanbanCard[data-run-state='queued'] {
   box-shadow: var(--kanban-card-focus-ring), var(--kanban-card-shadow-queued);
 }

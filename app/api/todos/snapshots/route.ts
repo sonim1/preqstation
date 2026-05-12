@@ -5,6 +5,7 @@ import { withOwnerDb } from '@/lib/db/rls';
 import { taskLabelAssignments, tasks } from '@/lib/db/schema';
 import { toKanbanTask } from '@/lib/kanban-helpers';
 import { requireOwnerUser } from '@/lib/owner';
+import { listUnreadTaskNotificationTaskKeys } from '@/lib/task-notifications';
 
 export async function GET(request: Request) {
   try {
@@ -36,10 +37,21 @@ export async function GET(request: Request) {
           },
         },
       });
+      const unreadTaskKeys = await listUnreadTaskNotificationTaskKeys(
+        {
+          ownerId: owner.id,
+          ...(projectId ? { projectId } : {}),
+          taskKeys,
+        },
+        client,
+      );
 
       return NextResponse.json({
         tasks: rows.map((task) =>
-          toKanbanTask(task, task.status as Parameters<typeof toKanbanTask>[1]),
+          toKanbanTask(
+            { ...task, hasUnreadNotification: unreadTaskKeys.has(task.taskKey) },
+            task.status as Parameters<typeof toKanbanTask>[1],
+          ),
         ),
       });
     });

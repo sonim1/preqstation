@@ -26,6 +26,8 @@ const dbMock = vi.hoisted(() => ({
 const getOwnerUserOrNullMock = vi.hoisted(() => vi.fn());
 const resolveProjectByKeyMock = vi.hoisted(() => vi.fn());
 const getUserSettingMock = vi.hoisted(() => vi.fn());
+const groupTasksByStatusMock = vi.hoisted(() => vi.fn());
+const listUnreadTaskNotificationTaskKeysMock = vi.hoisted(() => vi.fn());
 
 vi.mock('next/navigation', () => ({
   notFound: vi.fn(),
@@ -58,14 +60,11 @@ vi.mock('@/lib/project-resolve', () => ({
 }));
 
 vi.mock('@/lib/kanban-helpers', () => ({
-  groupTasksByStatus: () => ({
-    inbox: [],
-    todo: [],
-    hold: [],
-    ready: [],
-    done: [],
-    archived: [],
-  }),
+  groupTasksByStatus: groupTasksByStatusMock,
+}));
+
+vi.mock('@/lib/task-notifications', () => ({
+  listUnreadTaskNotificationTaskKeys: listUnreadTaskNotificationTaskKeysMock,
 }));
 
 vi.mock('@/lib/task-labels', () => ({
@@ -116,6 +115,15 @@ describe('board page task query', () => {
       projectKey: 'PROJ',
     });
     getUserSettingMock.mockResolvedValue('true');
+    groupTasksByStatusMock.mockReturnValue({
+      inbox: [],
+      todo: [],
+      hold: [],
+      ready: [],
+      done: [],
+      archived: [],
+    });
+    listUnreadTaskNotificationTaskKeysMock.mockResolvedValue(new Set());
   });
 
   it('does not apply a global task cap on the all-projects board query', async () => {
@@ -152,5 +160,69 @@ describe('board page task query', () => {
     expect(tasksFindManyMock.mock.calls[0]?.[0]).toEqual(
       expect.objectContaining({ orderBy: TASK_BOARD_ORDER }),
     );
+  });
+
+  it('marks all-project board tasks that have unread notifications before grouping', async () => {
+    tasksFindManyMock.mockResolvedValueOnce([
+      {
+        id: 'task-1',
+        taskKey: 'PROJ-1',
+        status: 'todo',
+      },
+      {
+        id: 'task-2',
+        taskKey: 'PROJ-2',
+        status: 'ready',
+      },
+    ]);
+    listUnreadTaskNotificationTaskKeysMock.mockResolvedValueOnce(new Set(['PROJ-2']));
+
+    await BoardPage({ searchParams: Promise.resolve({}) });
+
+    expect(listUnreadTaskNotificationTaskKeysMock).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        taskKeys: ['PROJ-1', 'PROJ-2'],
+      },
+      dbMock,
+    );
+    expect(groupTasksByStatusMock).toHaveBeenCalledWith([
+      expect.objectContaining({ taskKey: 'PROJ-1', hasUnreadNotification: false }),
+      expect.objectContaining({ taskKey: 'PROJ-2', hasUnreadNotification: true }),
+    ]);
+  });
+
+  it('marks project board tasks that have unread notifications before grouping', async () => {
+    tasksFindManyMock.mockResolvedValueOnce([
+      {
+        id: 'task-1',
+        taskKey: 'PROJ-1',
+        status: 'todo',
+      },
+      {
+        id: 'task-2',
+        taskKey: 'PROJ-2',
+        status: 'ready',
+      },
+    ]);
+    listUnreadTaskNotificationTaskKeysMock.mockResolvedValueOnce(new Set(['PROJ-1']));
+
+    await ProjectBoardPage({
+      params: Promise.resolve({ key: 'PROJ' }),
+      searchParams: Promise.resolve({}),
+    });
+
+    expect(listUnreadTaskNotificationTaskKeysMock).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        projectId: 'project-1',
+        taskKeys: ['PROJ-1', 'PROJ-2'],
+      },
+      dbMock,
+    );
+    expect(groupTasksByStatusMock).toHaveBeenCalledWith([
+      expect.objectContaining({ taskKey: 'PROJ-1', hasUnreadNotification: true }),
+      expect.objectContaining({ taskKey: 'PROJ-2', hasUnreadNotification: false }),
+    ]);
   });
 });

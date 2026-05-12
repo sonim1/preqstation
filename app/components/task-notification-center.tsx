@@ -3,6 +3,7 @@
 import { ActionIcon, Indicator } from '@mantine/core';
 import { IconBell } from '@tabler/icons-react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import {
@@ -117,6 +118,7 @@ function toTaskNotificationItem(notification: PolledNotification): TaskNotificat
 }
 
 export function TaskNotificationCenter() {
+  const router = useRouter();
   const [opened, setOpened] = useState(false);
   const [mode, setMode] = useState<TaskNotificationDrawerMode>('unread');
   const [unreadNotifications, setUnreadNotifications] = useState<TaskNotificationItem[]>([]);
@@ -261,17 +263,21 @@ export function TaskNotificationCenter() {
     setHistoryNextOffset(0);
     setHasLoadedHistory(false);
 
-    void markNotificationsRead({ markAll: true }).catch(() => {
-      setSessionReadNotifications((current) =>
-        current.filter(
-          (notification) => !unreadSnapshot.some((snapshot) => snapshot.id === notification.id),
-        ),
-      );
-      setSessionUnreadTotal(null);
-      setUnreadNotifications((current) => prependUniqueById(current, unreadSnapshot));
-      setUnreadTotal((current) => current + unreadTotalSnapshot);
-      showErrorNotification('Failed to mark notifications as read.');
-    });
+    void markNotificationsRead({ markAll: true })
+      .then(() => {
+        router.refresh();
+      })
+      .catch(() => {
+        setSessionReadNotifications((current) =>
+          current.filter(
+            (notification) => !unreadSnapshot.some((snapshot) => snapshot.id === notification.id),
+          ),
+        );
+        setSessionUnreadTotal(null);
+        setUnreadNotifications((current) => prependUniqueById(current, unreadSnapshot));
+        setUnreadTotal((current) => current + unreadTotalSnapshot);
+        showErrorNotification('Failed to mark notifications as read.');
+      });
   }
 
   function closeDrawer() {

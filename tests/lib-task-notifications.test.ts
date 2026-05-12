@@ -38,6 +38,7 @@ import {
   createTaskCompletionNotification,
   isMissingTaskNotificationsRelationError,
   listTaskNotifications,
+  listUnreadTaskNotificationTaskKeys,
   markAllTaskNotificationsRead,
   markTaskNotificationsRead,
   safeCreateTaskCompletionNotification,
@@ -280,6 +281,63 @@ describe('lib/task-notifications', () => {
     expect(historyPageQueryText).toContain('limit');
     expect(flattenQueryChunks(execute.mock.calls[3]?.[0])).toContain(1);
     expect(flattenQueryChunks(execute.mock.calls[3]?.[0])).toContain(2);
+  });
+
+  it('returns unread task keys scoped by owner, project, and requested task keys', async () => {
+    const execute = vi.fn().mockResolvedValue({
+      rows: [{ task_key: 'PROJ-327' }, { taskKey: 'PROJ-328' }],
+    });
+
+    const result = await listUnreadTaskNotificationTaskKeys(
+      {
+        ownerId: OWNER_ID,
+        projectId: PROJECT_ID,
+        taskKeys: ['PROJ-327', 'PROJ-328', 'PROJ-327'],
+      },
+      { execute } as never,
+    );
+
+    expect(result).toEqual(new Set(['PROJ-327', 'PROJ-328']));
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(queryText(execute.mock.calls[0]?.[0])).toContain('select distinct task_key');
+    expect(queryText(execute.mock.calls[0]?.[0])).toContain('where owner_id =');
+    expect(queryText(execute.mock.calls[0]?.[0])).toContain('read_at is null');
+    expect(queryText(execute.mock.calls[0]?.[0])).toContain('project_id =');
+    expect(queryText(execute.mock.calls[0]?.[0])).toContain('task_key in');
+    expect(flattenQueryChunks(execute.mock.calls[0]?.[0])).toEqual(
+      expect.arrayContaining([OWNER_ID, PROJECT_ID, 'PROJ-327', 'PROJ-328']),
+    );
+  });
+
+  it('skips the unread task-key query when the requested task key list is empty', async () => {
+    const execute = vi.fn();
+
+    const result = await listUnreadTaskNotificationTaskKeys(
+      {
+        ownerId: OWNER_ID,
+        taskKeys: [],
+      },
+      { execute } as never,
+    );
+
+    expect(result).toEqual(new Set());
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it('returns an empty unread task-key set when the notifications relation is missing', async () => {
+    const execute = vi
+      .fn()
+      .mockRejectedValue(new Error('relation "task_notifications" does not exist'));
+
+    const result = await listUnreadTaskNotificationTaskKeys(
+      {
+        ownerId: OWNER_ID,
+        taskKeys: ['PROJ-327'],
+      },
+      { execute } as never,
+    );
+
+    expect(result).toEqual(new Set());
   });
 
   it('marks only the requested notification ids as read for the owner', async () => {
