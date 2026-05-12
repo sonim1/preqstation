@@ -384,6 +384,7 @@ export function TaskCopyActions({
 
   useEffect(() => {
     clearDispatchResetTimeout();
+    dispatchInFlightRef.current = false;
     setDispatchState('idle');
 
     return clearDispatchResetTimeout;

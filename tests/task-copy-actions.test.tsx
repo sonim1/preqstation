@@ -437,6 +437,56 @@ describe('app/components/task-copy-actions', () => {
     expect(sendButton.matches(':disabled')).toBe(true);
   });
 
+  it('allows dispatching the next task when the task key changes during a send', async () => {
+    const firstSend = createTelegramSendResponse();
+    const secondSend = createTelegramSendResponse();
+    const fetchMock = vi
+      .fn<typeof fetch>()
+      .mockReturnValueOnce(firstSend.response)
+      .mockReturnValueOnce(secondSend.response);
+    vi.stubGlobal('fetch', fetchMock);
+
+    const view = render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+        />
+      </MantineProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send dispatch' }));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      view.rerender(
+        <MantineProvider>
+          <TaskCopyActions
+            taskKey="PROJ-225"
+            branchName="task/proj-225/move-status-test-button"
+            status="todo"
+            engine="codex"
+            telegramEnabled
+          />
+        </MantineProvider>,
+      );
+    });
+
+    const sendButton = screen.getByRole('button', { name: 'Send dispatch' });
+    expect(sendButton.textContent).toContain('Send');
+
+    fireEvent.click(sendButton);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [, options] = fetchMock.mock.calls[1] ?? [];
+    expect(JSON.parse(String(options?.body)).taskKey).toBe('PROJ-225');
+
+    await resolveTelegramSend(firstSend);
+    await resolveTelegramSend(secondSend);
+  });
+
   it('falls back to the status mode when stored mode is not available for the column', () => {
     localStorage.setItem(
       TASK_DISPATCH_PREFERENCES_STORAGE,
