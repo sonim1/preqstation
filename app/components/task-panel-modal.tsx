@@ -290,7 +290,7 @@ function writeTaskPanelStoredFullscreen(
 }
 
 function isTaskPanelHeaderInteractiveTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) {
+  if (!(target instanceof Element)) {
     return false;
   }
 
@@ -550,7 +550,11 @@ export function TaskPanelModal({
 
   const contentChildren = (
     <>
-      <Modal.Header className={classes.header} onDoubleClick={handleHeaderDoubleClick}>
+      <Modal.Header
+        className={classes.header}
+        data-testid="task-panel-modal-header"
+        onDoubleClick={handleHeaderDoubleClick}
+      >
         <Modal.Title className={classes.title}>{titleNode}</Modal.Title>
         <Modal.CloseButton
           aria-label={`Close ${title} dialog`}

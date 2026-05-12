@@ -98,9 +98,7 @@ vi.mock('@mantine/core', () => ({
         </div>
       ),
       Header: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-        <div data-testid="task-panel-modal-header" {...props}>
-          {children}
-        </div>
+        <div {...props}>{children}</div>
       ),
       Title: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
         <div data-testid="task-panel-modal-title" {...props}>
@@ -202,6 +200,7 @@ const { JSDOM } = require('jsdom') as {
 function installDom({ width, height }: { width: number; height: number }) {
   const originalWindow = globalThis.window;
   const originalDocument = globalThis.document;
+  const originalElement = globalThis.Element;
   const originalHTMLElement = globalThis.HTMLElement;
   const originalEvent = globalThis.Event;
   const dom = new JSDOM('<!doctype html><html><body></body></html>', {
@@ -223,6 +222,10 @@ function installDom({ width, height }: { width: number; height: number }) {
   Object.defineProperty(globalThis, 'document', {
     configurable: true,
     value: dom.window.document,
+  });
+  Object.defineProperty(globalThis, 'Element', {
+    configurable: true,
+    value: dom.window.Element,
   });
   Object.defineProperty(globalThis, 'HTMLElement', {
     configurable: true,
@@ -253,6 +256,10 @@ function installDom({ width, height }: { width: number; height: number }) {
       Object.defineProperty(globalThis, 'document', {
         configurable: true,
         value: originalDocument,
+      });
+      Object.defineProperty(globalThis, 'Element', {
+        configurable: true,
+        value: originalElement,
       });
       Object.defineProperty(globalThis, 'HTMLElement', {
         configurable: true,
@@ -1101,7 +1108,12 @@ describe('TaskPanelModal', () => {
         </TaskPanelModal>,
       );
 
-      fireEvent.doubleClick(getByLabelText('Enter full screen for Edit Task dialog'));
+      const fullscreenButton = getByLabelText('Enter full screen for Edit Task dialog');
+      const fullscreenIcon = fullscreenButton.querySelector('svg');
+
+      expect(fullscreenIcon).not.toBeNull();
+
+      fireEvent.doubleClick(fullscreenIcon!);
 
       expect(replaceMock).not.toHaveBeenCalled();
       expect(window.localStorage.getItem('preqstation:task-edit-panel:fullscreen:v1')).toBeNull();
