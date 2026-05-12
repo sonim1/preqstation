@@ -14,7 +14,7 @@ import { withAdminDb } from '@/lib/db/rls';
 import { users } from '@/lib/db/schema';
 import { env } from '@/lib/env';
 import { getRequestContext } from '@/lib/request-context';
-import { decryptTwoFactorSecret, verifyTotpCode } from '@/lib/two-factor';
+import { decodeBase64Url, decryptTwoFactorSecret, verifyTotpCode } from '@/lib/two-factor';
 
 export const SESSION_COOKIE_NAME = 'pm_owner_session';
 export const TWO_FACTOR_CHALLENGE_COOKIE_NAME = 'pm_owner_2fa';
@@ -81,17 +81,6 @@ function encodeBase64Url(input: string) {
   }
 
   return btoa(input).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-}
-
-function decodeBase64Url(input: string) {
-  const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = normalized + '==='.slice((normalized.length + 3) % 4);
-
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(padded, 'base64').toString('utf8');
-  }
-
-  return atob(padded);
 }
 
 function bytesToBase64Url(bytes: Uint8Array) {

@@ -56,11 +56,9 @@ export async function loginAction(
       return { error: 'Please enter your authentication code.', twoFactorRequired: true };
     }
 
+    let result: Awaited<ReturnType<typeof completeTwoFactorSignIn>>;
     try {
-      const result = await completeTwoFactorSignIn({ code, path: '/login' });
-      if (result.ok) {
-        await continueSuccessfulAuth(result.user, '/dashboard');
-      }
+      result = await completeTwoFactorSignIn({ code, path: '/login' });
     } catch {
       return {
         error: 'An error occurred during login. Please try again later.',
@@ -68,7 +66,16 @@ export async function loginAction(
       };
     }
 
-    return { error: 'Invalid authentication code.', twoFactorRequired: true };
+    if (!result.ok) {
+      return { error: 'Invalid authentication code.', twoFactorRequired: true };
+    }
+
+    const continuation = await continueSuccessfulAuth(result.user, '/dashboard');
+    if (continuation) {
+      return continuation;
+    }
+
+    return { error: 'Unable to finish login.' };
   }
 
   const email = String(formData.get('email') || '').trim();

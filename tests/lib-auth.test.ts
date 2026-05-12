@@ -53,6 +53,11 @@ vi.mock('@/lib/browser-sessions', () => ({
 }));
 
 vi.mock('@/lib/two-factor', () => ({
+  decodeBase64Url: (input: string) => {
+    const normalized = input.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized + '==='.slice((normalized.length + 3) % 4);
+    return Buffer.from(padded, 'base64').toString('utf8');
+  },
   decryptTwoFactorSecret: mocked.decryptTwoFactorSecret,
   verifyTotpCode: mocked.verifyTotpCode,
 }));

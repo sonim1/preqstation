@@ -30,7 +30,7 @@ function base64UrlToBytes(input: string) {
   return new Uint8Array(Buffer.from(padded, 'base64'));
 }
 
-function decodeBase64Url(input: string) {
+export function decodeBase64Url(input: string) {
   return Buffer.from(base64UrlToBytes(input)).toString('utf8');
 }
 

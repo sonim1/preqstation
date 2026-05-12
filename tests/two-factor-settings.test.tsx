@@ -78,6 +78,7 @@ describe('app/components/two-factor-settings', () => {
 
     expect(html).toContain('Enabled');
     expect(html).toContain('Disable');
+    expect(html).toContain('Authentication code');
     expect(html).not.toContain('Set up authenticator app');
   });
 });

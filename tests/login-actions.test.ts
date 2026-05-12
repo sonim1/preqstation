@@ -161,6 +161,36 @@ describe('app/login/actions', () => {
     );
   });
 
+  it('does not catch the redirect thrown after successful TOTP verification', async () => {
+    const redirectError = new Error('NEXT_REDIRECT');
+    mocked.redirect.mockImplementationOnce(() => {
+      throw redirectError;
+    });
+
+    await expect(
+      loginAction({ error: null, twoFactorRequired: true }, buildTwoFactorFormData()),
+    ).rejects.toBe(redirectError);
+  });
+
+  it('returns the OAuth continuation error after successful TOTP verification', async () => {
+    mocked.consumeMcpLoginRequestCookie.mockResolvedValueOnce({
+      clientId: 'client-123',
+      redirectUri: 'https://client.example/callback',
+      state: 'opaque-state',
+      codeChallenge: 'challenge-123',
+      codeChallengeMethod: 'S256',
+    });
+    mocked.issueMcpAuthorizationCode.mockResolvedValueOnce(null);
+
+    const result = await loginAction(
+      { error: null, twoFactorRequired: true },
+      buildTwoFactorFormData(),
+    );
+
+    expect(result).toEqual({ error: 'Unable to continue OAuth login. Please try again.' });
+    expect(mocked.redirect).not.toHaveBeenCalled();
+  });
+
   it('returns an inline error and stays on the 2FA form for invalid TOTP', async () => {
     mocked.completeTwoFactorSignIn.mockResolvedValueOnce({
       ok: false,

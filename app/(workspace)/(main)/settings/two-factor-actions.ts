@@ -8,6 +8,7 @@ import { users } from '@/lib/db/schema';
 import { requireOwnerUser } from '@/lib/owner';
 import { writeSecurityEvent } from '@/lib/security-events';
 import {
+  decryptTwoFactorSecret,
   encryptTwoFactorSecret,
   generateTwoFactorSetup,
   verifyTotpCode,
@@ -83,8 +84,41 @@ export async function confirmTwoFactorSetupAction(
   return { ok: true, message: 'Two-factor authentication enabled.' };
 }
 
-export async function disableTwoFactorAction(): Promise<TwoFactorActionState> {
+export async function disableTwoFactorAction(
+  _prevState: TwoFactorActionState | null,
+  formData: FormData,
+): Promise<TwoFactorActionState> {
   const owner = await requireOwnerUser();
+  const totpCode = String(formData.get('totpCode') || '');
+
+  if (!owner.twoFactorEnabled || !owner.twoFactorSecret) {
+    return { ok: false, message: 'Two-factor authentication is not enabled.' };
+  }
+
+  let secret: string;
+  try {
+    secret = await decryptTwoFactorSecret(owner.twoFactorSecret);
+  } catch {
+    await writeSecurityEvent({
+      ownerId: owner.id,
+      actorEmail: owner.email,
+      eventType: 'auth.2fa_disable',
+      outcome: 'error',
+      detail: { reason: 'secret_decrypt_failed' },
+    });
+    return { ok: false, message: 'Unable to disable two-factor authentication.' };
+  }
+
+  if (!verifyTotpCode(secret, totpCode)) {
+    await writeSecurityEvent({
+      ownerId: owner.id,
+      actorEmail: owner.email,
+      eventType: 'auth.2fa_disable',
+      outcome: 'blocked',
+      detail: { reason: 'invalid_code' },
+    });
+    return { ok: false, message: 'Invalid authentication code.' };
+  }
 
   await withOwnerDb(owner.id, (client) =>
     client

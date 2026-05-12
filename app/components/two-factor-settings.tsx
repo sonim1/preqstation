@@ -17,7 +17,10 @@ type TwoFactorSettingsProps = {
     prevState: TwoFactorActionState | null,
     formData: FormData,
   ) => Promise<TwoFactorActionState>;
-  disableAction: () => Promise<TwoFactorActionState>;
+  disableAction: (
+    prevState: TwoFactorActionState | null,
+    formData: FormData,
+  ) => Promise<TwoFactorActionState>;
 };
 
 type SetupState = {
@@ -34,9 +37,9 @@ export function TwoFactorSettings({
   const [setup, setSetup] = useState<SetupState | null>(null);
   const [status, setStatus] = useState<TwoFactorActionState | null>(null);
   const [confirmState, confirmFormAction, isConfirmPending] = useActionState(confirmAction, null);
+  const [disableState, disableFormAction, isDisablePending] = useActionState(disableAction, null);
   const [isStartPending, startTransition] = useTransition();
-  const [isDisablePending, disableTransition] = useTransition();
-  const visibleStatus = status ?? confirmState;
+  const visibleStatus = status ?? disableState ?? confirmState;
 
   function handleStartSetup() {
     startTransition(async () => {
@@ -53,14 +56,6 @@ export function TwoFactorSettings({
     });
   }
 
-  function handleDisable() {
-    disableTransition(async () => {
-      setStatus(null);
-      const result = await disableAction();
-      setStatus(result);
-    });
-  }
-
   return (
     <Stack gap="sm">
       <Group gap="sm" justify="space-between" align="center">
@@ -72,23 +67,28 @@ export function TwoFactorSettings({
             </Badge>
           ) : null}
         </Group>
-        {enabled ? (
-          <Button
-            type="button"
-            color="red"
-            variant="light"
-            loading={isDisablePending}
-            onClick={handleDisable}
-          >
-            Disable
-          </Button>
-        ) : null}
       </Group>
 
       {enabled ? (
-        <Text size="sm" c="dimmed">
-          Authentication codes are required after owner password sign-in.
-        </Text>
+        <form action={disableFormAction}>
+          <Stack gap="sm">
+            <Text size="sm" c="dimmed">
+              Authentication codes are required after owner password sign-in.
+            </Text>
+            <TextInput
+              id="two-factor-disable-code"
+              name="totpCode"
+              label="Authentication code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              required
+            />
+            <Button type="submit" color="red" variant="light" loading={isDisablePending}>
+              Disable
+            </Button>
+          </Stack>
+        </form>
       ) : null}
 
       {!enabled && !setup ? (
