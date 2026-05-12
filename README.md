@@ -49,6 +49,7 @@ If you are new to the system, start with the [public guide](https://preqstation.
 - **PREQSTATION Task API** — REST API at `/api/tasks` for AI agent integration with Bearer token auth
 - **Connections** — review and revoke OAuth/MCP clients from `/connections`
 - **Command Palette** — keyboard-driven navigation via Mantine Spotlight
+- **Authenticator-app 2FA** — optional TOTP verification for owner sign-in
 - **Today Focus** — pin tasks to surface daily priorities
 - **Markdown task notes** — edit checklists, artifacts, and fenced Mermaid diagrams with live rendering
 - **Activity tracking** — work logs linked to projects and tasks
@@ -102,7 +103,7 @@ PreqStation is designed for a single owner. All routes require authentication an
 Key policies:
 
 - Session cookies are `httpOnly`, `sameSite=strict`, signed with HMAC
-- Login verifies the single owner against the `users` table
+- Login verifies the single owner against the `users` table, with optional authenticator-app 2FA
 - Row level security is enabled across the app schema and owner-scoped requests set `app.user_id` before querying
 - Authenticated pages, server actions, and APIs use `withOwnerDb(ownerId, ...)` instead of ambient access to the global `db`
 - Bootstrap/login/OAuth flows and security-event writes use explicit admin access via `withAdminDb(...)`

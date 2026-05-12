@@ -106,6 +106,18 @@ VALUES ('you@example.com', '$2b$10$replace_me', true);
 
 If you are migrating an existing instance, keep the existing owner row `id` so projects, tasks, API tokens, and work logs stay linked automatically.
 
+Optional authenticator-app 2FA is configured after the owner can log in:
+
+1. Open **Settings -> Two-factor authentication**.
+2. Select **Set up authenticator app**.
+3. Copy the generated setup URI into your authenticator app.
+4. Enter the 6-digit code from the app and confirm.
+
+The migration adds `users.two_factor_enabled` and `users.two_factor_secret`. New and existing owner
+rows default to `two_factor_enabled=false` with no secret until setup is confirmed. Confirming setup
+stores the TOTP secret encrypted with AES-GCM using a key derived from `AUTH_SECRET`; disabling 2FA
+sets `two_factor_enabled=false` and clears `two_factor_secret`.
+
 ## 6) Configure Telegram Channels
 
 Open **Settings → Telegram** after the owner account is provisioned. Telegram configuration is now
@@ -153,6 +165,8 @@ Recommended validation from the settings screen:
 
 - `/api/health` returns `200`
 - Owner email + password login succeeds using the `users` table row
+- If owner 2FA is enabled, password sign-in prompts for an authenticator-app code before redirecting
+  to the dashboard or continuing MCP OAuth login
 - Invalid credentials are blocked
 - Unauthenticated access to `/` redirects to `/login`
 - Cross-origin requests to protected APIs return `403 Invalid origin`
@@ -243,7 +257,9 @@ npx skills add sonim1/preqstation-skill -g
 
 ## 11) Operational Recommendations
 
-- Rotate `AUTH_SECRET` and the stored owner `password_hash` regularly.
+- Rotate the stored owner `password_hash` regularly.
+- Keep `AUTH_SECRET` stable for encrypted settings. If it must be rotated, re-save encrypted
+  settings and re-enroll owner 2FA afterward.
 - Enable Vercel Access Logs and error alerting (e.g., Sentry).
 - Enable Dependabot and patch dependencies at least monthly.
 - Separate Vercel env vars for Production and Preview environments.

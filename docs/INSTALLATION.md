@@ -50,6 +50,8 @@ Copy `.env.example` to `.env.local` and fill in the values before starting.
 
 Owner credentials are no longer read from env vars. Store them in the `users` table as
 `email` + `password_hash`, keeping the existing owner row `id` when migrating an existing instance.
+Optional authenticator-app 2FA is enabled from **Settings -> Two-factor authentication** after the
+owner can log in; setup stores `users.two_factor_enabled` plus an encrypted `users.two_factor_secret`.
 
 ---
 
