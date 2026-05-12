@@ -152,9 +152,9 @@
 
 .commentCard {
   padding: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 20%);
+  border: 1px solid var(--ui-reading-border);
   border-radius: 0.5rem;
-  background: color-mix(in srgb, var(--ui-surface), transparent 8%);
+  background: var(--ui-reading-surface);
   overflow-wrap: anywhere;
 }
 

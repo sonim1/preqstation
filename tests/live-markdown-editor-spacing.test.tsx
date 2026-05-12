@@ -118,6 +118,23 @@ function getHiddenMarkdownInput(container: HTMLElement) {
 }
 
 describe('LiveMarkdownEditor spacing reconciliation', () => {
+  it('renders stable classes for live and markdown reading surfaces', async () => {
+    const { container } = renderEditor('Read me');
+
+    const liveEditor = await screen.findByLabelText('Description live editor');
+    const shell = container.querySelector('.live-editor-shell');
+
+    expect(shell).not.toBeNull();
+    expect(shell?.contains(liveEditor)).toBe(true);
+    expect(liveEditor.classList.contains('live-editor-input')).toBe(true);
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Markdown' }));
+
+    const rawInput = await screen.findByLabelText('Description markdown source');
+    expect(rawInput).toBeInstanceOf(HTMLTextAreaElement);
+    expect(rawInput.classList.contains('live-editor-raw-input')).toBe(true);
+  });
+
   it('does not autosave a blank line between an ordered list and following paragraph during bootstrap', async () => {
     const markdown = '1. First item\nText right below';
     const { container, onContentChange } = renderEditor(markdown);
