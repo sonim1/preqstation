@@ -3,20 +3,27 @@
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 
-const BOARD_CACHE = 'preq-board-v2';
+const BOARD_CACHE = 'preq-board-v3';
 
-function isBoardRoutePath(pathname: string | null) {
-  return pathname === '/board' || pathname?.startsWith('/board/');
+function isWorkspaceRoutePath(pathname: string | null) {
+  return (
+    pathname === '/dashboard' ||
+    pathname === '/dashboard/' ||
+    pathname === '/projects' ||
+    pathname === '/projects/' ||
+    pathname === '/board' ||
+    pathname?.startsWith('/board/') === true
+  );
 }
 
-export function OfflineBoardRouteWarmer() {
+export function OfflineWorkspaceRouteWarmer() {
   const pathname = usePathname();
   const warmedPathnamesRef = useRef(new Set<string>());
 
   useEffect(() => {
     if (
       !pathname ||
-      !isBoardRoutePath(pathname) ||
+      !isWorkspaceRoutePath(pathname) ||
       !navigator.onLine ||
       warmedPathnamesRef.current.has(pathname) ||
       typeof window === 'undefined' ||

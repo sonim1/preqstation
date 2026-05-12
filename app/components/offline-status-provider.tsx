@@ -12,7 +12,15 @@ const OfflineStatusContext = createContext<OfflineStatusContextValue>({
   online: true,
 });
 
-const OFFLINE_PING_TIMEOUT_MS = 15_000;
+const OFFLINE_PING_TIMEOUT_MS = 2_500;
+
+function getInitialOnlineStatus() {
+  if (typeof navigator === 'undefined') {
+    return true;
+  }
+
+  return navigator.onLine;
+}
 
 export async function resolveOfflineStatus(fetcher: typeof fetch = fetch) {
   if (typeof navigator === 'undefined' || !navigator.onLine) {
@@ -49,7 +57,7 @@ export async function resolveOfflineStatus(fetcher: typeof fetch = fetch) {
 }
 
 export function OfflineStatusProvider({ children }: { children: React.ReactNode }) {
-  const [online, setOnline] = useState(true);
+  const [online, setOnline] = useState(() => getInitialOnlineStatus());
   const [checkedAt, setCheckedAt] = useState<string | null>(null);
 
   useEffect(() => {

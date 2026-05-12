@@ -1,11 +1,16 @@
-# Offline Board
+# Offline Workspace Navigation
 
-The board now includes an offline-first path for browser sessions. `/sw.js` caches same-origin
-`/board`, `/board/:key`, and `/projects` navigations plus static assets so those workspace routes
-can reopen after the user has already loaded them online at least once. While the browser is
-online, `OfflineBoardRouteWarmer` also refreshes the current `/board` or `/board/:key` document
-into the `preq-board-v2` cache so visited board routes stay warm between sync attempts. API
-responses are not cached by the service worker.
+The workspace shell includes an offline-first path for browser sessions. `/sw.js` caches
+same-origin `/dashboard`, `/projects`, `/board`, and `/board/:key` navigations plus static assets
+so those workspace routes can reopen after the user has already loaded them online at least once.
+While the browser is online, `OfflineWorkspaceRouteWarmer` refreshes the current workspace document
+into the `preq-board-v3` cache so visited routes stay warm between sync attempts. API responses are
+not cached by the service worker.
+
+After first install or a service worker update, the user still needs to open a workspace route
+online at least once before that exact HTML document can be reused offline. If a managed route has
+not been cached yet, the service worker serves `/offline.html` with recovery actions instead of
+leaving the PWA stuck on the loading shell.
 
 Browser storage in IndexedDB (`preqstation-offline`) keeps four kinds of local state:
 

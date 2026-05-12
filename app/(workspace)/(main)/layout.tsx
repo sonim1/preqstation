@@ -2,6 +2,7 @@ import { and, asc, eq, isNull } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
 import { OfflineBanner } from '@/app/components/offline-banner';
+import { OfflineWorkspaceRouteWarmer } from '@/app/components/offline-board-route-warmer';
 import { SignOutForm } from '@/app/components/sign-out-form';
 import { WorkspaceShell } from '@/app/components/workspace-shell';
 import { withOwnerDb } from '@/lib/db/rls';
@@ -45,6 +46,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
       apiKeysHref="/connections"
       signOutControl={<SignOutForm />}
     >
+      <OfflineWorkspaceRouteWarmer />
       <OfflineBanner />
       {children}
     </WorkspaceShell>

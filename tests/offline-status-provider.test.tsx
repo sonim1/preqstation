@@ -1,6 +1,19 @@
+// @vitest-environment jsdom
+
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { resolveOfflineStatus } from '@/app/components/offline-status-provider';
+import {
+  OfflineStatusProvider,
+  resolveOfflineStatus,
+  useOfflineStatus,
+} from '@/app/components/offline-status-provider';
+
+function StatusProbe() {
+  const { online } = useOfflineStatus();
+
+  return <output>{online ? 'online' : 'offline'}</output>;
+}
 
 describe('app/components/offline-status-provider', () => {
   beforeEach(() => {
@@ -30,7 +43,7 @@ describe('app/components/offline-status-provider', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('returns offline when /api/ping does not answer within 15 seconds', async () => {
+  it('returns offline when /api/ping does not answer within 2.5 seconds', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('navigator', { onLine: true } as Navigator);
     const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
@@ -39,7 +52,7 @@ describe('app/components/offline-status-provider', () => {
     });
 
     const statusPromise = resolveOfflineStatus(fetchMock as typeof fetch);
-    await vi.advanceTimersByTimeAsync(14_999);
+    await vi.advanceTimersByTimeAsync(2_499);
 
     await expect(Promise.race([statusPromise, Promise.resolve('pending')])).resolves.toBe(
       'pending',
@@ -52,5 +65,21 @@ describe('app/components/offline-status-provider', () => {
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     vi.useRealTimers();
+  });
+
+  it('uses navigator.onLine for the first client render', () => {
+    Object.defineProperty(window.navigator, 'onLine', {
+      configurable: true,
+      value: false,
+    });
+    vi.stubGlobal('fetch', vi.fn());
+
+    render(
+      <OfflineStatusProvider>
+        <StatusProbe />
+      </OfflineStatusProvider>,
+    );
+
+    expect(screen.getByText('offline')).toBeTruthy();
   });
 });

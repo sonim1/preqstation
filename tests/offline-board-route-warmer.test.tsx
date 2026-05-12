@@ -9,7 +9,7 @@ vi.mock('next/navigation', () => ({
   usePathname: () => usePathnameMock(),
 }));
 
-import { OfflineBoardRouteWarmer } from '@/app/components/offline-board-route-warmer';
+import { OfflineWorkspaceRouteWarmer } from '@/app/components/offline-board-route-warmer';
 
 describe('app/components/offline-board-route-warmer', () => {
   beforeEach(() => {
@@ -22,32 +22,64 @@ describe('app/components/offline-board-route-warmer', () => {
     });
   });
 
-  it('warms the current board route document into the board cache while online', async () => {
-    usePathnameMock.mockReturnValue('/board/PQST');
+  it('warms the current dashboard document into the current navigation cache while online', async () => {
+    usePathnameMock.mockReturnValue('/dashboard');
+    window.history.replaceState({}, '', '/dashboard');
     const cachePutMock = vi.fn().mockResolvedValue(undefined);
     const openMock = vi.fn().mockResolvedValue({ put: cachePutMock });
     const fetchMock = vi
       .fn()
-      .mockResolvedValue(new Response('<html>cached board</html>', { status: 200 }));
+      .mockResolvedValue(new Response('<html>cached dashboard</html>', { status: 200 }));
 
     vi.stubGlobal('caches', { open: openMock });
     vi.stubGlobal('fetch', fetchMock);
 
-    render(<OfflineBoardRouteWarmer />);
+    render(<OfflineWorkspaceRouteWarmer />);
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/board/PQST', {
+      expect(fetchMock).toHaveBeenCalledWith('/dashboard', {
         credentials: 'same-origin',
         headers: { accept: 'text/html' },
         cache: 'no-store',
       });
     });
-    expect(openMock).toHaveBeenCalledWith('preq-board-v2');
+    expect(openMock).toHaveBeenCalledWith('preq-board-v3');
     expect(cachePutMock).toHaveBeenCalledWith(
-      `${window.location.origin}/board/PQST`,
+      `${window.location.origin}/dashboard`,
       expect.any(Response),
     );
   });
+
+  it.each(['/projects', '/board', '/board/PQST'])(
+    'warms %s as a workspace document route',
+    async (pathname) => {
+      usePathnameMock.mockReturnValue(pathname);
+      window.history.replaceState({}, '', pathname);
+      const cachePutMock = vi.fn().mockResolvedValue(undefined);
+      const openMock = vi.fn().mockResolvedValue({ put: cachePutMock });
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValue(new Response('<html>cached workspace route</html>', { status: 200 }));
+
+      vi.stubGlobal('caches', { open: openMock });
+      vi.stubGlobal('fetch', fetchMock);
+
+      render(<OfflineWorkspaceRouteWarmer />);
+
+      await waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(pathname, {
+          credentials: 'same-origin',
+          headers: { accept: 'text/html' },
+          cache: 'no-store',
+        });
+      });
+      expect(openMock).toHaveBeenCalledWith('preq-board-v3');
+      expect(cachePutMock).toHaveBeenCalledWith(
+        `${window.location.origin}${pathname}`,
+        expect.any(Response),
+      );
+    },
+  );
 
   it('does not re-warm a pathname that was already cached in the current session', async () => {
     let pathname = '/board/PQST';
@@ -61,7 +93,7 @@ describe('app/components/offline-board-route-warmer', () => {
     vi.stubGlobal('caches', { open: openMock });
     vi.stubGlobal('fetch', fetchMock);
 
-    const view = render(<OfflineBoardRouteWarmer />);
+    const view = render(<OfflineWorkspaceRouteWarmer />);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -69,7 +101,7 @@ describe('app/components/offline-board-route-warmer', () => {
 
     pathname = '/board';
     window.history.replaceState({}, '', '/board');
-    view.rerender(<OfflineBoardRouteWarmer />);
+    view.rerender(<OfflineWorkspaceRouteWarmer />);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -77,7 +109,7 @@ describe('app/components/offline-board-route-warmer', () => {
 
     pathname = '/board/PQST';
     window.history.replaceState({}, '', '/board/PQST');
-    view.rerender(<OfflineBoardRouteWarmer />);
+    view.rerender(<OfflineWorkspaceRouteWarmer />);
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2);

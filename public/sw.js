@@ -3,8 +3,12 @@ const STATIC_CACHE = 'preq-static-v3';
 const MANAGED_CACHES = [BOARD_CACHE, STATIC_CACHE];
 const MANAGED_CACHE_PREFIXES = ['preq-board-', 'preq-static-'];
 const OFFLINE_FALLBACK_URL = '/offline.html';
-const PRECACHED_ASSETS = ['/manifest.webmanifest', OFFLINE_FALLBACK_URL];
-const NAVIGATION_TIMEOUT_MS = 15000;
+const PRECACHED_ASSETS = [
+  '/manifest.webmanifest',
+  OFFLINE_FALLBACK_URL,
+  '/brand/preqstation-app-icon.svg',
+];
+const NAVIGATION_TIMEOUT_MS = 2500;
 
 function isSameOrigin(url) {
   return url.origin === self.location.origin;
@@ -14,12 +18,25 @@ function isBoardNavigation(url) {
   return url.pathname === '/board' || url.pathname.startsWith('/board/');
 }
 
+function isDashboardNavigation(url) {
+  return url.pathname === '/dashboard' || url.pathname === '/dashboard/';
+}
+
 function isProjectsNavigation(url) {
   return url.pathname === '/projects' || url.pathname === '/projects/';
 }
 
+function isRootNavigation(url) {
+  return url.pathname === '/';
+}
+
 function isManagedNavigation(url) {
-  return isBoardNavigation(url) || isProjectsNavigation(url);
+  return (
+    isDashboardNavigation(url) ||
+    isProjectsNavigation(url) ||
+    isBoardNavigation(url) ||
+    isRootNavigation(url)
+  );
 }
 
 function isApiRequest(url) {
@@ -33,7 +50,7 @@ function isStaticAsset(url) {
   );
 }
 
-function buildBoardCacheKey(url) {
+function buildNavigationCacheKey(url) {
   return `${url.origin}${url.pathname}`;
 }
 
@@ -100,7 +117,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (event.request.mode === 'navigate' && isManagedNavigation(url)) {
-    const cacheKey = buildBoardCacheKey(url);
+    const cacheKey = buildNavigationCacheKey(url);
     event.respondWith(
       fetchWithTimeout(event.request, NAVIGATION_TIMEOUT_MS)
         .then((response) => {

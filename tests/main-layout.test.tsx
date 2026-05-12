@@ -11,6 +11,7 @@ const mocked = vi.hoisted(() => {
   return {
     getOwnerUserOrNull: vi.fn(),
     getUserSetting: vi.fn(),
+    offlineWorkspaceRouteWarmer: vi.fn(),
     orderBy,
     redirect: vi.fn(),
     select,
@@ -34,6 +35,13 @@ vi.mock('drizzle-orm', async (importOriginal) => {
 
 vi.mock('@/app/components/sign-out-form', () => ({
   SignOutForm: () => <div data-sign-out-form="true" />,
+}));
+
+vi.mock('@/app/components/offline-board-route-warmer', () => ({
+  OfflineWorkspaceRouteWarmer: () => {
+    mocked.offlineWorkspaceRouteWarmer();
+    return <div data-offline-workspace-route-warmer="true" />;
+  },
 }));
 
 vi.mock('@/app/components/workspace-shell', () => ({
@@ -91,6 +99,8 @@ describe('app/(workspace)/(main)/layout', () => {
     const html = renderToStaticMarkup(page);
 
     expect(html).toContain('data-workspace-shell="owner@example.com"');
+    expect(html).toContain('data-offline-workspace-route-warmer="true"');
+    expect(mocked.offlineWorkspaceRouteWarmer).toHaveBeenCalledTimes(1);
     expect(mocked.getUserSetting).not.toHaveBeenCalled();
     expect(mocked.select).toHaveBeenCalledWith(
       expect.objectContaining({
