@@ -67,7 +67,7 @@ describe('app/components/offline-status-provider', () => {
     vi.useRealTimers();
   });
 
-  it('uses navigator.onLine for the first client render', () => {
+  it('uses a stable online value for the first client render before resolving offline status', async () => {
     Object.defineProperty(window.navigator, 'onLine', {
       configurable: true,
       value: false,
@@ -80,6 +80,7 @@ describe('app/components/offline-status-provider', () => {
       </OfflineStatusProvider>,
     );
 
-    expect(screen.getByText('offline')).toBeTruthy();
+    expect(screen.getByText('online')).toBeTruthy();
+    expect(await screen.findByText('offline')).toBeTruthy();
   });
 });

@@ -50,6 +50,33 @@ describe('app/components/offline-board-route-warmer', () => {
     );
   });
 
+  it('uses the captured route pathname for the fetch and cache key', async () => {
+    usePathnameMock.mockReturnValue('/dashboard');
+    window.history.replaceState({}, '', '/board');
+    const cachePutMock = vi.fn().mockResolvedValue(undefined);
+    const openMock = vi.fn().mockResolvedValue({ put: cachePutMock });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response('<html>cached dashboard</html>', { status: 200 }));
+
+    vi.stubGlobal('caches', { open: openMock });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<OfflineWorkspaceRouteWarmer />);
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/dashboard', {
+        credentials: 'same-origin',
+        headers: { accept: 'text/html' },
+        cache: 'no-store',
+      });
+    });
+    expect(cachePutMock).toHaveBeenCalledWith(
+      `${window.location.origin}/dashboard`,
+      expect.any(Response),
+    );
+  });
+
   it.each(['/projects', '/board', '/board/PQST'])(
     'warms %s as a workspace document route',
     async (pathname) => {

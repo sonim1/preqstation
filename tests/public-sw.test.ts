@@ -346,7 +346,7 @@ describe('public/sw.js', () => {
     expect(await response.text()).toBe('<html>cached projects</html>');
   });
 
-  it('serves cached /projects navigation when the network does not answer within 2.5 seconds', async () => {
+  it('serves cached /projects navigation when the network does not answer within 5 seconds', async () => {
     vi.useFakeTimers();
     const sw = await loadServiceWorker({
       fetchMock: vi.fn(() => new Promise<Response>(() => undefined)),
@@ -362,8 +362,15 @@ describe('public/sw.js', () => {
       sw.handlers.get('fetch') as Parameters<typeof dispatchFetch>[0],
       { mode: 'navigate', url: 'https://example.com/projects' },
     );
+    let resolvedBeforeTimeout = false;
+    void responsePromise.then(() => {
+      resolvedBeforeTimeout = true;
+    });
 
-    await vi.advanceTimersByTimeAsync(2_500);
+    await vi.advanceTimersByTimeAsync(4_999);
+    expect(resolvedBeforeTimeout).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1);
     const response = await responsePromise;
 
     expect(await response.text()).toBe('<html>cached projects</html>');

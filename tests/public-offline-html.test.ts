@@ -14,5 +14,6 @@ describe('public/offline.html', () => {
     expect(offlineHtml).toContain('Back to Main');
     expect(offlineHtml).toContain('Back to Board');
     expect(offlineHtml).toContain('location.pathname');
+    expect(offlineHtml).toContain("pathname === '/dashboard/'");
   });
 });
