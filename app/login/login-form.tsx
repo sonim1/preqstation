@@ -18,26 +18,43 @@ export function LoginForm() {
           </Alert>
         ) : null}
 
-        <TextInput
-          id="login-email"
-          type="email"
-          name="email"
-          label="Email"
-          placeholder="owner@example.com"
-          autoComplete="username"
-          required
-        />
-        <PasswordInput
-          id="login-password"
-          name="password"
-          label="Password"
-          placeholder="Enter password"
-          autoComplete="current-password"
-          required
-        />
+        {state.twoFactorRequired ? (
+          <>
+            <input type="hidden" name="intent" value="two-factor" />
+            <TextInput
+              id="login-totp-code"
+              name="totpCode"
+              label="Authentication code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              required
+            />
+          </>
+        ) : (
+          <>
+            <TextInput
+              id="login-email"
+              type="email"
+              name="email"
+              label="Email"
+              placeholder="owner@example.com"
+              autoComplete="username"
+              required
+            />
+            <PasswordInput
+              id="login-password"
+              name="password"
+              label="Password"
+              placeholder="Enter password"
+              autoComplete="current-password"
+              required
+            />
+          </>
+        )}
 
         <Button type="submit" loading={isPending}>
-          Sign in
+          {state.twoFactorRequired ? 'Verify' : 'Sign in'}
         </Button>
       </Stack>
     </form>

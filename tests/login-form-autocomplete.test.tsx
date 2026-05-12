@@ -55,6 +55,22 @@ describe('login form autocomplete semantics', () => {
     expectFormSemantics(html, 'login-form', 'login');
   });
 
+  it('marks the 2FA challenge code field with one-time-code semantics', () => {
+    reactHooks.useActionState.mockReturnValue([
+      { error: null, twoFactorRequired: true },
+      vi.fn(),
+      false,
+    ]);
+
+    const html = render(<LoginForm />);
+
+    expectAutocomplete(html, 'login-totp-code', 'one-time-code');
+    expect(html).toContain('name="intent"');
+    expect(html).toContain('value="two-factor"');
+    expect(html).not.toContain('id="login-email"');
+    expect(html).not.toContain('id="login-password"');
+  });
+
   it('marks the owner setup fields with username and new-password semantics', () => {
     const html = render(<OwnerSetupForm />);
 

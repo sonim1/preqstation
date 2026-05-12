@@ -117,21 +117,21 @@ Coding agent checks task status via preq_get_task, then:
 
 ### Tech Stack
 
-| Layer      | Technology                                  |
-| ---------- | ------------------------------------------- |
-| Framework  | Next.js 16 (App Router)                     |
-| UI         | React 19, Mantine 8, Tabler Icons, Recharts |
-| Editor     | Lexical                                     |
-| ORM        | Drizzle ORM                                 |
-| Database   | PostgreSQL                                  |
-| Validation | Zod                                         |
-| Auth       | Session cookies (HMAC-signed), bcryptjs     |
+| Layer      | Technology                                                 |
+| ---------- | ---------------------------------------------------------- |
+| Framework  | Next.js 16 (App Router)                                    |
+| UI         | React 19, Mantine 8, Tabler Icons, Recharts                |
+| Editor     | Lexical                                                    |
+| ORM        | Drizzle ORM                                                |
+| Database   | PostgreSQL                                                 |
+| Validation | Zod                                                        |
+| Auth       | Session cookies (HMAC-signed), bcryptjs, optional TOTP 2FA |
 
 ### Database Schema
 
 | Table              | Purpose                                                                                                         |
 | ------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `users`            | Single-owner account                                                                                            |
+| `users`            | Single-owner account, password hash, optional TOTP 2FA state                                                    |
 | `tasks`            | Task items with `taskKey` (e.g. `PROJ-123`), workflow status, priority, engine, branch, sort order, `run_state` |
 | `task_labels`      | Project-owned task label taxonomy (`project_id` required, unique name per project, owner-protected via RLS)     |
 | `projects`         | GitHub/Vercel project tracking with repo URL, background image, soft-delete                                     |
@@ -499,6 +499,8 @@ When MCP is unavailable, source `scripts/preqstation-api.sh` for curl-based REST
 | `CRON_SECRET`     | No       | Vercel cron job auth                |
 
 Owner credentials are stored in the `users` table as `email` + `password_hash`.
+Optional authenticator-app 2FA stores `two_factor_enabled` plus an AES-GCM encrypted
+`two_factor_secret`.
 For existing deployments, update the existing owner row in place so related data keeps the same `owner_id`.
 
 ### preqstation-skill (agent-side)
@@ -523,7 +525,7 @@ Recommended MCP installs now target `https://<preqstation-domain>/mcp` directly 
 
 ### Authentication
 
-- **Web UI** — Session cookies (httpOnly, sameSite=strict, HMAC-signed)
+- **Web UI** — Session cookies (httpOnly, sameSite=strict, HMAC-signed), with optional TOTP 2FA
 - **REST API** — Bearer token (`preq_` prefix, SHA-256 hashed in DB) for legacy/direct automation
 - **Telegram bot token** — AES-GCM encrypted at rest
 

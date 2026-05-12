@@ -49,6 +49,12 @@ vi.mock('@/app/components/timezone-settings', () => ({
   ),
 }));
 
+vi.mock('@/app/components/two-factor-settings', () => ({
+  TwoFactorSettings: ({ enabled }: { enabled: boolean }) => (
+    <div data-slot="two-factor-settings">{enabled ? '2FA enabled' : '2FA disabled'}</div>
+  ),
+}));
+
 vi.mock('@/lib/audit', () => ({
   writeAuditLog: mocked.writeAuditLog,
 }));
@@ -120,7 +126,11 @@ async function renderSettingsPage() {
 describe('app/(workspace)/(main)/settings/page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocked.getOwnerUserOrNull.mockResolvedValue({ id: 'owner-1' });
+    mocked.getOwnerUserOrNull.mockResolvedValue({
+      id: 'owner-1',
+      email: 'owner@example.com',
+      twoFactorEnabled: false,
+    });
     mocked.getUserSettings.mockResolvedValue({
       kitchen_mode: 'false',
       telegram_bot_token: '',
@@ -161,6 +171,17 @@ describe('app/(workspace)/(main)/settings/page', () => {
     expect(html).toContain('data-settings-item="timezone"');
   });
 
+  it('renders two-factor settings between workspace preferences and Telegram', async () => {
+    const html = await renderSettingsPage();
+
+    expect(html).toContain('Two-factor authentication');
+    expect(html).toContain('data-slot="two-factor-settings"');
+    expect(html.indexOf('Workspace Preferences')).toBeLessThan(
+      html.indexOf('Two-factor authentication'),
+    );
+    expect(html.indexOf('Two-factor authentication')).toBeLessThan(html.indexOf('Telegram'));
+  });
+
   it('does not render the removed live sync preference', async () => {
     const html = await renderSettingsPage();
 
@@ -190,7 +211,7 @@ describe('app/(workspace)/(main)/settings/page', () => {
     expect(html).toMatch(/<h1[^>]*>Task Settings<\/h1>/);
     expect(html).toContain('Task Settings');
     expect(html).toContain('Manage workspace preferences and task priority symbols.');
-    expect((html.match(/mantine-Paper-root/g) ?? []).length).toBe(3);
+    expect((html.match(/mantine-Paper-root/g) ?? []).length).toBe(4);
     expect(html.indexOf('Task Settings')).toBeLessThan(html.indexOf('Priority Icons'));
   });
 });

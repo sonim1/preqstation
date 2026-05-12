@@ -20,6 +20,7 @@ import panelStyles from '@/app/components/panels.module.css';
 import { TaskPriorityIcon } from '@/app/components/task-priority-icon';
 import { TelegramSettings } from '@/app/components/telegram-settings';
 import { TimezoneSettings } from '@/app/components/timezone-settings';
+import { TwoFactorSettings } from '@/app/components/two-factor-settings';
 import { WorkspacePageHeader } from '@/app/components/workspace-page-header';
 import { writeAuditLog } from '@/lib/audit';
 import { withOwnerDb } from '@/lib/db/rls';
@@ -29,6 +30,12 @@ import { encryptTelegramToken } from '@/lib/telegram-crypto';
 import { resolveTelegramDispatchConfig } from '@/lib/telegram-dispatch-settings';
 import { resolveTerminology } from '@/lib/terminology';
 import { getUserSettings, SETTING_KEYS, setUserSetting } from '@/lib/user-settings';
+
+import {
+  confirmTwoFactorSetupAction,
+  disableTwoFactorAction,
+  startTwoFactorSetupAction,
+} from './two-factor-actions';
 
 export default async function SettingsPage() {
   const owner = await getOwnerUserOrNull();
@@ -229,6 +236,32 @@ export default async function SettingsPage() {
                 <TimezoneSettings defaultValue={settings.timezone} />
               </div>
             </section>
+          </div>
+        </Paper>
+
+        <Paper
+          withBorder
+          radius="lg"
+          p={{ base: 'md', sm: 'lg' }}
+          className={`${panelStyles.sectionPanel} ${classes.section}`}
+        >
+          <div className={classes.sectionHeader}>
+            <div className={classes.sectionTitleGroup}>
+              <Title component="h2" order={3} className={classes.sectionTitle}>
+                Two-factor authentication
+              </Title>
+              <Text className={classes.sectionDescription} size="sm">
+                Require authenticator app codes after owner password sign-in.
+              </Text>
+            </div>
+          </div>
+          <div className={classes.sectionBody}>
+            <TwoFactorSettings
+              enabled={owner.twoFactorEnabled}
+              startAction={startTwoFactorSetupAction}
+              confirmAction={confirmTwoFactorSetupAction}
+              disableAction={disableTwoFactorAction}
+            />
           </div>
         </Paper>
 

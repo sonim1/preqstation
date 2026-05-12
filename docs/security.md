@@ -8,6 +8,12 @@
 ## 1) Authentication
 
 - Login validates the single owner against `users.email` + `users.password_hash`.
+- If authenticator-app 2FA is enabled, a successful password check creates a short-lived signed
+  `pm_owner_2fa` challenge cookie and the owner must enter a valid 6-digit TOTP code before the
+  browser session cookie is issued.
+- Owner 2FA is managed from **Settings -> Two-factor authentication**. Setup generates an
+  `otpauth://` URI for an authenticator app, confirmation stores the encrypted secret, and disable
+  clears the stored secret.
 - Session cookie settings: `httpOnly`, `sameSite=strict`, `secure` in production.
 - Cookies are signed with HMAC (`AUTH_SECRET`) to prevent tampering.
 - `/mcp` uses OAuth authorization code flow with PKCE and bearer access tokens.
@@ -25,6 +31,8 @@
 - Policies are keyed off `owner_id` (or equivalent ownership joins) so authenticated CRUD only sees rows owned by the current session/API token owner.
 - `FORCE ROW LEVEL SECURITY` is applied to the main owner-scoped tables so policies stay active even if future code accidentally reaches for broader access.
 - `users` allows read/update only for the current owner row.
+- Owner TOTP state lives on `users.two_factor_enabled` and `users.two_factor_secret`. The secret is
+  AES-GCM encrypted as `v1.{iv}.{ciphertext}` with a key derived from `AUTH_SECRET` via HKDF.
 - `security_events` is written through an explicit admin path and only exposes owner-visible rows back to the app.
 - `is_owner=true` is constrained to exactly one row via a unique index.
 
@@ -88,5 +96,7 @@
 - Separate Vercel env vars for Production and Preview.
 - `AUTH_SECRET` must be at least 16 characters (runtime-validated via Zod).
 - Use a strong owner password and rotate the stored `password_hash` regularly.
+- Keep `AUTH_SECRET` stable for existing encrypted settings. Rotating it invalidates signed sessions
+  and requires re-enrolling owner 2FA because stored TOTP secrets can no longer be decrypted.
 - Update dependencies at least monthly.
 - Consider IP allowlist via Cloudflare/Vercel protection layers.

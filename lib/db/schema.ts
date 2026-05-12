@@ -22,13 +22,11 @@ import type { ProjectBackgroundCredit } from '@/lib/project-backgrounds';
 import type { TaskArtifact } from '@/lib/task-artifacts';
 
 const currentAppUserId = sql`nullif(current_setting('app.user_id', true), '')`;
-const binaryVarchar = customType<{ data: string; driverData: string; config: { length: number } }>(
-  {
-    dataType(config) {
-      return `varchar(${config?.length ?? 64}) collate "C"`;
-    },
+const binaryVarchar = customType<{ data: string; driverData: string; config: { length: number } }>({
+  dataType(config) {
+    return `varchar(${config?.length ?? 64}) collate "C"`;
   },
-);
+});
 
 function appUserMatches(column: AnyPgColumn) {
   return sql`${column}::text = ${currentAppUserId}`;
@@ -89,6 +87,8 @@ export const users = pgTable(
     passwordHash: text('password_hash'),
     name: text('name'),
     isOwner: boolean('is_owner').notNull().default(false),
+    twoFactorEnabled: boolean('two_factor_enabled').notNull().default(false),
+    twoFactorSecret: text('two_factor_secret'),
     createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 })
       .notNull()

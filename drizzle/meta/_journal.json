@@ -169,6 +169,13 @@
       "when": 1777651201000,
       "tag": "0023_task_sort_order_collation",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1778580000000,
+      "tag": "0024_owner_totp_2fa",
+      "breakpoints": true
     }
   ]
 }

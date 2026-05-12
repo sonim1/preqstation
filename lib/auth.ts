@@ -14,14 +14,24 @@ import { withAdminDb } from '@/lib/db/rls';
 import { users } from '@/lib/db/schema';
 import { env } from '@/lib/env';
 import { getRequestContext } from '@/lib/request-context';
+import { decryptTwoFactorSecret, verifyTotpCode } from '@/lib/two-factor';
 
 export const SESSION_COOKIE_NAME = 'pm_owner_session';
+export const TWO_FACTOR_CHALLENGE_COOKIE_NAME = 'pm_owner_2fa';
+const TWO_FACTOR_CHALLENGE_MAX_AGE_SECONDS = 60 * 5;
 
 type SessionPayload = {
   sub: string;
   email: string;
   isOwner: boolean;
   sid?: string;
+  exp: number;
+};
+
+type TwoFactorChallengePayload = {
+  sub: string;
+  email: string;
+  isOwner: true;
   exp: number;
 };
 
@@ -36,7 +46,7 @@ type SecurityEventPayload = {
   detail?: unknown;
 };
 
-type OwnerAuthUser = {
+export type OwnerAuthUser = {
   id: string;
   email: string;
   isOwner: boolean;
@@ -51,6 +61,15 @@ export type CreateOwnerAccountResult =
       ok: false;
       reason: 'owner_exists';
     };
+
+export type SignInWithPasswordResult =
+  | { ok: true; twoFactorRequired: false; user: OwnerAuthUser }
+  | { ok: true; twoFactorRequired: true; email: string }
+  | { ok: false; reason: 'invalid_credentials' };
+
+export type CompleteTwoFactorSignInResult =
+  | { ok: true; user: OwnerAuthUser }
+  | { ok: false; reason: 'invalid_totp' };
 
 function encodeBase64Url(input: string) {
   if (typeof Buffer !== 'undefined') {
@@ -140,6 +159,18 @@ async function createSignedToken(input: {
   return `${payloadB64}.${sig}`;
 }
 
+async function createTwoFactorChallengeToken(input: { userId: string; email: string }) {
+  const payload: TwoFactorChallengePayload = {
+    sub: input.userId,
+    email: input.email,
+    isOwner: true,
+    exp: Math.floor(Date.now() / 1000) + TWO_FACTOR_CHALLENGE_MAX_AGE_SECONDS,
+  };
+  const payloadB64 = encodeBase64Url(JSON.stringify(payload));
+  const sig = await sign(payloadB64);
+  return `${payloadB64}.${sig}`;
+}
+
 async function setSessionCookie(token: string) {
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, token, {
@@ -148,6 +179,27 @@ async function setSessionCookie(token: string) {
     sameSite: 'strict',
     path: '/',
     maxAge: BROWSER_SESSION_MAX_AGE_SECONDS,
+  });
+}
+
+async function setTwoFactorChallengeCookie(token: string) {
+  const cookieStore = await cookies();
+  cookieStore.set(TWO_FACTOR_CHALLENGE_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+    maxAge: TWO_FACTOR_CHALLENGE_MAX_AGE_SECONDS,
+  });
+}
+
+function clearCookie(cookieStore: Awaited<ReturnType<typeof cookies>>, name: string) {
+  cookieStore.set(name, '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+    expires: new Date(0),
   });
 }
 
@@ -223,6 +275,26 @@ export async function verifySessionToken(token?: string | null) {
     const payload = JSON.parse(decodeBase64Url(payloadB64)) as SessionPayload;
     if (!payload?.sub || !payload?.email || !payload?.exp) return null;
     if (!payload.isOwner) return null;
+    if (payload.exp < Math.floor(Date.now() / 1000)) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+async function verifyTwoFactorChallengeToken(token?: string | null) {
+  if (!token) return null;
+  if ((token.match(/\./g) || []).length !== 1) return null;
+  const [payloadB64, sig] = token.split('.');
+  if (!payloadB64 || !sig) return null;
+
+  const expected = await sign(payloadB64);
+  if (!safeEquals(sig, expected)) return null;
+
+  try {
+    const payload = JSON.parse(decodeBase64Url(payloadB64)) as TwoFactorChallengePayload;
+    if (!payload?.sub || !payload?.email || !payload?.exp) return null;
+    if (payload.isOwner !== true) return null;
     if (payload.exp < Math.floor(Date.now() / 1000)) return null;
     return payload;
   } catch {
@@ -313,6 +385,7 @@ export async function createOwnerAccount(input: {
         email,
         passwordHash,
         isOwner: true,
+        twoFactorEnabled: false,
       })
       .returning({
         id: users.id,
@@ -361,7 +434,7 @@ export async function signInWithPassword(input: {
   email: string;
   password: string;
   path?: string | null;
-}) {
+}): Promise<SignInWithPasswordResult> {
   const email = input.email.trim().toLowerCase();
   const requestContext = await getRequestContext();
   const owner = await withAdminDb((client) =>
@@ -372,6 +445,8 @@ export async function signInWithPassword(input: {
         email: true,
         isOwner: true,
         passwordHash: true,
+        twoFactorEnabled: true,
+        twoFactorSecret: true,
       },
     }),
   );
@@ -389,9 +464,43 @@ export async function signInWithPassword(input: {
     ipAddress: requestContext.ipAddress,
     userAgent: requestContext.userAgent,
     path: input.path ?? requestContext.path ?? null,
+    detail: ok ? { twoFactorRequired: owner?.twoFactorEnabled === true } : undefined,
   });
 
-  if (!ok || !owner) return false;
+  if (!ok || !owner) return { ok: false, reason: 'invalid_credentials' };
+
+  if (owner.twoFactorEnabled) {
+    if (!owner.twoFactorSecret) {
+      await logSecurityEvent({
+        ownerId: owner.id,
+        actorEmail: owner.email,
+        eventType: 'auth.2fa_challenge',
+        outcome: 'blocked',
+        ipAddress: requestContext.ipAddress,
+        userAgent: requestContext.userAgent,
+        path: input.path ?? requestContext.path ?? null,
+        detail: { reason: 'missing_secret' },
+      });
+      return { ok: false, reason: 'invalid_credentials' };
+    }
+
+    const challengeToken = await createTwoFactorChallengeToken({
+      userId: owner.id,
+      email: owner.email,
+    });
+    await setTwoFactorChallengeCookie(challengeToken);
+    await logSecurityEvent({
+      ownerId: owner.id,
+      actorEmail: owner.email,
+      eventType: 'auth.2fa_challenge',
+      outcome: 'allowed',
+      ipAddress: requestContext.ipAddress,
+      userAgent: requestContext.userAgent,
+      path: input.path ?? requestContext.path ?? null,
+    });
+
+    return { ok: true, twoFactorRequired: true, email: owner.email };
+  }
 
   const token = await createOwnerSessionToken({
     userId: owner.id,
@@ -402,7 +511,100 @@ export async function signInWithPassword(input: {
   });
   await setSessionCookie(token);
 
-  return true;
+  return {
+    ok: true,
+    twoFactorRequired: false,
+    user: {
+      id: owner.id,
+      email: owner.email,
+      isOwner: owner.isOwner,
+    },
+  };
+}
+
+export async function completeTwoFactorSignIn(input: {
+  code: string;
+  path?: string | null;
+}): Promise<CompleteTwoFactorSignInResult> {
+  const requestContext = await getRequestContext();
+  const cookieStore = await cookies();
+  const challengeToken = cookieStore.get(TWO_FACTOR_CHALLENGE_COOKIE_NAME)?.value;
+  const challenge = await verifyTwoFactorChallengeToken(challengeToken);
+
+  async function block(reason: string, owner?: { id?: string | null; email?: string | null }) {
+    await logSecurityEvent({
+      ownerId: owner?.id ?? challenge?.sub ?? null,
+      actorEmail: owner?.email ?? challenge?.email ?? null,
+      eventType: 'auth.2fa_verify',
+      outcome: 'blocked',
+      ipAddress: requestContext.ipAddress,
+      userAgent: requestContext.userAgent,
+      path: input.path ?? requestContext.path ?? null,
+      detail: { reason },
+    });
+    return { ok: false, reason: 'invalid_totp' } as const;
+  }
+
+  if (!challenge) {
+    return block('invalid_challenge');
+  }
+
+  const owner = await withAdminDb((client) =>
+    client.query.users.findFirst({
+      where: and(eq(users.isOwner, true), eq(users.id, challenge.sub)),
+      columns: {
+        id: true,
+        email: true,
+        isOwner: true,
+        twoFactorEnabled: true,
+        twoFactorSecret: true,
+      },
+    }),
+  );
+
+  if (!owner?.isOwner || !owner.twoFactorEnabled || !owner.twoFactorSecret) {
+    return block('missing_secret', owner);
+  }
+
+  let secret: string;
+  try {
+    secret = await decryptTwoFactorSecret(owner.twoFactorSecret);
+  } catch {
+    return block('secret_decryption_failed', owner);
+  }
+
+  if (!verifyTotpCode(secret, input.code)) {
+    return block('invalid_code', owner);
+  }
+
+  const token = await createOwnerSessionToken({
+    userId: owner.id,
+    email: owner.email,
+    isOwner: owner.isOwner,
+    ipAddress: requestContext.ipAddress,
+    userAgent: requestContext.userAgent,
+  });
+  await setSessionCookie(token);
+  clearCookie(cookieStore, TWO_FACTOR_CHALLENGE_COOKIE_NAME);
+
+  await logSecurityEvent({
+    ownerId: owner.id,
+    actorEmail: owner.email,
+    eventType: 'auth.2fa_verify',
+    outcome: 'allowed',
+    ipAddress: requestContext.ipAddress,
+    userAgent: requestContext.userAgent,
+    path: input.path ?? requestContext.path ?? null,
+  });
+
+  return {
+    ok: true,
+    user: {
+      id: owner.id,
+      email: owner.email,
+      isOwner: owner.isOwner,
+    },
+  };
 }
 
 export async function signOut(options?: { redirectTo?: string }) {
@@ -422,13 +624,8 @@ export async function signOut(options?: { redirectTo?: string }) {
       }
     }
   }
-  cookieStore.set(SESSION_COOKIE_NAME, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    path: '/',
-    expires: new Date(0),
-  });
+  clearCookie(cookieStore, SESSION_COOKIE_NAME);
+  clearCookie(cookieStore, TWO_FACTOR_CHALLENGE_COOKIE_NAME);
 
   await logSecurityEvent({
     eventType: 'auth.sign_out',

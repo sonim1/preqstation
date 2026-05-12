@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 
-import { auth, createOwnerAccount, signInWithPassword } from '@/lib/auth';
+import { completeTwoFactorSignIn, createOwnerAccount, signInWithPassword } from '@/lib/auth';
 import {
   buildMcpAuthorizationRedirect,
   consumeMcpLoginRequestCookie,
@@ -11,6 +11,7 @@ import {
 
 type LoginActionState = {
   error: string | null;
+  twoFactorRequired?: boolean;
 };
 
 async function continueSuccessfulAuth(user: { id: string; isOwner: boolean }, redirectTo: string) {
@@ -47,6 +48,29 @@ export async function loginAction(
   _prevState: LoginActionState,
   formData: FormData,
 ): Promise<LoginActionState> {
+  const intent = String(formData.get('intent') || 'password');
+
+  if (intent === 'two-factor') {
+    const code = String(formData.get('totpCode') || '');
+    if (!code) {
+      return { error: 'Please enter your authentication code.', twoFactorRequired: true };
+    }
+
+    try {
+      const result = await completeTwoFactorSignIn({ code, path: '/login' });
+      if (result.ok) {
+        await continueSuccessfulAuth(result.user, '/dashboard');
+      }
+    } catch {
+      return {
+        error: 'An error occurred during login. Please try again later.',
+        twoFactorRequired: true,
+      };
+    }
+
+    return { error: 'Invalid authentication code.', twoFactorRequired: true };
+  }
+
   const email = String(formData.get('email') || '').trim();
   const password = String(formData.get('password') || '');
 
@@ -54,23 +78,23 @@ export async function loginAction(
     return { error: 'Please enter your email and password.' };
   }
 
-  let ok = false;
+  let result: Awaited<ReturnType<typeof signInWithPassword>>;
   try {
-    ok = await signInWithPassword({ email, password, path: '/login' });
+    result = await signInWithPassword({ email, password, path: '/login' });
   } catch {
     return { error: 'An error occurred during login. Please try again later.' };
   }
 
-  if (ok) {
-    const session = await auth();
-    if (!session?.user?.id || !session.user.isOwner) {
-      return { error: 'Unable to continue login. Please try again.' };
-    }
-
-    await continueSuccessfulAuth(session.user, '/dashboard');
+  if (!result.ok) {
+    return { error: 'Invalid email or password.' };
   }
 
-  return { error: 'Invalid email or password.' };
+  if (result.twoFactorRequired) {
+    return { error: null, twoFactorRequired: true };
+  }
+
+  await continueSuccessfulAuth(result.user, '/dashboard');
+  return { error: 'Unable to finish login.' };
 }
 
 export async function registerOwnerAction(

@@ -44,6 +44,7 @@
     "lexical": "^0.44.0",
     "mermaid": "^11.15.0",
     "next": "^16.2.6",
+    "otpauth": "^9.5.1",
     "postgres": "^3.4.8",
     "re-resizable": "^6.11.2",
     "react": "^19.2.6",
