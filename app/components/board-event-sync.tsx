@@ -34,6 +34,15 @@ const RUNNING_POLL_INTERVAL_MS = 60_000;
 const MAX_POLL_BACKOFF_MS = 300_000;
 const TASK_QUEUED_GRACE_MS = 120_000;
 
+async function getSafeJson<T>(response: Response) {
+  const contentType = response.headers.get('content-type') || '';
+  if (!contentType.toLowerCase().includes('application/json')) {
+    throw new Error(`Expected JSON response, received ${contentType || 'unknown content type'}`);
+  }
+
+  return (await response.json()) as T;
+}
+
 async function fetchTaskSnapshots(taskKeys: string[], projectId: string | null) {
   const params = new URLSearchParams();
   for (const taskKey of taskKeys) {
@@ -117,7 +126,7 @@ export function BoardEventSync({ projectId, onArchivedCountRefresh }: BoardEvent
   const router = useRouter();
   const focusedTaskKey = useKanbanFocusedTaskKey();
   const isReconciliationPaused = useKanbanReconciliationPaused();
-  const runStatePollingStatus = useKanbanRunStatePollingStatus();
+  const { hasQueued, hasRunning, lastTaskQueuedAt } = useKanbanRunStatePollingStatus();
   const removeTask = useRemoveKanbanTask();
   const setFocusedTask = useSetFocusedTask();
   const upsertSnapshots = useUpsertKanbanSnapshots();
@@ -285,22 +294,20 @@ export function BoardEventSync({ projectId, onArchivedCountRefresh }: BoardEvent
     let stopped = false;
 
     function hasRecentQueuedTask() {
-      if (!runStatePollingStatus.lastTaskQueuedAt) return false;
-      const queuedAt = Date.parse(runStatePollingStatus.lastTaskQueuedAt);
+      if (!lastTaskQueuedAt) return false;
+      const queuedAt = Date.parse(lastTaskQueuedAt);
       return Number.isFinite(queuedAt) && Date.now() - queuedAt < TASK_QUEUED_GRACE_MS;
     }
 
     function isPollingActive() {
       return (
         document.visibilityState === 'visible' &&
-        (runStatePollingStatus.hasQueued ||
-          runStatePollingStatus.hasRunning ||
-          hasRecentQueuedTask())
+        (hasQueued || hasRunning || hasRecentQueuedTask())
       );
     }
 
     function baseDelay() {
-      return runStatePollingStatus.hasQueued ? QUEUED_POLL_INTERVAL_MS : RUNNING_POLL_INTERVAL_MS;
+      return hasQueued ? QUEUED_POLL_INTERVAL_MS : RUNNING_POLL_INTERVAL_MS;
     }
 
     function schedule(delay: number) {
@@ -320,15 +327,19 @@ export function BoardEventSync({ projectId, onArchivedCountRefresh }: BoardEvent
         const response = await fetch(`/api/events?${params.toString()}`, {
           credentials: 'same-origin',
         });
+        if (response.status >= 400 && response.status < 500) {
+          console.error('[board-event-sync] permanent event polling error:', response.status);
+          return;
+        }
         if (!response.ok) {
           throw new Error(`Event polling failed: ${response.status}`);
         }
 
-        const payload = (await response.json()) as {
+        const payload = await getSafeJson<{
           events?: PolledTaskEvent[];
           cursor?: string | null;
           staleCursor?: boolean;
-        };
+        }>(response);
         pollingCursorRef.current = payload.cursor ?? pollingCursorRef.current;
         pollingFailureCountRef.current = 0;
 
@@ -367,7 +378,7 @@ export function BoardEventSync({ projectId, onArchivedCountRefresh }: BoardEvent
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [projectId, router, runStatePollingStatus]);
+  }, [projectId, router, hasQueued, hasRunning, lastTaskQueuedAt]);
 
   return null;
 }

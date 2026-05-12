@@ -129,6 +129,17 @@ describe('app/components/board-event-sync', () => {
     });
   }
 
+  function jsonPollingResponse(body: unknown, status = 200) {
+    return {
+      ok: status >= 200 && status < 300,
+      status,
+      headers: {
+        get: (name: string) => (name.toLowerCase() === 'content-type' ? 'application/json' : null),
+      },
+      json: async () => body,
+    };
+  }
+
   it('hydrates focused task work-log timestamps before updating the kanban store', async () => {
     fetchMock
       .mockResolvedValueOnce({
@@ -357,13 +368,9 @@ describe('app/components/board-event-sync', () => {
       lastTaskQueuedAt: null,
     });
     fetchMock
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ events: [], cursor: '10', staleCursor: false }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({
+      .mockResolvedValueOnce(jsonPollingResponse({ events: [], cursor: '10', staleCursor: false }))
+      .mockResolvedValueOnce(
+        jsonPollingResponse({
           events: [
             {
               id: '11',
@@ -375,7 +382,7 @@ describe('app/components/board-event-sync', () => {
           cursor: '11',
           staleCursor: false,
         }),
-      });
+      );
 
     renderBoardEventSync();
     await vi.runOnlyPendingTimersAsync();
@@ -404,10 +411,9 @@ describe('app/components/board-event-sync', () => {
       hasRunning: true,
       lastTaskQueuedAt: null,
     });
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({ events: [], cursor: '10', staleCursor: false }),
-    });
+    fetchMock.mockResolvedValue(
+      jsonPollingResponse({ events: [], cursor: '10', staleCursor: false }),
+    );
 
     renderBoardEventSync();
     await vi.runOnlyPendingTimersAsync();
@@ -459,16 +465,33 @@ describe('app/components/board-event-sync', () => {
       hasRunning: false,
       lastTaskQueuedAt: null,
     });
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ events: [], cursor: '25', staleCursor: true }),
-    });
+    fetchMock.mockResolvedValueOnce(
+      jsonPollingResponse({ events: [], cursor: '25', staleCursor: true }),
+    );
 
     renderBoardEventSync();
     await vi.runOnlyPendingTimersAsync();
 
     expect(routerRefreshMock).toHaveBeenCalledTimes(1);
     expect(publishPolledTaskEventsMock).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('stops polling after permanent client errors', async () => {
+    vi.useFakeTimers();
+    stubVisibilityState('visible');
+    useKanbanRunStatePollingStatusMock.mockReturnValue({
+      hasQueued: true,
+      hasRunning: false,
+      lastTaskQueuedAt: null,
+    });
+    fetchMock.mockResolvedValueOnce(jsonPollingResponse({ error: 'Invalid after cursor' }, 400));
+
+    renderBoardEventSync();
+    await vi.runOnlyPendingTimersAsync();
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });
 });

@@ -45,6 +45,14 @@ describe('app/api/events/route', () => {
     expect(body).toEqual({ events: [], cursor: '42', staleCursor: false });
   });
 
+  it('returns a stable zero cursor when the owner has no events yet', async () => {
+    const response = await GET(request('?projectId=project-1'));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({ events: [], cursor: '0', staleCursor: false });
+  });
+
   it('returns owner/project scoped events after the provided cursor with bigint ids serialized', async () => {
     mocked.client.query.eventsOutbox.findMany
       .mockResolvedValueOnce([{ id: 11n }])

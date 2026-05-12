@@ -37,14 +37,15 @@ export async function GET(request: Request) {
     }
 
     return await withOwnerDb(owner.id, async (client) => {
-      const scope = and(
-        eq(eventsOutbox.ownerId, owner.id),
+      const ownerScope = eq(eventsOutbox.ownerId, owner.id);
+      const projectScope = and(
+        ownerScope,
         projectId ? eq(eventsOutbox.projectId, projectId) : undefined,
       );
 
       if (after === null) {
         const [latestEvent] = await client.query.eventsOutbox.findMany({
-          where: scope,
+          where: ownerScope,
           columns: { id: true },
           orderBy: [desc(eventsOutbox.id)],
           limit: 1,
@@ -52,13 +53,13 @@ export async function GET(request: Request) {
 
         return NextResponse.json({
           events: [],
-          cursor: latestEvent?.id.toString() ?? null,
+          cursor: latestEvent?.id.toString() ?? '0',
           staleCursor: false,
         });
       }
 
       const [oldestEvent] = await client.query.eventsOutbox.findMany({
-        where: scope,
+        where: ownerScope,
         columns: { id: true },
         orderBy: [asc(eventsOutbox.id)],
         limit: 1,
@@ -73,7 +74,7 @@ export async function GET(request: Request) {
       }
 
       const events = await client.query.eventsOutbox.findMany({
-        where: and(scope, gt(eventsOutbox.id, after)),
+        where: and(projectScope, gt(eventsOutbox.id, after)),
         orderBy: [asc(eventsOutbox.id)],
         limit: MAX_EVENTS,
       });
