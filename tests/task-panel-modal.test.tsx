@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module';
 
-import { act, cleanup, render, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -98,9 +98,7 @@ vi.mock('@mantine/core', () => ({
         </div>
       ),
       Header: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-        <div data-testid="task-panel-modal-header" {...props}>
-          {children}
-        </div>
+        <div {...props}>{children}</div>
       ),
       Title: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
         <div data-testid="task-panel-modal-title" {...props}>
@@ -202,6 +200,7 @@ const { JSDOM } = require('jsdom') as {
 function installDom({ width, height }: { width: number; height: number }) {
   const originalWindow = globalThis.window;
   const originalDocument = globalThis.document;
+  const originalElement = globalThis.Element;
   const originalHTMLElement = globalThis.HTMLElement;
   const originalEvent = globalThis.Event;
   const dom = new JSDOM('<!doctype html><html><body></body></html>', {
@@ -223,6 +222,10 @@ function installDom({ width, height }: { width: number; height: number }) {
   Object.defineProperty(globalThis, 'document', {
     configurable: true,
     value: dom.window.document,
+  });
+  Object.defineProperty(globalThis, 'Element', {
+    configurable: true,
+    value: dom.window.Element,
   });
   Object.defineProperty(globalThis, 'HTMLElement', {
     configurable: true,
@@ -253,6 +256,10 @@ function installDom({ width, height }: { width: number; height: number }) {
       Object.defineProperty(globalThis, 'document', {
         configurable: true,
         value: originalDocument,
+      });
+      Object.defineProperty(globalThis, 'Element', {
+        configurable: true,
+        value: originalElement,
       });
       Object.defineProperty(globalThis, 'HTMLElement', {
         configurable: true,
@@ -1025,6 +1032,95 @@ describe('TaskPanelModal', () => {
         urlDesktopFullScreen: true,
       }),
     ).toEqual({ isDesktopFullScreen: false, modalFullScreen: true });
+  });
+
+  it('toggles desktop fullscreen when the header surface is double-clicked', () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('panel=task-edit&taskId=PROJ-335'));
+
+    try {
+      const { getByTestId } = render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/dashboard?panel=task-edit&taskId=PROJ-335"
+          fullscreenStorageKey="preqstation:task-edit-panel:fullscreen:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      fireEvent.doubleClick(getByTestId('task-panel-modal-header'));
+
+      expect(replaceMock).toHaveBeenCalledWith(
+        '/dashboard?panel=task-edit&taskId=PROJ-335&fullscreen=1',
+      );
+      expect(window.localStorage.getItem('preqstation:task-edit-panel:fullscreen:v1')).toBe('true');
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
+  it('exits desktop fullscreen when the fullscreen header surface is double-clicked', () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    useSearchParamsMock.mockReturnValue(
+      new URLSearchParams('panel=task-edit&taskId=PROJ-335&fullscreen=1'),
+    );
+
+    try {
+      const { getByTestId } = render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/dashboard?panel=task-edit&taskId=PROJ-335"
+          fullscreenStorageKey="preqstation:task-edit-panel:fullscreen:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      fireEvent.doubleClick(getByTestId('task-panel-modal-header'));
+
+      expect(replaceMock).toHaveBeenCalledWith('/dashboard?panel=task-edit&taskId=PROJ-335');
+      expect(window.localStorage.getItem('preqstation:task-edit-panel:fullscreen:v1')).toBe(
+        'false',
+      );
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
+  it('does not toggle fullscreen from interactive header controls on double-click', () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('panel=task-edit&taskId=PROJ-335'));
+
+    try {
+      const { getByLabelText } = render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/dashboard?panel=task-edit&taskId=PROJ-335"
+          fullscreenStorageKey="preqstation:task-edit-panel:fullscreen:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      const fullscreenButton = getByLabelText('Enter full screen for Edit Task dialog');
+      const fullscreenIcon = fullscreenButton.querySelector('svg');
+
+      expect(fullscreenIcon).not.toBeNull();
+
+      fireEvent.doubleClick(fullscreenIcon!);
+
+      expect(replaceMock).not.toHaveBeenCalled();
+      expect(window.localStorage.getItem('preqstation:task-edit-panel:fullscreen:v1')).toBeNull();
+    } finally {
+      cleanup();
+      dom.restore();
+    }
   });
 
   it('adds and removes fullscreen=1 without dropping other query params', () => {
