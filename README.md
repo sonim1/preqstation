@@ -76,163 +76,24 @@ If you are new to the system, start with the [public guide](https://preqstation.
 ## Quick Start
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/sonim1/preqstation.git
 cd preqstation
-
-# 2. Copy and fill environment variables
 cp .env.example .env.local
-
-# 3. Install dependencies
 npm install
-
-# 4. Apply database migrations
 npm run db:migrate
-
-# 5. Create or verify the owner account
-# Fresh installs guide you through owner setup; see docs/setup.md for manual setup details
-
-# 6. Start the development server
 npm run dev
 ```
 
-The app runs at `http://localhost:3000` by default. Set `PORT=` in `.env.local` to change it.
-`drizzle-kit` reads `DATABASE_URL` from `.env.local`.
+The app runs at `http://localhost:3000` by default. See [docs/INSTALLATION.md](docs/INSTALLATION.md) for environment variables, owner setup, and development commands.
 
-### First-Run Onboarding
+## Documentation
 
-After the owner logs in for the first time, an empty workspace routes to `/onboarding`. The wizard
-uses a worker-first sequence:
-
-1. Create or confirm the first project.
-2. Create the first task inside that project.
-3. Connect a worker through MCP or an API token.
-
-Dispatcher automation is optional. Use the dispatcher after the project, task, and worker path is
-working; it is not required for the first successful setup.
-
----
-
-## Environment Variables
-
-Copy `.env.example` to `.env.local` and fill in the values before starting.
-
-| Variable          | Required | Description                                                                  |
-| ----------------- | -------- | ---------------------------------------------------------------------------- |
-| `AUTH_SECRET`     | Yes      | HMAC session signing secret (min 16 chars). Generate: `openssl rand -hex 32` |
-| `DATABASE_URL`    | Yes      | PostgreSQL connection string                                                 |
-| `ALLOWED_ORIGINS` | No       | Comma-separated origins for CORS/server action checks                        |
-
-Owner credentials are no longer read from env vars. Store them in the `users` table as
-`email` + `password_hash`, keeping the existing owner row `id` when migrating an existing instance.
-
----
-
-## Development
-
-```bash
-npm run dev          # Start dev server (reads PORT from .env.local)
-npm run lint         # Run ESLint
-npm run typecheck    # Run tsc --noEmit
-npm run test:unit    # Run Vitest unit tests
-npm run build        # Production build
-```
-
-Additional database commands:
-
-```bash
-npm run db:generate  # Generate SQL migration files from schema changes
-npm run db:migrate   # Apply checked-in migrations
-npm run db:push      # Push schema directly to the configured database
-npm run db:pull      # Pull schema state from the configured database
-npm run db:studio    # Open Drizzle Studio
-```
-
-## Offline Board
-
-The board now includes an offline-first path for browser sessions. `/sw.js` caches same-origin
-`/board`, `/board/:key`, and `/projects` navigations plus static assets so those workspace routes
-can reopen after the user has already loaded them online at least once. While the browser is
-online, `OfflineBoardRouteWarmer` also refreshes the current `/board` or `/board/:key` document
-into the `preq-board-v2` cache so visited board routes stay warm between sync attempts. API
-responses are not cached by the service worker.
-
-Browser storage in IndexedDB (`preqstation-offline`) keeps three kinds of local state:
-
-- recent board snapshots keyed by project so `/board` can hydrate while offline
-- the latest projects-index snapshot so `/projects` can render cached project cards offline
-- task-edit title/note drafts
-- queued task create/edit/move/delete mutations for replay
-
-While offline, quick-add, task edits, board moves, and task deletes are applied optimistically in the UI and
-written to the local mutation queue. Once `/api/ping` reports the backend reachable again, the app
-replays those mutations against the normal internal board APIs and replaces temporary `OFFLINE-*`
-task keys with server-issued task keys after sync. If a replayed note edit conflicts with newer
-server notes, or if a browser draft was based on an older server title, the conflicting patch is
-removed from the queue, the latest server task snapshot is restored into the board/task panel, and
-the saved local draft remains available for manual restore. Browser drafts whose title and note
-fingerprints still match the latest server task are auto-saved after reconnect instead of asking the
-user to restore them manually.
-
----
-
-## Project Structure
-
-```
-.
-├── app/              # Next.js App Router pages and API routes
-├── lib/              # Shared utilities, auth, DB client, validation
-├── drizzle/          # SQL migrations + Drizzle metadata
-├── tests/            # Vitest unit tests
-├── docs/             # Setup, architecture, and implementation notes
-└── public/           # Static assets
-```
-
----
-
-## API
-
-PreqStation exposes two agent integration surfaces.
-
-- **REST API** for shell helpers and direct automation
-- **MCP over HTTP** at `/mcp` for Claude Code / Codex with OAuth login
-
-### REST API
-
-- Base path: `/api/tasks`
-- Auth: `Authorization: Bearer <token>` for direct REST automation and legacy shell-helper flows
-- Manage OAuth-backed agent installs from `/connections`
-
-Endpoints:
-
-| Method   | Path             | Description                                  |
-| -------- | ---------------- | -------------------------------------------- |
-| `GET`    | `/api/tasks`     | List tasks (filter by status, label, engine) |
-| `POST`   | `/api/tasks`     | Create a task                                |
-| `PATCH`  | `/api/tasks/:id` | Update a task                                |
-| `DELETE` | `/api/tasks/:id` | Delete a task                                |
-
-Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `archived`. Task payloads can also include execution fields `run_state` and `run_state_updated_at` so API clients can distinguish workflow position from live agent activity. Full task payloads include an `artifacts` array for persisted task outputs such as screenshots, videos, documents, and links; `POST /api/tasks`, `PATCH /api/tasks/:id`, and QA-run updates accept up to 50 artifact objects.
-
-### MCP over HTTP
-
-- Endpoint: `/mcp`
-- Discovery: `/.well-known/oauth-authorization-server`
-- Auth: OAuth authorization code flow with browser login
-- Owner visibility: `/connections` shows client name, engine, status, last-used time, and expiry
-- Claude Code install: `claude mcp add --transport http preqstation https://<your-domain>/mcp`
-- Codex install: `codex mcp add preqstation --url https://<your-domain>/mcp`
-- Exposed read tools include `preq_list_projects`, `preq_list_tasks`, `preq_get_task`, and `preq_get_project_settings`
-
-See [`docs/architecture.md`](docs/architecture.md) for the current API and workflow contract.
-
-For first-time system onboarding, prefer:
-
-- [PreqStation Guide](https://preqstation.com/guide) for the umbrella guide and recommended reading order
-- [`preqstation-skill`](https://github.com/sonim1/preqstation-skill) for worker/runtime setup
-- [`preqstation-dispatcher`](https://github.com/sonim1/preqstation-dispatcher) for PREQ CLI setup and dispatcher automation
-
----
+- [Installation](docs/INSTALLATION.md) — local setup, env vars, first-run onboarding, and development commands
+- [Architecture](docs/architecture.md) — current system structure and workflow contract
+- [API](docs/API.md) — REST and MCP integration surfaces
+- [Offline Board](docs/OFFLINE_BOARD.md) — browser offline cache, IndexedDB state, and replay behavior
+- [Project Structure](docs/PROJECT_STRUCTURE.md) — repository layout
+- [Security](docs/security.md) — full security design
 
 ## Security
 
