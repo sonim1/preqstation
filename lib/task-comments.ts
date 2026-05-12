@@ -1,7 +1,8 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 
-import type { db } from '@/lib/db';
 import { taskComments, tasks } from '@/lib/db/schema';
+import type { DbTransaction } from '@/lib/db/types';
+import { ENTITY_TASK, TASK_UPDATED, writeOutboxEvent } from '@/lib/outbox';
 
 export const TASK_COMMENT_RUN_STATES = ['queued', 'working', 'done', 'failed'] as const;
 export const TASK_COMMENT_AUTHOR_TYPES = ['user', 'agent', 'system'] as const;
@@ -46,15 +47,13 @@ export function serializeTaskComment(comment: TaskCommentRow) {
   };
 }
 
-type TaskCommentRunStateClient = Pick<typeof db, 'query' | 'update'>;
-
 export async function syncTaskRunStateFromComments({
   client,
   ownerId,
   taskId,
   now = new Date(),
 }: {
-  client: TaskCommentRunStateClient;
+  client: DbTransaction;
   ownerId: string;
   taskId: string;
   now?: Date;
@@ -62,7 +61,7 @@ export async function syncTaskRunStateFromComments({
   const [task, activeComments] = await Promise.all([
     client.query.tasks.findFirst({
       where: and(eq(tasks.ownerId, ownerId), eq(tasks.id, taskId)),
-      columns: { runState: true },
+      columns: { runState: true, taskKey: true, projectId: true },
     }),
     client.query.taskComments.findMany({
       where: and(
@@ -89,6 +88,16 @@ export async function syncTaskRunStateFromComments({
       runStateUpdatedAt: nextRunState ? now : null,
     })
     .where(and(eq(tasks.ownerId, ownerId), eq(tasks.id, taskId)));
+
+  await writeOutboxEvent({
+    tx: client,
+    ownerId,
+    projectId: task.projectId,
+    eventType: TASK_UPDATED,
+    entityType: ENTITY_TASK,
+    entityId: task.taskKey,
+    payload: { changedFields: ['runState', 'runStateUpdatedAt'] },
+  });
 
   return nextRunState;
 }

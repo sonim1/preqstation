@@ -4,7 +4,12 @@ import { createContext, type ReactNode, useContext, useState } from 'react';
 import { useStore } from 'zustand';
 
 import type { KanbanColumns } from '@/lib/kanban-helpers';
-import { createKanbanStore, type EditableBoardTask, selectKanbanColumns } from '@/lib/kanban-store';
+import {
+  createKanbanStore,
+  type EditableBoardTask,
+  selectKanbanColumns,
+  selectKanbanRunStatePollingStatus,
+} from '@/lib/kanban-store';
 
 type KanbanStoreApi = ReturnType<typeof createKanbanStore>;
 
@@ -69,6 +74,10 @@ export function useFocusedTaskDetailStatus() {
 
 export function useKanbanReconciliationPaused() {
   return useKanbanStore((state) => state.isReconciliationPaused);
+}
+
+export function useKanbanRunStatePollingStatus() {
+  return useKanbanStore(selectKanbanRunStatePollingStatus);
 }
 
 export function useHydrateKanbanStore() {

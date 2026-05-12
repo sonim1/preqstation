@@ -4,12 +4,15 @@ const useEffectMock = vi.hoisted(() => vi.fn());
 const useCallbackMock = vi.hoisted(() => vi.fn());
 const useRefMock = vi.hoisted(() => vi.fn());
 const subscribePolledTaskEventsMock = vi.hoisted(() => vi.fn());
+const publishPolledTaskEventsMock = vi.hoisted(() => vi.fn());
 const useKanbanFocusedTaskKeyMock = vi.hoisted(() => vi.fn());
 const useKanbanReconciliationPausedMock = vi.hoisted(() => vi.fn());
+const useKanbanRunStatePollingStatusMock = vi.hoisted(() => vi.fn());
 const removeTaskMock = vi.hoisted(() => vi.fn());
 const setFocusedTaskMock = vi.hoisted(() => vi.fn());
 const upsertSnapshotsMock = vi.hoisted(() => vi.fn());
 const putSnapshotMock = vi.hoisted(() => vi.fn());
+const routerRefreshMock = vi.hoisted(() => vi.fn());
 
 vi.mock('react', async () => {
   const actual = await vi.importActual<typeof import('react')>('react');
@@ -22,15 +25,21 @@ vi.mock('react', async () => {
 });
 
 vi.mock('@/lib/event-poll-subscriptions', () => ({
+  publishPolledTaskEvents: publishPolledTaskEventsMock,
   subscribePolledTaskEvents: subscribePolledTaskEventsMock,
 }));
 
 vi.mock('@/app/components/kanban-store-provider', () => ({
   useKanbanFocusedTaskKey: useKanbanFocusedTaskKeyMock,
   useKanbanReconciliationPaused: useKanbanReconciliationPausedMock,
+  useKanbanRunStatePollingStatus: useKanbanRunStatePollingStatusMock,
   useRemoveKanbanTask: () => removeTaskMock,
   useSetFocusedTask: () => setFocusedTaskMock,
   useUpsertKanbanSnapshots: () => upsertSnapshotsMock,
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: routerRefreshMock }),
 }));
 
 vi.mock('@/lib/offline/snapshot-store', () => ({
@@ -59,12 +68,15 @@ describe('app/components/board-event-sync', () => {
     useCallbackMock.mockReset();
     useRefMock.mockReset();
     subscribePolledTaskEventsMock.mockReset();
+    publishPolledTaskEventsMock.mockReset();
     useKanbanFocusedTaskKeyMock.mockReset();
     useKanbanReconciliationPausedMock.mockReset();
+    useKanbanRunStatePollingStatusMock.mockReset();
     removeTaskMock.mockReset();
     setFocusedTaskMock.mockReset();
     upsertSnapshotsMock.mockReset();
     putSnapshotMock.mockReset();
+    routerRefreshMock.mockReset();
 
     useEffectMock.mockImplementation((effect: () => void | (() => void)) => {
       effects.push(effect);
@@ -80,6 +92,12 @@ describe('app/components/board-event-sync', () => {
     });
     useKanbanFocusedTaskKeyMock.mockReturnValue('PROJ-255');
     useKanbanReconciliationPausedMock.mockReturnValue(false);
+    useKanbanRunStatePollingStatusMock.mockReturnValue({
+      hasQueued: false,
+      hasRunning: false,
+      lastTaskQueuedAt: null,
+    });
+    publishPolledTaskEventsMock.mockResolvedValue(true);
     subscribePolledTaskEventsMock.mockImplementation(
       (nextSubscriber: (events: Array<Record<string, unknown>>) => Promise<boolean> | boolean) => {
         subscriber = nextSubscriber;
@@ -90,7 +108,7 @@ describe('app/components/board-event-sync', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
 
-  function renderBoardEventSync(projectId = 'project-1') {
+  function renderBoardEventSync(projectId: string | null = 'project-1') {
     nextRefIndex = 0;
     BoardEventSync({
       projectId,
@@ -101,6 +119,25 @@ describe('app/components/board-event-sync', () => {
     effects.splice(0).forEach((effect) => {
       effect();
     });
+  }
+
+  function stubVisibilityState(visibilityState: 'visible' | 'hidden') {
+    vi.stubGlobal('document', {
+      visibilityState,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    });
+  }
+
+  function jsonPollingResponse(body: unknown, status = 200) {
+    return {
+      ok: status >= 200 && status < 300,
+      status,
+      headers: {
+        get: (name: string) => (name.toLowerCase() === 'content-type' ? 'application/json' : null),
+      },
+      json: async () => body,
+    };
   }
 
   it('hydrates focused task work-log timestamps before updating the kanban store', async () => {
@@ -320,5 +357,197 @@ describe('app/components/board-event-sync', () => {
     expect(removeTaskMock).not.toHaveBeenCalled();
     expect(upsertSnapshotsMock).not.toHaveBeenCalled();
     expect(setFocusedTaskMock).not.toHaveBeenCalled();
+  });
+
+  it('polls active queued boards every 30 seconds and publishes returned events', async () => {
+    vi.useFakeTimers();
+    stubVisibilityState('visible');
+    useKanbanRunStatePollingStatusMock.mockReturnValue({
+      hasQueued: true,
+      hasRunning: false,
+      lastTaskQueuedAt: null,
+    });
+    fetchMock
+      .mockResolvedValueOnce(jsonPollingResponse({ events: [], cursor: '10', staleCursor: false }))
+      .mockResolvedValueOnce(
+        jsonPollingResponse({
+          events: [
+            {
+              id: '11',
+              eventType: 'TASK_UPDATED',
+              entityType: 'task',
+              entityId: 'PROJ-255',
+            },
+          ],
+          cursor: '11',
+          staleCursor: false,
+        }),
+      );
+
+    renderBoardEventSync();
+    await vi.runOnlyPendingTimersAsync();
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/events?projectId=project-1', {
+      credentials: 'same-origin',
+    });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/events?projectId=project-1&after=10', {
+      credentials: 'same-origin',
+    });
+    expect(publishPolledTaskEventsMock).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: '11',
+        entityId: 'PROJ-255',
+      }),
+    ]);
+    vi.useRealTimers();
+  });
+
+  it('polls active all-project boards without a project query parameter', async () => {
+    vi.useFakeTimers();
+    stubVisibilityState('visible');
+    useKanbanRunStatePollingStatusMock.mockReturnValue({
+      hasQueued: true,
+      hasRunning: false,
+      lastTaskQueuedAt: null,
+    });
+    fetchMock.mockResolvedValueOnce(
+      jsonPollingResponse({ events: [], cursor: '10', staleCursor: false }),
+    );
+
+    renderBoardEventSync(null);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/events', {
+      credentials: 'same-origin',
+    });
+    vi.useRealTimers();
+  });
+
+  it('uses a 60 second polling delay when running tasks are active without queued tasks', async () => {
+    vi.useFakeTimers();
+    stubVisibilityState('visible');
+    useKanbanRunStatePollingStatusMock.mockReturnValue({
+      hasQueued: false,
+      hasRunning: true,
+      lastTaskQueuedAt: null,
+    });
+    fetchMock.mockResolvedValue(
+      jsonPollingResponse({ events: [], cursor: '10', staleCursor: false }),
+    );
+
+    renderBoardEventSync();
+    await vi.runOnlyPendingTimersAsync();
+    await vi.advanceTimersByTimeAsync(59_999);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('does not poll hidden tabs or boards without active run state', async () => {
+    vi.useFakeTimers();
+    stubVisibilityState('hidden');
+    useKanbanRunStatePollingStatusMock.mockReturnValue({
+      hasQueued: true,
+      hasRunning: false,
+      lastTaskQueuedAt: null,
+    });
+
+    renderBoardEventSync();
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('does not poll visible boards when no task has active run state', async () => {
+    vi.useFakeTimers();
+    stubVisibilityState('visible');
+    useKanbanRunStatePollingStatusMock.mockReturnValue({
+      hasQueued: false,
+      hasRunning: false,
+      lastTaskQueuedAt: null,
+    });
+
+    renderBoardEventSync();
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('refreshes the board once when the event cursor is stale', async () => {
+    vi.useFakeTimers();
+    stubVisibilityState('visible');
+    useKanbanRunStatePollingStatusMock.mockReturnValue({
+      hasQueued: true,
+      hasRunning: false,
+      lastTaskQueuedAt: null,
+    });
+    fetchMock.mockResolvedValueOnce(
+      jsonPollingResponse({ events: [], cursor: '25', staleCursor: true }),
+    );
+
+    renderBoardEventSync();
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(routerRefreshMock).toHaveBeenCalledTimes(1);
+    expect(publishPolledTaskEventsMock).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('allows another stale-cursor refresh after normal event replay recovers', async () => {
+    vi.useFakeTimers();
+    stubVisibilityState('visible');
+    useKanbanRunStatePollingStatusMock.mockReturnValue({
+      hasQueued: true,
+      hasRunning: false,
+      lastTaskQueuedAt: null,
+    });
+    fetchMock
+      .mockResolvedValueOnce(jsonPollingResponse({ events: [], cursor: '25', staleCursor: true }))
+      .mockResolvedValueOnce(
+        jsonPollingResponse({
+          events: [
+            {
+              id: '26',
+              eventType: 'TASK_UPDATED',
+              entityType: 'task',
+              entityId: 'PROJ-255',
+            },
+          ],
+          cursor: '26',
+          staleCursor: false,
+        }),
+      )
+      .mockResolvedValueOnce(jsonPollingResponse({ events: [], cursor: '40', staleCursor: true }));
+
+    renderBoardEventSync();
+    await vi.runOnlyPendingTimersAsync();
+    await vi.runOnlyPendingTimersAsync();
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(routerRefreshMock).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('stops polling after permanent client errors', async () => {
+    vi.useFakeTimers();
+    stubVisibilityState('visible');
+    useKanbanRunStatePollingStatusMock.mockReturnValue({
+      hasQueued: true,
+      hasRunning: false,
+      lastTaskQueuedAt: null,
+    });
+    fetchMock.mockResolvedValueOnce(jsonPollingResponse({ error: 'Invalid after cursor' }, 400));
+
+    renderBoardEventSync();
+    await vi.runOnlyPendingTimersAsync();
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
   });
 });
