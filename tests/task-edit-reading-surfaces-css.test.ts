@@ -1,7 +1,7 @@
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 
-import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 
 const globalsCss = fs.readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
@@ -9,6 +9,12 @@ const taskEditFormCss = fs.readFileSync(
   path.join(process.cwd(), 'app/components/task-edit-form.module.css'),
   'utf8',
 );
+const require = createRequire(import.meta.url);
+const { JSDOM } = require('jsdom') as {
+  JSDOM: new (html?: string) => {
+    window: Window & typeof globalThis;
+  };
+};
 
 function findClosingBrace(source: string, openingBraceIndex: number) {
   let depth = 0;
