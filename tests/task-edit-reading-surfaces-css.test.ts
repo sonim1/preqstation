@@ -122,20 +122,30 @@ describe('task edit reading surface CSS', () => {
     );
   });
 
-  it('keeps mermaid diagrams on a light canvas in dark mode for contrast', () => {
-    const markdownMermaidRule = getRuleBody(
-      globalsCss,
-      "html[data-mantine-color-scheme='dark'] .markdown-output .mermaid",
-    );
-    const liveEditorMermaidRule = getRuleBody(
-      globalsCss,
-      "html[data-mantine-color-scheme='dark'] .live-editor-mermaid-block .mermaid",
-    );
+  it('keeps mermaid fallback source readable on a light canvas in dark mode', () => {
+    const dom = new JSDOM(`
+      <html data-mantine-color-scheme="dark">
+        <head><style>${globalsCss}</style></head>
+        <body>
+          <article class="markdown-output">
+            <pre class="mermaid">graph TD; A-->B;</pre>
+          </article>
+          <section class="live-editor-mermaid-block">
+            <pre class="mermaid">sequenceDiagram; Alice->>Bob: Hi;</pre>
+          </section>
+        </body>
+      </html>
+    `);
 
-    for (const ruleBody of [markdownMermaidRule, liveEditorMermaidRule]) {
-      expect(ruleBody).toContain('background: var(--mantine-color-white);');
-      expect(ruleBody).toContain('border-color: var(--mantine-color-gray-3);');
-      expect(ruleBody).not.toMatch(/background:\s*color-mix\(/);
+    const mermaidNodes = dom.window.document.querySelectorAll<HTMLElement>('.mermaid');
+
+    expect(mermaidNodes).toHaveLength(2);
+
+    for (const node of mermaidNodes) {
+      const style = dom.window.getComputedStyle(node);
+
+      expect(style.background).toBe('var(--mantine-color-white)');
+      expect(style.color).toBe('rgb(15, 32, 61)');
     }
   });
 

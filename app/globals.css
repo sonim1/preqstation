@@ -1714,6 +1714,7 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   border: 1px solid var(--ui-border);
   border-radius: var(--mantine-radius-sm);
   background: var(--mantine-color-white);
+  color: #0f203d;
   padding: 12px;
 }
 
@@ -1927,6 +1928,7 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   border: 1px solid var(--ui-border);
   border-radius: var(--mantine-radius-sm);
   background: var(--mantine-color-white);
+  color: #0f203d;
   padding: 12px;
 }
 
@@ -2425,14 +2427,9 @@ html[data-mantine-color-scheme='dark'] .live-editor-code {
   background: rgba(129, 154, 255, 0.26);
 }
 
-html[data-mantine-color-scheme='dark'] .markdown-output .mermaid {
-  background: var(--mantine-color-white);
-  border-color: var(--ui-border);
-}
-
+html[data-mantine-color-scheme='dark'] .markdown-output .mermaid,
 html[data-mantine-color-scheme='dark'] .live-editor-mermaid-block .mermaid {
-  background: var(--mantine-color-white);
-  border-color: var(--ui-border);
+  border-color: var(--mantine-color-gray-3);
 }
 
 html[data-mantine-color-scheme='dark'] .live-editor-code-block {
