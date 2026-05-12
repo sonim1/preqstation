@@ -258,12 +258,14 @@ The workspace keeps a browser-local offline path layered on top of the normal in
 `/api/todos` workflow.
 
 - `app/components/pwa-registration.tsx` registers `/sw.js` for browser sessions.
-- `public/sw.js` caches same-origin `/board`, `/board/:key`, and `/projects` navigations plus
-  static assets. Navigation fetches use a 15-second timeout before falling back to cached HTML. It
-  does not cache `/api/*` responses, so queued writes still reconcile against the live backend.
+- `public/sw.js` caches same-origin `/`, `/dashboard`, `/projects`, `/board`, and `/board/:key`
+  navigations plus static assets. Navigation fetches use a 15-second timeout before falling back to
+  cached HTML. It does not cache `/api/*` responses, so queued writes still reconcile against the
+  live backend.
 - `public/offline.html` is precached and returned when a workspace navigation misses both the
   network and the corresponding cached HTML document, which keeps the browser from falling back to
-  its localized network error page.
+  its localized network error page. The uncached root `/` start route uses the same dashboard
+  recovery copy as `/dashboard`.
 - IndexedDB database `preqstation-offline` contains `snapshots` for recent board/task/projects
   payloads, `drafts` for task-edit title/note drafts, and `mutations` for queued offline
   create/patch/delete records.
@@ -271,9 +273,9 @@ The workspace keeps a browser-local offline path layered on top of the normal in
   store from that snapshot when the browser is offline.
 - `ProjectsOfflineHydrator` writes the latest projects-index snapshot while online and renders
   cached project cards from IndexedDB when `/projects` is loaded offline.
-- `OfflineBoardRouteWarmer` issues a no-store fetch for the current `/board` or `/board/:key`
-  document while the browser is online and writes the HTML response into `preq-board-v2`, so board
-  routes the user actually visits are proactively available offline.
+- `OfflineWorkspaceRouteWarmer` issues a no-store fetch for the current `/dashboard`, `/projects`,
+  `/board`, or `/board/:key` document while the browser is online and writes the HTML response into
+  `preq-board-v3`, so workspace routes the user actually visits are proactively available offline.
 - `BoardOfflineSyncProvider` owns optimistic offline board mutations. Offline creates get temporary
   `OFFLINE-*` task keys, edits and moves merge into per-task queued records, deletes are queued as
   delete records, and replay runs again once the connectivity check against `/api/ping` succeeds.

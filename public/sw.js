@@ -8,7 +8,7 @@ const PRECACHED_ASSETS = [
   OFFLINE_FALLBACK_URL,
   '/brand/preqstation-app-icon.svg',
 ];
-const NAVIGATION_TIMEOUT_MS = 5000;
+const NAVIGATION_TIMEOUT_MS = 15000;
 
 function isSameOrigin(url) {
   return url.origin === self.location.origin;

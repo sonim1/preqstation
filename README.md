@@ -44,7 +44,7 @@ If you are new to the system, start with the [public guide](https://preqstation.
 
 - **Projects** — create and manage projects with GitHub/Vercel URL tracking
 - **Kanban board** — drag-and-drop task management across 6 workflow statuses (`inbox`, `todo`, `hold`, `ready`, `done`, `archived`)
-- **Offline workspace workflow** — cached `/board`, visited `/board/:key`, and `/projects` routes with IndexedDB-backed board/projects snapshots, task drafts, plus queued create/edit/move/delete sync when connectivity returns
+- **Offline workspace workflow** — cached `/`, `/dashboard`, `/board`, visited `/board/:key`, and `/projects` routes with IndexedDB-backed board/projects snapshots, task drafts, plus queued create/edit/move/delete sync when connectivity returns
 - **Execution overlay** — task cards can show `Requested` / `Running` independently from workflow position
 - **PREQSTATION Task API** — REST API at `/api/tasks` for AI agent integration with Bearer token auth
 - **Connections** — review and revoke OAuth/MCP clients from `/connections`

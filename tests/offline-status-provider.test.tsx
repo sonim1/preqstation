@@ -43,7 +43,7 @@ describe('app/components/offline-status-provider', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('returns offline when /api/ping does not answer within 2.5 seconds', async () => {
+  it('returns offline when /api/ping does not answer within 15 seconds', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('navigator', { onLine: true } as Navigator);
     const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
@@ -52,7 +52,7 @@ describe('app/components/offline-status-provider', () => {
     });
 
     const statusPromise = resolveOfflineStatus(fetchMock as typeof fetch);
-    await vi.advanceTimersByTimeAsync(2_499);
+    await vi.advanceTimersByTimeAsync(14_999);
 
     await expect(Promise.race([statusPromise, Promise.resolve('pending')])).resolves.toBe(
       'pending',

@@ -12,7 +12,7 @@ const OfflineStatusContext = createContext<OfflineStatusContextValue>({
   online: true,
 });
 
-const OFFLINE_PING_TIMEOUT_MS = 2_500;
+const OFFLINE_PING_TIMEOUT_MS = 15_000;
 
 export async function resolveOfflineStatus(fetcher: typeof fetch = fetch) {
   if (typeof navigator === 'undefined' || !navigator.onLine) {
