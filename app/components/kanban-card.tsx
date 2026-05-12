@@ -426,6 +426,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const labelTooltipText = '#f5f8ff';
   const hasPriorityIcon = taskPriority !== 'none';
   const canEditLabels = Boolean(onUpdateTaskLabels) && labelOptions.length > 0;
+  const hasUnreadNotification = Boolean(task.hasUnreadNotification);
   const hasFooterMeta = Boolean(
     task.runState || task.dueAt || engineConfig || checklistCounts || primaryLabel || canEditLabels,
   );
@@ -568,6 +569,9 @@ export const KanbanCardContent = memo(function KanbanCardContent({
     >
       {task.runState ? <KanbanRunStateDecor runState={task.runState} /> : null}
       <div className={styles.kanbanCardBody}>
+        {hasUnreadNotification ? (
+          <span className={styles.kanbanCardUnreadStatus}>Unread update</span>
+        ) : null}
         <div className={styles.kanbanCardHead}>
           <div
             className={`kanban-drag-handle ${styles.kanbanCardTopRow}`}

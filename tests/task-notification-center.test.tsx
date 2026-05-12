@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const subscribePolledTaskEventsMock = vi.hoisted(() => vi.fn());
 const showErrorNotificationMock = vi.hoisted(() => vi.fn());
 const showTaskCompletionNotificationMock = vi.hoisted(() => vi.fn());
+const routerRefreshMock = vi.hoisted(() => vi.fn());
 
 let drawerProps: Record<string, unknown> | null = null;
 let subscriber: ((events: Array<Record<string, unknown>>) => Promise<boolean> | boolean) | null =
@@ -34,6 +35,12 @@ vi.mock('@/lib/event-poll-subscriptions', () => ({
 vi.mock('@/lib/notifications', () => ({
   showErrorNotification: showErrorNotificationMock,
   showTaskCompletionNotification: showTaskCompletionNotificationMock,
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    refresh: routerRefreshMock,
+  }),
 }));
 
 import { TaskNotificationCenter } from '@/app/components/task-notification-center';
@@ -108,6 +115,7 @@ describe('app/components/task-notification-center', () => {
     fetchMock = vi.fn();
 
     vi.clearAllMocks();
+    routerRefreshMock.mockReset();
     vi.stubGlobal('fetch', fetchMock);
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
@@ -218,6 +226,7 @@ describe('app/components/task-notification-center', () => {
           body: JSON.stringify({ markAll: true }),
         }),
       );
+      expect(routerRefreshMock).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -237,6 +246,7 @@ describe('app/components/task-notification-center', () => {
       expect(showErrorNotificationMock).toHaveBeenCalledWith(
         'Failed to mark notifications as read.',
       );
+      expect(routerRefreshMock).not.toHaveBeenCalled();
       expect(screen.getByLabelText('Open notifications (3 unread)')).toBeTruthy();
     });
 

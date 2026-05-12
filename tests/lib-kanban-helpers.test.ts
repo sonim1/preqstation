@@ -453,5 +453,53 @@ describe('kanban-helpers', () => {
 
       expect(task.dispatchTarget).toBe('hermes-telegram');
     });
+
+    it('serializes unread notification state as a boolean card flag', () => {
+      const unreadTask = toKanbanTask(
+        {
+          id: 'task-1',
+          taskKey: 'PROJ-1',
+          title: 'Task',
+          note: null,
+          sortOrder: 'a0',
+          taskPriority: 'none',
+          dueAt: null,
+          engine: null,
+          dispatchTarget: null,
+          runState: null,
+          runStateUpdatedAt: null,
+          archivedAt: null,
+          updatedAt: new Date('2026-03-10T12:00:00.000Z'),
+          project: null,
+          labels: [],
+          hasUnreadNotification: true,
+        },
+        'todo',
+      );
+      const readTask = toKanbanTask(
+        {
+          id: 'task-2',
+          taskKey: 'PROJ-2',
+          title: 'Task',
+          note: null,
+          sortOrder: 'b0',
+          taskPriority: 'none',
+          dueAt: null,
+          engine: null,
+          dispatchTarget: null,
+          runState: null,
+          runStateUpdatedAt: null,
+          archivedAt: null,
+          updatedAt: new Date('2026-03-10T12:00:00.000Z'),
+          project: null,
+          labels: [],
+          hasUnreadNotification: null,
+        },
+        'todo',
+      );
+
+      expect(unreadTask.hasUnreadNotification).toBe(true);
+      expect(readTask.hasUnreadNotification).toBe(false);
+    });
   });
 });

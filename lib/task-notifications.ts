@@ -57,6 +57,17 @@ type ListTaskNotificationsParams = {
   limit?: number;
 };
 
+type ListUnreadTaskNotificationTaskKeysParams = {
+  ownerId: string;
+  projectId?: string | null;
+  taskKeys: string[];
+};
+
+type EnrichTasksWithUnreadStatusParams = {
+  ownerId: string;
+  projectId?: string | null;
+};
+
 type MarkTaskNotificationsReadParams = {
   ownerId: string;
   notificationIds: string[];
@@ -282,6 +293,66 @@ export async function listTaskNotifications(
     limit,
     hasMore: offset + notifications.length < total,
   };
+}
+
+export async function listUnreadTaskNotificationTaskKeys(
+  params: ListUnreadTaskNotificationTaskKeysParams,
+  client: DbClientOrTx = db,
+) {
+  const taskKeys = [
+    ...new Set((params.taskKeys ?? []).map((taskKey) => taskKey.trim()).filter(Boolean)),
+  ];
+
+  if (taskKeys.length === 0) {
+    return new Set<string>();
+  }
+
+  const projectFilter = params.projectId ? sql`and project_id = ${params.projectId}` : sql``;
+  const taskKeyFilter = sql`and task_key in (${sql.join(
+    taskKeys.map((taskKey) => sql`${taskKey}`),
+    sql`, `,
+  )})`;
+
+  try {
+    const result = await client.execute(sql`
+      select distinct task_key
+      from task_notifications
+      where owner_id = ${params.ownerId}
+        and read_at is null
+        ${projectFilter}
+        ${taskKeyFilter}
+    `);
+
+    return new Set(
+      resultRows(result)
+        .map((row) => String(row.taskKey ?? row.task_key ?? '').trim())
+        .filter(Boolean),
+    );
+  } catch (error) {
+    if (isMissingTaskNotificationsRelationError(error)) {
+      return new Set<string>();
+    }
+    throw error;
+  }
+}
+
+export async function enrichTasksWithUnreadStatus<TTask extends { taskKey: string }>(
+  params: EnrichTasksWithUnreadStatusParams,
+  taskRows: TTask[],
+  client: DbClientOrTx = db,
+): Promise<Array<TTask & { hasUnreadNotification: boolean }>> {
+  const unreadTaskKeys = await listUnreadTaskNotificationTaskKeys(
+    {
+      ...params,
+      taskKeys: taskRows.map((task) => task.taskKey),
+    },
+    client,
+  );
+
+  return taskRows.map((task) => ({
+    ...task,
+    hasUnreadNotification: unreadTaskKeys.has(task.taskKey),
+  }));
 }
 
 export async function markTaskNotificationsRead(

@@ -19,6 +19,7 @@ import { normalizeTaskDispatchTarget } from '@/lib/task-dispatch';
 import { normalizeTaskIdentifier, taskWhereByIdentifier } from '@/lib/task-keys';
 import { extractTaskLabels } from '@/lib/task-labels';
 import { coerceTaskRunState, taskPriorityOptionData } from '@/lib/task-meta';
+import { enrichTasksWithUnreadStatus } from '@/lib/task-notifications';
 import { TASK_BOARD_ORDER } from '@/lib/task-sort-order';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 
@@ -180,7 +181,17 @@ export default async function ProjectBoardPage({ params, searchParams }: Project
     ]),
   );
 
-  const kanbanTasks = groupTasksByStatus(todos);
+  const todosWithUnreadNotifications = await withOwnerDb(owner.id, (client) =>
+    enrichTasksWithUnreadStatus(
+      {
+        ownerId: owner.id,
+        projectId,
+      },
+      todos,
+      client,
+    ),
+  );
+  const kanbanTasks = groupTasksByStatus(todosWithUnreadNotifications);
   const initialArchivedCount = archivedCountRows[0]?.count ?? 0;
   const taskPriorityOptions = taskPriorityOptionData();
   const boardBgUrl = getProjectBoardBgUrl(resolved.bgImage ?? null);

@@ -11,6 +11,7 @@ import { normalizeTaskDispatchTarget } from '@/lib/task-dispatch';
 import { normalizeTaskIdentifier, taskWhereByIdentifier } from '@/lib/task-keys';
 import { extractTaskLabels, groupTaskLabelsByProjectId } from '@/lib/task-labels';
 import { coerceTaskRunState, taskPriorityOptionData } from '@/lib/task-meta';
+import { enrichTasksWithUnreadStatus } from '@/lib/task-notifications';
 import { TASK_BOARD_ORDER } from '@/lib/task-sort-order';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 
@@ -120,7 +121,16 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
     ]),
   );
 
-  const kanbanTasks = groupTasksByStatus(todos);
+  const todosWithUnreadNotifications = await withOwnerDb(owner.id, (client) =>
+    enrichTasksWithUnreadStatus(
+      {
+        ownerId: owner.id,
+      },
+      todos,
+      client,
+    ),
+  );
+  const kanbanTasks = groupTasksByStatus(todosWithUnreadNotifications);
   const initialArchivedCount = archivedCountRows[0]?.count ?? 0;
   const taskPriorityOptions = taskPriorityOptionData();
   const telegramEnabled = telegramEnabledSetting === 'true';

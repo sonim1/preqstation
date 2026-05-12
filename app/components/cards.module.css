@@ -64,6 +64,35 @@
   pointer-events: none;
 }
 
+.kanbanCardUpdated::before {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  z-index: 4;
+  width: 4px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-success), white 16%),
+    color-mix(in srgb, var(--ui-success), black 18%)
+  );
+  box-shadow: 0 0 16px color-mix(in srgb, var(--ui-success), transparent 42%);
+  pointer-events: none;
+}
+
+.kanbanCardUnreadStatus {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 .kanbanCard[data-run-state='queued'] {
   box-shadow: var(--kanban-card-focus-ring), var(--kanban-card-shadow-queued);
 }

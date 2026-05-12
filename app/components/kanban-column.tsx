@@ -103,6 +103,7 @@ function KanbanColumnTaskCard({
   isFocused,
 }: KanbanColumnTaskCardProps) {
   const isStaleQueued = useStaleQueuedTask(task.runState, task.runStateUpdatedAt);
+  const hasUnreadNotification = Boolean(task.hasUnreadNotification);
   const editHref = `${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(task.taskKey)}`;
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -138,15 +139,16 @@ function KanbanColumnTaskCard({
             cardStyles.itemCard,
             cardStyles.kanbanCard,
             task.status === 'hold' || isStaleQueued ? cardStyles.kanbanCardHold : null,
+            hasUnreadNotification ? cardStyles.kanbanCardUpdated : null,
             snapshot.isDragging ? cardStyles.isDragging : null,
             isFocused ? cardStyles.isFocused : null,
           ]
             .filter(Boolean)
             .join(' ')}
           data-run-state={task.runState ?? undefined}
+          data-has-unread-notification={hasUnreadNotification ? 'true' : undefined}
           role="link"
           tabIndex={snapshot.isDragging ? -1 : 0}
-          aria-label={`Open task ${task.taskKey} ${task.title}`}
           onClick={(e) => {
             if (snapshot.isDragging) return;
             const target = e.target as HTMLElement;
