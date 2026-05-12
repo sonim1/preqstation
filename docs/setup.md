@@ -188,16 +188,18 @@ Recommended validation from the settings screen:
 
 Run this after any deploy that changes board shell code, `/sw.js`, or the offline mutation flow.
 
-- Visit `/board` and `/projects` online at least once so the browser registers `/sw.js`, warms the
-  workspace navigation cache, and writes the current projects snapshot into IndexedDB. Also open
-  each `/board/:projectKey` route you expect to use offline once while online so
-  `OfflineBoardRouteWarmer` stores that board document in `preq-board-v2`.
+- Visit `/dashboard`, `/board`, and `/projects` online at least once so the browser registers
+  `/sw.js`, warms the workspace navigation cache, and writes the current projects snapshot into
+  IndexedDB. Also open each `/board/:projectKey` route you expect to use offline once while online
+  so `OfflineWorkspaceRouteWarmer` stores that workspace document in `preq-board-v3`.
 - Disable network in the browser/devtools, reload `/board`, and confirm the offline banner appears
   and the most recent board snapshot renders.
 - While still offline, reload a `/board/:projectKey` route that was visited online earlier and
   confirm the same offline banner and latest snapshot render there too.
 - While still offline, open `/projects` and confirm cached project cards render from IndexedDB
   instead of the browser's localized network error screen.
+- While still offline, open `/` in an uncached browser profile and confirm the offline fallback uses
+  the dashboard recovery copy instead of the browser's localized network error screen.
 - While still offline, open a board path that has not been cached yet and confirm the app shows the
   board-specific English offline fallback page instead of the browser's network error screen.
 - While still offline, quick-add a task, edit its title/note, move it to another lane, and delete
@@ -263,9 +265,9 @@ npx skills add sonim1/preqstation-skill -g
 - Enable Vercel Access Logs and error alerting (e.g., Sentry).
 - Enable Dependabot and patch dependencies at least monthly.
 - Separate Vercel env vars for Production and Preview environments.
-- Treat service worker changes as deploy-sensitive: load the updated `/board`, representative
-  `/board/:key` routes, and `/projects` online once before relying on cached workspace rendering
-  for that browser profile.
+- Treat service worker changes as deploy-sensitive: load the updated `/dashboard`, `/board`,
+  representative `/board/:key` routes, and `/projects` online once before relying on cached
+  workspace rendering for that browser profile.
 - Offline workspace support depends on browser service worker + IndexedDB availability. Private
   browsing policies, cleared site storage, or corporate browser restrictions can disable the cached
   board path or custom offline fallback even when the server is healthy.

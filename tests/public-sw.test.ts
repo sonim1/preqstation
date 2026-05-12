@@ -164,7 +164,11 @@ describe('public/sw.js', () => {
 
     expect(sw.addAllCalls).toContainEqual({
       cacheName: 'preq-static-v3',
-      assets: expect.arrayContaining(['/manifest.webmanifest', '/offline.html']),
+      assets: expect.arrayContaining([
+        '/manifest.webmanifest',
+        '/offline.html',
+        '/brand/preqstation-app-icon.svg',
+      ]),
     });
   });
 
@@ -245,6 +249,65 @@ describe('public/sw.js', () => {
     expect(await response.text()).toBe('<html>cached board</html>');
   });
 
+  it('keeps serving a cached /dashboard page when the network is offline', async () => {
+    const sw = await loadServiceWorker({
+      fetchMock: vi.fn().mockRejectedValue(new TypeError('offline')),
+      seedCaches: [
+        {
+          name: 'preq-board-v3',
+          entries: [
+            ['https://example.com/dashboard', new Response('<html>cached dashboard</html>')],
+          ],
+        },
+      ],
+    });
+
+    const response = await dispatchFetch(
+      sw.handlers.get('fetch') as Parameters<typeof dispatchFetch>[0],
+      { mode: 'navigate', url: 'https://example.com/dashboard' },
+    );
+
+    expect(await response.text()).toBe('<html>cached dashboard</html>');
+  });
+
+  it('serves the offline fallback shell for an uncached /dashboard navigation when the network is offline', async () => {
+    const sw = await loadServiceWorker({
+      fetchMock: vi.fn().mockRejectedValue(new TypeError('offline')),
+      seedCaches: [
+        {
+          name: 'preq-static-v3',
+          entries: [['/offline.html', new Response('<html>offline fallback</html>')]],
+        },
+      ],
+    });
+
+    const response = await dispatchFetch(
+      sw.handlers.get('fetch') as Parameters<typeof dispatchFetch>[0],
+      { mode: 'navigate', url: 'https://example.com/dashboard' },
+    );
+
+    expect(await response.text()).toBe('<html>offline fallback</html>');
+  });
+
+  it('serves the offline fallback shell for the uncached root start navigation when the network is offline', async () => {
+    const sw = await loadServiceWorker({
+      fetchMock: vi.fn().mockRejectedValue(new TypeError('offline')),
+      seedCaches: [
+        {
+          name: 'preq-static-v3',
+          entries: [['/offline.html', new Response('<html>offline fallback</html>')]],
+        },
+      ],
+    });
+
+    const response = await dispatchFetch(
+      sw.handlers.get('fetch') as Parameters<typeof dispatchFetch>[0],
+      { mode: 'navigate', url: 'https://example.com/' },
+    );
+
+    expect(await response.text()).toBe('<html>offline fallback</html>');
+  });
+
   it('serves the offline fallback shell for an uncached board navigation when the network is offline', async () => {
     const sw = await loadServiceWorker({
       fetchMock: vi.fn().mockRejectedValue(new TypeError('offline')),
@@ -299,8 +362,15 @@ describe('public/sw.js', () => {
       sw.handlers.get('fetch') as Parameters<typeof dispatchFetch>[0],
       { mode: 'navigate', url: 'https://example.com/projects' },
     );
+    let resolvedBeforeTimeout = false;
+    void responsePromise.then(() => {
+      resolvedBeforeTimeout = true;
+    });
 
-    await vi.advanceTimersByTimeAsync(15_000);
+    await vi.advanceTimersByTimeAsync(14_999);
+    expect(resolvedBeforeTimeout).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1);
     const response = await responsePromise;
 
     expect(await response.text()).toBe('<html>cached projects</html>');
@@ -361,6 +431,25 @@ describe('public/sw.js', () => {
     expect(sw.putCalls).toContainEqual({
       cacheName: 'preq-board-v3',
       key: 'https://example.com/projects',
+    });
+  });
+
+  it('caches a successful /dashboard navigation for future offline reloads', async () => {
+    const sw = await loadServiceWorker({
+      fetchMock: vi
+        .fn()
+        .mockResolvedValue(new Response('<html>fresh dashboard</html>', { status: 200 })),
+    });
+
+    const response = await dispatchFetch(
+      sw.handlers.get('fetch') as Parameters<typeof dispatchFetch>[0],
+      { mode: 'navigate', url: 'https://example.com/dashboard' },
+    );
+
+    expect(await response.text()).toBe('<html>fresh dashboard</html>');
+    expect(sw.putCalls).toContainEqual({
+      cacheName: 'preq-board-v3',
+      key: 'https://example.com/dashboard',
     });
   });
 });

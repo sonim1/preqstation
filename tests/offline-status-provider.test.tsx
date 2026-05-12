@@ -1,6 +1,19 @@
+// @vitest-environment jsdom
+
+import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { resolveOfflineStatus } from '@/app/components/offline-status-provider';
+import {
+  OfflineStatusProvider,
+  resolveOfflineStatus,
+  useOfflineStatus,
+} from '@/app/components/offline-status-provider';
+
+function StatusProbe() {
+  const { online } = useOfflineStatus();
+
+  return <output>{online ? 'online' : 'offline'}</output>;
+}
 
 describe('app/components/offline-status-provider', () => {
   beforeEach(() => {
@@ -52,5 +65,22 @@ describe('app/components/offline-status-provider', () => {
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     vi.useRealTimers();
+  });
+
+  it('uses a stable online value for the first client render before resolving offline status', async () => {
+    Object.defineProperty(window.navigator, 'onLine', {
+      configurable: true,
+      value: false,
+    });
+    vi.stubGlobal('fetch', vi.fn());
+
+    render(
+      <OfflineStatusProvider>
+        <StatusProbe />
+      </OfflineStatusProvider>,
+    );
+
+    expect(screen.getByText('online')).toBeTruthy();
+    expect(await screen.findByText('offline')).toBeTruthy();
   });
 });

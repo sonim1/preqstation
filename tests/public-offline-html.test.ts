@@ -8,10 +8,12 @@ describe('public/offline.html', () => {
 
     expect(offlineHtml).toContain('You are offline');
     expect(offlineHtml).toContain('Projects are unavailable while you are offline.');
+    expect(offlineHtml).toContain('Dashboard is unavailable while you are offline.');
     expect(offlineHtml).toContain('This board has not been saved for offline use yet.');
     expect(offlineHtml).toContain('Retry');
     expect(offlineHtml).toContain('Back to Main');
     expect(offlineHtml).toContain('Back to Board');
     expect(offlineHtml).toContain('location.pathname');
+    expect(offlineHtml).toContain("pathname === '/dashboard/'");
   });
 });

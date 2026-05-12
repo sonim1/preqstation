@@ -24,7 +24,7 @@
         margin: 0;
         min-height: 100vh;
         font-family:
-          "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
+          'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Palatino, Georgia, serif;
         background:
           radial-gradient(circle at top, rgba(36, 93, 82, 0.12), transparent 36%),
           linear-gradient(180deg, #fcfaf5 0%, var(--bg) 100%);
@@ -170,6 +170,13 @@
           label: 'Back to Main',
           message: 'This board has not been saved for offline use yet.',
         },
+        dashboard: {
+          detail:
+            'Open a cached board or reconnect to refresh the dashboard after the network returns.',
+          href: '/board',
+          label: 'Open Board',
+          message: 'Dashboard is unavailable while you are offline.',
+        },
         default: {
           detail:
             'Reconnect to refresh this page. Boards stay available offline only after you open them once while online.',
@@ -188,11 +195,13 @@
 
       const pathname = location.pathname;
       const variant =
-        pathname === '/projects'
-          ? variants.projects
-          : pathname === '/board' || pathname.startsWith('/board/')
-            ? variants.board
-            : variants.default;
+        pathname === '/dashboard' || pathname === '/dashboard/' || pathname === '/'
+          ? variants.dashboard
+          : pathname === '/projects'
+            ? variants.projects
+            : pathname === '/board' || pathname.startsWith('/board/')
+              ? variants.board
+              : variants.default;
 
       document.getElementById('offline-message').textContent = variant.message;
       document.getElementById('offline-detail').textContent = variant.detail;

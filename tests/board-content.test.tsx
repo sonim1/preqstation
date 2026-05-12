@@ -203,7 +203,7 @@ describe('BoardContent background image handling', () => {
     expect(html).toContain('data-close-href="/board"');
     expect(html).toContain('data-size="80rem"');
     expect(html).toContain('data-testid="offline-board-hydrator"');
-    expect(html).toContain('data-testid="offline-board-route-warmer"');
+    expect(html).not.toContain('data-testid="offline-board-route-warmer"');
     expect(html).toContain('data-archived-count="7"');
     expect(html).toContain('data-archive-project-id="project-1"');
     expect(html).toContain('data-project-id="project-1"');
@@ -213,7 +213,7 @@ describe('BoardContent background image handling', () => {
         boardKey: 'PROJ',
       }),
     );
-    expect(offlineBoardRouteWarmerPropsMock).toHaveBeenCalledWith({});
+    expect(offlineBoardRouteWarmerPropsMock).not.toHaveBeenCalled();
   });
 });
 
