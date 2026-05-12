@@ -259,26 +259,30 @@ The workspace keeps a browser-local offline path layered on top of the normal in
 
 - `app/components/pwa-registration.tsx` registers `/sw.js` for browser sessions.
 - `public/sw.js` caches same-origin `/board`, `/board/:key`, and `/projects` navigations plus
-  static assets. It does not cache `/api/*` responses, so queued writes still reconcile against the
-  live backend.
+  static assets. Navigation fetches use a 15-second timeout before falling back to cached HTML. It
+  does not cache `/api/*` responses, so queued writes still reconcile against the live backend.
 - `public/offline.html` is precached and returned when a workspace navigation misses both the
   network and the corresponding cached HTML document, which keeps the browser from falling back to
   its localized network error page.
-- IndexedDB database `preqstation-offline` contains `snapshots` for recent board/task payloads,
-  `drafts` for task-edit title/note drafts, and `mutations` for queued offline create/patch
-  records.
+- IndexedDB database `preqstation-offline` contains `snapshots` for recent board/task/projects
+  payloads, `drafts` for task-edit title/note drafts, and `mutations` for queued offline
+  create/patch/delete records.
 - `OfflineBoardHydrator` writes the latest board snapshot per project key and rehydrates the Kanban
   store from that snapshot when the browser is offline.
+- `ProjectsOfflineHydrator` writes the latest projects-index snapshot while online and renders
+  cached project cards from IndexedDB when `/projects` is loaded offline.
 - `OfflineBoardRouteWarmer` issues a no-store fetch for the current `/board` or `/board/:key`
   document while the browser is online and writes the HTML response into `preq-board-v2`, so board
   routes the user actually visits are proactively available offline.
 - `BoardOfflineSyncProvider` owns optimistic offline board mutations. Offline creates get temporary
-  `OFFLINE-*` task keys, edits and moves merge into per-task queued records, and replay runs again
-  once the connectivity check against `/api/ping` succeeds.
+  `OFFLINE-*` task keys, edits and moves merge into per-task queued records, deletes are queued as
+  delete records, and replay runs again once the connectivity check against `/api/ping` succeeds.
 - Offline mutation replay preserves queue order. Create replay posts to `/api/todos`, patch replay
-  uses `PATCH /api/todos/:taskKey`, and any queued patch for an offline-created task is rekeyed to
-  the server-issued task key after the create succeeds. Note-fingerprint conflicts are treated as a
-  handled `409`: the conflicting patch is removed from the queue, the latest `boardTask` and
+  uses `PATCH /api/todos/:taskKey`, delete replay uses `DELETE /api/todos/:taskKey`, and any queued
+  patch for an offline-created task is rekeyed to the server-issued task key after the create
+  succeeds. If an offline-created task is deleted before it ever syncs, its queued create/patch
+  records are removed instead of replaying a server delete. Note-fingerprint conflicts are treated
+  as a handled `409`: the conflicting patch is removed from the queue, the latest `boardTask` and
   `focusedTask` payloads from the server are pushed back into the board UI, and the local draft is
   left intact so the user can decide whether to restore it. Other permanent
   validation/not-found/conflict failures (`400`, `404`, `410`, `422`, plus `409` responses without

@@ -4,6 +4,7 @@ import { NativeSelect, Stack, Text, TextInput } from '@mantine/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { LiveMarkdownEditor } from '@/app/components/live-markdown-editor';
+import { useOfflineStatus } from '@/app/components/offline-status-provider';
 import { ProjectBackgroundPicker } from '@/app/components/project-background-picker';
 import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setting-save-status';
 import { useAutoSave } from '@/app/hooks/use-auto-save';
@@ -32,10 +33,18 @@ type ProjectEditPanelProps = {
 };
 
 export function ProjectEditPanel({ selectedProject, updateProjectAction }: ProjectEditPanelProps) {
+  const { online } = useOfflineStatus();
   const formRef = useRef<HTMLFormElement>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const submitProjectUpdate = useCallback(
     async (form: HTMLFormElement) => {
+      if (!online) {
+        const message = 'Project edits are available after reconnecting.';
+        setSaveError(message);
+        showErrorNotification(message);
+        throw new Error(message);
+      }
+
       const result = await updateProjectAction(null, new FormData(form));
       if (result.ok) {
         setSaveError(null);
@@ -46,7 +55,7 @@ export function ProjectEditPanel({ selectedProject, updateProjectAction }: Proje
       showErrorNotification(result.message);
       throw new Error(result.message);
     },
-    [updateProjectAction],
+    [online, updateProjectAction],
   );
   const {
     markDirty: baseMarkDirty,

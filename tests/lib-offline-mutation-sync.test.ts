@@ -223,9 +223,7 @@ describe('lib/offline/mutation-sync', () => {
     const result = await flushOfflineMutations({ fetchImpl: fetchMock });
 
     expect(result).toEqual({ appliedCount: 2, error: null, halted: false });
-    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).not.toHaveProperty(
-      'sortOrder',
-    );
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).not.toHaveProperty('sortOrder');
     expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/todos/PROJ-900');
     expect(JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body))).toEqual({
       status: 'todo',
@@ -304,6 +302,35 @@ describe('lib/offline/mutation-sync', () => {
         taskKey: 'PROJ-512',
         workLogs: [expect.objectContaining({ workedAt: expect.any(Date) })],
       }),
+    });
+  });
+
+  it('replays queued deletes as DELETE requests', async () => {
+    listQueuedOfflineMutationsMock.mockResolvedValueOnce([
+      {
+        id: 'delete:PROJ-512',
+        kind: 'delete',
+        createdAt: '2026-04-25T12:00:00.000Z',
+        taskKey: 'PROJ-512',
+      },
+    ]);
+
+    const onApplied = vi.fn();
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+    });
+
+    const result = await flushOfflineMutations({ fetchImpl: fetchMock, onApplied });
+
+    expect(result).toEqual({ appliedCount: 1, error: null, halted: false });
+    expect(fetchMock).toHaveBeenCalledWith('/api/todos/PROJ-512', {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    });
+    expect(deleteOfflineMutationMock).toHaveBeenCalledWith('delete:PROJ-512');
+    expect(onApplied).toHaveBeenCalledWith({
+      kind: 'delete',
+      taskKey: 'PROJ-512',
     });
   });
 

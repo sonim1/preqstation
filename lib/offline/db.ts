@@ -17,7 +17,7 @@ export type OfflineDraftRecord = {
 
 export type OfflineSnapshotRecord<TPayload = unknown> = {
   id: string;
-  kind: 'board' | 'task';
+  kind: 'board' | 'projects' | 'task';
   entityKey: string;
   payload: TPayload;
   updatedAt: string;
@@ -60,7 +60,17 @@ export type OfflinePatchMutationRecord = {
   taskKey: string;
 };
 
-export type OfflineMutationRecord = OfflineCreateMutationRecord | OfflinePatchMutationRecord;
+export type OfflineDeleteMutationRecord = {
+  id: string;
+  kind: 'delete';
+  createdAt: string;
+  taskKey: string;
+};
+
+export type OfflineMutationRecord =
+  | OfflineCreateMutationRecord
+  | OfflineDeleteMutationRecord
+  | OfflinePatchMutationRecord;
 
 interface OfflineDbSchema extends DBSchema {
   drafts: {

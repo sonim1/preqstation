@@ -16,6 +16,7 @@ import {
   buildOptimisticTask,
   type QueueOfflineCreateInput,
   queueOfflineCreateMutation,
+  queueOfflineDeleteMutation,
   type QueueOfflinePatchInput,
   queueOfflinePatchMutation,
 } from '@/lib/offline/mutation-store';
@@ -32,6 +33,7 @@ import {
 type BoardOfflineSyncContextValue = {
   online: boolean;
   queueTaskCreate: (input: QueueOfflineCreateInput) => Promise<KanbanTask>;
+  queueTaskDelete: (input: { taskKey: string }) => Promise<void>;
   queueTaskMove: (input: {
     sortOrder: string;
     status: KanbanStatus;
@@ -119,8 +121,14 @@ export function BoardOfflineSyncProvider({
           if (mutation.kind === 'create') {
             await deleteDraft(buildTaskOfflineDraftId(mutation.previousTaskKey));
             await deleteDraft(buildTaskOfflineDraftId(mutation.boardTask.taskKey));
+          } else if (mutation.kind === 'delete') {
+            await deleteDraft(buildTaskOfflineDraftId(mutation.taskKey));
           } else {
             await deleteDraft(buildTaskOfflineDraftId(mutation.taskKey));
+          }
+
+          if (mutation.kind === 'delete') {
+            return;
           }
 
           if (activeProjectId && mutation.boardTask.project?.id !== activeProjectId) {
@@ -287,11 +295,16 @@ export function BoardOfflineSyncProvider({
     [],
   );
 
+  const queueTaskDelete = useCallback(async (input: { taskKey: string }) => {
+    await queueOfflineDeleteMutation({ taskKey: input.taskKey });
+  }, []);
+
   return (
     <BoardOfflineSyncContext.Provider
       value={{
         online,
         queueTaskCreate,
+        queueTaskDelete,
         queueTaskMove,
         queueTaskPatch,
       }}

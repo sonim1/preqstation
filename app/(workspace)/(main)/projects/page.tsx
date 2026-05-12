@@ -28,6 +28,7 @@ import { resolveTerminology } from '@/lib/terminology';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 
 import { ProjectPortfolioCard, type ProjectPortfolioCardSummary } from './project-portfolio-card';
+import { ProjectsOfflineHydrator } from './projects-offline-hydrator';
 import styles from './projects-page.module.css';
 
 const DAY_MS = 86_400_000;
@@ -452,6 +453,13 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
     return { ok: true as const };
   }
 
+  const projectsOfflineSnapshot = {
+    featuredCard,
+    resumeCards,
+    quietCards,
+    summaryStrip,
+  };
+
   return (
     <Container
       className="dashboard-root"
@@ -459,117 +467,124 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
       px={{ base: 'sm', sm: 'md', lg: 'lg', xl: 'xl' }}
       py={{ base: 'md', sm: 'xl' }}
     >
-      <Stack gap="md" className="dashboard-stack">
-        <WorkspacePageHeader
-          title="Projects"
-          description="Resume where work last moved. Keep the whole portfolio visible."
-        />
+      <ProjectsOfflineHydrator snapshot={projectsOfflineSnapshot}>
+        <Stack gap="md" className="dashboard-stack">
+          <WorkspacePageHeader
+            title="Projects"
+            description="Resume where work last moved. Keep the whole portfolio visible."
+          />
 
-        <div className={styles.topGrid}>
-          <Paper
-            withBorder
-            radius="md"
-            p={{ base: 'sm', sm: 'lg' }}
-            className={`${panelStyles.sectionPanel} ${styles.topSection}`}
-          >
-            <Stack gap="lg">
-              <div className={styles.topBar}>
-                <Group justify="flex-end" align="center" wrap="wrap" className={styles.topActions}>
-                  <LinkButton href="/dashboard?panel=project">New Project</LinkButton>
-                </Group>
-              </div>
+          <div className={styles.topGrid}>
+            <Paper
+              withBorder
+              radius="md"
+              p={{ base: 'sm', sm: 'lg' }}
+              className={`${panelStyles.sectionPanel} ${styles.topSection}`}
+            >
+              <Stack gap="lg">
+                <div className={styles.topBar}>
+                  <Group
+                    justify="flex-end"
+                    align="center"
+                    wrap="wrap"
+                    className={styles.topActions}
+                  >
+                    <LinkButton href="/dashboard?panel=project">New Project</LinkButton>
+                  </Group>
+                </div>
 
-              <div className={styles.summaryStrip}>
-                {summaryStrip.map((item) => (
-                  <div key={item.label} className={styles.summaryPill}>
-                    <strong>{item.value}</strong>
-                    <span>{item.label}</span>
-                  </div>
-                ))}
-              </div>
+                <div className={styles.summaryStrip}>
+                  {summaryStrip.map((item) => (
+                    <div key={item.label} className={styles.summaryPill}>
+                      <strong>{item.value}</strong>
+                      <span>{item.label}</span>
+                    </div>
+                  ))}
+                </div>
 
-              <div className={styles.guideWrap}>
-                <OpenClawGuide
-                  projects={projectSummaries.map((summary) => ({
-                    projectKey: summary.project.projectKey,
-                    name: summary.project.name,
-                    repoUrl: summary.project.repoUrl,
-                  }))}
+                <div className={styles.guideWrap}>
+                  <OpenClawGuide
+                    projects={projectSummaries.map((summary) => ({
+                      projectKey: summary.project.projectKey,
+                      name: summary.project.name,
+                      repoUrl: summary.project.repoUrl,
+                    }))}
+                  />
+                </div>
+              </Stack>
+            </Paper>
+
+            {featuredCard ? (
+              <div className={styles.topFeature} data-portfolio-featured="true">
+                <ProjectPortfolioCard
+                  card={featuredCard}
+                  deleteAction={deleteProject}
+                  pauseAction={pauseProject}
                 />
               </div>
-            </Stack>
-          </Paper>
-
-          {featuredCard ? (
-            <div className={styles.topFeature} data-portfolio-featured="true">
-              <ProjectPortfolioCard
-                card={featuredCard}
-                deleteAction={deleteProject}
-                pauseAction={pauseProject}
-              />
-            </div>
-          ) : null}
-        </div>
-
-        {totalProjectCount === 0 ? (
-          <EmptyState
-            icon={<IconFolderPlus size={24} />}
-            title="No projects yet"
-            description={`Create your first project to start tracking ${terminology.task.pluralLower} and progress.`}
-            action={<LinkButton href="/dashboard?panel=project">Create Project</LinkButton>}
-          />
-        ) : (
-          <>
-            {resumeCards.length > 0 ? (
-              <section className={styles.portfolioSection} data-project-section="resume">
-                <SimpleGrid
-                  cols={{ base: 1, sm: 2, lg: 3, xl: 4 }}
-                  spacing="md"
-                  className={styles.resumeGrid}
-                >
-                  {resumeCards.map((card) => (
-                    <ProjectPortfolioCard
-                      key={card.id}
-                      card={card}
-                      deleteAction={deleteProject}
-                      pauseAction={pauseProject}
-                    />
-                  ))}
-                </SimpleGrid>
-              </section>
             ) : null}
+          </div>
 
-            <section className={styles.portfolioSection} data-project-section="quiet">
-              <div className={styles.sectionHead}>
-                <div>
-                  <Title component="h2" order={2} size="h4">
-                    Quiet edge
-                  </Title>
-                  <Text c="dimmed" size="sm">
-                    Paused projects stay within reach without competing with the active lane.
-                  </Text>
+          {totalProjectCount === 0 ? (
+            <EmptyState
+              icon={<IconFolderPlus size={24} />}
+              title="No projects yet"
+              description={`Create your first project to start tracking ${terminology.task.pluralLower} and progress.`}
+              action={<LinkButton href="/dashboard?panel=project">Create Project</LinkButton>}
+            />
+          ) : (
+            <>
+              {resumeCards.length > 0 ? (
+                <section className={styles.portfolioSection} data-project-section="resume">
+                  <SimpleGrid
+                    cols={{ base: 1, sm: 2, lg: 3, xl: 4 }}
+                    spacing="md"
+                    className={styles.resumeGrid}
+                  >
+                    {resumeCards.map((card) => (
+                      <ProjectPortfolioCard
+                        key={card.id}
+                        card={card}
+                        deleteAction={deleteProject}
+                        pauseAction={pauseProject}
+                      />
+                    ))}
+                  </SimpleGrid>
+                </section>
+              ) : null}
+
+              <section className={styles.portfolioSection} data-project-section="quiet">
+                <div className={styles.sectionHead}>
+                  <div>
+                    <Title component="h2" order={2} size="h4">
+                      Quiet edge
+                    </Title>
+                    <Text c="dimmed" size="sm">
+                      Paused projects stay within reach without competing with the active lane.
+                    </Text>
+                  </div>
+                  <span className={styles.sectionCount}>{quietCards.length}</span>
                 </div>
-                <span className={styles.sectionCount}>{quietCards.length}</span>
-              </div>
 
-              {quietCards.length > 0 ? (
-                <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" className={styles.quietGrid}>
-                  {quietCards.map((card) => (
-                    <ProjectPortfolioCard
-                      key={card.id}
-                      card={card}
-                      deleteAction={deleteProject}
-                      pauseAction={pauseProject}
-                    />
-                  ))}
-                </SimpleGrid>
-              ) : (
-                <p className={styles.sectionEmpty}>No paused projects right now.</p>
-              )}
-            </section>
-          </>
-        )}
-      </Stack>
+                {quietCards.length > 0 ? (
+                  <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" className={styles.quietGrid}>
+                    {quietCards.map((card) => (
+                      <ProjectPortfolioCard
+                        key={card.id}
+                        card={card}
+                        deleteAction={deleteProject}
+                        pauseAction={pauseProject}
+                      />
+                    ))}
+                  </SimpleGrid>
+                ) : (
+                  <p className={styles.sectionEmpty}>No paused projects right now.</p>
+                )}
+              </section>
+            </>
+          )}
+        </Stack>
+      </ProjectsOfflineHydrator>
 
       {activePanel === 'project-edit' && editingProject ? (
         <TaskPanelModal

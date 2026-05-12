@@ -174,23 +174,24 @@ Recommended validation from the settings screen:
 
 Run this after any deploy that changes board shell code, `/sw.js`, or the offline mutation flow.
 
-- Visit `/board` and `/projects` online at least once so the browser registers `/sw.js` and warms
-  the workspace navigation cache. Also open each `/board/:projectKey` route you expect to use
-  offline once while online so `OfflineBoardRouteWarmer` stores that board document in
-  `preq-board-v2`.
+- Visit `/board` and `/projects` online at least once so the browser registers `/sw.js`, warms the
+  workspace navigation cache, and writes the current projects snapshot into IndexedDB. Also open
+  each `/board/:projectKey` route you expect to use offline once while online so
+  `OfflineBoardRouteWarmer` stores that board document in `preq-board-v2`.
 - Disable network in the browser/devtools, reload `/board`, and confirm the offline banner appears
   and the most recent board snapshot renders.
 - While still offline, reload a `/board/:projectKey` route that was visited online earlier and
   confirm the same offline banner and latest snapshot render there too.
-- While still offline, open `/projects` and confirm the app shows the English offline fallback page
+- While still offline, open `/projects` and confirm cached project cards render from IndexedDB
   instead of the browser's localized network error screen.
 - While still offline, open a board path that has not been cached yet and confirm the app shows the
   board-specific English offline fallback page instead of the browser's network error screen.
-- While still offline, quick-add a task, edit its title/note, and move it to another lane. Reload
-  once to confirm the snapshot and task draft survive a refresh from IndexedDB.
-- Re-enable network and confirm the queued create/edit/move mutations replay automatically, the
-  optimistic `OFFLINE-*` task key is replaced with the server task key, and the task remains in the
-  expected lane.
+- While still offline, quick-add a task, edit its title/note, move it to another lane, and delete
+  an archived task. Reload once to confirm the snapshot and task draft survive a refresh from
+  IndexedDB.
+- Re-enable network and confirm the queued create/edit/move/delete mutations replay automatically,
+  the optimistic `OFFLINE-*` task key is replaced with the server task key, and the task remains in
+  the expected lane.
 - For a task draft whose saved base title and note still match the server task, confirm reconnecting
   auto-saves the draft and preserves the task priority, status, project, and labels.
 - If replay hits a note-conflict `409`, confirm the conflicting patch is removed from the queue,
@@ -247,8 +248,8 @@ npx skills add sonim1/preqstation-skill -g
 - Enable Dependabot and patch dependencies at least monthly.
 - Separate Vercel env vars for Production and Preview environments.
 - Treat service worker changes as deploy-sensitive: load the updated `/board`, representative
-  `/board/:key` routes, and `/projects` online once before relying on offline fallback for that
-  browser profile.
+  `/board/:key` routes, and `/projects` online once before relying on cached workspace rendering
+  for that browser profile.
 - Offline workspace support depends on browser service worker + IndexedDB availability. Private
   browsing policies, cleared site storage, or corporate browser restrictions can disable the cached
   board path or custom offline fallback even when the server is healthy.

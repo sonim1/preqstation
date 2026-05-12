@@ -1,6 +1,6 @@
 import React, { type ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { QaRunView } from '@/lib/qa-runs';
 
@@ -15,6 +15,7 @@ const useKanbanColumnsMock = vi.hoisted(() =>
   })),
 );
 const setKanbanReconciliationPausedMock = vi.hoisted(() => vi.fn());
+const useOfflineStatusMock = vi.hoisted(() => vi.fn(() => ({ checkedAt: null, online: true })));
 const router = vi.hoisted(() => ({
   refresh: vi.fn(),
 }));
@@ -59,6 +60,7 @@ vi.mock('@/app/components/kanban-archive-drawer', () => ({
     isLoading,
     isLoadingMore,
     hasMore,
+    deleteDisabled,
   }: {
     opened: boolean;
     tasks: Array<{ taskKey: string }>;
@@ -67,6 +69,7 @@ vi.mock('@/app/components/kanban-archive-drawer', () => ({
     isLoading: boolean;
     isLoadingMore: boolean;
     hasMore: boolean;
+    deleteDisabled?: boolean;
   }) => (
     <div
       data-testid="kanban-archive-drawer"
@@ -77,6 +80,7 @@ vi.mock('@/app/components/kanban-archive-drawer', () => ({
       data-loading={String(isLoading)}
       data-loading-more={String(isLoadingMore)}
       data-has-more={String(hasMore)}
+      data-delete-disabled={String(Boolean(deleteDisabled))}
     />
   ),
 }));
@@ -91,6 +95,10 @@ vi.mock('@/app/components/kanban-column', () => ({
 
 vi.mock('@/app/components/kanban-quick-add', () => ({
   KanbanQuickAdd: () => null,
+}));
+
+vi.mock('@/app/components/offline-status-provider', () => ({
+  useOfflineStatus: () => useOfflineStatusMock(),
 }));
 
 vi.mock('@/app/components/project-insight-modal', () => ({
@@ -205,6 +213,10 @@ function renderBoard({
 }
 
 describe('app/components/kanban-board action island', () => {
+  beforeEach(() => {
+    useOfflineStatusMock.mockReturnValue({ checkedAt: null, online: true });
+  });
+
   it('renders project board QA beside the add control with tooltip labels', () => {
     const html = renderBoard({
       selectedProject: { id: '1', name: 'Alpha', projectKey: 'PROJ' },
@@ -249,6 +261,14 @@ describe('app/components/kanban-board action island', () => {
     expect(html).not.toContain('Open project settings');
     expect(html).not.toContain('Open QA runs');
     expect(html).not.toContain('Open project insight');
+  });
+
+  it('disables archived task deletion in the archive drawer while offline', () => {
+    useOfflineStatusMock.mockReturnValue({ checkedAt: null, online: false });
+
+    const html = renderBoard({ selectedProject: null, archivedCount: 1 });
+
+    expect(html).toContain('data-delete-disabled="true"');
   });
 
   it('builds archived drawer requests against the archived route with scope, search, and pagination', () => {

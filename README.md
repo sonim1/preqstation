@@ -44,7 +44,7 @@ If you are new to the system, start with the [public guide](https://preqstation.
 
 - **Projects** — create and manage projects with GitHub/Vercel URL tracking
 - **Kanban board** — drag-and-drop task management across 6 workflow statuses (`inbox`, `todo`, `hold`, `ready`, `done`, `archived`)
-- **Offline board workflow** — cached `/board`, visited `/board/:key` routes, and IndexedDB-backed board snapshots, task drafts, plus queued create/edit/move sync when connectivity returns
+- **Offline workspace workflow** — cached `/board`, visited `/board/:key`, and `/projects` routes with IndexedDB-backed board/projects snapshots, task drafts, plus queued create/edit/move/delete sync when connectivity returns
 - **Execution overlay** — task cards can show `Requested` / `Running` independently from workflow position
 - **PREQSTATION Task API** — REST API at `/api/tasks` for AI agent integration with Bearer token auth
 - **Connections** — review and revoke OAuth/MCP clients from `/connections`
@@ -160,10 +160,11 @@ responses are not cached by the service worker.
 Browser storage in IndexedDB (`preqstation-offline`) keeps three kinds of local state:
 
 - recent board snapshots keyed by project so `/board` can hydrate while offline
+- the latest projects-index snapshot so `/projects` can render cached project cards offline
 - task-edit title/note drafts
-- queued task create/edit/move mutations for replay
+- queued task create/edit/move/delete mutations for replay
 
-While offline, quick-add, task edits, and board moves are applied optimistically in the UI and
+While offline, quick-add, task edits, board moves, and task deletes are applied optimistically in the UI and
 written to the local mutation queue. Once `/api/ping` reports the backend reachable again, the app
 replays those mutations against the normal internal board APIs and replaces temporary `OFFLINE-*`
 task keys with server-issued task keys after sync. If a replayed note edit conflicts with newer

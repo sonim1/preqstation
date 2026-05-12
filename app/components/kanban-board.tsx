@@ -1126,19 +1126,21 @@ export function KanbanBoard({
       if (located) {
         const task = columnsRef.current[located.status][located.index];
         if (!task) return;
+        if (!online && located.status === 'archived') return;
         setDeleteConfirm({ taskId: task.id, taskKey: task.taskKey, title: task.title });
         return;
       }
 
       const archivedTask = archivedDrawerState.tasks.find((task) => task.id === taskId);
       if (!archivedTask) return;
+      if (!online) return;
       setDeleteConfirm({
         taskId: archivedTask.id,
         taskKey: archivedTask.taskKey,
         title: archivedTask.title,
       });
     },
-    [archivedDrawerState.tasks],
+    [archivedDrawerState.tasks, online],
   );
 
   const deleteTask = useCallback(
@@ -1158,6 +1160,11 @@ export function KanbanBoard({
         if (located.status === 'archived') {
           setArchivedDrawerState((current) => removeArchivedDrawerTaskState(current, taskId));
           onArchivedCountChange?.((current) => Math.max(0, current - 1));
+        }
+
+        if (!online && boardOfflineSync) {
+          void boardOfflineSync.queueTaskDelete({ taskKey: targetTask.taskKey });
+          return;
         }
 
         enqueuePersist({
@@ -1182,6 +1189,11 @@ export function KanbanBoard({
       setArchivedDrawerState((current) => removeArchivedDrawerTaskState(current, taskId));
       onArchivedCountChange?.((current) => Math.max(0, current - 1));
 
+      if (!online && boardOfflineSync) {
+        void boardOfflineSync.queueTaskDelete({ taskKey: archivedTask.taskKey });
+        return;
+      }
+
       enqueuePersist({
         run: async () => {
           const response = await fetch(`/api/todos/${encodeURIComponent(archivedTask.taskKey)}`, {
@@ -1194,9 +1206,11 @@ export function KanbanBoard({
     },
     [
       archivedDrawerState.tasks,
+      boardOfflineSync,
       enqueuePersist,
       kanbanStore,
       onArchivedCountChange,
+      online,
       readColumnsFromStore,
     ],
   );
@@ -1514,6 +1528,7 @@ export function KanbanBoard({
         nextOffset={archivedDrawerState.nextOffset}
         loadMoreError={archiveLoadMoreError}
         isPending={isPending}
+        deleteDisabled={!online}
         onQueryChange={(value) => {
           setArchiveLoadMoreError(null);
           setArchiveQuery(value);

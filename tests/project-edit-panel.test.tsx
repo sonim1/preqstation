@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const useAutoSaveMock = vi.hoisted(() => vi.fn());
+const useOfflineStatusMock = vi.hoisted(() => vi.fn());
 const notifications = vi.hoisted(() => ({
   showErrorNotification: vi.fn(),
 }));
@@ -20,6 +21,10 @@ vi.mock('@/app/components/project-background-picker', () => ({
 
 vi.mock('@/app/hooks/use-auto-save', () => ({
   useAutoSave: useAutoSaveMock,
+}));
+
+vi.mock('@/app/components/offline-status-provider', () => ({
+  useOfflineStatus: () => useOfflineStatusMock(),
 }));
 
 vi.mock('@/lib/notifications', () => notifications);
@@ -60,6 +65,7 @@ describe('app/components/panels/project-edit-panel', () => {
       status: 'idle',
       isDirty: false,
     });
+    useOfflineStatusMock.mockReturnValue({ online: true });
 
     vi.stubGlobal(
       'requestAnimationFrame',
@@ -151,5 +157,55 @@ describe('app/components/panels/project-edit-panel', () => {
     );
     expect(notifications.showErrorNotification).toHaveBeenCalledWith('Failed to update project.');
     expect(updateProjectAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not call the project update server action while offline', async () => {
+    let capturedSubmit: ((form: HTMLFormElement) => void | Promise<void>) | undefined;
+    useOfflineStatusMock.mockReturnValue({ online: false });
+    useAutoSaveMock.mockImplementation(
+      (_formRef: React.RefObject<HTMLFormElement | null>, _delay: number, options?: unknown) => {
+        capturedSubmit = (
+          options as { submit?: (form: HTMLFormElement) => Promise<void> } | undefined
+        )?.submit;
+        return {
+          markDirty: vi.fn(),
+          triggerSave: vi.fn(),
+          syncSnapshot: vi.fn(),
+          status: 'idle',
+          isDirty: false,
+        };
+      },
+    );
+    const updateProjectAction = vi.fn(async () => ({ ok: true as const }));
+
+    renderToStaticMarkup(
+      <MantineProvider>
+        <ProjectEditPanel
+          selectedProject={{
+            id: 'project-1',
+            name: 'Project One',
+            projectKey: 'PROJ',
+            description: null,
+            status: 'active',
+            priority: 2,
+            bgImage: null,
+            bgImageCredit: null,
+            repoUrl: null,
+            vercelUrl: null,
+          }}
+          updateProjectAction={updateProjectAction}
+        />
+      </MantineProvider>,
+    );
+
+    const form = document.createElement('form');
+
+    await expect(capturedSubmit!(form as HTMLFormElement)).rejects.toThrow(
+      'Project edits are available after reconnecting.',
+    );
+    expect(updateProjectAction).not.toHaveBeenCalled();
+    expect(notifications.showErrorNotification).toHaveBeenCalledWith(
+      'Project edits are available after reconnecting.',
+    );
   });
 });

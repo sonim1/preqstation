@@ -5,10 +5,12 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { openOfflineDb } from '@/lib/offline/db';
 import {
   buildOfflineCreateMutationId,
+  buildOfflineDeleteMutationId,
   buildOfflinePatchMutationId,
   buildOptimisticTasksFromQueuedCreates,
   listQueuedOfflineMutations,
   queueOfflineCreateMutation,
+  queueOfflineDeleteMutation,
   queueOfflinePatchMutation,
   rekeyOfflinePatchMutation,
 } from '@/lib/offline/mutation-store';
@@ -302,6 +304,49 @@ describe('lib/offline/mutation-store', () => {
         },
       },
     ]);
+  });
+
+  it('queues a delete record after removing stale patch records for server tasks', async () => {
+    await queueOfflinePatchMutation({
+      taskKey: 'PROJ-401',
+      payload: { title: 'Renamed offline' },
+    });
+
+    await queueOfflineDeleteMutation({ taskKey: 'PROJ-401' });
+
+    const queued = await listQueuedOfflineMutations();
+
+    expect(queued).toEqual([
+      {
+        id: buildOfflineDeleteMutationId('PROJ-401'),
+        kind: 'delete',
+        createdAt: expect.any(String),
+        taskKey: 'PROJ-401',
+      },
+    ]);
+  });
+
+  it('drops queued create and patch records when a local offline task is deleted', async () => {
+    await queueOfflineCreateMutation({
+      taskKey: 'OFFLINE-123456789',
+      payload: {
+        title: 'Draft task',
+        note: '',
+        projectId: 'project-1',
+        labelIds: [],
+        taskPriority: 'none',
+        status: 'inbox',
+        sortOrder: 'a0',
+      },
+    });
+    await queueOfflinePatchMutation({
+      taskKey: 'OFFLINE-123456789',
+      payload: { status: 'todo', sortOrder: 'a1' },
+    });
+
+    await queueOfflineDeleteMutation({ taskKey: 'OFFLINE-123456789' });
+
+    await expect(listQueuedOfflineMutations()).resolves.toEqual([]);
   });
 
   it('rekeys queued patches after an offline task receives a real task key', async () => {
