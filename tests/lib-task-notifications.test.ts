@@ -324,6 +324,22 @@ describe('lib/task-notifications', () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
+  it('skips the unread task-key query when task keys are omitted', async () => {
+    const execute = vi.fn();
+    const params = {
+      ownerId: OWNER_ID,
+    };
+
+    const result = await listUnreadTaskNotificationTaskKeys(
+      // @ts-expect-error taskKeys is required for typed callers; this covers runtime defense.
+      params,
+      { execute } as never,
+    );
+
+    expect(result).toEqual(new Set());
+    expect(execute).not.toHaveBeenCalled();
+  });
+
   it('returns an empty unread task-key set when the notifications relation is missing', async () => {
     const execute = vi
       .fn()

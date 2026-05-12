@@ -60,7 +60,7 @@ type ListTaskNotificationsParams = {
 type ListUnreadTaskNotificationTaskKeysParams = {
   ownerId: string;
   projectId?: string | null;
-  taskKeys?: string[] | null;
+  taskKeys: string[];
 };
 
 type MarkTaskNotificationsReadParams = {
@@ -294,21 +294,19 @@ export async function listUnreadTaskNotificationTaskKeys(
   params: ListUnreadTaskNotificationTaskKeysParams,
   client: DbClientOrTx = db,
 ) {
-  const taskKeys = params.taskKeys
-    ? [...new Set(params.taskKeys.map((taskKey) => taskKey.trim()).filter(Boolean))]
-    : null;
+  const taskKeys = [
+    ...new Set((params.taskKeys ?? []).map((taskKey) => taskKey.trim()).filter(Boolean)),
+  ];
 
-  if (taskKeys && taskKeys.length === 0) {
+  if (taskKeys.length === 0) {
     return new Set<string>();
   }
 
   const projectFilter = params.projectId ? sql`and project_id = ${params.projectId}` : sql``;
-  const taskKeyFilter = taskKeys
-    ? sql`and task_key in (${sql.join(
-        taskKeys.map((taskKey) => sql`${taskKey}`),
-        sql`, `,
-      )})`
-    : sql``;
+  const taskKeyFilter = sql`and task_key in (${sql.join(
+    taskKeys.map((taskKey) => sql`${taskKey}`),
+    sql`, `,
+  )})`;
 
   try {
     const result = await client.execute(sql`
