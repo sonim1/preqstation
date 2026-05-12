@@ -2268,6 +2268,10 @@ html[data-mantine-color-scheme='dark'] .mantine-NativeSelect-input {
   color: var(--ui-text);
 }
 
+html[data-mantine-color-scheme='dark'] [data-panel='task-edit-comments'] .mantine-Textarea-input {
+  background: var(--ui-reading-surface-soft);
+}
+
 html[data-mantine-color-scheme='dark'] .mantine-Input-input::placeholder,
 html[data-mantine-color-scheme='dark'] .mantine-Textarea-input::placeholder,
 html[data-mantine-color-scheme='dark'] .mantine-Select-input::placeholder,

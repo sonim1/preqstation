@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 
 const globalsCss = fs.readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
@@ -133,5 +134,35 @@ describe('task edit reading surface CSS', () => {
 
     expect(commentCardRule).toContain('border: 1px solid var(--ui-reading-border);');
     expectTokenBackground(commentCardRule, '--ui-reading-surface');
+  });
+
+  it('keeps the task comments textarea reading surface through the dark-mode cascade', () => {
+    const dom = new JSDOM(`
+      <html data-mantine-color-scheme="dark">
+        <head><style>${globalsCss}</style></head>
+        <body>
+          <textarea class="mantine-Textarea-input" data-testid="default-textarea"></textarea>
+          <section data-panel="task-edit-comments">
+            <textarea class="mantine-Textarea-input" data-testid="comments-textarea"></textarea>
+          </section>
+        </body>
+      </html>
+    `);
+
+    const defaultTextarea = dom.window.document.querySelector<HTMLTextAreaElement>(
+      '[data-testid="default-textarea"]',
+    );
+    const commentsTextarea = dom.window.document.querySelector<HTMLTextAreaElement>(
+      '[data-testid="comments-textarea"]',
+    );
+
+    expect(defaultTextarea).toBeTruthy();
+    expect(commentsTextarea).toBeTruthy();
+    expect(dom.window.getComputedStyle(defaultTextarea!).background).toBe(
+      'rgba(12, 22, 38, 0.92)',
+    );
+    expect(dom.window.getComputedStyle(commentsTextarea!).background).toBe(
+      'var(--ui-reading-surface-soft)',
+    );
   });
 });
