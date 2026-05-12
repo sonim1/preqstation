@@ -122,6 +122,33 @@ describe('task edit reading surface CSS', () => {
     );
   });
 
+  it('keeps mermaid fallback source readable on a light canvas in dark mode', () => {
+    const dom = new JSDOM(`
+      <html data-mantine-color-scheme="dark">
+        <head><style>${globalsCss}</style></head>
+        <body>
+          <article class="markdown-output">
+            <pre class="mermaid">graph TD; A-->B;</pre>
+          </article>
+          <section class="live-editor-mermaid-block">
+            <pre class="mermaid">sequenceDiagram; Alice->>Bob: Hi;</pre>
+          </section>
+        </body>
+      </html>
+    `);
+
+    const mermaidNodes = dom.window.document.querySelectorAll<HTMLElement>('.mermaid');
+
+    expect(mermaidNodes).toHaveLength(2);
+
+    for (const node of mermaidNodes) {
+      const style = dom.window.getComputedStyle(node);
+
+      expect(style.background).toBe('var(--mantine-color-white)');
+      expect(style.color).toBe('rgb(15, 32, 61)');
+    }
+  });
+
   it('uses reading surface tokens for task comments without overriding the focus border', () => {
     const textareaRule = getRuleBody(
       globalsCss,
@@ -164,9 +191,7 @@ describe('task edit reading surface CSS', () => {
 
     expect(defaultTextarea).toBeTruthy();
     expect(commentsTextarea).toBeTruthy();
-    expect(dom.window.getComputedStyle(defaultTextarea!).background).toBe(
-      'rgba(12, 22, 38, 0.92)',
-    );
+    expect(dom.window.getComputedStyle(defaultTextarea!).background).toBe('rgba(12, 22, 38, 0.92)');
     expect(dom.window.getComputedStyle(commentsTextarea!).background).toBe(
       'var(--ui-reading-surface-soft)',
     );
