@@ -53,9 +53,11 @@ describe('app/api/events/route', () => {
 
     const response = await GET(request('?projectId=project-1'));
     const body = await response.json();
+    const latestCursorQuery = mocked.client.query.eventsOutbox.findMany.mock.calls[0]?.[0];
 
     expect(response.status).toBe(200);
     expect(body).toEqual({ events: [], cursor: '42', staleCursor: false });
+    expect(queryParamValues(latestCursorQuery.where)).toContain('project-1');
   });
 
   it('returns a stable zero cursor when the owner has no events yet', async () => {

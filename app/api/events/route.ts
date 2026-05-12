@@ -45,7 +45,7 @@ export async function GET(request: Request) {
 
       if (after === null) {
         const [latestEvent] = await client.query.eventsOutbox.findMany({
-          where: ownerScope,
+          where: projectScope,
           columns: { id: true },
           orderBy: [desc(eventsOutbox.id)],
           limit: 1,
