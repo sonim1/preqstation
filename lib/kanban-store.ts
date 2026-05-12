@@ -56,6 +56,17 @@ const kanbanColumnsCache = new WeakMap<
   Record<string, KanbanTask>,
   WeakMap<Record<KanbanStatus, string[]>, KanbanColumns>
 >();
+const runStatePollingStatusCache = new WeakMap<
+  Record<string, KanbanTask>,
+  {
+    lastTaskQueuedAt: string | null;
+    result: {
+      hasQueued: boolean;
+      hasRunning: boolean;
+      lastTaskQueuedAt: string | null;
+    };
+  }
+>();
 
 export type KanbanStoreState = {
   tasksByKey: Record<string, KanbanTask>;
@@ -65,6 +76,7 @@ export type KanbanStoreState = {
   focusedTask: EditableBoardTask | null;
   focusedTaskDetailStatus: FocusedTaskDetailStatus;
   isReconciliationPaused: boolean;
+  lastTaskQueuedAt: string | null;
   hydrate: (snapshot: KanbanHydrationSnapshot) => void;
   applyMove: (taskId: string, status: KanbanStatus, index: number) => string[];
   upsertSnapshots: (tasks: KanbanTask[]) => void;
@@ -241,6 +253,40 @@ export function selectKanbanColumns(
   return columns;
 }
 
+export function selectKanbanRunStatePollingStatus(
+  state: Pick<KanbanStoreState, 'tasksByKey' | 'lastTaskQueuedAt'>,
+) {
+  const cached = runStatePollingStatusCache.get(state.tasksByKey);
+  if (cached?.lastTaskQueuedAt === state.lastTaskQueuedAt) {
+    return cached.result;
+  }
+
+  let hasQueued = false;
+  let hasRunning = false;
+
+  for (const task of Object.values(state.tasksByKey)) {
+    if (task.runState === 'queued') {
+      hasQueued = true;
+    } else if (task.runState === 'running') {
+      hasRunning = true;
+    }
+
+    if (hasQueued && hasRunning) break;
+  }
+
+  const result = {
+    hasQueued,
+    hasRunning,
+    lastTaskQueuedAt: state.lastTaskQueuedAt,
+  };
+  runStatePollingStatusCache.set(state.tasksByKey, {
+    lastTaskQueuedAt: state.lastTaskQueuedAt,
+    result,
+  });
+
+  return result;
+}
+
 export function createKanbanStore(snapshot: KanbanHydrationSnapshot) {
   return createStore<KanbanStoreState>()((set, get) => {
     const normalized = normalizeColumns(snapshot.columns);
@@ -249,6 +295,7 @@ export function createKanbanStore(snapshot: KanbanHydrationSnapshot) {
       ...normalized,
       ...focusState(snapshot.focusedTask),
       isReconciliationPaused: false,
+      lastTaskQueuedAt: null,
       hydrate(nextSnapshot) {
         const current = get();
         const nextColumns = mergeHydratedColumns(nextSnapshot.columns, current.tasksByKey);
@@ -376,6 +423,7 @@ export function createKanbanStore(snapshot: KanbanHydrationSnapshot) {
         set({
           ...nextNormalized,
           ...focusState(focusedTask, current.focusedTaskDetailStatus),
+          lastTaskQueuedAt: queuedAt,
         });
       },
     };
