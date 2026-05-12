@@ -59,7 +59,7 @@ export async function GET(request: Request) {
       }
 
       const [oldestEvent] = await client.query.eventsOutbox.findMany({
-        where: ownerScope,
+        where: projectScope,
         columns: { id: true },
         orderBy: [asc(eventsOutbox.id)],
         limit: 1,

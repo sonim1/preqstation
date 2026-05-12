@@ -28,6 +28,19 @@ function request(search = '') {
   return new Request(`${TEST_BASE_URL}/api/events${search}`);
 }
 
+function queryParamValues(value: unknown): unknown[] {
+  if (!value || typeof value !== 'object') return [];
+
+  if (value.constructor.name === 'Param' && 'value' in value) {
+    return [value.value];
+  }
+
+  const queryChunks = 'queryChunks' in value ? value.queryChunks : undefined;
+  if (!Array.isArray(queryChunks)) return [];
+
+  return queryChunks.flatMap((chunk) => queryParamValues(chunk));
+}
+
 describe('app/api/events/route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -99,6 +112,47 @@ describe('app/api/events/route', () => {
 
     expect(response.status).toBe(200);
     expect(body).toEqual({ events: [], cursor: '25', staleCursor: true });
+  });
+
+  it('measures stale project cursors against the same project-scoped event set', async () => {
+    mocked.client.query.eventsOutbox.findMany.mockReset();
+    mocked.client.query.eventsOutbox.findMany.mockImplementation((options: { limit: number; where: unknown }) => {
+      if (options.limit === 1) {
+        return Promise.resolve(queryParamValues(options.where).includes('project-1') ? [] : [{ id: 5n }]);
+      }
+
+      return Promise.resolve([
+        {
+          id: 4n,
+          projectId: 'project-1',
+          eventType: 'TASK_UPDATED',
+          entityType: 'task',
+          entityId: 'PQST-104',
+          payload: { changedFields: ['title'] },
+          createdAt: new Date('2026-05-11T12:00:00.000Z'),
+        },
+      ]);
+    });
+
+    const response = await GET(request('?projectId=project-1&after=3'));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual({
+      events: [
+        {
+          id: '4',
+          projectId: 'project-1',
+          eventType: 'TASK_UPDATED',
+          entityType: 'task',
+          entityId: 'PQST-104',
+          payload: { changedFields: ['title'] },
+          createdAt: '2026-05-11T12:00:00.000Z',
+        },
+      ],
+      cursor: '4',
+      staleCursor: false,
+    });
   });
 
   it('rejects an invalid after cursor', async () => {
