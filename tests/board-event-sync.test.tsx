@@ -108,7 +108,7 @@ describe('app/components/board-event-sync', () => {
     vi.stubGlobal('fetch', fetchMock);
   });
 
-  function renderBoardEventSync(projectId = 'project-1') {
+  function renderBoardEventSync(projectId: string | null = 'project-1') {
     nextRefIndex = 0;
     BoardEventSync({
       projectId,
@@ -403,6 +403,27 @@ describe('app/components/board-event-sync', () => {
     vi.useRealTimers();
   });
 
+  it('polls active all-project boards without a project query parameter', async () => {
+    vi.useFakeTimers();
+    stubVisibilityState('visible');
+    useKanbanRunStatePollingStatusMock.mockReturnValue({
+      hasQueued: true,
+      hasRunning: false,
+      lastTaskQueuedAt: null,
+    });
+    fetchMock.mockResolvedValueOnce(
+      jsonPollingResponse({ events: [], cursor: '10', staleCursor: false }),
+    );
+
+    renderBoardEventSync(null);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/events', {
+      credentials: 'same-origin',
+    });
+    vi.useRealTimers();
+  });
+
   it('uses a 60 second polling delay when running tasks are active without queued tasks', async () => {
     vi.useFakeTimers();
     stubVisibilityState('visible');
@@ -474,6 +495,41 @@ describe('app/components/board-event-sync', () => {
 
     expect(routerRefreshMock).toHaveBeenCalledTimes(1);
     expect(publishPolledTaskEventsMock).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('allows another stale-cursor refresh after normal event replay recovers', async () => {
+    vi.useFakeTimers();
+    stubVisibilityState('visible');
+    useKanbanRunStatePollingStatusMock.mockReturnValue({
+      hasQueued: true,
+      hasRunning: false,
+      lastTaskQueuedAt: null,
+    });
+    fetchMock
+      .mockResolvedValueOnce(jsonPollingResponse({ events: [], cursor: '25', staleCursor: true }))
+      .mockResolvedValueOnce(
+        jsonPollingResponse({
+          events: [
+            {
+              id: '26',
+              eventType: 'TASK_UPDATED',
+              entityType: 'task',
+              entityId: 'PROJ-255',
+            },
+          ],
+          cursor: '26',
+          staleCursor: false,
+        }),
+      )
+      .mockResolvedValueOnce(jsonPollingResponse({ events: [], cursor: '40', staleCursor: true }));
+
+    renderBoardEventSync();
+    await vi.runOnlyPendingTimersAsync();
+    await vi.runOnlyPendingTimersAsync();
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(routerRefreshMock).toHaveBeenCalledTimes(2);
     vi.useRealTimers();
   });
 

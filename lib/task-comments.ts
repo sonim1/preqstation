@@ -1,8 +1,8 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 
-import type { db } from '@/lib/db';
-import { eventsOutbox, taskComments, tasks } from '@/lib/db/schema';
-import { ENTITY_TASK, TASK_UPDATED } from '@/lib/outbox';
+import { taskComments, tasks } from '@/lib/db/schema';
+import type { DbTransaction } from '@/lib/db/types';
+import { ENTITY_TASK, TASK_UPDATED, writeOutboxEvent } from '@/lib/outbox';
 
 export const TASK_COMMENT_RUN_STATES = ['queued', 'working', 'done', 'failed'] as const;
 export const TASK_COMMENT_AUTHOR_TYPES = ['user', 'agent', 'system'] as const;
@@ -47,15 +47,13 @@ export function serializeTaskComment(comment: TaskCommentRow) {
   };
 }
 
-type TaskCommentRunStateClient = Pick<typeof db, 'insert' | 'query' | 'update'>;
-
 export async function syncTaskRunStateFromComments({
   client,
   ownerId,
   taskId,
   now = new Date(),
 }: {
-  client: TaskCommentRunStateClient;
+  client: DbTransaction;
   ownerId: string;
   taskId: string;
   now?: Date;
@@ -91,7 +89,8 @@ export async function syncTaskRunStateFromComments({
     })
     .where(and(eq(tasks.ownerId, ownerId), eq(tasks.id, taskId)));
 
-  await client.insert(eventsOutbox).values({
+  await writeOutboxEvent({
+    tx: client,
     ownerId,
     projectId: task.projectId,
     eventType: TASK_UPDATED,

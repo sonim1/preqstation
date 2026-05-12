@@ -109,4 +109,13 @@ describe('syncTaskRunStateFromComments', () => {
     expect(mocked.db.update).not.toHaveBeenCalled();
     expect(mocked.db.insert).not.toHaveBeenCalled();
   });
+
+  it('requires the caller-provided transaction for the outbox insert', async () => {
+    mocked.db.query.taskComments.findMany.mockResolvedValue([{ runState: 'queued' }]);
+
+    await sync({ now: new Date('2026-05-11T12:04:00.000Z') });
+
+    expect(mocked.db.update).toHaveBeenCalledTimes(1);
+    expect(mocked.db.insert).toHaveBeenCalledTimes(1);
+  });
 });

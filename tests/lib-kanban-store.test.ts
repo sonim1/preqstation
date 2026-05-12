@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
 import type { KanbanColumns, KanbanTask } from '@/lib/kanban-helpers';
-import { createKanbanStore, type EditableBoardTask, selectKanbanColumns } from '@/lib/kanban-store';
+import {
+  createKanbanStore,
+  type EditableBoardTask,
+  selectKanbanColumns,
+  selectKanbanRunStatePollingStatus,
+} from '@/lib/kanban-store';
 
 function buildTask(
   overrides: Partial<KanbanTask> & { id: string; taskKey: string; sortOrder: string },
@@ -160,6 +165,37 @@ describe('lib/kanban-store', () => {
     const state = store.getState();
 
     expect(selectKanbanColumns(state)).toBe(selectKanbanColumns(state));
+  });
+
+  it('keeps the run-state polling selector result stable when status values are unchanged', () => {
+    const store = createKanbanStore({
+      columns: {
+        ...buildColumns(),
+        todo: [
+          buildTask({
+            id: 'task-1',
+            taskKey: 'PROJ-255',
+            sortOrder: 'a0',
+            runState: 'queued',
+          }),
+          buildTask({ id: 'task-2', taskKey: 'PROJ-256', sortOrder: 'b0' }),
+        ],
+      },
+      focusedTask: buildFocusedTask(),
+    });
+
+    const before = selectKanbanRunStatePollingStatus(store.getState());
+
+    store.getState().upsertSnapshots([
+      buildTask({
+        id: 'task-2',
+        taskKey: 'PROJ-256',
+        sortOrder: 'b0',
+        title: 'Reconciled title',
+      }),
+    ]);
+
+    expect(selectKanbanRunStatePollingStatus(store.getState())).toBe(before);
   });
 
   it('keeps optimistic queued run state when hydrating a stale server snapshot', () => {

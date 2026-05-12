@@ -285,7 +285,7 @@ export function BoardEventSync({ projectId, onArchivedCountRefresh }: BoardEvent
   }, [flushBufferedTaskKeys, isReconciliationPaused]);
 
   useEffect(() => {
-    if (!projectId || typeof document === 'undefined') {
+    if (typeof document === 'undefined') {
       return;
     }
     const activeProjectId = projectId;
@@ -321,10 +321,12 @@ export function BoardEventSync({ projectId, onArchivedCountRefresh }: BoardEvent
       if (stopped || !isPollingActive()) return;
 
       try {
-        const params = new URLSearchParams({ projectId: activeProjectId });
+        const params = new URLSearchParams();
+        if (activeProjectId) params.set('projectId', activeProjectId);
         if (pollingCursorRef.current) params.set('after', pollingCursorRef.current);
+        const query = params.toString();
 
-        const response = await fetch(`/api/events?${params.toString()}`, {
+        const response = await fetch(`/api/events${query ? `?${query}` : ''}`, {
           credentials: 'same-origin',
         });
         if (response.status >= 400 && response.status < 500) {
@@ -348,8 +350,11 @@ export function BoardEventSync({ projectId, onArchivedCountRefresh }: BoardEvent
             didRefreshStaleCursorRef.current = true;
             router.refresh();
           }
-        } else if (payload.events && payload.events.length > 0) {
-          await publishPolledTaskEvents(payload.events);
+        } else {
+          didRefreshStaleCursorRef.current = false;
+          if (payload.events && payload.events.length > 0) {
+            await publishPolledTaskEvents(payload.events);
+          }
         }
 
         schedule(baseDelay());

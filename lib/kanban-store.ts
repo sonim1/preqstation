@@ -60,13 +60,17 @@ const runStatePollingStatusCache = new WeakMap<
   Record<string, KanbanTask>,
   {
     lastTaskQueuedAt: string | null;
-    result: {
-      hasQueued: boolean;
-      hasRunning: boolean;
-      lastTaskQueuedAt: string | null;
-    };
+    result: KanbanRunStatePollingStatus;
   }
 >();
+
+type KanbanRunStatePollingStatus = {
+  hasQueued: boolean;
+  hasRunning: boolean;
+  lastTaskQueuedAt: string | null;
+};
+
+let lastRunStatePollingStatusResult: KanbanRunStatePollingStatus | null = null;
 
 export type KanbanStoreState = {
   tasksByKey: Record<string, KanbanTask>;
@@ -279,12 +283,20 @@ export function selectKanbanRunStatePollingStatus(
     hasRunning,
     lastTaskQueuedAt: state.lastTaskQueuedAt,
   };
+  const stableResult =
+    lastRunStatePollingStatusResult &&
+    lastRunStatePollingStatusResult.hasQueued === result.hasQueued &&
+    lastRunStatePollingStatusResult.hasRunning === result.hasRunning &&
+    lastRunStatePollingStatusResult.lastTaskQueuedAt === result.lastTaskQueuedAt
+      ? lastRunStatePollingStatusResult
+      : result;
+  lastRunStatePollingStatusResult = stableResult;
   runStatePollingStatusCache.set(state.tasksByKey, {
     lastTaskQueuedAt: state.lastTaskQueuedAt,
-    result,
+    result: stableResult,
   });
 
-  return result;
+  return stableResult;
 }
 
 export function createKanbanStore(snapshot: KanbanHydrationSnapshot) {
