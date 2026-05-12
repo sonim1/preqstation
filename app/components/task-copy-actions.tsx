@@ -3,7 +3,14 @@
 import { ActionIcon, Kbd, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { IconInfoCircle } from '@tabler/icons-react';
 import Image from 'next/image';
-import { type CSSProperties, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import {
+  type CSSProperties,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 
 import { DispatchPromptPreview } from '@/app/components/dispatch-prompt-preview';
 import { DispatchSegmentedControl } from '@/app/components/dispatch-segmented-control';
@@ -233,8 +240,15 @@ export function TaskCopyActions({
   );
   const sendDispatchRef = useRef<(() => Promise<void>) | null>(null);
   const dispatchInFlightRef = useRef(false);
+  const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dispatchState, setDispatchState] = useState<DispatchState>('idle');
   const isSending = dispatchState === 'loading';
+  const clearDispatchResetTimeout = useCallback(() => {
+    if (!resetTimeoutRef.current) return;
+
+    clearTimeout(resetTimeoutRef.current);
+    resetTimeoutRef.current = null;
+  }, []);
   const availableActions = resolveTaskEditDispatchActions(
     telegramEnabled,
     resolvedHermesTelegramEnabled,
@@ -310,8 +324,9 @@ export function TaskCopyActions({
   };
 
   const sendDispatch = async () => {
-    if (dispatchInFlightRef.current || isSending) return;
+    if (dispatchInFlightRef.current) return;
 
+    clearDispatchResetTimeout();
     dispatchInFlightRef.current = true;
     setDispatchState('loading');
 
@@ -356,8 +371,9 @@ export function TaskCopyActions({
       showErrorNotification(errorMessage);
     } finally {
       dispatchInFlightRef.current = false;
-      setTimeout(() => {
+      resetTimeoutRef.current = setTimeout(() => {
         setDispatchState('idle');
+        resetTimeoutRef.current = null;
       }, 1500);
     }
   };
@@ -367,8 +383,15 @@ export function TaskCopyActions({
   });
 
   useEffect(() => {
+    clearDispatchResetTimeout();
+    setDispatchState('idle');
+
+    return clearDispatchResetTimeout;
+  }, [clearDispatchResetTimeout, taskKey]);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.defaultPrevented || isSending) return;
+      if (event.defaultPrevented) return;
 
       const isSendShortcut = (event.metaKey || event.ctrlKey) && event.key === 'Enter';
       if (!isSendShortcut) return;
@@ -380,7 +403,7 @@ export function TaskCopyActions({
 
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [isSending]);
+  }, []);
 
   if (availableModes.length === 0 || availableActions.length === 0) {
     return null;
