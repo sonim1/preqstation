@@ -2426,11 +2426,13 @@ html[data-mantine-color-scheme='dark'] .live-editor-code {
 }
 
 html[data-mantine-color-scheme='dark'] .markdown-output .mermaid {
-  background: color-mix(in srgb, var(--ui-surface-strong), white 6%);
+  background: var(--mantine-color-white);
+  border-color: var(--mantine-color-gray-3);
 }
 
 html[data-mantine-color-scheme='dark'] .live-editor-mermaid-block .mermaid {
-  background: color-mix(in srgb, var(--ui-surface-strong), white 6%);
+  background: var(--mantine-color-white);
+  border-color: var(--mantine-color-gray-3);
 }
 
 html[data-mantine-color-scheme='dark'] .live-editor-code-block {

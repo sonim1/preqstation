@@ -122,6 +122,23 @@ describe('task edit reading surface CSS', () => {
     );
   });
 
+  it('keeps mermaid diagrams on a light canvas in dark mode for contrast', () => {
+    const markdownMermaidRule = getRuleBody(
+      globalsCss,
+      "html[data-mantine-color-scheme='dark'] .markdown-output .mermaid",
+    );
+    const liveEditorMermaidRule = getRuleBody(
+      globalsCss,
+      "html[data-mantine-color-scheme='dark'] .live-editor-mermaid-block .mermaid",
+    );
+
+    for (const ruleBody of [markdownMermaidRule, liveEditorMermaidRule]) {
+      expect(ruleBody).toContain('background: var(--mantine-color-white);');
+      expect(ruleBody).toContain('border-color: var(--mantine-color-gray-3);');
+      expect(ruleBody).not.toMatch(/background:\s*color-mix\(/);
+    }
+  });
+
   it('uses reading surface tokens for task comments without overriding the focus border', () => {
     const textareaRule = getRuleBody(
       globalsCss,
@@ -164,9 +181,7 @@ describe('task edit reading surface CSS', () => {
 
     expect(defaultTextarea).toBeTruthy();
     expect(commentsTextarea).toBeTruthy();
-    expect(dom.window.getComputedStyle(defaultTextarea!).background).toBe(
-      'rgba(12, 22, 38, 0.92)',
-    );
+    expect(dom.window.getComputedStyle(defaultTextarea!).background).toBe('rgba(12, 22, 38, 0.92)');
     expect(dom.window.getComputedStyle(commentsTextarea!).background).toBe(
       'var(--ui-reading-surface-soft)',
     );
