@@ -1806,9 +1806,12 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
 }
 
 [data-panel='task-edit-comments'] .mantine-Textarea-input {
-  border-color: var(--ui-reading-border);
   background: var(--ui-reading-surface-soft);
   color: var(--ui-text);
+}
+
+[data-panel='task-edit-comments'] .mantine-Textarea-input:not(:focus) {
+  border-color: var(--ui-reading-border);
 }
 
 .live-editor-paragraph {
