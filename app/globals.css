@@ -1788,7 +1788,7 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   border-radius: var(--mantine-radius-md);
   padding: 12px 14px;
   background: var(--ui-reading-surface-soft);
-  color: var(--mantine-color-text);
+  color: var(--ui-text);
   resize: vertical;
   font-size: 14px;
   line-height: 1.5;
@@ -2316,26 +2316,8 @@ html[data-mantine-color-scheme='dark'] .workspace-navbar {
   border-color: var(--ui-border);
 }
 
-html[data-mantine-color-scheme='dark'] .markdown-output,
-html[data-mantine-color-scheme='dark'] .live-editor-shell,
-html[data-mantine-color-scheme='dark'] .live-editor-raw-input,
-html[data-mantine-color-scheme='dark'] [data-panel='task-edit-comments'] .mantine-Textarea-input {
-  border-color: var(--ui-reading-border);
-}
-
 html[data-mantine-color-scheme='dark'] .kanban-quickadd-panel {
   background: var(--ui-card-bg);
-}
-
-html[data-mantine-color-scheme='dark'] .markdown-output {
-  background: var(--ui-reading-surface);
-}
-
-html[data-mantine-color-scheme='dark'] .live-editor-shell,
-html[data-mantine-color-scheme='dark'] .live-editor-raw-input,
-html[data-mantine-color-scheme='dark'] [data-panel='task-edit-comments'] .mantine-Textarea-input {
-  background: var(--ui-reading-surface-soft);
-  color: var(--ui-text);
 }
 
 html[data-mantine-color-scheme='dark'] .workspace-header,
@@ -2451,12 +2433,6 @@ html[data-mantine-color-scheme='dark'] .live-editor-code-block {
 
 html[data-mantine-color-scheme='dark'] .live-editor-placeholder {
   color: rgba(158, 176, 205, 0.72);
-}
-
-html[data-mantine-color-scheme='dark'] .live-editor-raw-input {
-  border-color: var(--ui-reading-border);
-  background: var(--ui-reading-surface-soft);
-  color: var(--ui-text);
 }
 
 html[data-mantine-color-scheme='dark'] .live-editor-raw-input::placeholder {

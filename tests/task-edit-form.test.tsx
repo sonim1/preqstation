@@ -1241,8 +1241,12 @@ describe('app/components/task-edit-form', () => {
 
     expect(await screen.findByLabelText('Codex CLI comment')).toBeTruthy();
     expect(screen.queryByText('done')).toBeNull();
+    const commentInput = screen.getByLabelText('Add task comment');
+    expect(commentInput.classList.contains('mantine-Textarea-input')).toBe(true);
+    expect(commentInput.closest('[data-panel="task-edit-comments"]')).not.toBeNull();
+    expect((await screen.findByText('I checked this.')).closest('.markdown-output')).not.toBeNull();
 
-    fireEvent.change(screen.getByLabelText('Add task comment'), {
+    fireEvent.change(commentInput, {
       target: { value: 'Please check this' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Add comment' }));
