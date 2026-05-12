@@ -240,6 +240,7 @@ export function TaskCopyActions({
   );
   const sendDispatchRef = useRef<(() => Promise<void>) | null>(null);
   const dispatchInFlightRef = useRef(false);
+  const dispatchGenerationRef = useRef(0);
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dispatchState, setDispatchState] = useState<DispatchState>('idle');
   const isSending = dispatchState === 'loading';
@@ -327,6 +328,8 @@ export function TaskCopyActions({
     if (dispatchInFlightRef.current) return;
 
     clearDispatchResetTimeout();
+    dispatchGenerationRef.current += 1;
+    const dispatchGeneration = dispatchGenerationRef.current;
     dispatchInFlightRef.current = true;
     setDispatchState('loading');
 
@@ -356,22 +359,32 @@ export function TaskCopyActions({
       );
 
       if (!result.ok) {
-        setDispatchState('error');
+        if (dispatchGenerationRef.current === dispatchGeneration) {
+          setDispatchState('error');
+        }
         showErrorNotification(result.error);
       } else {
         const queuedAt = new Date().toISOString();
         onTaskQueued?.(taskKey, queuedAt, dispatchTarget);
         persistDispatchPreference(selectedEngine, effectiveObjective, effectiveAction);
-        setDispatchState('success');
+        if (dispatchGenerationRef.current === dispatchGeneration) {
+          setDispatchState('success');
+        }
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error && error.message ? error.message : 'Failed to send Telegram message';
-      setDispatchState('error');
+      if (dispatchGenerationRef.current === dispatchGeneration) {
+        setDispatchState('error');
+      }
       showErrorNotification(errorMessage);
     } finally {
+      if (dispatchGenerationRef.current !== dispatchGeneration) return;
+
       dispatchInFlightRef.current = false;
       resetTimeoutRef.current = setTimeout(() => {
+        if (dispatchGenerationRef.current !== dispatchGeneration) return;
+
         setDispatchState('idle');
         resetTimeoutRef.current = null;
       }, 1500);
@@ -383,6 +396,7 @@ export function TaskCopyActions({
   });
 
   useEffect(() => {
+    dispatchGenerationRef.current += 1;
     clearDispatchResetTimeout();
     dispatchInFlightRef.current = false;
     setDispatchState('idle');

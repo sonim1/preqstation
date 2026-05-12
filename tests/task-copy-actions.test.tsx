@@ -437,13 +437,16 @@ describe('app/components/task-copy-actions', () => {
     expect(sendButton.matches(':disabled')).toBe(true);
   });
 
-  it('allows dispatching the next task when the task key changes during a send', async () => {
+  it('keeps the next task guarded when the previous task resolves during its send', async () => {
+    vi.useFakeTimers();
     const firstSend = createTelegramSendResponse();
     const secondSend = createTelegramSendResponse();
+    const duplicateSend = createTelegramSendResponse();
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockReturnValueOnce(firstSend.response)
-      .mockReturnValueOnce(secondSend.response);
+      .mockReturnValueOnce(secondSend.response)
+      .mockReturnValueOnce(duplicateSend.response);
     vi.stubGlobal('fetch', fetchMock);
 
     const view = render(
@@ -482,8 +485,29 @@ describe('app/components/task-copy-actions', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const [, options] = fetchMock.mock.calls[1] ?? [];
     expect(JSON.parse(String(options?.body)).taskKey).toBe('PROJ-225');
+    expect(sendButton.textContent).toContain('Sending');
 
     await resolveTelegramSend(firstSend);
+    expect(sendButton.textContent).toContain('Sending');
+    expect(sendButton.matches(':disabled')).toBe(true);
+
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          metaKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1500);
+    });
+    expect(sendButton.textContent).toContain('Sending');
+
     await resolveTelegramSend(secondSend);
   });
 
