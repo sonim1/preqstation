@@ -3,6 +3,17 @@
   --ui-surface-soft: rgba(255, 255, 255, 0.95);
   --ui-surface-strong: rgba(255, 255, 255, 0.98);
   --ui-border: rgba(92, 121, 165, 0.34);
+  --ui-reading-surface: linear-gradient(
+    180deg,
+    rgba(246, 244, 239, 0.96),
+    rgba(240, 238, 232, 0.94)
+  );
+  --ui-reading-surface-soft: linear-gradient(
+    180deg,
+    rgba(248, 246, 241, 0.98),
+    rgba(242, 240, 234, 0.95)
+  );
+  --ui-reading-border: rgba(118, 105, 86, 0.22);
   --ui-shadow: 0 22px 52px -34px rgba(21, 45, 89, 0.5);
   --ui-text: #0f203d;
   --ui-muted-text: #4f668a;
@@ -78,6 +89,13 @@ html[data-mantine-color-scheme='dark'] {
   --ui-surface-soft: rgba(20, 33, 54, 0.95);
   --ui-surface-strong: rgba(13, 24, 40, 0.98);
   --ui-border: rgba(132, 161, 202, 0.42);
+  --ui-reading-surface: linear-gradient(180deg, rgba(24, 34, 48, 0.98), rgba(19, 29, 42, 0.96));
+  --ui-reading-surface-soft: linear-gradient(
+    180deg,
+    rgba(27, 38, 54, 0.98),
+    rgba(21, 32, 47, 0.96)
+  );
+  --ui-reading-border: rgba(145, 166, 195, 0.36);
   --ui-shadow: 0 26px 58px -36px rgba(2, 8, 22, 0.98);
   --ui-text: #eaf2fc;
   --ui-muted-text: #b3c4e0;
@@ -1633,10 +1651,10 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
 
 .markdown-output {
   margin-top: 8px;
-  border: 1px solid var(--ui-border);
+  border: 1px solid var(--ui-reading-border);
   border-radius: var(--mantine-radius-md);
   padding: 10px 12px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(245, 250, 255, 0.84));
+  background: var(--ui-reading-surface);
   overflow: auto;
 }
 
@@ -1728,9 +1746,9 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
 
 .live-editor-shell {
   position: relative;
-  border: 1px solid var(--ui-border);
+  border: 1px solid var(--ui-reading-border);
   border-radius: var(--mantine-radius-md);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 251, 255, 0.86));
+  background: var(--ui-reading-surface-soft);
 }
 
 .live-editor-input {
@@ -1766,10 +1784,10 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
 .live-editor-raw-input {
   width: 100%;
   min-height: 220px;
-  border: 1px solid var(--ui-border);
+  border: 1px solid var(--ui-reading-border);
   border-radius: var(--mantine-radius-md);
   padding: 12px 14px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 251, 255, 0.86));
+  background: var(--ui-reading-surface-soft);
   color: var(--mantine-color-text);
   resize: vertical;
   font-size: 14px;
@@ -1785,6 +1803,12 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
 
 .live-editor-raw-input:focus-visible {
   border-color: var(--ui-accent);
+}
+
+[data-panel='task-edit-comments'] .mantine-Textarea-input {
+  border-color: var(--ui-reading-border);
+  background: var(--ui-reading-surface-soft);
+  color: var(--ui-text);
 }
 
 .live-editor-paragraph {
@@ -2288,16 +2312,30 @@ html[data-mantine-color-scheme='dark'] select:-webkit-autofill {
 html[data-mantine-color-scheme='dark'] .kanban-column,
 html[data-mantine-color-scheme='dark'] .kanban-quickadd-panel,
 html[data-mantine-color-scheme='dark'] .workspace-header,
-html[data-mantine-color-scheme='dark'] .workspace-navbar,
-html[data-mantine-color-scheme='dark'] .live-editor-shell,
-html[data-mantine-color-scheme='dark'] .markdown-output {
+html[data-mantine-color-scheme='dark'] .workspace-navbar {
   border-color: var(--ui-border);
 }
 
-html[data-mantine-color-scheme='dark'] .kanban-quickadd-panel,
 html[data-mantine-color-scheme='dark'] .markdown-output,
-html[data-mantine-color-scheme='dark'] .live-editor-shell {
+html[data-mantine-color-scheme='dark'] .live-editor-shell,
+html[data-mantine-color-scheme='dark'] .live-editor-raw-input,
+html[data-mantine-color-scheme='dark'] [data-panel='task-edit-comments'] .mantine-Textarea-input {
+  border-color: var(--ui-reading-border);
+}
+
+html[data-mantine-color-scheme='dark'] .kanban-quickadd-panel {
   background: var(--ui-card-bg);
+}
+
+html[data-mantine-color-scheme='dark'] .markdown-output {
+  background: var(--ui-reading-surface);
+}
+
+html[data-mantine-color-scheme='dark'] .live-editor-shell,
+html[data-mantine-color-scheme='dark'] .live-editor-raw-input,
+html[data-mantine-color-scheme='dark'] [data-panel='task-edit-comments'] .mantine-Textarea-input {
+  background: var(--ui-reading-surface-soft);
+  color: var(--ui-text);
 }
 
 html[data-mantine-color-scheme='dark'] .workspace-header,
@@ -2416,8 +2454,8 @@ html[data-mantine-color-scheme='dark'] .live-editor-placeholder {
 }
 
 html[data-mantine-color-scheme='dark'] .live-editor-raw-input {
-  border-color: var(--ui-border);
-  background: linear-gradient(180deg, rgba(21, 35, 57, 0.96), rgba(16, 28, 47, 0.94));
+  border-color: var(--ui-reading-border);
+  background: var(--ui-reading-surface-soft);
   color: var(--ui-text);
 }
 
