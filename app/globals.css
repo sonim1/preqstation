@@ -2427,12 +2427,12 @@ html[data-mantine-color-scheme='dark'] .live-editor-code {
 
 html[data-mantine-color-scheme='dark'] .markdown-output .mermaid {
   background: var(--mantine-color-white);
-  border-color: var(--mantine-color-gray-3);
+  border-color: var(--ui-border);
 }
 
 html[data-mantine-color-scheme='dark'] .live-editor-mermaid-block .mermaid {
   background: var(--mantine-color-white);
-  border-color: var(--mantine-color-gray-3);
+  border-color: var(--ui-border);
 }
 
 html[data-mantine-color-scheme='dark'] .live-editor-code-block {
