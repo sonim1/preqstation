@@ -250,7 +250,6 @@ describe('app/components/task-copy-actions', () => {
     expect(html.indexOf('data-task-dispatch-prompt')).toBeLessThan(
       html.indexOf('aria-label="Send dispatch"'),
     );
-    expect(html).toContain('Cmd+Enter');
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');
     expect(html).toContain('🦞 Telegram');
@@ -269,13 +268,48 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Selected action:');
   });
 
-  it('uses Ctrl+Enter for the send shortcut label on non-Apple platforms', () => {
-    setNavigatorPlatform('Win32');
-
+  it('omits the platform-dependent send shortcut during static render', () => {
     const html = renderTaskCopyActions({ engine: 'codex' });
 
-    expect(html).toContain('Ctrl+Enter');
     expect(html).not.toContain('Cmd+Enter');
+    expect(html).not.toContain('Ctrl+Enter');
+    expect(html).not.toContain('task-dispatch-send-shortcut');
+  });
+
+  it('uses Cmd+Enter for the send shortcut label after mounting on Apple platforms', async () => {
+    render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+        />
+      </MantineProvider>,
+    );
+
+    expect(await screen.findByText('Cmd+Enter')).toBeTruthy();
+    expect(screen.queryByText('Ctrl+Enter')).toBeNull();
+  });
+
+  it('uses Ctrl+Enter for the send shortcut label after mounting on non-Apple platforms', async () => {
+    setNavigatorPlatform('Win32');
+
+    render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+        />
+      </MantineProvider>,
+    );
+
+    expect(await screen.findByText('Ctrl+Enter')).toBeTruthy();
+    expect(screen.queryByText('Cmd+Enter')).toBeNull();
   });
 
   it('persists the current dispatch preference when copying the prompt', async () => {

@@ -252,6 +252,7 @@ export function TaskCopyActions({
   const dispatchGenerationRef = useRef(0);
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dispatchState, setDispatchState] = useState<DispatchState>('idle');
+  const [sendShortcutLabel, setSendShortcutLabel] = useState<string | null>(null);
   const isSending = dispatchState === 'loading';
   const clearDispatchResetTimeout = useCallback(() => {
     if (!resetTimeoutRef.current) return;
@@ -263,7 +264,6 @@ export function TaskCopyActions({
     telegramEnabled,
     resolvedHermesTelegramEnabled,
   );
-  const sendShortcutLabel = getSendShortcutLabel();
   const effectiveObjective = availableModes.includes(selectedObjective)
     ? selectedObjective
     : resolveInitialMode(availableModes, storedPreference?.objective);
@@ -413,6 +413,10 @@ export function TaskCopyActions({
 
     return clearDispatchResetTimeout;
   }, [clearDispatchResetTimeout, taskKey]);
+
+  useEffect(() => {
+    setSendShortcutLabel(getSendShortcutLabel());
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -571,11 +575,11 @@ export function TaskCopyActions({
             }}
           >
             <span>{getSendLabel(dispatchState)}</span>
-            {suppressShortcut ? null : (
+            {!suppressShortcut && sendShortcutLabel ? (
               <Kbd size="xs" className="task-dispatch-send-shortcut">
                 {sendShortcutLabel}
               </Kbd>
-            )}
+            ) : null}
           </UnstyledButton>
         </div>
 
