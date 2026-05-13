@@ -148,6 +148,40 @@ describe('app/components/board-notification-sync', () => {
     });
   });
 
+  it('does not clear a board flag from a partial unread notification page', async () => {
+    const firstNotification = makeNotification({ id: 'notif-1', taskKey: 'PROJ-327' });
+
+    render(
+      <KanbanStoreProvider initialColumns={buildColumns()} initialFocusedTask={null}>
+        <BoardNotificationSync />
+        <BoardFlagProbe />
+      </KanbanStoreProvider>,
+    );
+
+    act(() => {
+      useTaskNotificationStore.getState().hydrateUnreadPage({
+        notifications: [firstNotification],
+        total: 21,
+        offset: 0,
+        limit: 20,
+        hasMore: true,
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('flag-PROJ-327').textContent).toBe('true');
+    });
+
+    act(() => {
+      useTaskNotificationStore.getState().beginMarkRead(firstNotification);
+      useTaskNotificationStore.getState().finishMarkRead(firstNotification);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('flag-PROJ-327').textContent).toBe('true');
+    });
+  });
+
   it('keys the sync effect off task count and memoized unread keys', () => {
     expect(boardNotificationSyncSource).toContain('useMemo');
     expect(boardNotificationSyncSource).toContain(
@@ -155,7 +189,7 @@ describe('app/components/board-notification-sync', () => {
     );
     expect(boardNotificationSyncSource).not.toContain('useKanbanColumns');
     expect(boardNotificationSyncSource).toContain(
-      '}, [taskKeysCount, setTaskUnreadNotification, nextUnreadTaskKeys]);',
+      '}, [taskKeysCount, canClearUnreadTaskFlags, setTaskUnreadNotification, nextUnreadTaskKeys]);',
     );
   });
 });

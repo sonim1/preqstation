@@ -10,6 +10,9 @@ export function BoardNotificationSync() {
   const unreadTaskNotificationCounts = useTaskNotificationStore(
     (state) => state.unreadTaskNotificationCounts,
   );
+  const canClearUnreadTaskFlags = useTaskNotificationStore(
+    (state) => state.unreadNotifications.length >= state.unreadTotal,
+  );
   const setTaskUnreadNotification = useSetTaskUnreadNotification();
   const syncedTaskKeysRef = useRef(new Set<string>());
 
@@ -28,14 +31,19 @@ export function BoardNotificationSync() {
       setTaskUnreadNotification(taskKey, true);
     }
 
-    for (const taskKey of syncedTaskKeysRef.current) {
-      if (!nextUnreadTaskKeys.has(taskKey)) {
-        setTaskUnreadNotification(taskKey, false);
+    if (canClearUnreadTaskFlags) {
+      for (const taskKey of syncedTaskKeysRef.current) {
+        if (!nextUnreadTaskKeys.has(taskKey)) {
+          setTaskUnreadNotification(taskKey, false);
+        }
       }
+
+      syncedTaskKeysRef.current = nextUnreadTaskKeys;
+      return;
     }
 
-    syncedTaskKeysRef.current = nextUnreadTaskKeys;
-  }, [taskKeysCount, setTaskUnreadNotification, nextUnreadTaskKeys]);
+    syncedTaskKeysRef.current = new Set([...syncedTaskKeysRef.current, ...nextUnreadTaskKeys]);
+  }, [taskKeysCount, canClearUnreadTaskFlags, setTaskUnreadNotification, nextUnreadTaskKeys]);
 
   return null;
 }
