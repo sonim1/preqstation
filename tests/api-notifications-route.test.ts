@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { TEST_BASE_URL } from './test-utils';
 
+const NOTIFICATION_ID_1 = '44444444-4444-4444-8444-444444444444';
+const NOTIFICATION_ID_2 = '55555555-5555-4555-8555-555555555555';
+const NOTIFICATION_ID_9 = '99999999-9999-4999-8999-999999999999';
+
 const mocked = vi.hoisted(() => ({
   requireOwnerUser: vi.fn(),
   assertSameOrigin: vi.fn(),
@@ -56,7 +60,7 @@ describe('app/api/notifications/route', () => {
     mocked.listTaskNotifications.mockResolvedValue({
       notifications: [
         {
-          id: 'notif-1',
+          id: NOTIFICATION_ID_1,
           ownerId: 'owner-1',
           projectId: 'project-1',
           taskId: 'task-1',
@@ -73,8 +77,8 @@ describe('app/api/notifications/route', () => {
       limit: 20,
       hasMore: false,
     });
-    mocked.markAllTaskNotificationsRead.mockResolvedValue(['notif-1', 'notif-2']);
-    mocked.markTaskNotificationsRead.mockResolvedValue(['notif-1']);
+    mocked.markAllTaskNotificationsRead.mockResolvedValue([NOTIFICATION_ID_1, NOTIFICATION_ID_2]);
+    mocked.markTaskNotificationsRead.mockResolvedValue([NOTIFICATION_ID_1]);
   });
 
   it('GET returns unread notifications by default', async () => {
@@ -91,7 +95,7 @@ describe('app/api/notifications/route', () => {
     expect(body).toEqual({
       notifications: [
         expect.objectContaining({
-          id: 'notif-1',
+          id: NOTIFICATION_ID_1,
           taskKey: 'PROJ-327',
           statusTo: 'ready',
           readAt: null,
@@ -109,7 +113,7 @@ describe('app/api/notifications/route', () => {
     mocked.listTaskNotifications.mockResolvedValueOnce({
       notifications: [
         {
-          id: 'notif-9',
+          id: NOTIFICATION_ID_9,
           ownerId: 'owner-1',
           projectId: 'project-1',
           taskId: 'task-9',
@@ -143,7 +147,7 @@ describe('app/api/notifications/route', () => {
     expect(body).toEqual({
       notifications: [
         expect.objectContaining({
-          id: 'notif-9',
+          id: NOTIFICATION_ID_9,
           readAt: '2026-04-08T05:00:00.000Z',
           createdAt: '2026-04-08T04:40:00.000Z',
         }),
@@ -158,7 +162,7 @@ describe('app/api/notifications/route', () => {
   it('PATCH marks the supplied notification ids as read for the current owner', async () => {
     const response = await PATCH(
       patchRequest({
-        notificationIds: ['notif-1'],
+        notificationIds: [NOTIFICATION_ID_1],
       }),
     );
 
@@ -166,14 +170,30 @@ describe('app/api/notifications/route', () => {
     expect(mocked.markTaskNotificationsRead).toHaveBeenCalledWith(
       {
         ownerId: 'owner-1',
-        notificationIds: ['notif-1'],
+        notificationIds: [NOTIFICATION_ID_1],
       },
       expect.anything(),
     );
     expect(await response.json()).toEqual({
       ok: true,
-      updatedIds: ['notif-1'],
+      updatedIds: [NOTIFICATION_ID_1],
     });
+  });
+
+  it('PATCH rejects invalid notification ids', async () => {
+    const response = await PATCH(
+      patchRequest({
+        notificationIds: [''],
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(mocked.markTaskNotificationsRead).not.toHaveBeenCalled();
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        error: 'Invalid payload',
+      }),
+    );
   });
 
   it('PATCH can mark every unread notification for the current owner', async () => {
@@ -192,7 +212,7 @@ describe('app/api/notifications/route', () => {
     );
     expect(await response.json()).toEqual({
       ok: true,
-      updatedIds: ['notif-1', 'notif-2'],
+      updatedIds: [NOTIFICATION_ID_1, NOTIFICATION_ID_2],
     });
   });
 
@@ -240,7 +260,7 @@ describe('app/api/notifications/route', () => {
 
     const response = await PATCH(
       patchRequest({
-        notificationIds: ['notif-1'],
+        notificationIds: [NOTIFICATION_ID_1],
       }),
     );
 

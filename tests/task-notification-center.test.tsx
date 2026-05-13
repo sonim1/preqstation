@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const subscribePolledTaskEventsMock = vi.hoisted(() => vi.fn());
 const showErrorNotificationMock = vi.hoisted(() => vi.fn());
 const showTaskCompletionNotificationMock = vi.hoisted(() => vi.fn());
+const routerPushMock = vi.hoisted(() => vi.fn());
 const routerRefreshMock = vi.hoisted(() => vi.fn());
 
 let drawerProps: Record<string, unknown> | null = null;
@@ -39,11 +40,15 @@ vi.mock('@/lib/notifications', () => ({
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
+    push: routerPushMock,
     refresh: routerRefreshMock,
   }),
 }));
 
-import { TaskNotificationCenter } from '@/app/components/task-notification-center';
+import {
+  buildNotificationTaskHref,
+  TaskNotificationCenter,
+} from '@/app/components/task-notification-center';
 
 function makeNotification(
   overrides: Partial<{
@@ -111,6 +116,7 @@ describe('app/components/task-notification-center', () => {
     fetchMock = vi.fn();
 
     vi.clearAllMocks();
+    routerPushMock.mockReset();
     routerRefreshMock.mockReset();
     vi.stubGlobal('fetch', fetchMock);
     Object.defineProperty(window, 'matchMedia', {
@@ -246,13 +252,19 @@ describe('app/components/task-notification-center', () => {
           body: JSON.stringify({ notificationIds: ['notif-1'] }),
         }),
       );
+      expect(routerPushMock).toHaveBeenCalledWith(
+        '/board?panel=task-edit&taskId=PROJ-327&focus=PROJ-327',
+      );
       expect(routerRefreshMock).toHaveBeenCalledTimes(1);
-      expect(drawerProps?.total).toBe(2);
-      expect((drawerProps?.notifications as Array<{ id: string }>).map(({ id }) => id)).toEqual([
-        'notif-2',
-        'notif-3',
-      ]);
+      expect(screen.getByLabelText('Open notifications (2 unread)')).toBeTruthy();
+      expect(screen.queryByTestId('task-notification-drawer')).toBeNull();
     });
+  });
+
+  it('builds a focused board URL with encoded task keys', () => {
+    expect(buildNotificationTaskHref({ taskKey: 'PROJ 310/alpha' })).toBe(
+      '/board?panel=task-edit&taskId=PROJ%20310%2Falpha&focus=PROJ%20310%2Falpha',
+    );
   });
 
   it('restores unread state when marking a clicked notification fails', async () => {
@@ -278,6 +290,7 @@ describe('app/components/task-notification-center', () => {
       expect(showErrorNotificationMock).toHaveBeenCalledWith(
         'Failed to mark notification as read.',
       );
+      expect(routerPushMock).not.toHaveBeenCalled();
       expect(routerRefreshMock).not.toHaveBeenCalled();
       expect(screen.getByLabelText('Open notifications (3 unread)')).toBeTruthy();
       expect(drawerProps?.total).toBe(3);
@@ -323,6 +336,8 @@ describe('app/components/task-notification-center', () => {
       expect(showErrorNotificationMock).toHaveBeenCalledWith(
         'Failed to mark notification as read.',
       );
+      expect(routerPushMock).not.toHaveBeenCalled();
+      expect(routerRefreshMock).not.toHaveBeenCalled();
       expect(drawerProps?.total).toBe(4);
       expect((drawerProps?.notifications as Array<{ id: string }>).map(({ id }) => id)).toEqual([
         'notif-1',

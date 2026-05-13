@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const OWNER_ID = '11111111-1111-4111-8111-111111111111';
 const PROJECT_ID = '22222222-2222-4222-8222-222222222222';
 const TASK_ID = '33333333-3333-4333-8333-333333333333';
+const NOTIFICATION_ID_1 = '44444444-4444-4444-8444-444444444444';
+const NOTIFICATION_ID_2 = '55555555-5555-4555-8555-555555555555';
+const NOTIFICATION_ID_3 = '66666666-6666-4666-8666-666666666666';
 
 const mocked = vi.hoisted(() => {
   const writeOutboxEvent = vi.fn().mockResolvedValue(undefined);
@@ -48,6 +51,10 @@ import {
 } from '@/lib/task-notifications';
 
 function flattenQueryChunks(query: unknown): unknown[] {
+  if (Array.isArray(query)) {
+    return query.flatMap((chunk) => flattenQueryChunks(chunk));
+  }
+
   if (query && typeof query === 'object') {
     if (
       'queryChunks' in query &&
@@ -71,6 +78,26 @@ function queryText(query: unknown) {
   return flattenQueryChunks(query)
     .filter((chunk): chunk is string => typeof chunk === 'string')
     .join(' ');
+}
+
+function makeUpdateClient(rows: Array<{ id: string }>) {
+  const returning = vi.fn().mockResolvedValue(rows);
+  const where = vi.fn().mockReturnValue({ returning });
+  const set = vi.fn().mockReturnValue({ where });
+  const update = vi.fn().mockReturnValue({ set });
+  const execute = vi.fn();
+
+  return {
+    client: {
+      update,
+      execute,
+    },
+    update,
+    set,
+    where,
+    returning,
+    execute,
+  };
 }
 
 describe('lib/task-notifications', () => {
@@ -385,38 +412,56 @@ describe('lib/task-notifications', () => {
   });
 
   it('marks only the requested notification ids as read for the owner', async () => {
-    const execute = vi.fn().mockResolvedValue({
-      rows: [{ id: 'notif-1' }, { id: 'notif-3' }],
-    });
+    const now = new Date('2026-04-08T05:10:00.000Z');
+    const updateClient = makeUpdateClient([{ id: NOTIFICATION_ID_1 }, { id: NOTIFICATION_ID_3 }]);
 
     const result = await markTaskNotificationsRead(
       {
         ownerId: OWNER_ID,
-        notificationIds: ['notif-1', 'notif-3'],
+        notificationIds: [
+          ` ${NOTIFICATION_ID_1} `,
+          NOTIFICATION_ID_3,
+          NOTIFICATION_ID_1,
+          '',
+          '   ',
+        ],
+        now,
       },
-      { execute } as never,
+      updateClient.client as never,
     );
 
-    expect(result).toEqual(['notif-1', 'notif-3']);
-    expect(flattenQueryChunks(execute.mock.calls[0]?.[0])).toEqual(
-      expect.arrayContaining([OWNER_ID, 'notif-1', 'notif-3']),
-    );
-    expect(queryText(execute.mock.calls[0]?.[0])).toContain('update task_notifications');
+    expect(result).toEqual([NOTIFICATION_ID_1, NOTIFICATION_ID_3]);
+    expect(updateClient.update).toHaveBeenCalledTimes(1);
+    expect(updateClient.set).toHaveBeenCalledWith({ readAt: now });
+    expect(updateClient.where).toHaveBeenCalledTimes(1);
+    expect(updateClient.returning).toHaveBeenCalledTimes(1);
+    expect(updateClient.execute).not.toHaveBeenCalled();
+
+    const whereChunks = flattenQueryChunks(updateClient.where.mock.calls[0]?.[0]);
+    expect(whereChunks).toContain(OWNER_ID);
+    expect(whereChunks).toContain(NOTIFICATION_ID_3);
+    expect(whereChunks.filter((chunk) => chunk === NOTIFICATION_ID_1)).toHaveLength(1);
+    expect(whereChunks).not.toContain(` ${NOTIFICATION_ID_1} `);
   });
 
   it('marks all unread notifications for an owner', async () => {
-    const execute = vi.fn().mockResolvedValue({
-      rows: [{ id: 'notif-1' }, { id: 'notif-2' }],
-    });
+    const now = new Date('2026-04-08T05:15:00.000Z');
+    const updateClient = makeUpdateClient([{ id: NOTIFICATION_ID_1 }, { id: NOTIFICATION_ID_2 }]);
 
-    const updatedIds = await markAllTaskNotificationsRead({ ownerId: OWNER_ID }, {
-      execute,
-    } as never);
+    const updatedIds = await markAllTaskNotificationsRead(
+      { ownerId: OWNER_ID, now },
+      updateClient.client as never,
+    );
 
-    expect(updatedIds).toEqual(['notif-1', 'notif-2']);
-    expect(queryText(execute.mock.calls[0]?.[0])).toContain('update task_notifications');
-    expect(queryText(execute.mock.calls[0]?.[0])).toContain('where owner_id =');
-    expect(queryText(execute.mock.calls[0]?.[0])).toContain('read_at is null');
+    expect(updatedIds).toEqual([NOTIFICATION_ID_1, NOTIFICATION_ID_2]);
+    expect(updateClient.update).toHaveBeenCalledTimes(1);
+    expect(updateClient.set).toHaveBeenCalledWith({ readAt: now });
+    expect(updateClient.where).toHaveBeenCalledTimes(1);
+    expect(updateClient.returning).toHaveBeenCalledTimes(1);
+    expect(updateClient.execute).not.toHaveBeenCalled();
+
+    expect(flattenQueryChunks(updateClient.where.mock.calls[0]?.[0])).toContain(OWNER_ID);
+    expect(queryText(updateClient.where.mock.calls[0]?.[0])).toContain('is null');
   });
 
   it('detects missing task_notifications relation errors', () => {

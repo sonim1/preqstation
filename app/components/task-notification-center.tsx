@@ -117,6 +117,11 @@ function toTaskNotificationItem(notification: PolledNotification): TaskNotificat
   };
 }
 
+export function buildNotificationTaskHref(notification: Pick<TaskNotificationItem, 'taskKey'>) {
+  const taskKey = encodeURIComponent(notification.taskKey);
+  return `/board?panel=task-edit&taskId=${taskKey}&focus=${taskKey}`;
+}
+
 export function TaskNotificationCenter() {
   const router = useRouter();
   const [opened, setOpened] = useState(false);
@@ -259,6 +264,8 @@ export function TaskNotificationCenter() {
 
     try {
       await markNotificationsRead({ notificationIds: [notification.id] });
+      closeDrawer();
+      router.push(buildNotificationTaskHref(notification));
       router.refresh();
     } catch {
       setUnreadNotifications((current) => prependUniqueById([notification], current));
