@@ -195,6 +195,23 @@ function getRuleBody(css: string, selector: string) {
   return css.slice(bodyStart + 1, bodyEnd);
 }
 
+function expectNoCardSurfaceProperties(css: string, selector: string) {
+  const ruleBody = getRuleBody(css, selector);
+  const prohibitedProperties = [
+    'border:',
+    'border-radius:',
+    'box-shadow:',
+    'backdrop-filter:',
+    'background:',
+    'background-color:',
+    'background-image:',
+  ];
+
+  for (const property of prohibitedProperties) {
+    expect(ruleBody).not.toContain(property);
+  }
+}
+
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
@@ -278,7 +295,14 @@ describe('TaskFormPanel layout', () => {
 
   it('renders add task panels with flat section classes instead of nested card wrappers', () => {
     renderTaskFormPanelClient();
+    const form = document.querySelector('form');
+    const workbench = document.querySelector('[data-layout="task-form-workbench"]');
+    const directContentChildren = Array.from(form?.children ?? []).filter(
+      (child) => !(child instanceof HTMLInputElement && child.type === 'hidden'),
+    );
 
+    expect(directContentChildren).toEqual([workbench]);
+    expect(workbench?.className).toContain(taskFormPanelStyles.workbench);
     expect(document.querySelector('[data-panel="task-form-setup"]')?.className).toContain(
       taskFormPanelStyles.setupSection,
     );
@@ -291,15 +315,10 @@ describe('TaskFormPanel layout', () => {
   });
 
   it('keeps flat task form sections free of card surface styling', () => {
-    const ruleBody = getRuleBody(taskFormPanelCss, '.notesSection');
-
-    expect(ruleBody).not.toContain('border:');
-    expect(ruleBody).not.toContain('border-radius:');
-    expect(ruleBody).not.toContain('box-shadow:');
-    expect(ruleBody).not.toContain('backdrop-filter:');
-    expect(ruleBody).not.toContain('background:');
-    expect(ruleBody).not.toContain('background-color:');
-    expect(ruleBody).not.toContain('background-image:');
+    expectNoCardSurfaceProperties(taskFormPanelCss, '.workbench');
+    expectNoCardSurfaceProperties(taskFormPanelCss, '.setupSection');
+    expectNoCardSurfaceProperties(taskFormPanelCss, '.notesSection');
+    expectNoCardSurfaceProperties(taskFormPanelCss, '.metaSection');
   });
 
   it('keeps the markdown editor in the primary notes panel ahead of metadata controls', () => {

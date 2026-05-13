@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -28,8 +31,27 @@ vi.mock('@mantine/core', async (importOriginal) => {
 
   return {
     ...actual,
-    Modal: (({ children, title }: { children?: React.ReactNode; title?: React.ReactNode }) => (
-      <div data-modal-title={title}>{children}</div>
+    Modal: (({
+      children,
+      classNames,
+      title,
+    }: {
+      children?: React.ReactNode;
+      classNames?: { content?: string; header?: string; body?: string };
+      title?: React.ReactNode;
+    }) => (
+      <div
+        className={classNames?.content}
+        data-modal-content-class={classNames?.content}
+        data-modal-title={title}
+      >
+        <div className={classNames?.header} data-modal-header-class={classNames?.header}>
+          {title}
+        </div>
+        <div className={classNames?.body} data-modal-body-class={classNames?.body}>
+          {children}
+        </div>
+      </div>
     )) as unknown as typeof actual.Modal,
     Tooltip: (({ children, label }: { children?: React.ReactNode; label?: React.ReactNode }) => (
       <div data-tooltip-label={label}>{children}</div>
@@ -88,6 +110,24 @@ import {
 } from '@/app/components/ready-qa-actions';
 import { QA_DISPATCH_PREFERENCE_STORAGE } from '@/lib/dispatch-preferences';
 import { KITCHEN_TERMINOLOGY } from '@/lib/terminology';
+
+const readyQaActionsCssPath = path.join(
+  process.cwd(),
+  'app/components/ready-qa-actions.module.css',
+);
+
+function getRuleBody(css: string, selector: string) {
+  const selectorIndex = css.indexOf(selector);
+  expect(selectorIndex).toBeGreaterThanOrEqual(0);
+
+  const bodyStart = css.indexOf('{', selectorIndex);
+  const bodyEnd = css.indexOf('}', selectorIndex);
+
+  expect(bodyStart).toBeGreaterThan(selectorIndex);
+  expect(bodyEnd).toBeGreaterThan(bodyStart);
+
+  return css.slice(bodyStart + 1, bodyEnd);
+}
 
 class MemoryStorage implements Storage {
   private values = new Map<string, string>();
@@ -342,6 +382,12 @@ describe('app/components/ready-qa-actions', () => {
     expect(html).toContain('ALPHA');
     expect(html).toContain('release/mobile');
     expect(html).toContain('data-tooltip-label="Choose engine, then press play to queue QA."');
+    expect(html).toContain('data-modal-content-class="');
+    expect(html).toContain('qaModalContent');
+    expect(html).toContain('data-modal-header-class="');
+    expect(html).toContain('qaModalHeader');
+    expect(html).toContain('data-modal-body-class="');
+    expect(html).toContain('qaModalBody');
     expect(html).toContain('task-dispatch-engine-segments');
     expect(html).toContain('task-dispatch-target-segments');
     expect(html).toContain('task-dispatch-prompt-shell');
@@ -359,6 +405,22 @@ describe('app/components/ready-qa-actions', () => {
     expect(html).toContain('aria-label="Copy QA report for run-123"');
     expect(html).toContain('data-tooltip-label="Copy report"');
     expect(formatReadyQaScopeLabel(2, KITCHEN_TERMINOLOGY)).toBe('2 ready tickets');
+  });
+
+  it('defines QA modal surface classes with the task panel surface token family', () => {
+    expect(fs.existsSync(readyQaActionsCssPath)).toBe(true);
+
+    const css = fs.readFileSync(readyQaActionsCssPath, 'utf8');
+    const contentBody = getRuleBody(css, '.qaModalContent');
+    const headerBody = getRuleBody(css, '.qaModalHeader');
+    const bodyBody = getRuleBody(css, '.qaModalBody');
+
+    expect(contentBody).toContain('var(--ui-border)');
+    expect(contentBody).toContain('var(--ui-surface-strong)');
+    expect(headerBody).toContain('var(--ui-border)');
+    expect(headerBody).toContain('var(--ui-surface-soft)');
+    expect(headerBody).toContain('var(--ui-surface)');
+    expect(bodyBody).toContain('var(--ui-surface)');
   });
 
   it('renders ready tasks with select all and clear all controls', () => {

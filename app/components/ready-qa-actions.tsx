@@ -39,6 +39,7 @@ import { DEFAULT_TERMINOLOGY, type Terminology } from '@/lib/terminology';
 
 import { InfiniteScrollTrigger } from './infinite-scroll-trigger';
 import { MarkdownViewer } from './markdown-viewer';
+import classes from './ready-qa-actions.module.css';
 import { useTerminology } from './terminology-provider';
 import { useTimeZone } from './timezone-provider';
 
@@ -203,9 +204,7 @@ export function ReadyQaActions({
   const readyCount = readyTasks.length;
   const selectedReadyTaskKeys = useMemo(() => {
     const selectedSet = new Set(selectedTaskKeys);
-    return readyTasks
-      .filter((task) => selectedSet.has(task.taskKey))
-      .map((task) => task.taskKey);
+    return readyTasks.filter((task) => selectedSet.has(task.taskKey)).map((task) => task.taskKey);
   }, [readyTasks, selectedTaskKeys]);
   const selectedReadyCount = selectedReadyTaskKeys.length;
   const canQueueQa = selectedReadyCount > 0 && effectiveTarget !== null;
@@ -328,6 +327,11 @@ export function ReadyQaActions({
         title="QA Runs"
         size="xl"
         centered
+        classNames={{
+          content: classes.qaModalContent,
+          header: classes.qaModalHeader,
+          body: classes.qaModalBody,
+        }}
         overlayProps={{ opacity: 0.55, blur: 18 }}
         transitionProps={{ transition: 'fade-up', duration: 180, timingFunction: 'ease' }}
       >
