@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -12,6 +15,11 @@ import type {
 } from '@/app/components/task-notification-drawer';
 import { useTaskNotificationStore } from '@/app/components/task-notification-store';
 import type { KanbanColumns, KanbanTask } from '@/lib/kanban-helpers';
+
+const boardNotificationSyncSource = readFileSync(
+  resolve(process.cwd(), 'app/components/board-notification-sync.tsx'),
+  'utf8',
+);
 
 function buildTask(
   overrides: Partial<KanbanTask> & { id: string; taskKey: string; sortOrder: string },
@@ -138,5 +146,16 @@ describe('app/components/board-notification-sync', () => {
     await waitFor(() => {
       expect(screen.getByTestId('flag-PROJ-327').textContent).toBe('false');
     });
+  });
+
+  it('keys the sync effect off task count and memoized unread keys', () => {
+    expect(boardNotificationSyncSource).toContain('useMemo');
+    expect(boardNotificationSyncSource).toContain(
+      'const taskKeysCount = useKanbanStore((state) => Object.keys(state.taskKeysById).length);',
+    );
+    expect(boardNotificationSyncSource).not.toContain('useKanbanColumns');
+    expect(boardNotificationSyncSource).toContain(
+      '}, [taskKeysCount, setTaskUnreadNotification, nextUnreadTaskKeys]);',
+    );
   });
 });

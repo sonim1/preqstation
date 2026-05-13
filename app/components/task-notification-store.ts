@@ -102,9 +102,6 @@ export const useTaskNotificationStore = create<TaskNotificationStoreState>()((se
   ...initialTaskNotificationStoreState(),
   hydrateUnreadPage(page) {
     set((state) => {
-      const pendingPageNotificationCount = page.notifications.filter((notification) =>
-        state.pendingReadNotificationIds.has(notification.id),
-      ).length;
       const pageNotifications = page.notifications.filter(
         (notification) => !state.pendingReadNotificationIds.has(notification.id),
       );
@@ -122,7 +119,7 @@ export const useTaskNotificationStore = create<TaskNotificationStoreState>()((se
       return {
         unreadNotifications,
         unreadTotal: Math.max(
-          page.total - pendingPageNotificationCount,
+          page.total - state.pendingReadNotificationIds.size,
           unreadNotifications.length,
         ),
         knownNotificationIds: addKnownIds(state.knownNotificationIds, unreadNotifications),
@@ -171,11 +168,10 @@ export const useTaskNotificationStore = create<TaskNotificationStoreState>()((se
       const unreadNotifications = state.unreadNotifications.filter(
         (item) => item.id !== notification.id,
       );
-      const removed = unreadNotifications.length !== state.unreadNotifications.length;
 
       return {
         unreadNotifications,
-        unreadTotal: removed ? Math.max(0, state.unreadTotal - 1) : state.unreadTotal,
+        unreadTotal: Math.max(0, state.unreadTotal - 1),
         knownNotificationIds: addKnownIds(state.knownNotificationIds, [notification]),
         pendingReadNotificationIds: new Set(state.pendingReadNotificationIds).add(notification.id),
         unreadTaskNotificationCounts: countUnreadTaskNotifications(unreadNotifications),

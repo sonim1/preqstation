@@ -114,6 +114,39 @@ describe('app/components/task-notification-store', () => {
     ]);
   });
 
+  it('subtracts pending reads outside the fetched page from hydrated unread total', () => {
+    const firstNotification = makeNotification({ id: 'notif-1', taskKey: 'PROJ-327' });
+    const secondNotification = makeNotification({ id: 'notif-2', taskKey: 'PROJ-328' });
+    const offPageNotification = makeNotification({ id: 'notif-off-page', taskKey: 'PROJ-999' });
+
+    useTaskNotificationStore
+      .getState()
+      .hydrateUnreadPage(makePage([firstNotification, secondNotification], 5));
+    useTaskNotificationStore.getState().beginMarkRead(offPageNotification);
+    useTaskNotificationStore
+      .getState()
+      .hydrateUnreadPage(makePage([firstNotification, secondNotification], 5));
+
+    expect(useTaskNotificationStore.getState().unreadTotal).toBe(4);
+    expect(useTaskNotificationStore.getState().unreadNotifications.map(({ id }) => id)).toEqual([
+      'notif-1',
+      'notif-2',
+    ]);
+  });
+
+  it('optimistically decrements unread total for notifications missing from the local list', () => {
+    const firstNotification = makeNotification({ id: 'notif-1', taskKey: 'PROJ-327' });
+    const offPageNotification = makeNotification({ id: 'notif-off-page', taskKey: 'PROJ-999' });
+
+    useTaskNotificationStore.getState().hydrateUnreadPage(makePage([firstNotification], 5));
+    useTaskNotificationStore.getState().beginMarkRead(offPageNotification);
+
+    expect(useTaskNotificationStore.getState().unreadTotal).toBe(4);
+    expect(useTaskNotificationStore.getState().unreadNotifications.map(({ id }) => id)).toEqual([
+      'notif-1',
+    ]);
+  });
+
   it('keeps a task unread count while another notification for the same task remains unread', () => {
     const firstNotification = makeNotification({ id: 'notif-1', taskKey: 'PROJ-327' });
     const secondNotification = makeNotification({ id: 'notif-2', taskKey: 'PROJ-327' });
