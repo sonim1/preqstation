@@ -43,12 +43,6 @@ describe('generateBranchName', () => {
     expect(generateBranchName('PROJ-1', '')).toBe('task/proj-1/');
   });
 
-  it('generates branch names from plain English titles', () => {
-    expect(generateBranchName('PROJ-184', 'Fix branch name issue')).toBe(
-      'task/proj-184/fix-branch-name-issue',
-    );
-  });
-
   it('transliterates Japanese characters', () => {
     expect(generateBranchName('PROJ-5', 'ユーザー認証を追加')).toBe(
       'task/proj-5/yuzarenzhengozhuijia',
@@ -56,7 +50,7 @@ describe('generateBranchName', () => {
   });
 
   it('generates branch names from mixed-case English titles', () => {
-    const result = generateBranchName('PROJ-10', 'fix login bug');
+    const result = generateBranchName('PROJ-10', 'Fix Login Bug');
     expect(result).toBe('task/proj-10/fix-login-bug');
   });
 });
