@@ -30,7 +30,67 @@ Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `a
 - Owner visibility: `/connections` shows client name, engine, status, last-used time, and expiry
 - Claude Code install: `claude mcp add --transport http preqstation https://<your-domain>/mcp`
 - Codex install: `codex mcp add preqstation --url https://<your-domain>/mcp`
-- Exposed read tools include `preq_list_projects`, `preq_list_tasks`, `preq_get_task`, and `preq_get_project_settings`
+- Exposed read tools include `preq_list_projects`, `preq_list_tasks`, `preq_list_project_activity`, `preq_get_task`, and `preq_get_project_settings`
+
+#### `preq_list_project_activity`
+
+Read-only project activity feed for sync jobs, status dashboards, and agents that need changes across tasks, task comments, and work logs without polling board snapshots.
+
+Inputs:
+
+| Field         | Required | Description                                                                                            |
+| ------------- | -------- | ------------------------------------------------------------------------------------------------------ |
+| `from`        | Yes      | ISO timestamp for the inclusive lower bound of the activity window.                                    |
+| `to`          | Yes      | ISO timestamp for the exclusive upper bound of the activity window. Must be after `from`.              |
+| `projectKeys` | No       | Up to 20 project keys to filter by. Keys are normalized to uppercase and must match existing projects. |
+| `limit`       | No       | Page size from 1 to 500. Defaults to 500.                                                              |
+| `cursor`      | No       | Opaque cursor returned as `next_cursor` from a previous page.                                          |
+
+Pagination is ordered newest first by `occurred_at`, then `event_id`. When `has_more` is `true`, call the tool again with the same `from`, `to`, `projectKeys`, and `limit`, plus the returned `next_cursor`. Treat cursors as opaque strings; do not decode or edit them.
+
+Response shape:
+
+```json
+{
+  "from": "2026-05-12T10:00:00.000Z",
+  "to": "2026-05-13T10:30:00.000Z",
+  "project_keys": ["PQST"],
+  "count": 3,
+  "has_more": false,
+  "next_cursor": null,
+  "events": [
+    {
+      "event_id": "work_log:worklog-1:worked:2026-05-13T10:00:00.000Z",
+      "type": "work_log.created",
+      "occurred_at": "2026-05-13T10:00:00.000Z",
+      "project_key": "PQST",
+      "task_key": "PQST-113",
+      "title": "PREQSTATION Result",
+      "summary": "Completed implementation and opened PR",
+      "source": "work_log",
+      "task": {
+        "id": "task-1",
+        "task_key": "PQST-113",
+        "title": "Fix labels",
+        "status": "todo",
+        "priority": "high",
+        "branch_name": "task/pqst-113",
+        "engine": "codex",
+        "dispatch_target": "telegram",
+        "run_state": null
+      },
+      "project": {
+        "id": "project-1",
+        "key": "PQST",
+        "name": "PreqStation",
+        "repoUrl": "https://github.com/sonim1/preqstation"
+      }
+    }
+  ]
+}
+```
+
+Activity `source` values are `task`, `task_comment`, and `work_log`. Current event `type` values are `task.created`, `task.updated`, `task_comment.created`, `task_comment.updated`, and `work_log.created`.
 
 ### Internal Notifications
 

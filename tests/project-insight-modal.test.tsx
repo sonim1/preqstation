@@ -71,7 +71,7 @@ describe('app/components/project-insight-modal', () => {
         selectedProject: { id: 'project-1', name: 'Project', projectKey: 'PROJ' },
         target: null,
         targetOptions,
-        prompt: '브라우저 알림 기능 추가를 위한 다음 작업들을 정리해줘',
+        prompt: 'Plan follow-up tasks for browser notifications',
         isSubmitting: false,
       }),
     ).toBe(false);
@@ -82,12 +82,12 @@ describe('app/components/project-insight-modal', () => {
 
     expect(html).toContain('Create Inbox Tasks from Insight');
     expect(html).toContain(
-      '현재 프로젝트와 입력한 내용을 바탕으로 다음 작업 인사이트를 정리하고 Inbox에 추가합니다.',
+      'Summarize next-task insight from the current project and your prompt, then add it to Inbox.',
     );
     expect(html).toContain('aria-label="Insight prompt"');
     expect(html).toContain('textarea');
     expect(html).toContain('What should we break down?');
-    expect(html).toContain('Connections 페이지 개편 작업을 나눠줘');
+    expect(html).toContain('Break down the Connections page redesign');
     expect(html).toContain('0/1200');
   });
 

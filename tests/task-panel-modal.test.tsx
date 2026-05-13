@@ -591,6 +591,34 @@ describe('TaskPanelModal', () => {
     }
   });
 
+  it('commits the stored desktop resize size immediately after mounting', () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    window.localStorage.setItem(
+      'preqstation:task-edit-panel:size:v1',
+      JSON.stringify({ width: 900, height: 650 }),
+    );
+
+    try {
+      const { getByTestId } = render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      expect(getByTestId('resizable-panel').getAttribute('data-width')).toBe('900');
+      expect(getByTestId('resizable-panel').getAttribute('data-height')).toBe('650');
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
   it('hydrates stored size when resize becomes enabled after a fullscreen mount', async () => {
     const dom = installDom({ width: 1000, height: 700 });
     window.localStorage.setItem(

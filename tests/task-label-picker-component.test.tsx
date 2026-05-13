@@ -156,6 +156,10 @@ const taskLabelPickerCssPath = path.join(
   process.cwd(),
   'app/components/task-label-picker.module.css',
 );
+const taskMetadataControlsCssPath = path.join(
+  process.cwd(),
+  'app/components/task-metadata-controls.module.css',
+);
 
 function readTaskLabelPickerCss() {
   if (!fs.existsSync(taskLabelPickerCssPath)) {
@@ -163,6 +167,14 @@ function readTaskLabelPickerCss() {
   }
 
   return fs.readFileSync(taskLabelPickerCssPath, 'utf8');
+}
+
+function readTaskMetadataControlsCss() {
+  if (!fs.existsSync(taskMetadataControlsCssPath)) {
+    return null;
+  }
+
+  return fs.readFileSync(taskMetadataControlsCssPath, 'utf8');
 }
 
 describe('app/components/task-label-picker UI behavior', () => {
@@ -208,6 +220,9 @@ describe('app/components/task-label-picker UI behavior', () => {
     const css = readTaskLabelPickerCss();
     expect(css).not.toBeNull();
     expect(css ?? '').toContain('padding: 0.5rem 0.75rem;');
+    expect(css ?? '').toContain('min-height: var(--task-metadata-trigger-min-height, 2.375rem);');
+    expect(css ?? '').toContain('.triggerButton');
+    expect(css ?? '').toContain('.selectedLabelHash');
     expect(css ?? '').toContain('min-width: clamp(13.75rem, 28vw, 15.75rem);');
     expect(css ?? '').toContain('max-width: min(18rem, calc(100vw - 2rem));');
     expect(css ?? '').toContain('gap: 0.25rem;');
@@ -218,6 +233,53 @@ describe('app/components/task-label-picker UI behavior', () => {
     );
     expect(css ?? '').toContain(
       'background: color-mix(in srgb, var(--task-label-accent) 10%, var(--ui-accent-soft));',
+    );
+
+    const metadataCss = readTaskMetadataControlsCss();
+    expect(metadataCss).not.toBeNull();
+    expect(metadataCss ?? '').toContain(
+      'min-height: var(--task-metadata-trigger-min-height, 2.375rem);',
+    );
+  });
+
+  it('renders selected labels as hash-prefixed trigger tokens', () => {
+    render(
+      <TaskLabelPicker
+        labelOptions={labelOptions}
+        onChange={vi.fn()}
+        projectId="project-1"
+        selectedLabelIds={['label-1']}
+        selectedLabels={[labelOptions[0]]}
+        triggerAriaLabel="Edit labels"
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: 'Edit labels' });
+
+    expect(trigger.textContent).toContain('# Bug');
+    expect(trigger.textContent).not.toContain('Select labels');
+  });
+
+  it('keeps a visible focus ring available for custom trigger renderers', () => {
+    render(
+      <TaskLabelPicker
+        labelOptions={labelOptions}
+        onChange={vi.fn()}
+        projectId="project-1"
+        renderTrigger={() => <span data-testid="custom-label-trigger">Custom labels</span>}
+        selectedLabelIds={[]}
+        triggerAriaLabel="Edit labels"
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: 'Edit labels' });
+    const css = readTaskLabelPickerCss();
+
+    expect(screen.getByTestId('custom-label-trigger')).toBeTruthy();
+    expect(trigger.querySelector('[data-task-label-trigger="default"]')).toBeNull();
+    expect(css).not.toBeNull();
+    expect(css ?? '').toMatch(
+      /\.triggerButton:focus-visible > :not\(\.defaultTrigger\)\s*\{[\s\S]*box-shadow: 0 0 0 2px color-mix\(in srgb, var\(--ui-focus-ring\), transparent 18%\);/,
     );
   });
 

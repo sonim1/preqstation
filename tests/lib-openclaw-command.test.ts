@@ -65,10 +65,10 @@ describe('lib/openclaw-command', () => {
         status: 'todo',
         engineKey: 'codex',
         objective: 'ask',
-        askHint: 'Acceptance criteria 중심으로 정리해줘',
+        askHint: 'Summarize around acceptance criteria',
       }),
     ).toBe(
-      '!/skill preqstation-dispatch ask PROJ-328 using codex ask_hint="Acceptance criteria 중심으로 정리해줘"',
+      '!/skill preqstation-dispatch ask PROJ-328 using codex ask_hint="Summarize around acceptance criteria"',
     );
   });
 
@@ -129,10 +129,10 @@ describe('lib/openclaw-command', () => {
   it('encodes multiline dispatch prompt metadata safely', () => {
     expect(
       encodeDispatchPromptMetadata(
-        'Connections 페이지 개편 작업을 나눠줘\n모바일 흐름도 같이 봐줘',
+        'Break down the Connections page redesign\nAlso review the mobile flow',
       ),
     ).toBe(
-      'Q29ubmVjdGlvbnMg7Y6Y7J207KeAIOqwnO2OuCDsnpHsl4XsnYQg64KY64ig7KSYCuuqqOuwlOydvCDtnZDrpoTrj4Qg6rCZ7J20IOu0kOykmA==',
+      'QnJlYWsgZG93biB0aGUgQ29ubmVjdGlvbnMgcGFnZSByZWRlc2lnbgpBbHNvIHJldmlldyB0aGUgbW9iaWxlIGZsb3c=',
     );
   });
 
@@ -141,10 +141,10 @@ describe('lib/openclaw-command', () => {
       buildOpenClawProjectCommand({
         projectKey: 'proj',
         engineKey: 'codex',
-        insightPrompt: 'Connections 페이지 개편 작업을 나눠줘\n모바일 흐름도 같이 봐줘',
+        insightPrompt: 'Break down the Connections page redesign\nAlso review the mobile flow',
       }),
     ).toBe(
-      '!/skill preqstation-dispatch insight PROJ using codex insight_prompt_b64="Q29ubmVjdGlvbnMg7Y6Y7J207KeAIOqwnO2OuCDsnpHsl4XsnYQg64KY64ig7KSYCuuqqOuwlOydvCDtnZDrpoTrj4Qg6rCZ7J20IOu0kOykmA=="',
+      '!/skill preqstation-dispatch insight PROJ using codex insight_prompt_b64="QnJlYWsgZG93biB0aGUgQ29ubmVjdGlvbnMgcGFnZSByZWRlc2lnbgpBbHNvIHJldmlldyB0aGUgbW9iaWxlIGZsb3c="',
     );
   });
 });

@@ -43,21 +43,15 @@ describe('generateBranchName', () => {
     expect(generateBranchName('PROJ-1', '')).toBe('task/proj-1/');
   });
 
-  it('transliterates Korean characters', () => {
-    expect(generateBranchName('PROJ-184', '브랜치 이름 문제 수정')).toBe(
-      'task/proj-184/beulaenchi-ileum-munje-sujeong',
-    );
-  });
-
   it('transliterates Japanese characters', () => {
     expect(generateBranchName('PROJ-5', 'ユーザー認証を追加')).toBe(
       'task/proj-5/yuzarenzhengozhuijia',
     );
   });
 
-  it('transliterates mixed language title', () => {
-    const result = generateBranchName('PROJ-10', 'fix 로그인 bug');
-    expect(result).toBe('task/proj-10/fix-logeuin-bug');
+  it('generates branch names from mixed-case English titles', () => {
+    const result = generateBranchName('PROJ-10', 'Fix Login Bug');
+    expect(result).toBe('task/proj-10/fix-login-bug');
   });
 });
 

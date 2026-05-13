@@ -85,7 +85,7 @@ describe('app/api/tasks/[id]/comments/route', () => {
         parentCommentId: null,
         authorType: 'user',
         authorName: 'owner@example.com',
-        body: '댓글 확인해주세요',
+        body: 'Please review this comment',
         runState: 'queued',
         runStateUpdatedAt: new Date('2026-05-06T15:00:00.000Z'),
         engine: 'codex',
@@ -112,7 +112,7 @@ describe('app/api/tasks/[id]/comments/route', () => {
   });
 
   it('queues a dispatched comment and sends Hermes Telegram by default', async () => {
-    const response = await POST(postRequest({ body: '댓글 확인해주세요' }), {
+    const response = await POST(postRequest({ body: 'Please review this comment' }), {
       params: Promise.resolve({ id: 'PQST-74' }),
     });
 
@@ -160,7 +160,7 @@ describe('app/api/tasks/[id]/comments/route', () => {
         parentCommentId: null,
         authorType: 'user',
         authorName: 'owner@example.com',
-        body: '메모만 남깁니다',
+        body: 'Leave a note only',
         runState: null,
         runStateUpdatedAt: null,
         engine: 'codex',
@@ -172,7 +172,7 @@ describe('app/api/tasks/[id]/comments/route', () => {
       },
     ]);
 
-    const response = await POST(postRequest({ body: '메모만 남깁니다', dispatch: false }), {
+    const response = await POST(postRequest({ body: 'Leave a note only', dispatch: false }), {
       params: Promise.resolve({ id: 'PQST-74' }),
     });
 
@@ -209,7 +209,7 @@ describe('app/api/tasks/[id]/comments/route', () => {
           parentCommentId: null,
           authorType: 'user',
           authorName: 'owner@example.com',
-          body: '댓글 확인해주세요',
+          body: 'Please review this comment',
           runState: 'queued',
           runStateUpdatedAt: new Date('2026-05-06T15:00:00.000Z'),
           engine: 'codex',
@@ -229,7 +229,7 @@ describe('app/api/tasks/[id]/comments/route', () => {
           parentCommentId: null,
           authorType: 'user',
           authorName: 'owner@example.com',
-          body: '댓글 확인해주세요',
+          body: 'Please review this comment',
           runState: 'failed',
           runStateUpdatedAt: new Date('2026-05-06T15:01:00.000Z'),
           engine: 'codex',
@@ -241,7 +241,7 @@ describe('app/api/tasks/[id]/comments/route', () => {
         },
       ]);
 
-    const response = await POST(postRequest({ body: '댓글 확인해주세요' }), {
+    const response = await POST(postRequest({ body: 'Please review this comment' }), {
       params: Promise.resolve({ id: 'PQST-74' }),
     });
 

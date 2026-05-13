@@ -84,7 +84,7 @@ describe('app/components/task-edit-header-title', () => {
         <TaskEditHeaderTitle
           formId="task-edit-form:test"
           placeholder="Enter task title"
-          title="복구된 제목"
+          title="Restored title"
           titleLabel="Task title"
           onBlur={vi.fn()}
           onChange={vi.fn()}
@@ -93,12 +93,12 @@ describe('app/components/task-edit-header-title', () => {
       </MantineProvider>,
     );
 
-    expect(screen.getByDisplayValue('복구된 제목')).toBeTruthy();
+    expect(screen.getByDisplayValue('Restored title')).toBeTruthy();
   });
 
   it('updates the hidden title input while editing', () => {
     function ControlledTitle() {
-      const [title, setTitle] = React.useState('원본 제목');
+      const [title, setTitle] = React.useState('Original title');
 
       return (
         <TaskEditHeaderTitle
@@ -121,9 +121,9 @@ describe('app/components/task-edit-header-title', () => {
 
     fireEvent.click(screen.getByLabelText('Edit task title'));
     fireEvent.change(screen.getByLabelText('Task title'), {
-      target: { value: '변경된 제목' },
+      target: { value: 'Updated title' },
     });
 
-    expect(screen.getAllByDisplayValue('변경된 제목')).toHaveLength(2);
+    expect(screen.getAllByDisplayValue('Updated title')).toHaveLength(2);
   });
 });

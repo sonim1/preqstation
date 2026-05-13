@@ -61,7 +61,7 @@ function makeNotification(
     projectId: 'project-1',
     taskId: 'task-1',
     taskKey: overrides.taskKey ?? 'PROJ-327',
-    taskTitle: overrides.taskTitle ?? 'Browser Notification 추가',
+    taskTitle: overrides.taskTitle ?? 'Add browser notifications',
     statusFrom: overrides.statusFrom ?? 'todo',
     statusTo: overrides.statusTo ?? 'ready',
     readAt: overrides.readAt ?? null,
@@ -78,10 +78,6 @@ function buildNotifications(count: number) {
       createdAt: `2026-04-08T05:${String(index).padStart(2, '0')}:00.000Z`,
     }),
   );
-}
-
-function buildNotificationIds(count: number) {
-  return Array.from({ length: count }, (_unused, index) => `notif-${index + 1}`);
 }
 
 function makePage(total: number, notifications: ReturnType<typeof buildNotifications>) {
@@ -201,20 +197,44 @@ describe('app/components/task-notification-center', () => {
     });
   });
 
-  it('marks all unread notifications when the drawer opens', async () => {
+  it('keeps unread notifications visible when the drawer opens', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => makePage(3, buildNotifications(3)),
+    });
+
+    renderTaskNotificationCenter();
+
+    fireEvent.click(await screen.findByLabelText('Open notifications (3 unread)'));
+
+    await waitFor(() => {
+      expect(drawerProps?.total).toBe(3);
+      expect((drawerProps?.notifications as Array<{ id: string }>).length).toBe(3);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('marks only the clicked notification as read', async () => {
     fetchMock
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => makePage(26, buildNotifications(20)),
+        json: async () => makePage(3, buildNotifications(3)),
       })
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ ok: true, updatedIds: buildNotificationIds(26) }),
+        json: async () => ({ ok: true, updatedIds: ['notif-1'] }),
       });
 
     renderTaskNotificationCenter();
 
-    fireEvent.click(await screen.findByLabelText('Open notifications (26 unread)'));
+    fireEvent.click(await screen.findByLabelText('Open notifications (3 unread)'));
+    await waitFor(() => expect(drawerProps?.total).toBe(3));
+
+    (
+      drawerProps?.onNotificationClick as (
+        notification: ReturnType<typeof makeNotification>,
+      ) => void
+    )(makeNotification({ id: 'notif-1' }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenNthCalledWith(
@@ -223,14 +243,19 @@ describe('app/components/task-notification-center', () => {
         expect.objectContaining({
           method: 'PATCH',
           credentials: 'same-origin',
-          body: JSON.stringify({ markAll: true }),
+          body: JSON.stringify({ notificationIds: ['notif-1'] }),
         }),
       );
       expect(routerRefreshMock).toHaveBeenCalledTimes(1);
+      expect(drawerProps?.total).toBe(2);
+      expect((drawerProps?.notifications as Array<{ id: string }>).map(({ id }) => id)).toEqual([
+        'notif-2',
+        'notif-3',
+      ]);
     });
   });
 
-  it('restores unread state when mark-all fails after closing and reopening the drawer', async () => {
+  it('restores unread state when marking a clicked notification fails', async () => {
     fetchMock
       .mockResolvedValueOnce({
         ok: true,
@@ -241,36 +266,48 @@ describe('app/components/task-notification-center', () => {
     renderTaskNotificationCenter();
 
     fireEvent.click(await screen.findByLabelText('Open notifications (3 unread)'));
+    await waitFor(() => expect(drawerProps?.total).toBe(3));
+
+    (
+      drawerProps?.onNotificationClick as (
+        notification: ReturnType<typeof makeNotification>,
+      ) => void
+    )(makeNotification({ id: 'notif-1' }));
 
     await waitFor(() => {
       expect(showErrorNotificationMock).toHaveBeenCalledWith(
-        'Failed to mark notifications as read.',
+        'Failed to mark notification as read.',
       );
       expect(routerRefreshMock).not.toHaveBeenCalled();
       expect(screen.getByLabelText('Open notifications (3 unread)')).toBeTruthy();
-    });
-
-    (drawerProps?.onClose as (() => void) | undefined)?.();
-
-    fireEvent.click(screen.getByLabelText('Open notifications (3 unread)'));
-    await waitFor(() => {
       expect(drawerProps?.total).toBe(3);
-      expect((drawerProps?.notifications as Array<{ id: string }>).length).toBe(3);
+      expect((drawerProps?.notifications as Array<{ id: string }>).map(({ id }) => id)).toEqual([
+        'notif-1',
+        'notif-2',
+        'notif-3',
+      ]);
     });
   });
 
-  it('restores polled notifications ahead of the unread snapshot when mark-all fails', async () => {
-    const markAllRequest = deferred<{ ok: boolean; json: () => Promise<{ ok: true }> }>();
+  it('restores clicked notifications without losing polled notifications when marking read fails', async () => {
+    const markReadRequest = deferred<{ ok: boolean; json: () => Promise<{ ok: true }> }>();
     fetchMock
       .mockResolvedValueOnce({
         ok: true,
         json: async () => makePage(3, buildNotifications(3)),
       })
-      .mockReturnValueOnce(markAllRequest.promise);
+      .mockReturnValueOnce(markReadRequest.promise);
 
     renderTaskNotificationCenter();
 
     fireEvent.click(await screen.findByLabelText('Open notifications (3 unread)'));
+    await waitFor(() => expect(drawerProps?.total).toBe(3));
+
+    (
+      drawerProps?.onNotificationClick as (
+        notification: ReturnType<typeof makeNotification>,
+      ) => void
+    )(makeNotification({ id: 'notif-1' }));
 
     await subscriber?.([
       makeNotification({
@@ -280,16 +317,16 @@ describe('app/components/task-notification-center', () => {
       }),
     ]);
 
-    markAllRequest.reject(new Error('patch failed'));
+    markReadRequest.reject(new Error('patch failed'));
 
     await waitFor(() => {
       expect(showErrorNotificationMock).toHaveBeenCalledWith(
-        'Failed to mark notifications as read.',
+        'Failed to mark notification as read.',
       );
       expect(drawerProps?.total).toBe(4);
       expect((drawerProps?.notifications as Array<{ id: string }>).map(({ id }) => id)).toEqual([
-        'notif-live',
         'notif-1',
+        'notif-live',
         'notif-2',
         'notif-3',
       ]);

@@ -7,15 +7,35 @@ import {
 
 describe('lib/live-markdown-checklist', () => {
   it('parses complete unchecked and checked checklist markers', () => {
+    expect(parseLiveChecklistMarker('- [ ]')).toEqual({
+      checked: false,
+      content: '',
+      markerLength: 5,
+    });
     expect(parseLiveChecklistMarker('- [ ] ')).toEqual({
       checked: false,
       content: '',
       markerLength: 6,
     });
+    expect(parseLiveChecklistMarker('- [ ] task')).toEqual({
+      checked: false,
+      content: 'task',
+      markerLength: 6,
+    });
+    expect(parseLiveChecklistMarker('- [x]')).toEqual({
+      checked: true,
+      content: '',
+      markerLength: 5,
+    });
     expect(parseLiveChecklistMarker('- [x] done')).toEqual({
       checked: true,
       content: 'done',
       markerLength: 6,
+    });
+    expect(parseLiveChecklistMarker('- [X]')).toEqual({
+      checked: true,
+      content: '',
+      markerLength: 5,
     });
     expect(parseLiveChecklistMarker('- [X] done')).toEqual({
       checked: true,

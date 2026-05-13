@@ -98,14 +98,22 @@ describe('LiveMarkdownEditor links', () => {
       join(process.cwd(), 'app/components/live-markdown-editor.tsx'),
       'utf8',
     );
+    const shortcutPluginPattern =
+      /<LiveChecklistShortcutPlugin\s+recentlyCreatedChecklistItemKeysRef=\{recentlyCreatedChecklistItemKeysRef\}\s+\/>/;
+    const sourcePluginPattern =
+      /<LiveChecklistSourcePlugin\s+recentlyCreatedChecklistItemKeysRef=\{recentlyCreatedChecklistItemKeysRef\}\s+\/>/;
 
-    expect(source).toContain('function LiveChecklistShortcutPlugin()');
+    expect(source).toContain('export function LiveChecklistShortcutPlugin(');
     expect(source).toContain('KEY_SPACE_COMMAND');
     expect(source).toContain('$applyLiveChecklistShortcut(');
-    expect(source).toContain('function LiveChecklistSourcePlugin()');
-    expect(source).toContain('<LiveChecklistSourcePlugin />');
-    expect(source).toContain('<LiveChecklistShortcutPlugin />');
-    expect(source.indexOf('<LiveChecklistShortcutPlugin />')).toBeLessThan(
+    expect(source).toContain('function LiveChecklistSourcePlugin(');
+    expect(source).not.toContain('const recentlyCreatedChecklistItemKeys = new Set<string>();');
+    expect(source).toContain(
+      'const recentlyCreatedChecklistItemKeysRef = useRef(new Set<string>());',
+    );
+    expect(source).toMatch(shortcutPluginPattern);
+    expect(source).toMatch(sourcePluginPattern);
+    expect(source.search(shortcutPluginPattern)).toBeLessThan(
       source.indexOf('<MarkdownShortcutPlugin transformers={MARKDOWN_SHORTCUT_TRANSFORMERS} />'),
     );
   });
@@ -116,7 +124,9 @@ describe('LiveMarkdownEditor links', () => {
       'utf8',
     );
 
-    expect(source).toContain('options: { selectStart?: boolean } = {}');
+    expect(source).toMatch(
+      /options: \{\s+recentlyCreatedChecklistItemKeys\?: Set<string>;\s+selectStart\?: boolean;\s+skipImmediateReveal\?: boolean;\s+\} = \{\}/,
+    );
     expect(source).toContain('if (selectStart) {\n    listItem.selectStart();\n  }');
     expect(
       source.match(/\$collapseLiveChecklistSourceNode\(sourceNode, \{ selectStart: false \}\)/g),

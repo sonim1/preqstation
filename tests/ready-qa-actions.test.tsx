@@ -28,8 +28,27 @@ vi.mock('@mantine/core', async (importOriginal) => {
 
   return {
     ...actual,
-    Modal: (({ children, title }: { children?: React.ReactNode; title?: React.ReactNode }) => (
-      <div data-modal-title={title}>{children}</div>
+    Modal: (({
+      children,
+      classNames,
+      title,
+    }: {
+      children?: React.ReactNode;
+      classNames?: { content?: string; header?: string; body?: string };
+      title?: React.ReactNode;
+    }) => (
+      <div
+        className={classNames?.content}
+        data-modal-content-class={classNames?.content}
+        data-modal-title={title}
+      >
+        <div className={classNames?.header} data-modal-header-class={classNames?.header}>
+          {title}
+        </div>
+        <div className={classNames?.body} data-modal-body-class={classNames?.body}>
+          {children}
+        </div>
+      </div>
     )) as unknown as typeof actual.Modal,
     Tooltip: (({ children, label }: { children?: React.ReactNode; label?: React.ReactNode }) => (
       <div data-tooltip-label={label}>{children}</div>
@@ -342,6 +361,12 @@ describe('app/components/ready-qa-actions', () => {
     expect(html).toContain('ALPHA');
     expect(html).toContain('release/mobile');
     expect(html).toContain('data-tooltip-label="Choose engine, then press play to queue QA."');
+    expect(html).toContain('data-modal-content-class="');
+    expect(html).toContain('qaModalContent');
+    expect(html).toContain('data-modal-header-class="');
+    expect(html).toContain('qaModalHeader');
+    expect(html).toContain('data-modal-body-class="');
+    expect(html).toContain('qaModalBody');
     expect(html).toContain('task-dispatch-engine-segments');
     expect(html).toContain('task-dispatch-target-segments');
     expect(html).toContain('task-dispatch-prompt-shell');

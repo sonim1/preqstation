@@ -52,6 +52,8 @@ type TaskNotificationDrawerProps = {
   isLoadingMore: boolean;
   hasMore: boolean;
   now?: string;
+  pendingReadNotificationIds?: Set<string>;
+  onNotificationClick?: (notification: TaskNotificationItem) => void;
   onShowHistory: () => void;
   onShowUnread: () => void;
   onLoadMore: () => void;
@@ -77,6 +79,8 @@ export function TaskNotificationDrawer({
   isLoadingMore,
   hasMore,
   now,
+  pendingReadNotificationIds,
+  onNotificationClick,
   onShowHistory,
   onShowUnread,
   onLoadMore,
@@ -136,56 +140,74 @@ export function TaskNotificationDrawer({
             />
           ) : null}
 
-          {notifications.map((notification) => (
-            <div key={notification.id} className="task-notification-item">
-              {isConnectionExpirationNotification(notification) ? (
-                <Group justify="space-between" align="flex-start" wrap="nowrap">
-                  <div className="task-notification-copy">
-                    <Text size="sm" fw={600}>
-                      {notification.title}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      {notification.targetName}
-                    </Text>
-                    {notification.targetDetail ? (
-                      <Text size="xs" c="dimmed">
-                        {notification.targetDetail}
-                      </Text>
-                    ) : null}
-                    <Text size="xs" c="dimmed">
-                      Expires {formatDateTimeForDisplay(notification.expiresAt, timeZone)}
-                    </Text>
-                    {timeRemainingReference !== null ? (
-                      <Text size="xs" c="dimmed">
-                        {formatConnectionTimeRemaining(
-                          new Date(notification.expiresAt).getTime() - timeRemainingReference,
-                        )}{' '}
-                        remaining
-                      </Text>
-                    ) : null}
-                  </div>
-                  <Text size="xs" c="dimmed">
-                    {formatDateTimeForDisplay(notification.createdAt, timeZone)}
+          {notifications.map((notification) => {
+            const notificationContent = isConnectionExpirationNotification(notification) ? (
+              <Group justify="space-between" align="flex-start" wrap="nowrap">
+                <div className="task-notification-copy">
+                  <Text size="sm" fw={600}>
+                    {notification.title}
                   </Text>
-                </Group>
-              ) : (
-                <Group justify="space-between" align="flex-start" wrap="nowrap">
-                  <div className="task-notification-copy">
-                    <Text size="sm" fw={600}>
-                      {notification.taskKey} · {notification.taskTitle}
-                    </Text>
-                    <Text size="xs" c="dimmed">
-                      {labelForStatus(notification.statusFrom)} -&gt;{' '}
-                      {labelForStatus(notification.statusTo)}
-                    </Text>
-                  </div>
                   <Text size="xs" c="dimmed">
-                    {formatDateTimeForDisplay(notification.createdAt, timeZone)}
+                    {notification.targetName}
                   </Text>
-                </Group>
-              )}
-            </div>
-          ))}
+                  {notification.targetDetail ? (
+                    <Text size="xs" c="dimmed">
+                      {notification.targetDetail}
+                    </Text>
+                  ) : null}
+                  <Text size="xs" c="dimmed">
+                    Expires {formatDateTimeForDisplay(notification.expiresAt, timeZone)}
+                  </Text>
+                  {timeRemainingReference !== null ? (
+                    <Text size="xs" c="dimmed">
+                      {formatConnectionTimeRemaining(
+                        new Date(notification.expiresAt).getTime() - timeRemainingReference,
+                      )}{' '}
+                      remaining
+                    </Text>
+                  ) : null}
+                </div>
+                <Text size="xs" c="dimmed">
+                  {formatDateTimeForDisplay(notification.createdAt, timeZone)}
+                </Text>
+              </Group>
+            ) : (
+              <Group justify="space-between" align="flex-start" wrap="nowrap">
+                <div className="task-notification-copy">
+                  <Text size="sm" fw={600}>
+                    {notification.taskKey} · {notification.taskTitle}
+                  </Text>
+                  <Text size="xs" c="dimmed">
+                    {labelForStatus(notification.statusFrom)} -&gt;{' '}
+                    {labelForStatus(notification.statusTo)}
+                  </Text>
+                </div>
+                <Text size="xs" c="dimmed">
+                  {formatDateTimeForDisplay(notification.createdAt, timeZone)}
+                </Text>
+              </Group>
+            );
+
+            if (isHistoryMode) {
+              return (
+                <div key={notification.id} className="task-notification-item">
+                  {notificationContent}
+                </div>
+              );
+            }
+
+            return (
+              <button
+                key={notification.id}
+                type="button"
+                className="task-notification-item"
+                disabled={pendingReadNotificationIds?.has(notification.id) ?? false}
+                onClick={() => onNotificationClick?.(notification)}
+              >
+                {notificationContent}
+              </button>
+            );
+          })}
         </Stack>
 
         {isHistoryMode && hasMore ? (

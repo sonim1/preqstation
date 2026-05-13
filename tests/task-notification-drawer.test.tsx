@@ -85,7 +85,7 @@ function makeNotification(
     projectId: 'project-1',
     taskId: 'task-1',
     taskKey: overrides.taskKey ?? 'PROJ-327',
-    taskTitle: overrides.taskTitle ?? 'Browser Notification 추가',
+    taskTitle: overrides.taskTitle ?? 'Add browser notifications',
     statusFrom: overrides.statusFrom ?? 'todo',
     statusTo: overrides.statusTo ?? 'ready',
     readAt: overrides.readAt ?? null,
@@ -128,6 +128,7 @@ describe('app/components/task-notification-drawer', () => {
         isLoading={false}
         isLoadingMore={false}
         hasMore={false}
+        onNotificationClick={vi.fn()}
         onShowHistory={vi.fn()}
         onShowUnread={vi.fn()}
         onLoadMore={vi.fn()}
@@ -138,9 +139,11 @@ describe('app/components/task-notification-drawer', () => {
     expect(html).toContain('2');
     expect(html).toContain('Show history');
     expect(html).toContain('PROJ-327');
-    expect(html).toContain('Browser Notification 추가');
+    expect(html).toContain('Add browser notifications');
     expect(html).toContain('Ready');
     expect(html).toContain('Done');
+    expect(html).toContain('<button type="button" class="task-notification-item"');
+    expect(html).not.toContain('aria-label="Mark PROJ-327 notification as read"');
     expect(html).toContain('2026-04-08 05:10');
   });
 
@@ -213,6 +216,7 @@ describe('app/components/task-notification-drawer', () => {
         isLoading={false}
         isLoadingMore={false}
         hasMore={true}
+        onNotificationClick={vi.fn()}
         onShowHistory={vi.fn()}
         onShowUnread={vi.fn()}
         onLoadMore={vi.fn()}
@@ -221,6 +225,7 @@ describe('app/components/task-notification-drawer', () => {
 
     expect(html).toContain('Show unread');
     expect(html).toContain('History item');
+    expect(html).toContain('<div class="task-notification-item"');
     expect(html).toContain('data-load-more-button="true"');
     expect(html).toContain('data-disabled="false"');
   });
@@ -236,6 +241,7 @@ describe('app/components/task-notification-drawer', () => {
         isLoading={false}
         isLoadingMore={false}
         hasMore={false}
+        onNotificationClick={vi.fn()}
         onShowHistory={vi.fn()}
         onShowUnread={vi.fn()}
         onLoadMore={vi.fn()}
@@ -251,6 +257,7 @@ describe('app/components/task-notification-drawer', () => {
         isLoading={false}
         isLoadingMore={false}
         hasMore={false}
+        onNotificationClick={vi.fn()}
         onShowHistory={vi.fn()}
         onShowUnread={vi.fn()}
         onLoadMore={vi.fn()}
@@ -261,5 +268,27 @@ describe('app/components/task-notification-drawer', () => {
     expect(unreadHtml).toContain('Completed work will appear here.');
     expect(historyHtml).toContain('No notification history');
     expect(historyHtml).toContain('Read notifications will appear here once they arrive.');
+  });
+
+  it('disables notification rows while their read request is pending', () => {
+    const html = renderToStaticMarkup(
+      <TaskNotificationDrawer
+        opened={true}
+        onClose={vi.fn()}
+        mode="unread"
+        notifications={[makeNotification()]}
+        total={1}
+        isLoading={false}
+        isLoadingMore={false}
+        hasMore={false}
+        pendingReadNotificationIds={new Set(['notif-1'])}
+        onNotificationClick={vi.fn()}
+        onShowHistory={vi.fn()}
+        onShowUnread={vi.fn()}
+        onLoadMore={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain('disabled=""');
   });
 });

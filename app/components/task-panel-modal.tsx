@@ -11,7 +11,7 @@ import {
   Resizable,
   type ResizeDirection,
 } from 're-resizable';
-import { forwardRef, useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import classes from './task-panel-modal.module.css';
 
@@ -45,6 +45,8 @@ const TASK_PANEL_RESIZE_HANDLE_CLASSES: HandleClassName = {
   bottomLeft: classes.resizeHandleBottomLeft,
   topLeft: classes.resizeHandleTopLeft,
 };
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 type TaskPanelSize = {
   width: number;
@@ -383,7 +385,7 @@ export function TaskPanelModal({
     };
   }, []);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!isResizeEnabled || typeof window === 'undefined') {
       return;
     }
@@ -426,7 +428,7 @@ export function TaskPanelModal({
     }
   }, [isResizeEnabled]);
 
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!isResizeEnabled || !resizableStorageKey || typeof window === 'undefined') {
       return;
     }
@@ -439,17 +441,8 @@ export function TaskPanelModal({
     );
     const nextSize =
       storedSize ?? clampTaskPanelSize(TASK_PANEL_RESIZE_DEFAULT_SIZE, currentViewport);
-    let isActive = true;
 
-    queueMicrotask(() => {
-      if (isActive) {
-        setResizableSize(nextSize);
-      }
-    });
-
-    return () => {
-      isActive = false;
-    };
+    setResizableSize(nextSize);
   }, [isResizeEnabled, resizableStorageKey]);
 
   function requestClose() {
