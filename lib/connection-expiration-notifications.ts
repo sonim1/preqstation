@@ -254,7 +254,7 @@ async function listConnectionNotificationReads(
   }
 
   try {
-    return client.query.connectionNotificationReads.findMany({
+    return await client.query.connectionNotificationReads.findMany({
       where: and(
         eq(connectionNotificationReads.ownerId, ownerId),
         inArray(connectionNotificationReads.notificationKey, notificationKeys),

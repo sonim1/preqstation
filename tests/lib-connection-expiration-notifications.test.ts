@@ -200,4 +200,53 @@ describe('lib/connection-expiration-notifications', () => {
       }),
     );
   });
+
+  it('falls back to unread notifications when connection read storage is missing', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+
+    const missingReadsError = Object.assign(new Error('Failed query'), {
+      cause: Object.assign(
+        new Error('relation "connection_notification_reads" does not exist'),
+        {
+          code: '42P01',
+        },
+      ),
+    });
+    const mcpFindMany = vi.fn().mockResolvedValue([
+      {
+        id: 'mcp-expiring',
+        displayName: 'Codex',
+        redirectUri: 'http://127.0.0.1:3456/callback',
+        expiresAt: new Date('2026-03-27T11:00:00.000Z'),
+        revokedAt: null,
+        createdAt: new Date('2026-03-20T12:00:00.000Z'),
+      },
+    ]);
+    const client = {
+      query: {
+        mcpConnections: {
+          findMany: mcpFindMany,
+        },
+        browserSessions: {
+          findMany: vi.fn().mockResolvedValue([]),
+        },
+        connectionNotificationReads: {
+          findMany: vi.fn().mockRejectedValue(missingReadsError),
+        },
+      },
+    };
+
+    const result = await listConnectionExpirationNotifications(
+      { ownerId: OWNER_ID },
+      client as never,
+    );
+
+    expect(result.notifications).toEqual([
+      expect.objectContaining({
+        id: 'connection-expiring-soon:mcp:mcp-expiring:2026-03-27T11:00:00.000Z',
+        readAt: null,
+      }),
+    ]);
+  });
 });
