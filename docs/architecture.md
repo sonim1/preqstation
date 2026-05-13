@@ -129,21 +129,23 @@ Coding agent checks task status via preq_get_task, then:
 
 ### Database Schema
 
-| Table              | Purpose                                                                                                         |
-| ------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `users`            | Single-owner account, password hash, optional TOTP 2FA state                                                    |
-| `tasks`            | Task items with `taskKey` (e.g. `PROJ-123`), workflow status, priority, engine, branch, sort order, `run_state` |
-| `task_labels`      | Project-owned task label taxonomy (`project_id` required, unique name per project, owner-protected via RLS)     |
-| `projects`         | GitHub/Vercel project tracking with repo URL, background image, soft-delete                                     |
-| `project_settings` | Per-project config (deploy strategy, default branch, auto PR, squash merge, agent instructions)                 |
-| `oauth_clients`    | Registered OAuth clients for MCP installs, including client name and redirect URIs                              |
-| `mcp_connections`  | Owner-visible MCP connection metadata (display name, engine, last used, expiry, revoked state)                  |
-| `api_tokens`       | Legacy bearer tokens for direct REST automation (SHA-256 hashed, prefix `preq_`, optional expiration)           |
-| `work_logs`        | Durable audit trail of agent execution results (linked to task and project)                                     |
-| `events_outbox`    | Event sourcing (task/project/worklog CRUD events)                                                               |
-| `audit_logs`       | Immutable mutation log (all API actions)                                                                        |
-| `security_events`  | Login attempts, auth failures, IP/user-agent tracking                                                           |
-| `user_settings`    | Key-value config (Telegram bot token, split OpenClaw/Hermes chat IDs and enabled flags, timezone, etc.)         |
+| Table                           | Purpose                                                                                                         |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `users`                         | Single-owner account, password hash, optional TOTP 2FA state                                                    |
+| `tasks`                         | Task items with `taskKey` (e.g. `PROJ-123`), workflow status, priority, engine, branch, sort order, `run_state` |
+| `task_labels`                   | Project-owned task label taxonomy (`project_id` required, unique name per project, owner-protected via RLS)     |
+| `projects`                      | GitHub/Vercel project tracking with repo URL, background image, soft-delete                                     |
+| `project_settings`              | Per-project config (deploy strategy, default branch, auto PR, squash merge, agent instructions)                 |
+| `oauth_clients`                 | Registered OAuth clients for MCP installs, including client name and redirect URIs                              |
+| `mcp_connections`               | Owner-visible MCP connection metadata (display name, engine, last used, expiry, revoked state)                  |
+| `api_tokens`                    | Legacy bearer tokens for direct REST automation (SHA-256 hashed, prefix `preq_`, optional expiration)           |
+| `work_logs`                     | Durable audit trail of agent execution results (linked to task and project)                                     |
+| `task_notifications`            | Task completion notifications, read state, and notification drawer history                                      |
+| `connection_notification_reads` | Read receipts for generated MCP/browser connection-expiration notifications keyed by owner and notification key |
+| `events_outbox`                 | Event sourcing (task/project/worklog CRUD events)                                                               |
+| `audit_logs`                    | Immutable mutation log (all API actions)                                                                        |
+| `security_events`               | Login attempts, auth failures, IP/user-agent tracking                                                           |
+| `user_settings`                 | Key-value config (Telegram bot token, split OpenClaw/Hermes chat IDs and enabled flags, timezone, etc.)         |
 
 ### Database Access Boundary
 
@@ -242,6 +244,8 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 | `DELETE` | `/api/projects/:id/labels/:labelId` | Delete one project label                                              |
 | `POST`   | `/api/events/cleanup`               | Clean up old outbox entries                                           |
 | `GET`    | `/api/settings`                     | Get/update user settings                                              |
+| `GET`    | `/api/notifications`                | List unread or read notification drawer items                         |
+| `PATCH`  | `/api/notifications`                | Mark selected or all notification drawer items as read                |
 | `POST`   | `/api/projects/:id/qa-runs/trigger` | Queue selected ready task keys for QA via OpenClaw or Hermes Telegram |
 | `POST`   | `/api/telegram/send`                | Send task Telegram message to OpenClaw or Hermes                      |
 | `POST`   | `/api/telegram/send/insight`        | Send project insight to the OpenClaw or Hermes Telegram channel       |
@@ -251,6 +255,11 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 | `DELETE` | `/api/work-logs/:id`                | Delete work log entry                                                 |
 
 Legacy `/api/task-labels` and `/api/task-labels/:id` handlers are compatibility tombstones only: they return `410 Gone` and point callers to the canonical `/api/projects/:id/labels*` routes.
+
+The notification drawer uses `/api/notifications` to merge persisted task-completion notifications
+with generated connection-expiration notifications for MCP connections and browser sessions that
+expire within three days. `PATCH /api/notifications` updates both notification sources; generated
+connection-expiration read state is persisted in `connection_notification_reads`.
 
 ### Offline Workspace Path
 

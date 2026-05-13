@@ -32,6 +32,22 @@ Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `a
 - Codex install: `codex mcp add preqstation --url https://<your-domain>/mcp`
 - Exposed read tools include `preq_list_projects`, `preq_list_tasks`, `preq_get_task`, and `preq_get_project_settings`
 
+### Internal Notifications
+
+The session-authenticated `/api/notifications` endpoint powers the in-app notification drawer.
+`GET /api/notifications` returns a single `notifications` array that merges task-completion
+notifications with connection-expiration notifications, sorted by newest `createdAt` first. It
+accepts `history=1` or `history=true` for read notifications plus `offset` and `limit` pagination.
+
+Task notifications return `type: "task"` with task key, title, status transition, read time, and
+creation time. Connection-expiration notifications return `type: "connection-expiration"` with
+`source: "mcp" | "browser"`, target details, `expiresAt`, read time, and creation time. Connection
+expiration notices are generated for active MCP connections and browser sessions that expire within
+three days; their read state is stored in `connection_notification_reads`.
+
+`PATCH /api/notifications` accepts either `{ "notificationIds": [...] }` or `{ "markAll": true }`
+and marks matching task and connection-expiration notifications as read for the current owner.
+
 See [`architecture.md`](architecture.md) for the current API and workflow contract.
 
 For first-time system onboarding, prefer:
