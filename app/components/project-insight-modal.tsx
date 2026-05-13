@@ -39,7 +39,7 @@ type ProjectInsightModalProps = {
 };
 
 const insightPlaceholder =
-  '예: Connections 페이지 개편 작업을 나눠줘\n브라우저 알림 추가를 위한 다음 작업들을 정리해줘';
+  'Example: Break down the Connections page redesign\nPlan follow-up tasks for browser notifications';
 
 function getProjectDispatchTargetLabel(target: ProjectInsightTarget) {
   switch (target) {
@@ -235,7 +235,8 @@ export function ProjectInsightModal({
     >
       <Stack gap="md">
         <Text size="sm" c="dimmed">
-          현재 프로젝트와 입력한 내용을 바탕으로 다음 작업 인사이트를 정리하고 Inbox에 추가합니다.
+          Summarize next-task insight from the current project and your prompt, then add it to
+          Inbox.
         </Text>
 
         <DispatchSegmentedControl
@@ -323,8 +324,8 @@ export function ProjectInsightModal({
 
         <Group justify="space-between" align="flex-start" gap="sm">
           <Text size="xs" c="dimmed">
-            현재 프로젝트에서 필요한 다음 작업을 간단히 적어주세요. 줄바꿈은 그대로 보존되고,
-            transport에서는 안전하게 인코딩됩니다.
+            Briefly describe the next work this project needs. Line breaks are preserved and safely
+            encoded for transport.
           </Text>
           <Text size="xs" c={prompt.length > INSIGHT_PROMPT_MAX_LENGTH ? 'red' : 'dimmed'}>
             {prompt.length}/{INSIGHT_PROMPT_MAX_LENGTH}

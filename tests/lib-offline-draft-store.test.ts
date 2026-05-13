@@ -16,12 +16,12 @@ describe('lib/offline/draft-store', () => {
       id: 'task:PROJ-415',
       scope: 'task-edit',
       entityKey: 'PROJ-415',
-      fields: { title: '초안' },
+      fields: { title: 'Draft' },
       updatedAt: '2026-04-21T00:00:00.000Z',
     });
 
     expect(await getDraft('task:PROJ-415')).toMatchObject({
-      fields: { title: '초안' },
+      fields: { title: 'Draft' },
     });
 
     await deleteDraft('task:PROJ-415');

@@ -61,7 +61,7 @@ describe('app/api/notifications/route', () => {
           projectId: 'project-1',
           taskId: 'task-1',
           taskKey: 'PROJ-327',
-          taskTitle: 'Browser Notification 추가',
+          taskTitle: 'Add browser notifications',
           statusFrom: 'todo',
           statusTo: 'ready',
           readAt: null,

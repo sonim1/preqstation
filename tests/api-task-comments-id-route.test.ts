@@ -50,7 +50,7 @@ const existingComment = {
   parentCommentId: null,
   authorType: 'user',
   authorName: 'owner@example.com',
-  body: '댓글 확인해주세요',
+  body: 'Please review this comment',
   runState: 'queued',
   runStateUpdatedAt: new Date('2026-05-06T15:00:00.000Z'),
   engine: 'codex',

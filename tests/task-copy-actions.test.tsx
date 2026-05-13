@@ -729,14 +729,14 @@ describe('app/components/task-copy-actions', () => {
 
     const html = renderTaskCopyActions({
       noteMarkdown:
-        '## Context\n\nCurrent note\n\n---\n\nAsk:\nAcceptance criteria 중심으로 정리해줘',
+        '## Context\n\nCurrent note\n\n---\n\nAsk:\nSummarize around acceptance criteria',
     });
 
     expect(html).toContain('aria-label="Selected engine: Claude"');
     expect(html).toContain('aria-label="Selected mode: Ask"');
     expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
     expect(html).toContain(
-      '!/skill preqstation-dispatch ask PROJ-224 using claude-code branch_name=&quot;task/proj-224/move-status-test-button&quot; ask_hint=&quot;Acceptance criteria 중심으로 정리해줘&quot;',
+      '!/skill preqstation-dispatch ask PROJ-224 using claude-code branch_name=&quot;task/proj-224/move-status-test-button&quot; ask_hint=&quot;Summarize around acceptance criteria&quot;',
     );
   });
 });

@@ -54,7 +54,7 @@ describe('lib/task-search', () => {
 
     const results = await searchTasksForBoard({
       ownerId: 'owner-1',
-      query: '로그인',
+      query: 'login',
       projectId: 'project-1',
       limit: 999,
     });
@@ -67,7 +67,7 @@ describe('lib/task-search', () => {
 
     expect(chunks[0]).toContain('search_tasks_fts(');
     expect(chunks).toContain('owner-1');
-    expect(chunks).toContain('로그인');
+    expect(chunks).toContain('login');
     expect(chunks).toContain('project-1');
     expect(chunks).toContain(50);
   });
@@ -86,7 +86,7 @@ describe('lib/task-search', () => {
     await expect(
       searchTasksForBoard({
         ownerId: 'owner-1',
-        query: '배포 실패',
+        query: 'deploy failure',
         limit: 10,
       }),
     ).resolves.toEqual([

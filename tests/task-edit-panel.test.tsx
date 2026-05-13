@@ -292,7 +292,7 @@ describe('app/components/task-edit-panel', () => {
               ...BASE_PROPS.editableTodo,
               id: '1',
               taskKey: 'PROJ-187',
-              title: 'OpenClaw 기능 UI수정',
+              title: 'Update OpenClaw feature UI',
               note: 'Move the actions into the form meta header.',
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}

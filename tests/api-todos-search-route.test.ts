@@ -85,9 +85,7 @@ describe('app/api/todos/search/route', () => {
     ]);
 
     const response = await GET(
-      request(
-        `${TEST_BASE_URL}/api/todos/search?q=%EB%A1%9C%EA%B7%B8%EC%9D%B8&projectId=project-1`,
-      ),
+      request(`${TEST_BASE_URL}/api/todos/search?q=login&projectId=project-1`),
     );
     const body = await response.json();
 
@@ -95,13 +93,13 @@ describe('app/api/todos/search/route', () => {
     expect(mocked.searchTasksForBoard).toHaveBeenCalledWith(
       expect.objectContaining({
         ownerId: 'owner-1',
-        query: '로그인',
+        query: 'login',
         projectId: 'project-1',
         client: expect.anything(),
       }),
     );
     expect(body).toEqual({
-      query: '로그인',
+      query: 'login',
       total: 1,
       results: [
         {

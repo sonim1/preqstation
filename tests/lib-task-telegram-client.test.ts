@@ -28,10 +28,10 @@ describe('lib/task-telegram-client', () => {
         engine: 'claude-code',
         branchName: 'task/proj-328/edit-note',
         objective: 'ask',
-        askHint: 'Acceptance criteria 중심으로 정리해줘',
+        askHint: 'Summarize around acceptance criteria',
       }),
     ).toContain(
-      '!/skill preqstation-dispatch ask PROJ-328 using claude-code branch_name="task/proj-328/edit-note" ask_hint="Acceptance criteria 중심으로 정리해줘"',
+      '!/skill preqstation-dispatch ask PROJ-328 using claude-code branch_name="task/proj-328/edit-note" ask_hint="Summarize around acceptance criteria"',
     );
   });
 
@@ -111,7 +111,7 @@ describe('lib/task-telegram-client', () => {
         projectKey: 'PROJ',
         engine: 'codex',
         dispatchTarget: 'hermes-telegram',
-        insightPrompt: 'Connections 페이지 개편 작업을 나눠줘',
+        insightPrompt: 'Break down the Connections page redesign',
       }),
     ).toContain('/preqstation_dispatch@PreqHermesBot');
     expect(
@@ -119,7 +119,7 @@ describe('lib/task-telegram-client', () => {
         projectKey: 'PROJ',
         engine: 'codex',
         dispatchTarget: 'hermes-telegram',
-        insightPrompt: 'Connections 페이지 개편 작업을 나눠줘',
+        insightPrompt: 'Break down the Connections page redesign',
       }),
     ).toContain('insight_prompt_b64=');
   });
