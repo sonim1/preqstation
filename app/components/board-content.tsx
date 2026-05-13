@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { BoardEventSync } from '@/app/components/board-event-sync';
+import { BoardNotificationSync } from '@/app/components/board-notification-sync';
 import { BoardOfflineSyncProvider } from '@/app/components/board-offline-sync-provider';
 import { BoardTaskPanel } from '@/app/components/board-task-panel';
 import { buildArchivedTasksRequestPath, KanbanBoard } from '@/app/components/kanban-board';
@@ -174,6 +175,7 @@ export function BoardContent({
 
   return (
     <KanbanStoreProvider initialColumns={kanbanTasks} initialFocusedTask={editableTodo}>
+      <BoardNotificationSync />
       <OfflineBoardHydrator boardKey={selectedProject?.projectKey ?? 'ALL'} />
       <BoardOfflineSyncProvider
         editHrefBase={editHrefBase}

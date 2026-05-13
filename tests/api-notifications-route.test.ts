@@ -379,6 +379,29 @@ describe('app/api/notifications/route', () => {
     );
   });
 
+  it('PATCH treats already-read notification ids as a successful no-op', async () => {
+    mocked.markTaskNotificationsRead.mockResolvedValueOnce([]);
+
+    const response = await PATCH(
+      patchRequest({
+        notificationIds: [NOTIFICATION_ID_1],
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocked.markTaskNotificationsRead).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        notificationIds: [NOTIFICATION_ID_1],
+      },
+      expect.anything(),
+    );
+    expect(await response.json()).toEqual({
+      ok: true,
+      updatedIds: [],
+    });
+  });
+
   it('PATCH marks task and connection expiration ids as read for the current owner', async () => {
     mocked.markTaskNotificationsRead.mockResolvedValueOnce(['notif-1']);
     mocked.markConnectionExpirationNotificationsRead.mockResolvedValueOnce([

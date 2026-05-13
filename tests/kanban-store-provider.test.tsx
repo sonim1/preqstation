@@ -14,6 +14,7 @@ import {
   useRemoveKanbanTask,
   useSetFocusedTask,
   useSetKanbanReconciliationPaused,
+  useSetTaskUnreadNotification,
   useUpsertKanbanSnapshots,
 } from '@/app/components/kanban-store-provider';
 import type { KanbanColumns, KanbanTask } from '@/lib/kanban-helpers';
@@ -94,6 +95,7 @@ describe('app/components/kanban-store-provider', () => {
       const setFocusedTask = useSetFocusedTask();
       const removeTask = useRemoveKanbanTask();
       const applyOptimisticRunState = useApplyOptimisticKanbanRunState();
+      const setTaskUnreadNotification = useSetTaskUnreadNotification();
 
       return (
         <div
@@ -108,6 +110,7 @@ describe('app/components/kanban-store-provider', () => {
           data-set-focused-task-type={typeof setFocusedTask}
           data-remove-task-type={typeof removeTask}
           data-apply-optimistic-run-state-type={typeof applyOptimisticRunState}
+          data-set-task-unread-notification-type={typeof setTaskUnreadNotification}
         />
       );
     }
@@ -129,5 +132,6 @@ describe('app/components/kanban-store-provider', () => {
     expect(html).toContain('data-set-focused-task-type="function"');
     expect(html).toContain('data-remove-task-type="function"');
     expect(html).toContain('data-apply-optimistic-run-state-type="function"');
+    expect(html).toContain('data-set-task-unread-notification-type="function"');
   });
 });
