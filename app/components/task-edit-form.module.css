@@ -222,12 +222,6 @@
   overflow-x: auto;
 }
 
-.commentSubmitButton {
-  transition:
-    width 160ms ease,
-    min-width 160ms ease;
-}
-
 .commentSubmitContent {
   display: inline-flex;
   align-items: center;
@@ -267,7 +261,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .commentSubmitButton,
   .commentShortcutSlot {
     transition: none;
   }

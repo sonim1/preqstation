@@ -637,7 +637,7 @@ function TaskCommentsSection({
   const [statusMessage, setStatusMessage] = useState('Loading comments.');
   const canSubmitComment = Boolean(draft.trim());
   const commentShortcutActive = isComposerFocused;
-  const sendShortcutLabel = getSendShortcutLabel();
+  const [sendShortcutLabel, setSendShortcutLabel] = useState<string | null>(null);
   const showCommentShortcut = commentShortcutActive && Boolean(sendShortcutLabel);
 
   const loadComments = useCallback(async () => {
@@ -674,6 +674,10 @@ function TaskCommentsSection({
   useEffect(() => {
     void loadComments();
   }, [loadComments]);
+
+  useEffect(() => {
+    setSendShortcutLabel(getSendShortcutLabel());
+  }, []);
 
   useEffect(() => {
     onShortcutActiveChange?.(commentShortcutActive);
@@ -779,7 +783,6 @@ function TaskCommentsSection({
             <Button
               type="button"
               size="xs"
-              className={classes.commentSubmitButton}
               onClick={handleSubmit}
               loading={isSubmitting}
               disabled={!canSubmitComment}
@@ -791,9 +794,11 @@ function TaskCommentsSection({
                   data-visible={showCommentShortcut ? 'true' : 'false'}
                   aria-hidden={!showCommentShortcut}
                 >
-                  <Kbd size="xs" className="task-dispatch-send-shortcut">
-                    {sendShortcutLabel}
-                  </Kbd>
+                  {sendShortcutLabel ? (
+                    <Kbd size="xs" className="task-dispatch-send-shortcut">
+                      {sendShortcutLabel}
+                    </Kbd>
+                  ) : null}
                 </span>
               </span>
             </Button>
