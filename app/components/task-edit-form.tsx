@@ -39,7 +39,7 @@ import { type EditorMode, LiveMarkdownEditor } from '@/app/components/live-markd
 import { MarkdownViewer } from '@/app/components/markdown-viewer';
 import { useOfflineStatus } from '@/app/components/offline-status-provider';
 import { StatusHistoryBreadcrumb } from '@/app/components/status-history-breadcrumb';
-import { SEND_SHORTCUT_LABEL, TaskCopyActions } from '@/app/components/task-copy-actions';
+import { getSendShortcutLabel, TaskCopyActions } from '@/app/components/task-copy-actions';
 import { TaskMetadataPriorityPicker } from '@/app/components/task-metadata-controls';
 import { WorkLogTimeline } from '@/app/components/work-log-timeline';
 import { shouldFlushAutoSaveOnBlur, useAutoSave } from '@/app/hooks/use-auto-save';
@@ -636,6 +636,7 @@ function TaskCommentsSection({
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('Loading comments.');
   const commentShortcutActive = isComposerFocused && Boolean(draft.trim());
+  const sendShortcutLabel = getSendShortcutLabel();
 
   const loadComments = useCallback(async () => {
     setIsLoading(true);
@@ -674,13 +675,13 @@ function TaskCommentsSection({
 
   useEffect(() => {
     onShortcutActiveChange?.(commentShortcutActive);
-
-    return () => {
-      if (commentShortcutActive) {
-        onShortcutActiveChange?.(false);
-      }
-    };
   }, [commentShortcutActive, onShortcutActiveChange]);
+
+  useEffect(() => {
+    return () => {
+      onShortcutActiveChange?.(false);
+    };
+  }, [onShortcutActiveChange]);
 
   async function handleSubmit() {
     const body = draft.trim();
@@ -784,7 +785,7 @@ function TaskCommentsSection({
                 <span>Add comment</span>
                 {commentShortcutActive ? (
                   <Kbd size="xs" className="task-dispatch-send-shortcut">
-                    {SEND_SHORTCUT_LABEL}
+                    {sendShortcutLabel}
                   </Kbd>
                 ) : null}
               </Group>

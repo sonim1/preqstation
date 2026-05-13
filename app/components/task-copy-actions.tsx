@@ -39,7 +39,7 @@ import {
 
 const engineOptions = Object.values(ENGINE_CONFIGS);
 const dispatchFlowHelp = 'Choose an engine, review the prompt, then send it.';
-export const SEND_SHORTCUT_LABEL = 'Cmd+Enter';
+const APPLE_SHORTCUT_PLATFORM_PATTERN = /Mac|iPhone|iPad|iPod/;
 const TASK_DISPATCH_PREFERENCE_STATUSES: TaskDispatchPreferenceStatus[] = [
   'inbox',
   'todo',
@@ -65,6 +65,13 @@ const visuallyHiddenStyles = {
   whiteSpace: 'nowrap',
   border: 0,
 } as const;
+
+export function getSendShortcutLabel(platform?: string) {
+  const effectivePlatform =
+    platform ?? (typeof navigator === 'undefined' ? '' : navigator.platform);
+
+  return APPLE_SHORTCUT_PLATFORM_PATTERN.test(effectivePlatform) ? 'Cmd+Enter' : 'Ctrl+Enter';
+}
 
 type TaskCopyActionsProps = {
   taskKey: string;
@@ -256,6 +263,7 @@ export function TaskCopyActions({
     telegramEnabled,
     resolvedHermesTelegramEnabled,
   );
+  const sendShortcutLabel = getSendShortcutLabel();
   const effectiveObjective = availableModes.includes(selectedObjective)
     ? selectedObjective
     : resolveInitialMode(availableModes, storedPreference?.objective);
@@ -565,7 +573,7 @@ export function TaskCopyActions({
             <span>{getSendLabel(dispatchState)}</span>
             {suppressShortcut ? null : (
               <Kbd size="xs" className="task-dispatch-send-shortcut">
-                {SEND_SHORTCUT_LABEL}
+                {sendShortcutLabel}
               </Kbd>
             )}
           </UnstyledButton>

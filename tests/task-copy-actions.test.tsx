@@ -92,7 +92,18 @@ const originalClipboardDescriptor = Object.getOwnPropertyDescriptor(
   originalWindow.navigator,
   'clipboard',
 );
+const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(
+  originalWindow.navigator,
+  'platform',
+);
 const legacyClaudeDispatchAction = ['send', 'claude-code'].join('-');
+
+function setNavigatorPlatform(platform: string) {
+  Object.defineProperty(originalWindow.navigator, 'platform', {
+    configurable: true,
+    value: platform,
+  });
+}
 
 function renderTaskCopyActions(props: Partial<React.ComponentProps<typeof TaskCopyActions>> = {}) {
   return renderToStaticMarkup(
@@ -143,6 +154,7 @@ describe('app/components/task-copy-actions', () => {
   let localStorage: MemoryStorage;
 
   beforeEach(() => {
+    setNavigatorPlatform('MacIntel');
     localStorage = new MemoryStorage();
     Object.defineProperty(originalWindow, 'localStorage', {
       configurable: true,
@@ -179,6 +191,11 @@ describe('app/components/task-copy-actions', () => {
       Object.defineProperty(originalWindow.navigator, 'clipboard', originalClipboardDescriptor);
     } else {
       Reflect.deleteProperty(originalWindow.navigator, 'clipboard');
+    }
+    if (originalPlatformDescriptor) {
+      Object.defineProperty(originalWindow.navigator, 'platform', originalPlatformDescriptor);
+    } else {
+      Reflect.deleteProperty(originalWindow.navigator, 'platform');
     }
   });
 
@@ -250,6 +267,15 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Send to Telegram');
     expect(html).not.toContain('Copy Telegram');
     expect(html).not.toContain('Selected action:');
+  });
+
+  it('uses Ctrl+Enter for the send shortcut label on non-Apple platforms', () => {
+    setNavigatorPlatform('Win32');
+
+    const html = renderTaskCopyActions({ engine: 'codex' });
+
+    expect(html).toContain('Ctrl+Enter');
+    expect(html).not.toContain('Cmd+Enter');
   });
 
   it('persists the current dispatch preference when copying the prompt', async () => {
