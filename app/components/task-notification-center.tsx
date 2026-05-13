@@ -4,7 +4,7 @@ import { ActionIcon, Indicator } from '@mantine/core';
 import { IconBell } from '@tabler/icons-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   extractCreatedNotificationsFromPolledEvents,
@@ -18,6 +18,7 @@ import type {
   TaskNotificationDrawerMode,
   TaskNotificationItem,
 } from './task-notification-drawer';
+import { type NotificationPage, useTaskNotificationStore } from './task-notification-store';
 
 const TaskNotificationDrawer = dynamic(
   () => import('./task-notification-drawer').then((mod) => mod.TaskNotificationDrawer),
@@ -25,30 +26,6 @@ const TaskNotificationDrawer = dynamic(
 );
 
 const HISTORY_PAGE_SIZE = 20;
-
-type NotificationPage = {
-  notifications: TaskNotificationItem[];
-  total: number;
-  offset: number;
-  limit: number;
-  hasMore: boolean;
-};
-
-function prependUniqueById(
-  incoming: TaskNotificationItem[],
-  existing: TaskNotificationItem[],
-): TaskNotificationItem[] {
-  const seen = new Set<string>();
-  const merged: TaskNotificationItem[] = [];
-
-  for (const notification of [...incoming, ...existing]) {
-    if (seen.has(notification.id)) continue;
-    seen.add(notification.id);
-    merged.push(notification);
-  }
-
-  return merged;
-}
 
 function appendUniqueById(
   existing: TaskNotificationItem[],
@@ -88,7 +65,7 @@ async function fetchNotificationPage(params: {
 
 async function markNotificationsRead(params: { notificationIds?: string[]; markAll?: true }) {
   if (!params.markAll && (params.notificationIds?.length ?? 0) === 0) {
-    return;
+    return { ok: true, updatedIds: [] };
   }
 
   const response = await fetch('/api/notifications', {
@@ -105,6 +82,8 @@ async function markNotificationsRead(params: { notificationIds?: string[]; markA
   if (!response.ok) {
     throw new Error(`Failed to mark notifications as read: ${response.status}`);
   }
+
+  return (await response.json()) as { ok: true; updatedIds: string[] };
 }
 
 function toTaskNotificationItem(notification: PolledNotification): TaskCompletionNotificationItem {
@@ -139,11 +118,19 @@ export function TaskNotificationCenter() {
   const router = useRouter();
   const [opened, setOpened] = useState(false);
   const [mode, setMode] = useState<TaskNotificationDrawerMode>('unread');
-  const [unreadNotifications, setUnreadNotifications] = useState<TaskNotificationItem[]>([]);
-  const [unreadTotal, setUnreadTotal] = useState(0);
-  const [pendingReadNotificationIds, setPendingReadNotificationIds] = useState<Set<string>>(
-    () => new Set(),
+  const unreadNotifications = useTaskNotificationStore((state) => state.unreadNotifications);
+  const unreadTotal = useTaskNotificationStore((state) => state.unreadTotal);
+  const pendingReadNotificationIds = useTaskNotificationStore(
+    (state) => state.pendingReadNotificationIds,
   );
+  const hydrateUnreadPage = useTaskNotificationStore((state) => state.hydrateUnreadPage);
+  const addCreatedNotifications = useTaskNotificationStore(
+    (state) => state.addCreatedNotifications,
+  );
+  const beginMarkRead = useTaskNotificationStore((state) => state.beginMarkRead);
+  const finishMarkRead = useTaskNotificationStore((state) => state.finishMarkRead);
+  const rollbackMarkRead = useTaskNotificationStore((state) => state.rollbackMarkRead);
+  const rememberNotifications = useTaskNotificationStore((state) => state.rememberNotifications);
   const [historyNotifications, setHistoryNotifications] = useState<TaskNotificationItem[]>([]);
   const [historyTotal, setHistoryTotal] = useState(0);
   const [historyHasMore, setHistoryHasMore] = useState(false);
@@ -153,9 +140,6 @@ export function TaskNotificationCenter() {
   const [isUnreadLoading, setIsUnreadLoading] = useState(true);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryLoadingMore, setIsHistoryLoadingMore] = useState(false);
-  const knownNotificationIdsRef = useRef(new Set<string>());
-  const hasHydratedUnreadRef = useRef(false);
-  const needsUnreadReloadRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -170,17 +154,7 @@ export function TaskNotificationCenter() {
           return;
         }
 
-        for (const notification of page.notifications) {
-          knownNotificationIdsRef.current.add(notification.id);
-        }
-        setUnreadNotifications((current) => prependUniqueById(current, page.notifications));
-        setUnreadTotal(page.total);
-        hasHydratedUnreadRef.current = true;
-
-        if (needsUnreadReloadRef.current) {
-          needsUnreadReloadRef.current = false;
-          void loadUnreadNotifications();
-        }
+        hydrateUnreadPage(page);
       } catch {
         if (!cancelled) {
           showErrorNotification('Failed to load notifications.');
@@ -197,32 +171,27 @@ export function TaskNotificationCenter() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [hydrateUnreadPage]);
 
   useEffect(() => {
     return subscribePolledTaskEvents(async (events) => {
-      const createdNotifications = extractCreatedNotificationsFromPolledEvents(events)
-        .filter((notification) => !knownNotificationIdsRef.current.has(notification.id))
-        .map(toTaskNotificationItem);
+      const createdNotifications =
+        extractCreatedNotificationsFromPolledEvents(events).map(toTaskNotificationItem);
+      const addedNotifications = addCreatedNotifications(createdNotifications);
 
-      if (createdNotifications.length === 0) {
+      if (addedNotifications.length === 0) {
         return false;
       }
 
-      for (const notification of createdNotifications) {
-        knownNotificationIdsRef.current.add(notification.id);
-        showTaskCompletionNotification(notification);
+      for (const notification of addedNotifications) {
+        if ('taskKey' in notification) {
+          showTaskCompletionNotification(notification);
+        }
       }
 
-      if (!hasHydratedUnreadRef.current) {
-        needsUnreadReloadRef.current = true;
-      }
-
-      setUnreadNotifications((current) => prependUniqueById(createdNotifications, current));
-      setUnreadTotal((current) => current + createdNotifications.length);
       return true;
     });
-  }, []);
+  }, [addCreatedNotifications]);
 
   async function loadHistory(offset: number, append: boolean) {
     if (append) {
@@ -238,9 +207,7 @@ export function TaskNotificationCenter() {
         limit: HISTORY_PAGE_SIZE,
       });
 
-      for (const notification of page.notifications) {
-        knownNotificationIdsRef.current.add(notification.id);
-      }
+      rememberNotifications(page.notifications);
 
       setHistoryNotifications((current) =>
         append ? appendUniqueById(current, page.notifications) : page.notifications,
@@ -274,9 +241,7 @@ export function TaskNotificationCenter() {
       return;
     }
 
-    setPendingReadNotificationIds((current) => new Set(current).add(notification.id));
-    setUnreadNotifications((current) => current.filter((item) => item.id !== notification.id));
-    setUnreadTotal((current) => Math.max(0, current - 1));
+    beginMarkRead(notification);
 
     const taskHref = isTaskNotificationItem(notification)
       ? buildNotificationTaskHref(notification)
@@ -289,22 +254,12 @@ export function TaskNotificationCenter() {
     }
 
     try {
-      await markNotificationsRead({ notificationIds: [notification.id] }).catch(
-        (error: unknown) => {
-          throw error;
-        },
-      );
+      await markNotificationsRead({ notificationIds: [notification.id] });
+      finishMarkRead(notification);
       router.refresh();
     } catch {
-      setUnreadNotifications((current) => prependUniqueById([notification], current));
-      setUnreadTotal((current) => current + 1);
+      rollbackMarkRead(notification);
       showErrorNotification('Failed to mark notification as read.');
-    } finally {
-      setPendingReadNotificationIds((current) => {
-        const next = new Set(current);
-        next.delete(notification.id);
-        return next;
-      });
     }
   }
 

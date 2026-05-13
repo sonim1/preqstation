@@ -88,6 +88,7 @@ export type KanbanStoreState = {
   openFocusedTaskFromBoardTask: (task: KanbanTask) => void;
   setReconciliationPaused: (paused: boolean) => void;
   removeTask: (taskKey: string) => void;
+  setTaskUnreadNotification: (taskKey: string, hasUnreadNotification: boolean) => void;
   applyOptimisticRunState: (
     taskKey: string,
     queuedAt: string,
@@ -412,6 +413,23 @@ export function createKanbanStore(snapshot: KanbanHydrationSnapshot) {
           taskKeysById: nextTaskKeysById,
           columnTaskKeys: nextColumnTaskKeys,
           ...(current.focusedTaskKey === taskKey ? focusState(null) : null),
+        });
+      },
+      setTaskUnreadNotification(taskKey, hasUnreadNotification) {
+        const current = get();
+        const task = current.tasksByKey[taskKey];
+        if (!task || Boolean(task.hasUnreadNotification) === hasUnreadNotification) {
+          return;
+        }
+
+        set({
+          tasksByKey: {
+            ...current.tasksByKey,
+            [taskKey]: {
+              ...task,
+              hasUnreadNotification,
+            },
+          },
         });
       },
       applyOptimisticRunState(taskKey, queuedAt, dispatchTarget) {

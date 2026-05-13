@@ -108,6 +108,10 @@ export function useRemoveKanbanTask() {
   return useKanbanStore((state) => state.removeTask);
 }
 
+export function useSetTaskUnreadNotification() {
+  return useKanbanStore((state) => state.setTaskUnreadNotification);
+}
+
 export function useApplyOptimisticKanbanRunState() {
   return useKanbanStore((state) => state.applyOptimisticRunState);
 }

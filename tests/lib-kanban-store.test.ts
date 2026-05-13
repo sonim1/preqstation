@@ -167,6 +167,25 @@ describe('lib/kanban-store', () => {
     expect(selectKanbanColumns(state)).toBe(selectKanbanColumns(state));
   });
 
+  it('updates one task unread notification flag while preserving board order', () => {
+    const store = createKanbanStore({
+      columns: buildColumns(),
+      focusedTask: buildFocusedTask(),
+    });
+
+    store.getState().setTaskUnreadNotification('PROJ-255', true);
+
+    expect(store.getState().tasksByKey['PROJ-255']?.hasUnreadNotification).toBe(true);
+    expect(store.getState().tasksByKey['PROJ-256']?.hasUnreadNotification).toBeFalsy();
+    expect(store.getState().columnTaskKeys.todo).toEqual(['PROJ-255', 'PROJ-256']);
+    expect(selectKanbanColumns(store.getState()).todo[0]?.hasUnreadNotification).toBe(true);
+
+    store.getState().setTaskUnreadNotification('PROJ-255', false);
+
+    expect(store.getState().tasksByKey['PROJ-255']?.hasUnreadNotification).toBe(false);
+    expect(selectKanbanColumns(store.getState()).todo[0]?.hasUnreadNotification).toBe(false);
+  });
+
   it('keeps the run-state polling selector result stable when status values are unchanged', () => {
     const store = createKanbanStore({
       columns: {

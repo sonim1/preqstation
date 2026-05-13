@@ -49,6 +49,7 @@ import {
   buildNotificationTaskHref,
   TaskNotificationCenter,
 } from '@/app/components/task-notification-center';
+import { useTaskNotificationStore } from '@/app/components/task-notification-store';
 
 function makeNotification(
   overrides: Partial<{
@@ -117,6 +118,7 @@ describe('app/components/task-notification-center', () => {
 
     vi.clearAllMocks();
     routerPushMock.mockReset();
+    useTaskNotificationStore.setState(useTaskNotificationStore.getInitialState(), true);
     routerRefreshMock.mockReset();
     vi.stubGlobal('fetch', fetchMock);
     Object.defineProperty(window, 'matchMedia', {
@@ -279,6 +281,41 @@ describe('app/components/task-notification-center', () => {
     expect(buildNotificationTaskHref({ taskKey: 'PROJ 310/alpha' })).toBe(
       '/board?panel=task-edit&taskId=PROJ%20310%2Falpha&focus=PROJ%20310%2Falpha',
     );
+  });
+
+  it('treats already-read notification responses as a successful no-op', async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => makePage(3, buildNotifications(3)),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ ok: true, updatedIds: [] }),
+      });
+
+    renderTaskNotificationCenter();
+
+    fireEvent.click(await screen.findByLabelText('Open notifications (3 unread)'));
+    await waitFor(() => expect(drawerProps?.total).toBe(3));
+
+    (
+      drawerProps?.onNotificationClick as (
+        notification: ReturnType<typeof makeNotification>,
+      ) => void
+    )(makeNotification({ id: 'notif-1' }));
+
+    await waitFor(() => {
+      expect(showErrorNotificationMock).not.toHaveBeenCalledWith(
+        'Failed to mark notification as read.',
+      );
+      expect(routerPushMock).toHaveBeenCalledWith(
+        '/board?panel=task-edit&taskId=PROJ-327&focus=PROJ-327',
+      );
+      expect(routerRefreshMock).toHaveBeenCalledTimes(2);
+      expect(screen.getByLabelText('Open notifications (2 unread)')).toBeTruthy();
+      expect(screen.queryByTestId('task-notification-drawer')).toBeNull();
+    });
   });
 
   it('restores unread state when marking a clicked notification fails', async () => {
