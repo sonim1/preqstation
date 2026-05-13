@@ -454,7 +454,9 @@ export function KanbanBoard({
   const openFocusedTaskFromBoardTask = useOpenFocusedTaskFromBoardTask();
   const setKanbanReconciliationPaused = useSetKanbanReconciliationPaused();
   const columns = useKanbanColumns();
-  const focusedTaskKey = searchParams.get('focus');
+  const panelTaskKey =
+    searchParams.get('panel') === 'task-edit' ? searchParams.get('taskId') : null;
+  const focusedTaskKey = panelTaskKey || searchParams.get('focus');
   const [isPending, startTransition] = useTransition();
   const [saveError, setSaveError] = useState<string | null>(null);
   const [archiveDrawerOpened, setArchiveDrawerOpened] = useState(false);
@@ -483,6 +485,9 @@ export function KanbanBoard({
 
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('inbox');
+  const [dimmedFocusTaskKey, setDimmedFocusTaskKey] = useState<string | null>(null);
+  const focusedTaskLocation = focusedTaskKey ? findTaskLocation(columns, focusedTaskKey) : null;
+  const focusedTaskStatus = focusedTaskLocation?.status ?? null;
 
   useEffect(() => {
     if (!focusedTaskKey) {
@@ -490,24 +495,37 @@ export function KanbanBoard({
       return;
     }
 
-    const location = findTaskLocation(columns, focusedTaskKey);
     if (
       appliedFocusTabRef.current?.taskKey === focusedTaskKey &&
-      appliedFocusTabRef.current.status === location?.status
+      appliedFocusTabRef.current.status === focusedTaskStatus
     ) {
       return;
     }
 
-    if (location) {
+    if (focusedTaskStatus) {
       if (isMobile) {
-        setActiveTab(location.status);
+        setActiveTab(focusedTaskStatus);
         appliedFocusTabRef.current = {
-          status: location.status,
+          status: focusedTaskStatus,
           taskKey: focusedTaskKey,
         };
       }
     }
-  }, [columns, focusedTaskKey, isMobile]);
+  }, [focusedTaskKey, focusedTaskStatus, isMobile]);
+
+  useEffect(() => {
+    if (!focusedTaskKey || !focusedTaskStatus) {
+      setDimmedFocusTaskKey(null);
+      return;
+    }
+
+    setDimmedFocusTaskKey(focusedTaskKey);
+    const timeout = setTimeout(() => {
+      setDimmedFocusTaskKey(null);
+    }, 1600);
+
+    return () => clearTimeout(timeout);
+  }, [focusedTaskKey, focusedTaskStatus]);
 
   const boardFlowStatuses = useMemo(() => getBoardFlowStatuses(), []);
   const visibleBoardStatuses = useMemo(() => getVisibleBoardStatuses(columns), [columns]);
@@ -1410,6 +1428,7 @@ export function KanbanBoard({
             enginePresets={enginePresets}
             onOpenTaskEditor={openTaskEditor}
             focusedTaskKey={focusedTaskKey}
+            dimmedFocusTaskKey={dimmedFocusTaskKey}
             actionIsland={renderActionIsland(
               'kanban-action-island-anchor kanban-mobile-action-island-anchor',
             )}
@@ -1465,6 +1484,7 @@ export function KanbanBoard({
                       onOpenTaskEditor={openTaskEditor}
                       headerActions={headerActions}
                       focusedTaskKey={focusedTaskKey}
+                      dimmedFocusTaskKey={dimmedFocusTaskKey}
                     />
                   );
                 })}

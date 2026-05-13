@@ -168,6 +168,18 @@ function renderQueuedTaskSurfaces(task: KanbanTask) {
   return { desktopHtml, mobileHtml };
 }
 
+function getCardClassForTaskKey(html: string, taskKey: string) {
+  const taskKeyIndex = html.indexOf(taskKey);
+  expect(taskKeyIndex).toBeGreaterThanOrEqual(0);
+
+  const cardMatches = [
+    ...html.slice(0, taskKeyIndex).matchAll(/class="([^"]*itemCard[^"]*kanbanCard[^"]*)"/g),
+  ];
+  expect(cardMatches.length).toBeGreaterThan(0);
+
+  return cardMatches[cardMatches.length - 1][1];
+}
+
 describe('app/components/kanban-card', () => {
   it('uses card-size-aware wave positioning for queued while keeping running anchored', () => {
     expect(resolveRunStateFrameStyle('queued')).toEqual({
@@ -230,6 +242,18 @@ describe('app/components/kanban-card', () => {
   it('disables focused card pulse animation for reduced motion', () => {
     expect(cardsCss).toMatch(
       /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.kanbanCard\.isFocused\s*\{[\s\S]*animation:\s*none;/,
+    );
+  });
+
+  it('defines one-shot focus dimming with a reduced-motion override', () => {
+    expect(cardsCss).toMatch(
+      /\.kanbanCard\.isFocusDimmed\s*\{[\s\S]*animation:\s*kanbanCardFocusDim\s+1\.6s\s+ease-out\s+1;/,
+    );
+    expect(cardsCss).toMatch(
+      /@keyframes kanbanCardFocusDim\s*\{[\s\S]*filter:\s*brightness\(0\.58\)\s+saturate\(0\.75\);[\s\S]*opacity:\s*0\.55;[\s\S]*filter:\s*none;[\s\S]*opacity:\s*1;/,
+    );
+    expect(cardsCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.kanbanCard\.isFocusDimmed\s*\{[\s\S]*animation:\s*none;/,
     );
   });
 
@@ -347,6 +371,66 @@ describe('app/components/kanban-card', () => {
       );
       expect(html).toContain('Queued for more than 1 hour. Mark as done');
     }
+  });
+
+  it('dims non-target desktop cards during a focused task highlight', () => {
+    const tasks = [
+      { ...BASE_TASK, id: 'task-1', taskKey: 'PROJ-1', title: 'Neighbor card' },
+      { ...BASE_TASK, id: 'task-2', taskKey: 'PROJ-2', title: 'Focused card' },
+    ];
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <KanbanColumn
+          status="todo"
+          tasks={tasks}
+          isPending={false}
+          isMobile={false}
+          editHrefBase="/board"
+          editHrefJoiner="?"
+          router={{ push: () => {} } as any}
+          onQuickMoveTask={() => {}}
+          onDeleteTask={() => {}}
+          enginePresets={null}
+          focusedTaskKey="PROJ-2"
+          dimmedFocusTaskKey="PROJ-2"
+        />
+      </MantineProvider>,
+    );
+
+    expect(getCardClassForTaskKey(html, 'PROJ-1')).toContain('isFocusDimmed');
+    expect(getCardClassForTaskKey(html, 'PROJ-2')).not.toContain('isFocusDimmed');
+  });
+
+  it('dims non-target mobile cards during a focused task highlight', () => {
+    const tasks = [
+      { ...BASE_TASK, id: 'task-1', taskKey: 'PROJ-1', title: 'Neighbor card' },
+      { ...BASE_TASK, id: 'task-2', taskKey: 'PROJ-2', title: 'Focused card' },
+    ];
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <KanbanBoardMobile
+          columns={{
+            ...emptyColumns(),
+            todo: tasks,
+          }}
+          activeTab="todo"
+          onTabChange={() => {}}
+          isPending={false}
+          editHrefBase="/board"
+          editHrefJoiner="?"
+          router={{ push: () => {}, refresh: () => {} } as any}
+          onQuickMoveTask={() => {}}
+          onDeleteTask={() => {}}
+          saveError={null}
+          enginePresets={null}
+          focusedTaskKey="PROJ-2"
+          dimmedFocusTaskKey="PROJ-2"
+        />
+      </MantineProvider>,
+    );
+
+    expect(getCardClassForTaskKey(html, 'PROJ-1')).toContain('isFocusDimmed');
+    expect(getCardClassForTaskKey(html, 'PROJ-2')).not.toContain('isFocusDimmed');
   });
 
   it('renders empty columns with a top-only aurora seam instead of a bordered panel', () => {
