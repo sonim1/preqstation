@@ -47,7 +47,7 @@ const TASK_PANEL_RESIZE_HANDLE_CLASSES: HandleClassName = {
 };
 
 const useIsomorphicLayoutEffect =
-  typeof window === 'undefined' ? useEffect : useLayoutEffect;
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 type TaskPanelSize = {
   width: number;
