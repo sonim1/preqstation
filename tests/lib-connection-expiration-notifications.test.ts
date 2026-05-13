@@ -206,12 +206,9 @@ describe('lib/connection-expiration-notifications', () => {
     vi.setSystemTime(NOW);
 
     const missingReadsError = Object.assign(new Error('Failed query'), {
-      cause: Object.assign(
-        new Error('relation "connection_notification_reads" does not exist'),
-        {
-          code: '42P01',
-        },
-      ),
+      cause: Object.assign(new Error('relation "connection_notification_reads" does not exist'), {
+        code: '42P01',
+      }),
     });
     const mcpFindMany = vi.fn().mockResolvedValue([
       {

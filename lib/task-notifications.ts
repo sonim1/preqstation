@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { taskNotifications } from '@/lib/db/schema';
@@ -368,33 +368,30 @@ export async function markTaskNotificationsRead(
     return [];
   }
 
-  const notificationIdList = sql.join(
-    notificationIds.map((id) => sql`${id}`),
-    sql`, `,
-  );
-  const result = await client.execute(sql`
-    update task_notifications
-    set read_at = ${params.now ?? new Date()}
-    where owner_id = ${params.ownerId}
-      and read_at is null
-      and id in (${notificationIdList})
-    returning id
-  `);
+  const rows = await client
+    .update(taskNotifications)
+    .set({ readAt: params.now ?? new Date() })
+    .where(
+      and(
+        eq(taskNotifications.ownerId, params.ownerId),
+        isNull(taskNotifications.readAt),
+        inArray(taskNotifications.id, notificationIds),
+      ),
+    )
+    .returning({ id: taskNotifications.id });
 
-  return resultRows(result).map((row) => String(row.id));
+  return rows.map((row) => row.id);
 }
 
 export async function markAllTaskNotificationsRead(
   params: Pick<MarkTaskNotificationsReadParams, 'ownerId' | 'now'>,
   client: DbClientOrTx = db,
 ) {
-  const result = await client.execute(sql`
-    update task_notifications
-    set read_at = ${params.now ?? new Date()}
-    where owner_id = ${params.ownerId}
-      and read_at is null
-    returning id
-  `);
+  const rows = await client
+    .update(taskNotifications)
+    .set({ readAt: params.now ?? new Date() })
+    .where(and(eq(taskNotifications.ownerId, params.ownerId), isNull(taskNotifications.readAt)))
+    .returning({ id: taskNotifications.id });
 
-  return resultRows(result).map((row) => String(row.id));
+  return rows.map((row) => row.id);
 }

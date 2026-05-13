@@ -122,6 +122,19 @@ function toTaskNotificationItem(notification: PolledNotification): TaskCompletio
   };
 }
 
+export function buildNotificationTaskHref(
+  notification: Pick<TaskCompletionNotificationItem, 'taskKey'>,
+) {
+  const taskKey = encodeURIComponent(notification.taskKey);
+  return `/board?panel=task-edit&taskId=${taskKey}&focus=${taskKey}`;
+}
+
+function isTaskNotificationItem(
+  notification: TaskNotificationItem,
+): notification is TaskCompletionNotificationItem {
+  return notification.type !== 'connection-expiration';
+}
+
 export function TaskNotificationCenter() {
   const router = useRouter();
   const [opened, setOpened] = useState(false);
@@ -265,8 +278,22 @@ export function TaskNotificationCenter() {
     setUnreadNotifications((current) => current.filter((item) => item.id !== notification.id));
     setUnreadTotal((current) => Math.max(0, current - 1));
 
+    const taskHref = isTaskNotificationItem(notification)
+      ? buildNotificationTaskHref(notification)
+      : null;
+
+    closeDrawer();
+    if (taskHref !== null) {
+      router.refresh();
+      router.push(taskHref);
+    }
+
     try {
-      await markNotificationsRead({ notificationIds: [notification.id] });
+      await markNotificationsRead({ notificationIds: [notification.id] }).catch(
+        (error: unknown) => {
+          throw error;
+        },
+      );
       router.refresh();
     } catch {
       setUnreadNotifications((current) => prependUniqueById([notification], current));
