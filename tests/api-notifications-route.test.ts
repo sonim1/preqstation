@@ -33,6 +33,7 @@ vi.mock('@/lib/task-notifications', () => ({
 }));
 
 vi.mock('@/lib/connection-expiration-notifications', () => ({
+  isConnectionExpirationNotificationId: (id: string) => id.startsWith('connection-expiring-soon:'),
   listConnectionExpirationNotifications: mocked.listConnectionExpirationNotifications,
   markAllConnectionExpirationNotificationsRead: mocked.markAllConnectionExpirationNotificationsRead,
   markConnectionExpirationNotificationsRead: mocked.markConnectionExpirationNotificationsRead,
@@ -265,6 +266,39 @@ describe('app/api/notifications/route', () => {
     });
   });
 
+  it('GET caps merged source fetches when offset is large', async () => {
+    const response = await GET(getRequest('?offset=1000&limit=50'));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mocked.listTaskNotifications).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        history: false,
+        offset: 0,
+        limit: 500,
+        maxLimit: 500,
+      },
+      expect.anything(),
+    );
+    expect(mocked.listConnectionExpirationNotifications).toHaveBeenCalledWith(
+      {
+        ownerId: 'owner-1',
+        history: false,
+        offset: 0,
+        limit: 500,
+      },
+      expect.anything(),
+    );
+    expect(body).toEqual(
+      expect.objectContaining({
+        offset: 1000,
+        limit: 50,
+        hasMore: false,
+      }),
+    );
+  });
+
   it('PATCH marks the supplied notification ids as read for the current owner', async () => {
     const response = await PATCH(
       patchRequest({
@@ -305,20 +339,14 @@ describe('app/api/notifications/route', () => {
     expect(mocked.markTaskNotificationsRead).toHaveBeenCalledWith(
       {
         ownerId: 'owner-1',
-        notificationIds: [
-          'notif-1',
-          'connection-expiring-soon:mcp:connection-1:2026-04-10T04:00:00.000Z',
-        ],
+        notificationIds: ['notif-1'],
       },
       expect.anything(),
     );
     expect(mocked.markConnectionExpirationNotificationsRead).toHaveBeenCalledWith(
       {
         ownerId: 'owner-1',
-        notificationIds: [
-          'notif-1',
-          'connection-expiring-soon:mcp:connection-1:2026-04-10T04:00:00.000Z',
-        ],
+        notificationIds: ['connection-expiring-soon:mcp:connection-1:2026-04-10T04:00:00.000Z'],
       },
       expect.anything(),
     );

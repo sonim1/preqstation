@@ -171,6 +171,28 @@ describe('app/components/task-notification-drawer', () => {
     expect(html).toContain('1d 23h remaining');
   });
 
+  it('omits connection expiration remaining copy when now is omitted', () => {
+    const html = renderToStaticMarkup(
+      <TaskNotificationDrawer
+        opened={true}
+        onClose={vi.fn()}
+        mode="unread"
+        notifications={[makeConnectionNotification()]}
+        total={1}
+        isLoading={false}
+        isLoadingMore={false}
+        hasMore={false}
+        onShowHistory={vi.fn()}
+        onShowUnread={vi.fn()}
+        onLoadMore={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain('Expires 2026-04-10 04:00');
+    expect(html).not.toContain('remaining');
+    expect(html).not.toContain('1d 23h remaining');
+  });
+
   it('renders history mode with load-more support and a return-to-unread action', () => {
     const html = renderToStaticMarkup(
       <TaskNotificationDrawer

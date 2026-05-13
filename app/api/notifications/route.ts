@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import {
   type ConnectionExpirationNotification,
+  isConnectionExpirationNotificationId,
   listConnectionExpirationNotifications,
   markAllConnectionExpirationNotificationsRead,
   markConnectionExpirationNotificationsRead,
@@ -19,6 +20,7 @@ import {
 
 const DEFAULT_NOTIFICATION_LIMIT = 20;
 const MAX_NOTIFICATION_LIMIT = 50;
+const MAX_MERGED_FETCH_LIMIT = 500;
 
 const markNotificationsReadSchema = z.union([
   z.object({
@@ -107,9 +109,9 @@ function sortNotificationsByCreatedAt(left: SerializedNotification, right: Seria
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const history = parseHistoryFlag(searchParams.get('history'));
-  const offset = parseOffset(searchParams.get('offset'));
   const limit = parseLimit(searchParams.get('limit'));
-  const mergedFetchLimit = Math.max(offset + limit, limit);
+  const offset = parseOffset(searchParams.get('offset'));
+  const mergedFetchLimit = Math.min(Math.max(offset + limit, limit), MAX_MERGED_FETCH_LIMIT);
 
   try {
     const owner = await requireOwnerUser();
@@ -140,13 +142,14 @@ export async function GET(req: Request) {
       ].sort(sortNotificationsByCreatedAt);
       const notifications = mergedNotifications.slice(offset, offset + limit);
       const total = taskResult.total + connectionResult.total;
+      const visibleTotal = Math.min(total, MAX_MERGED_FETCH_LIMIT);
 
       return NextResponse.json({
         notifications,
         total,
         offset,
         limit,
-        hasMore: offset + notifications.length < total,
+        hasMore: offset + notifications.length < visibleTotal,
       });
     });
   } catch (error) {
@@ -173,38 +176,52 @@ export async function PATCH(req: Request) {
     const payload = markNotificationsReadSchema.parse(await req.json());
 
     return await withOwnerDb(owner.id, async (client) => {
-      const updatedIds =
-        'markAll' in payload
-          ? [
-              ...(await markAllTaskNotificationsRead(
+      let updatedIds: string[];
+
+      if ('markAll' in payload) {
+        updatedIds = [
+          ...(await markAllTaskNotificationsRead(
+            {
+              ownerId: owner.id,
+            },
+            client,
+          )),
+          ...(await markAllConnectionExpirationNotificationsRead(
+            {
+              ownerId: owner.id,
+            },
+            client,
+          )),
+        ];
+      } else {
+        const taskNotificationIds = payload.notificationIds.filter(
+          (id) => !isConnectionExpirationNotificationId(id),
+        );
+        const connectionNotificationIds = payload.notificationIds.filter(
+          isConnectionExpirationNotificationId,
+        );
+
+        updatedIds = [
+          ...(taskNotificationIds.length > 0
+            ? await markTaskNotificationsRead(
                 {
                   ownerId: owner.id,
+                  notificationIds: taskNotificationIds,
                 },
                 client,
-              )),
-              ...(await markAllConnectionExpirationNotificationsRead(
+              )
+            : []),
+          ...(connectionNotificationIds.length > 0
+            ? await markConnectionExpirationNotificationsRead(
                 {
                   ownerId: owner.id,
+                  notificationIds: connectionNotificationIds,
                 },
                 client,
-              )),
-            ]
-          : [
-              ...(await markTaskNotificationsRead(
-                {
-                  ownerId: owner.id,
-                  notificationIds: payload.notificationIds,
-                },
-                client,
-              )),
-              ...(await markConnectionExpirationNotificationsRead(
-                {
-                  ownerId: owner.id,
-                  notificationIds: payload.notificationIds,
-                },
-                client,
-              )),
-            ];
+              )
+            : []),
+        ];
+      }
 
       return NextResponse.json({
         ok: true,

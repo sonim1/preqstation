@@ -83,6 +83,7 @@ export function TaskNotificationDrawer({
 }: TaskNotificationDrawerProps) {
   const timeZone = useTimeZone();
   const isHistoryMode = mode === 'history';
+  const timeRemainingReference = now ? new Date(now).getTime() : null;
 
   return (
     <Drawer
@@ -154,13 +155,14 @@ export function TaskNotificationDrawer({
                     <Text size="xs" c="dimmed">
                       Expires {formatDateTimeForDisplay(notification.expiresAt, timeZone)}
                     </Text>
-                    <Text size="xs" c="dimmed">
-                      {formatConnectionTimeRemaining(
-                        new Date(notification.expiresAt).getTime() -
-                          new Date(now ?? notification.createdAt).getTime(),
-                      )}{' '}
-                      remaining
-                    </Text>
+                    {timeRemainingReference !== null ? (
+                      <Text size="xs" c="dimmed">
+                        {formatConnectionTimeRemaining(
+                          new Date(notification.expiresAt).getTime() - timeRemainingReference,
+                        )}{' '}
+                        remaining
+                      </Text>
+                    ) : null}
                   </div>
                   <Text size="xs" c="dimmed">
                     {formatDateTimeForDisplay(notification.createdAt, timeZone)}

@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNull, lte } from 'drizzle-orm';
 
 import { EXPIRING_SOON_WINDOW_MS, isConnectionExpiringSoon } from '@/lib/connection-expiration';
 import { db } from '@/lib/db';
@@ -62,6 +62,7 @@ type ListConnectionExpirationNotificationsParams = {
   history?: boolean;
   offset?: number;
   limit?: number;
+  now?: Date;
 };
 
 type MarkConnectionExpirationNotificationsReadParams = {
@@ -101,7 +102,7 @@ function notificationCreatedAt(recordCreatedAt: Date, expiresAt: Date) {
   );
 }
 
-function isConnectionExpirationNotificationId(id: string) {
+export function isConnectionExpirationNotificationId(id: string) {
   return id.startsWith(CONNECTION_NOTIFICATION_PREFIX);
 }
 
@@ -194,15 +195,22 @@ export function buildConnectionExpirationNotifications(
   }
 
   return notifications.sort((left, right) => {
-    const expiryDelta = left.expiresAt.getTime() - right.expiresAt.getTime();
-    if (expiryDelta !== 0) return expiryDelta;
-    return left.id.localeCompare(right.id);
+    const createdAtDelta = right.createdAt.getTime() - left.createdAt.getTime();
+    if (createdAtDelta !== 0) return createdAtDelta;
+    return right.id.localeCompare(left.id);
   });
 }
 
-async function listMcpConnectionSources(ownerId: string, client: DbClientOrTx) {
+async function listMcpConnectionSources(ownerId: string, now: Date, client: DbClientOrTx) {
+  const windowEnd = new Date(now.getTime() + EXPIRING_SOON_WINDOW_MS);
+
   return client.query.mcpConnections.findMany({
-    where: eq(mcpConnections.ownerId, ownerId),
+    where: and(
+      eq(mcpConnections.ownerId, ownerId),
+      isNull(mcpConnections.revokedAt),
+      gt(mcpConnections.expiresAt, now),
+      lte(mcpConnections.expiresAt, windowEnd),
+    ),
     columns: {
       id: true,
       displayName: true,
@@ -214,9 +222,16 @@ async function listMcpConnectionSources(ownerId: string, client: DbClientOrTx) {
   });
 }
 
-async function listBrowserSessionSources(ownerId: string, client: DbClientOrTx) {
+async function listBrowserSessionSources(ownerId: string, now: Date, client: DbClientOrTx) {
+  const windowEnd = new Date(now.getTime() + EXPIRING_SOON_WINDOW_MS);
+
   return client.query.browserSessions.findMany({
-    where: eq(browserSessions.ownerId, ownerId),
+    where: and(
+      eq(browserSessions.ownerId, ownerId),
+      isNull(browserSessions.revokedAt),
+      gt(browserSessions.expiresAt, now),
+      lte(browserSessions.expiresAt, windowEnd),
+    ),
     columns: {
       id: true,
       ipAddress: true,
@@ -263,8 +278,8 @@ async function listCurrentConnectionExpirationNotifications(
   client: DbClientOrTx,
 ) {
   const now = params.now ?? new Date();
-  const mcpConnections = await listMcpConnectionSources(params.ownerId, client);
-  const browserSessions = await listBrowserSessionSources(params.ownerId, client);
+  const mcpConnections = await listMcpConnectionSources(params.ownerId, now, client);
+  const browserSessions = await listBrowserSessionSources(params.ownerId, now, client);
   const withoutReads = buildConnectionExpirationNotifications({
     ownerId: params.ownerId,
     now,
