@@ -104,7 +104,26 @@ function renderDefaultTrigger({
       data-task-label-trigger="default"
     >
       <span className={styles.defaultTriggerLabel}>
-        {hasSelectedLabels ? selectedLabels.map((label) => label.name).join(', ') : emptyStateLabel}
+        {hasSelectedLabels ? (
+          <span className={styles.selectedLabelSummary}>
+            {selectedLabels.map((label) => (
+              <span
+                key={label.id}
+                className={styles.selectedLabelToken}
+                style={
+                  {
+                    '--task-label-accent': resolveTaskLabelSwatchColor(label.color),
+                  } as CSSProperties
+                }
+              >
+                <span className={styles.selectedLabelHash}># </span>
+                <span className={styles.selectedLabelName}>{label.name}</span>
+              </span>
+            ))}
+          </span>
+        ) : (
+          emptyStateLabel
+        )}
       </span>
       <span className={styles.defaultTriggerMeta}>
         {!hasSelectedLabels ? (
@@ -260,6 +279,7 @@ export function TaskLabelPicker({
         <UnstyledButton
           type="button"
           aria-label={triggerAriaLabel}
+          className={styles.triggerButton}
           disabled={disabled}
           onPointerDown={onTriggerPointerDown}
           onClick={handleTriggerClick}

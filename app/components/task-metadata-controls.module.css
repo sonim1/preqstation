@@ -18,6 +18,7 @@
   justify-content: space-between;
   gap: 0.625rem;
   padding: 0.5rem 0.75rem;
+  min-height: var(--task-metadata-trigger-min-height, 2.375rem);
   border: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
   border-radius: 0.625rem;
   background: var(--ui-surface);

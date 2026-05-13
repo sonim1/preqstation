@@ -389,7 +389,10 @@ describe('app/components/task-edit-form answer selection', () => {
     expect(html).toContain('type="hidden" name="labelIds" value="label-ui"');
     expect(html).toContain('type="hidden" name="labelIds" value="label-bug"');
     expect(html).toContain('type="hidden" name="labelIds" value="label-ops"');
-    expect(html).toContain('>UI, Bug, Ops</span>');
+    expect(html).toContain('># </span>');
+    expect(html).toContain('>UI</span>');
+    expect(html).toContain('>Bug</span>');
+    expect(html).toContain('>Ops</span>');
     expect(html).not.toContain('data-kanban-label-summary="true"');
     expect(html).not.toContain('>+2</span>');
     expect(html).not.toContain('data-slot="multiselect:Labels"');

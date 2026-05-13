@@ -217,6 +217,7 @@ describe('app/components/task-edit-form layout', () => {
     });
 
     expect(html).toContain('data-task-label-trigger="default"');
+    expect(html.replace(/<[^>]*>/g, '')).toContain('# Frontend');
     expect(html).toContain('name="taskPriority"');
     expect(html).toContain('data-task-priority-value="none"');
     expect(html).not.toContain('data-task-edit-label-shortcut="true"');
