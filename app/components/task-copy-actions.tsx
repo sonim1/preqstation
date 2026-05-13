@@ -248,6 +248,7 @@ export function TaskCopyActions({
     resolveInitialMode(availableModes, storedPreference?.objective),
   );
   const sendDispatchRef = useRef<(() => Promise<void>) | null>(null);
+  const suppressShortcutRef = useRef(suppressShortcut);
   const dispatchInFlightRef = useRef(false);
   const dispatchGenerationRef = useRef(0);
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -403,6 +404,7 @@ export function TaskCopyActions({
 
   useLayoutEffect(() => {
     sendDispatchRef.current = sendDispatch;
+    suppressShortcutRef.current = suppressShortcut;
   });
 
   useEffect(() => {
@@ -421,7 +423,7 @@ export function TaskCopyActions({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
-      if (suppressShortcut) return;
+      if (suppressShortcutRef.current) return;
 
       const isSendShortcut = (event.metaKey || event.ctrlKey) && event.key === 'Enter';
       if (!isSendShortcut) return;
@@ -433,7 +435,7 @@ export function TaskCopyActions({
 
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [suppressShortcut]);
+  }, []);
 
   if (availableModes.length === 0 || availableActions.length === 0) {
     return null;
