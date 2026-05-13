@@ -126,8 +126,8 @@ describe('app/components/task-notification-drawer', () => {
     expect(html).toContain('Browser Notification 추가');
     expect(html).toContain('Ready');
     expect(html).toContain('Done');
-    expect(html).toContain('type="button"');
-    expect(html).toContain('aria-label="Mark PROJ-327 notification as read"');
+    expect(html).toContain('<button type="button" class="task-notification-item"');
+    expect(html).not.toContain('aria-label="Mark PROJ-327 notification as read"');
     expect(html).toContain('2026-04-08 05:10');
   });
 
@@ -160,6 +160,7 @@ describe('app/components/task-notification-drawer', () => {
 
     expect(html).toContain('Show unread');
     expect(html).toContain('History item');
+    expect(html).toContain('<div class="task-notification-item"');
     expect(html).toContain('data-load-more-button="true"');
     expect(html).toContain('data-disabled="false"');
   });

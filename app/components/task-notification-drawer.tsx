@@ -113,15 +113,8 @@ export function TaskNotificationDrawer({
             />
           ) : null}
 
-          {notifications.map((notification) => (
-            <button
-              key={notification.id}
-              type="button"
-              className="task-notification-item"
-              aria-label={`Mark ${notification.taskKey} notification as read`}
-              disabled={pendingReadNotificationIds?.has(notification.id) ?? false}
-              onClick={() => onNotificationClick(notification)}
-            >
+          {notifications.map((notification) => {
+            const notificationContent = (
               <Group justify="space-between" align="flex-start" wrap="nowrap">
                 <div className="task-notification-copy">
                   <Text size="sm" fw={600}>
@@ -136,8 +129,28 @@ export function TaskNotificationDrawer({
                   {formatDateTimeForDisplay(notification.createdAt, timeZone)}
                 </Text>
               </Group>
-            </button>
-          ))}
+            );
+
+            if (isHistoryMode) {
+              return (
+                <div key={notification.id} className="task-notification-item">
+                  {notificationContent}
+                </div>
+              );
+            }
+
+            return (
+              <button
+                key={notification.id}
+                type="button"
+                className="task-notification-item"
+                disabled={pendingReadNotificationIds?.has(notification.id) ?? false}
+                onClick={() => onNotificationClick(notification)}
+              >
+                {notificationContent}
+              </button>
+            );
+          })}
         </Stack>
 
         {isHistoryMode && hasMore ? (
