@@ -635,8 +635,10 @@ function TaskCommentsSection({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('Loading comments.');
-  const commentShortcutActive = isComposerFocused && Boolean(draft.trim());
-  const sendShortcutLabel = getSendShortcutLabel();
+  const canSubmitComment = Boolean(draft.trim());
+  const commentShortcutActive = isComposerFocused;
+  const [sendShortcutLabel, setSendShortcutLabel] = useState<string | null>(null);
+  const showCommentShortcut = commentShortcutActive && Boolean(sendShortcutLabel);
 
   const loadComments = useCallback(async () => {
     setIsLoading(true);
@@ -672,6 +674,10 @@ function TaskCommentsSection({
   useEffect(() => {
     void loadComments();
   }, [loadComments]);
+
+  useEffect(() => {
+    setSendShortcutLabel(getSendShortcutLabel());
+  }, []);
 
   useEffect(() => {
     onShortcutActiveChange?.(commentShortcutActive);
@@ -761,7 +767,7 @@ function TaskCommentsSection({
             onKeyDown={(event) => {
               const isCommentSubmitShortcut =
                 (event.metaKey || event.ctrlKey) && event.key === 'Enter';
-              if (!isCommentSubmitShortcut || !draft.trim()) return;
+              if (!isCommentSubmitShortcut || !canSubmitComment) return;
 
               event.preventDefault();
               event.stopPropagation();
@@ -779,16 +785,22 @@ function TaskCommentsSection({
               size="xs"
               onClick={handleSubmit}
               loading={isSubmitting}
-              disabled={!draft.trim()}
+              disabled={!canSubmitComment}
             >
-              <Group component="span" gap="xs" wrap="nowrap">
+              <span className={classes.commentSubmitContent}>
                 <span>Add comment</span>
-                {commentShortcutActive ? (
-                  <Kbd size="xs" className="task-dispatch-send-shortcut">
-                    {sendShortcutLabel}
-                  </Kbd>
-                ) : null}
-              </Group>
+                <span
+                  className={classes.commentShortcutSlot}
+                  data-visible={showCommentShortcut ? 'true' : 'false'}
+                  aria-hidden={!showCommentShortcut}
+                >
+                  {sendShortcutLabel ? (
+                    <Kbd size="xs" className="task-dispatch-send-shortcut">
+                      {sendShortcutLabel}
+                    </Kbd>
+                  ) : null}
+                </span>
+              </span>
             </Button>
           </Group>
         </Stack>

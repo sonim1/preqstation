@@ -306,6 +306,14 @@ describe('app/components/task-edit-form', () => {
     expect(html).not.toContain('Ticket content (Markdown)');
   });
 
+  it('omits the comment shortcut label from static markup until client mount', () => {
+    const html = renderTaskEditForm();
+
+    expect(html).toContain('data-panel="task-edit-comments"');
+    expect(html).not.toContain('Cmd+Enter');
+    expect(html).not.toContain('Ctrl+Enter');
+  });
+
   it('wires the shared task label picker with the default trigger metadata', () => {
     renderTaskEditForm();
 
@@ -1272,26 +1280,58 @@ describe('app/components/task-edit-form', () => {
     expect(screen.getByLabelText('User comment')).toBeTruthy();
   });
 
-  it('moves the Mod+Enter shortcut to Add comment while the comment composer is active', async () => {
-    const fetchMock = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        comments: [],
-      }),
-    });
+  it('moves the Mod+Enter shortcut to Add comment as soon as the comment composer is focused', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          comments: [],
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          comment: {
+            id: 'comment-keyboard',
+            task_id: '1',
+            project_id: 'project-1',
+            parent_comment_id: null,
+            author_type: 'user',
+            author_name: 'Owner',
+            body: 'Keyboard follow-up',
+            run_state: null,
+            run_state_updated_at: null,
+            engine: 'codex',
+            dispatch_target: null,
+            error_message: null,
+            metadata: null,
+            created_at: '2026-05-05T00:00:00.000Z',
+            updated_at: '2026-05-05T00:00:00.000Z',
+          },
+        }),
+      });
     vi.stubGlobal('fetch', fetchMock);
 
     renderTaskEditFormClient();
 
+    const submitButton = screen.getByRole('button', { name: 'Add comment' });
+    const shortcutSlot = submitButton.querySelector('[data-visible]');
+    expect(shortcutSlot?.getAttribute('data-visible')).toBe('false');
+    expect(shortcutSlot?.getAttribute('aria-hidden')).toBe('true');
+
     const commentInput = screen.getByLabelText('Add task comment');
     fireEvent.focus(commentInput);
-    fireEvent.change(commentInput, {
-      target: { value: 'Please check this' },
-    });
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Add comment/ }).textContent).toContain(
-        'Cmd+Enter',
+      const focusedShortcutSlot = screen
+        .getByRole('button', { name: /Add comment/ })
+        .querySelector('[data-visible]');
+
+      expect(focusedShortcutSlot?.getAttribute('data-visible')).toBe('true');
+      expect(focusedShortcutSlot?.getAttribute('aria-hidden')).toBe('false');
+      expect(screen.getByText('Cmd+Enter').classList.contains('task-dispatch-send-shortcut')).toBe(
+        true,
       );
     });
     await waitFor(() => {
@@ -1302,9 +1342,23 @@ describe('app/components/task-edit-form', () => {
       );
     });
 
+    fireEvent.keyDown(commentInput, { key: 'Enter', metaKey: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
     fireEvent.change(commentInput, {
-      target: { value: '' },
+      target: { value: 'Keyboard follow-up' },
     });
+    fireEvent.keyDown(commentInput, { key: 'Enter', metaKey: true });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/todos/PROJ-187/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body: 'Keyboard follow-up' }),
+      });
+    });
+
+    fireEvent.blur(commentInput);
 
     await waitFor(() => {
       expect(taskCopyActionsPropsMock.mock.calls.at(-1)?.[0]).toEqual(
@@ -1312,6 +1366,12 @@ describe('app/components/task-edit-form', () => {
           suppressShortcut: false,
         }),
       );
+      const blurredShortcutSlot = screen
+        .getByRole('button', { name: 'Add comment' })
+        .querySelector('[data-visible]');
+
+      expect(blurredShortcutSlot?.getAttribute('data-visible')).toBe('false');
+      expect(blurredShortcutSlot?.getAttribute('aria-hidden')).toBe('true');
     });
   });
 
