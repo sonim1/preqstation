@@ -11,6 +11,13 @@ import styles from '@/app/(workspace)/(main)/connections/connections-page.module
 import { EmptyState } from '@/app/components/empty-state';
 import { WorkspacePageHeader } from '@/app/components/workspace-page-header';
 import { listOwnerBrowserSessions } from '@/lib/browser-sessions';
+import {
+  type ConnectionDisplayStatus,
+  formatConnectionTimeRemaining,
+  getConnectionDisplayStatus,
+  isConnectionExpired,
+  isConnectionExpiringSoon,
+} from '@/lib/connection-expiration';
 import { formatDateTimeForDisplay } from '@/lib/date-time';
 import { listOwnerMcpConnections } from '@/lib/mcp/connections';
 import { getOwnerUserOrNull } from '@/lib/owner';
@@ -28,45 +35,14 @@ const ENGINE_LABELS = {
   codex: 'Codex',
   'gemini-cli': 'Gemini CLI',
 } as const;
-const EXPIRING_SOON_WINDOW_MS = 1000 * 60 * 60 * 24 * 3;
 
 type ConnectionRecord = Awaited<ReturnType<typeof listOwnerMcpConnections>>[number];
 type BrowserSessionRecord = Awaited<ReturnType<typeof listOwnerBrowserSessions>>[number];
-type DisplayStatus = 'Active' | 'Expired' | 'Expiring Soon' | 'Revoked';
+type DisplayStatus = ConnectionDisplayStatus;
 
 function formatTimestamp(value: Date | null, timeZone: string) {
   if (!value) return 'Never';
   return formatDateTimeForDisplay(value, timeZone);
-}
-
-function formatDuration(msRemaining: number) {
-  if (msRemaining <= 0) return 'Expired';
-
-  const totalMinutes = Math.floor(msRemaining / (60 * 1000));
-  if (totalMinutes < 1) return '<1m';
-
-  const days = Math.floor(totalMinutes / (60 * 24));
-  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
-  const minutes = totalMinutes % 60;
-
-  if (days > 0) {
-    return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
-  }
-
-  if (hours > 0) {
-    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-  }
-
-  return `${minutes}m`;
-}
-
-function getConnectionStatusAtTime(
-  connection: { revokedAt: Date | null; expiresAt: Date },
-  now: number,
-) {
-  if (connection.revokedAt) return 'Revoked';
-  if (connection.expiresAt.getTime() < now) return 'Expired';
-  return 'Active';
 }
 
 function getStatusBadgeStyle(status: string): CSSProperties {
@@ -124,20 +100,6 @@ function getEngineLabel(connection: ConnectionRecord) {
     connection.client?.clientName,
     connection.redirectUri,
   ]);
-}
-
-function isConnectionExpired(record: { revokedAt: Date | null; expiresAt: Date }, now: number) {
-  return !record.revokedAt && record.expiresAt.getTime() <= now;
-}
-
-function isConnectionExpiringSoon(
-  record: { revokedAt: Date | null; expiresAt: Date },
-  now: number,
-) {
-  if (record.revokedAt) return false;
-
-  const msRemaining = record.expiresAt.getTime() - now;
-  return msRemaining > 0 && msRemaining <= EXPIRING_SOON_WINDOW_MS;
 }
 
 function getConnectionSummary(connections: ConnectionRecord[], now: number) {
@@ -238,12 +200,7 @@ function getDisplayStatus(
   record: { revokedAt: Date | null; expiresAt: Date },
   now: number,
 ): DisplayStatus {
-  const status = getConnectionStatusAtTime(record, now);
-  if (status === 'Active' && isConnectionExpiringSoon(record, now)) {
-    return 'Expiring Soon';
-  }
-
-  return status as DisplayStatus;
+  return getConnectionDisplayStatus(record, now);
 }
 
 function getExpiryDisplay(
@@ -259,7 +216,7 @@ function getExpiryDisplay(
   }
 
   return {
-    value: formatDuration(record.expiresAt.getTime() - now),
+    value: formatConnectionTimeRemaining(record.expiresAt.getTime() - now),
     meta: formatTimestamp(record.expiresAt, timeZone),
   };
 }

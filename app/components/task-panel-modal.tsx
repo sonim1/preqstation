@@ -46,8 +46,7 @@ const TASK_PANEL_RESIZE_HANDLE_CLASSES: HandleClassName = {
   topLeft: classes.resizeHandleTopLeft,
 };
 
-const useIsomorphicLayoutEffect =
-  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 type TaskPanelSize = {
   width: number;

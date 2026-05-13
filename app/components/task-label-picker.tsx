@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  Button,
-  ColorSwatch,
-  Popover,
-  Text,
-  TextInput,
-  UnstyledButton,
-} from '@mantine/core';
+import { Button, ColorSwatch, Popover, Text, TextInput, UnstyledButton } from '@mantine/core';
 import { IconCheck, IconChevronDown, IconPlus } from '@tabler/icons-react';
 import {
   type CSSProperties,

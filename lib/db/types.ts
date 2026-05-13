@@ -71,6 +71,12 @@ export type SelectProjectSetting = typeof schema.projectSettings.$inferSelect;
 export type InsertQaRun = typeof schema.qaRuns.$inferInsert;
 export type SelectQaRun = typeof schema.qaRuns.$inferSelect;
 
+// ─── Connection Notification Read ───────────────────────────────────
+export type InsertConnectionNotificationRead =
+  typeof schema.connectionNotificationReads.$inferInsert;
+export type SelectConnectionNotificationRead =
+  typeof schema.connectionNotificationReads.$inferSelect;
+
 // ─── Event Outbox ────────────────────────────────────────────────────
 export type InsertEventOutbox = typeof schema.eventsOutbox.$inferInsert;
 export type SelectEventOutbox = typeof schema.eventsOutbox.$inferSelect;

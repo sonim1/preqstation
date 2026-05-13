@@ -70,6 +70,7 @@ import { TaskNotificationDrawer } from '@/app/components/task-notification-drawe
 function makeNotification(
   overrides: Partial<{
     id: string;
+    type: 'task';
     taskKey: string;
     taskTitle: string;
     statusFrom: string;
@@ -80,6 +81,7 @@ function makeNotification(
 ) {
   return {
     id: overrides.id ?? 'notif-1',
+    type: overrides.type ?? 'task',
     projectId: 'project-1',
     taskId: 'task-1',
     taskKey: overrides.taskKey ?? 'PROJ-327',
@@ -88,6 +90,20 @@ function makeNotification(
     statusTo: overrides.statusTo ?? 'ready',
     readAt: overrides.readAt ?? null,
     createdAt: overrides.createdAt ?? '2026-04-08T05:00:00.000Z',
+  };
+}
+
+function makeConnectionNotification() {
+  return {
+    id: 'connection-expiring-soon:mcp:connection-1:2026-04-10T04:00:00.000Z',
+    type: 'connection-expiration' as const,
+    source: 'mcp' as const,
+    title: 'Connection expires soon',
+    targetName: 'Codex',
+    targetDetail: '127.0.0.1:3456/callback',
+    expiresAt: '2026-04-10T04:00:00.000Z',
+    readAt: null,
+    createdAt: '2026-04-08T05:00:00.000Z',
   };
 }
 
@@ -119,7 +135,7 @@ describe('app/components/task-notification-drawer', () => {
       />,
     );
 
-    expect(html).toContain('Task Notifications');
+    expect(html).toContain('Notifications');
     expect(html).toContain('2');
     expect(html).toContain('Show history');
     expect(html).toContain('PROJ-327');
@@ -129,6 +145,55 @@ describe('app/components/task-notification-drawer', () => {
     expect(html).toContain('<button type="button" class="task-notification-item"');
     expect(html).not.toContain('aria-label="Mark PROJ-327 notification as read"');
     expect(html).toContain('2026-04-08 05:10');
+  });
+
+  it('renders task and connection expiration notifications with distinct copy', () => {
+    const html = renderToStaticMarkup(
+      <TaskNotificationDrawer
+        opened={true}
+        onClose={vi.fn()}
+        mode="unread"
+        notifications={[makeNotification(), makeConnectionNotification()]}
+        total={2}
+        isLoading={false}
+        isLoadingMore={false}
+        hasMore={false}
+        now="2026-04-08T05:00:00.000Z"
+        onShowHistory={vi.fn()}
+        onShowUnread={vi.fn()}
+        onLoadMore={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain('PROJ-327');
+    expect(html).toContain('Ready');
+    expect(html).toContain('Connection expires soon');
+    expect(html).toContain('Codex');
+    expect(html).toContain('127.0.0.1:3456/callback');
+    expect(html).toContain('Expires 2026-04-10 04:00');
+    expect(html).toContain('1d 23h remaining');
+  });
+
+  it('omits connection expiration remaining copy when now is omitted', () => {
+    const html = renderToStaticMarkup(
+      <TaskNotificationDrawer
+        opened={true}
+        onClose={vi.fn()}
+        mode="unread"
+        notifications={[makeConnectionNotification()]}
+        total={1}
+        isLoading={false}
+        isLoadingMore={false}
+        hasMore={false}
+        onShowHistory={vi.fn()}
+        onShowUnread={vi.fn()}
+        onLoadMore={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain('Expires 2026-04-10 04:00');
+    expect(html).not.toContain('remaining');
+    expect(html).not.toContain('1d 23h remaining');
   });
 
   it('renders history mode with load-more support and a return-to-unread action', () => {

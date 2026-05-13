@@ -48,6 +48,7 @@ If you are new to the system, start with the [public guide](https://preqstation.
 - **Execution overlay** — task cards can show `Requested` / `Running` independently from workflow position
 - **PREQSTATION Task API** — REST API at `/api/tasks` for AI agent integration with Bearer token auth
 - **Connections** — review and revoke OAuth/MCP clients from `/connections`
+- **Notifications** — review task completion notices and expiring MCP/browser connections from the notification drawer
 - **Command Palette** — keyboard-driven navigation via Mantine Spotlight
 - **Authenticator-app 2FA** — optional TOTP verification for owner sign-in
 - **Today Focus** — pin tasks to surface daily priorities

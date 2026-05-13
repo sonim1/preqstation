@@ -55,6 +55,7 @@ type ListTaskNotificationsParams = {
   history?: boolean;
   offset?: number;
   limit?: number;
+  maxLimit?: number;
 };
 
 type ListUnreadTaskNotificationTaskKeysParams = {
@@ -78,12 +79,12 @@ function normalizeStatus(value: string | null | undefined) {
   return (value || '').trim();
 }
 
-function clampLimit(limit?: number) {
+function clampLimit(limit?: number, maxLimit = MAX_NOTIFICATION_LIMIT) {
   if (!Number.isFinite(limit) || !limit || limit < 1) {
     return DEFAULT_NOTIFICATION_LIMIT;
   }
 
-  return Math.min(Math.trunc(limit), MAX_NOTIFICATION_LIMIT);
+  return Math.min(Math.trunc(limit), maxLimit);
 }
 
 function normalizeOffset(offset?: number) {
@@ -253,7 +254,7 @@ export async function listTaskNotifications(
   client: DbClientOrTx = db,
 ) {
   const offset = normalizeOffset(params.offset);
-  const limit = clampLimit(params.limit);
+  const limit = clampLimit(params.limit, params.maxLimit);
   const readFilter = params.history ? sql`read_at is not null` : sql`read_at is null`;
 
   const countResult = await client.execute(sql`
