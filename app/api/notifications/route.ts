@@ -141,15 +141,14 @@ export async function GET(req: Request) {
         ...connectionResult.notifications.map(serializeConnectionNotification),
       ].sort(sortNotificationsByCreatedAt);
       const notifications = mergedNotifications.slice(offset, offset + limit);
-      const total = taskResult.total + connectionResult.total;
-      const visibleTotal = Math.min(total, MAX_MERGED_FETCH_LIMIT);
+      const total = Math.min(taskResult.total + connectionResult.total, MAX_MERGED_FETCH_LIMIT);
 
       return NextResponse.json({
         notifications,
         total,
         offset,
         limit,
-        hasMore: offset + notifications.length < visibleTotal,
+        hasMore: offset + notifications.length < total,
       });
     });
   } catch (error) {

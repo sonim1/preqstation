@@ -299,6 +299,45 @@ describe('app/api/notifications/route', () => {
     );
   });
 
+  it('GET caps total metadata to the merged fetch window', async () => {
+    mocked.listTaskNotifications.mockResolvedValueOnce({
+      notifications: Array.from({ length: 50 }, (_, index) => ({
+        id: `notif-${index + 1}`,
+        ownerId: 'owner-1',
+        projectId: 'project-1',
+        taskId: `task-${index + 1}`,
+        taskKey: `PROJ-${index + 1}`,
+        taskTitle: 'Backlog item',
+        statusFrom: 'todo',
+        statusTo: 'done',
+        readAt: null,
+        createdAt: new Date(`2026-04-08T04:${String(index).padStart(2, '0')}:00.000Z`),
+      })),
+      total: 600,
+      offset: 0,
+      limit: 50,
+      hasMore: true,
+    });
+    mocked.listConnectionExpirationNotifications.mockResolvedValueOnce({
+      notifications: [],
+      total: 200,
+      offset: 0,
+      limit: 50,
+      hasMore: true,
+    });
+
+    const response = await GET(getRequest('?limit=50'));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toEqual(
+      expect.objectContaining({
+        total: 500,
+        hasMore: true,
+      }),
+    );
+  });
+
   it('PATCH marks the supplied notification ids as read for the current owner', async () => {
     const response = await PATCH(
       patchRequest({
