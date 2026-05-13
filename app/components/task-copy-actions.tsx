@@ -39,7 +39,7 @@ import {
 
 const engineOptions = Object.values(ENGINE_CONFIGS);
 const dispatchFlowHelp = 'Choose an engine, review the prompt, then send it.';
-const SEND_SHORTCUT_LABEL = 'Cmd+Enter';
+const APPLE_SHORTCUT_PLATFORM_PATTERN = /Mac|iPhone|iPad|iPod/;
 const TASK_DISPATCH_PREFERENCE_STATUSES: TaskDispatchPreferenceStatus[] = [
   'inbox',
   'todo',
@@ -66,6 +66,13 @@ const visuallyHiddenStyles = {
   border: 0,
 } as const;
 
+export function getSendShortcutLabel(platform?: string) {
+  const effectivePlatform =
+    platform ?? (typeof navigator === 'undefined' ? '' : navigator.platform);
+
+  return APPLE_SHORTCUT_PLATFORM_PATTERN.test(effectivePlatform) ? 'Cmd+Enter' : 'Ctrl+Enter';
+}
+
 type TaskCopyActionsProps = {
   taskKey: string;
   branchName?: string | null;
@@ -75,6 +82,7 @@ type TaskCopyActionsProps = {
   noteMarkdown?: string | null;
   telegramEnabled?: boolean;
   hermesTelegramEnabled?: boolean;
+  suppressShortcut?: boolean;
   onTaskQueued?: (taskKey: string, queuedAt: string, dispatchTarget: TaskDispatchTarget) => void;
 };
 
@@ -217,6 +225,7 @@ export function TaskCopyActions({
   noteMarkdown,
   telegramEnabled = false,
   hermesTelegramEnabled,
+  suppressShortcut = false,
   onTaskQueued,
 }: TaskCopyActionsProps) {
   const resolvedHermesTelegramEnabled = hermesTelegramEnabled ?? telegramEnabled;
@@ -239,10 +248,12 @@ export function TaskCopyActions({
     resolveInitialMode(availableModes, storedPreference?.objective),
   );
   const sendDispatchRef = useRef<(() => Promise<void>) | null>(null);
+  const suppressShortcutRef = useRef(suppressShortcut);
   const dispatchInFlightRef = useRef(false);
   const dispatchGenerationRef = useRef(0);
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dispatchState, setDispatchState] = useState<DispatchState>('idle');
+  const [sendShortcutLabel, setSendShortcutLabel] = useState<string | null>(null);
   const isSending = dispatchState === 'loading';
   const clearDispatchResetTimeout = useCallback(() => {
     if (!resetTimeoutRef.current) return;
@@ -393,6 +404,7 @@ export function TaskCopyActions({
 
   useLayoutEffect(() => {
     sendDispatchRef.current = sendDispatch;
+    suppressShortcutRef.current = suppressShortcut;
   });
 
   useEffect(() => {
@@ -405,8 +417,13 @@ export function TaskCopyActions({
   }, [clearDispatchResetTimeout, taskKey]);
 
   useEffect(() => {
+    setSendShortcutLabel(getSendShortcutLabel());
+  }, []);
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
+      if (suppressShortcutRef.current) return;
 
       const isSendShortcut = (event.metaKey || event.ctrlKey) && event.key === 'Enter';
       if (!isSendShortcut) return;
@@ -560,9 +577,11 @@ export function TaskCopyActions({
             }}
           >
             <span>{getSendLabel(dispatchState)}</span>
-            <Kbd size="xs" className="task-dispatch-send-shortcut">
-              {SEND_SHORTCUT_LABEL}
-            </Kbd>
+            {!suppressShortcut && sendShortcutLabel ? (
+              <Kbd size="xs" className="task-dispatch-send-shortcut">
+                {sendShortcutLabel}
+              </Kbd>
+            ) : null}
           </UnstyledButton>
         </div>
 

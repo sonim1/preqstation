@@ -4,6 +4,7 @@ import {
   apiTokens,
   auditLogs,
   browserSessions,
+  connectionNotificationReads,
   mcpConnections,
   oauthClients,
   oauthCodes,
@@ -36,6 +37,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   userSettings: many(userSettings),
   securityEvents: many(securityEvents),
   qaRuns: many(qaRuns),
+  connectionNotificationReads: many(connectionNotificationReads),
 }));
 
 // ─── OAuth Client Relations ──────────────────────────────────────────
@@ -153,6 +155,16 @@ export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
     references: [taskComments.id],
   }),
 }));
+
+export const connectionNotificationReadsRelations = relations(
+  connectionNotificationReads,
+  ({ one }) => ({
+    owner: one(users, {
+      fields: [connectionNotificationReads.ownerId],
+      references: [users.id],
+    }),
+  }),
+);
 
 export const taskLabelAssignmentsRelations = relations(taskLabelAssignments, ({ one }) => ({
   task: one(tasks, {

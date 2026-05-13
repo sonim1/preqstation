@@ -13,7 +13,11 @@ import {
 } from '@/lib/event-poll-subscriptions';
 import { showErrorNotification, showTaskCompletionNotification } from '@/lib/notifications';
 
-import type { TaskNotificationDrawerMode, TaskNotificationItem } from './task-notification-drawer';
+import type {
+  TaskCompletionNotificationItem,
+  TaskNotificationDrawerMode,
+  TaskNotificationItem,
+} from './task-notification-drawer';
 
 const TaskNotificationDrawer = dynamic(
   () => import('./task-notification-drawer').then((mod) => mod.TaskNotificationDrawer),
@@ -103,9 +107,10 @@ async function markNotificationsRead(params: { notificationIds?: string[]; markA
   }
 }
 
-function toTaskNotificationItem(notification: PolledNotification): TaskNotificationItem {
+function toTaskNotificationItem(notification: PolledNotification): TaskCompletionNotificationItem {
   return {
     id: notification.id,
+    type: 'task',
     projectId: notification.projectId,
     taskId: notification.taskId,
     taskKey: notification.taskKey,
@@ -117,9 +122,17 @@ function toTaskNotificationItem(notification: PolledNotification): TaskNotificat
   };
 }
 
-export function buildNotificationTaskHref(notification: Pick<TaskNotificationItem, 'taskKey'>) {
+export function buildNotificationTaskHref(
+  notification: Pick<TaskCompletionNotificationItem, 'taskKey'>,
+) {
   const taskKey = encodeURIComponent(notification.taskKey);
   return `/board?panel=task-edit&taskId=${taskKey}&focus=${taskKey}`;
+}
+
+function isTaskNotificationItem(
+  notification: TaskNotificationItem,
+): notification is TaskCompletionNotificationItem {
+  return notification.type !== 'connection-expiration';
 }
 
 export function TaskNotificationCenter() {
@@ -136,6 +149,7 @@ export function TaskNotificationCenter() {
   const [historyHasMore, setHistoryHasMore] = useState(false);
   const [historyNextOffset, setHistoryNextOffset] = useState(0);
   const [hasLoadedHistory, setHasLoadedHistory] = useState(false);
+  const [drawerOpenedAt, setDrawerOpenedAt] = useState<string | null>(null);
   const [isUnreadLoading, setIsUnreadLoading] = useState(true);
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [isHistoryLoadingMore, setIsHistoryLoadingMore] = useState(false);
@@ -246,11 +260,13 @@ export function TaskNotificationCenter() {
   function openDrawer() {
     setOpened(true);
     setMode('unread');
+    setDrawerOpenedAt(new Date().toISOString());
   }
 
   function closeDrawer() {
     setOpened(false);
     setMode('unread');
+    setDrawerOpenedAt(null);
   }
 
   async function markNotificationRead(notification: TaskNotificationItem) {
@@ -266,7 +282,9 @@ export function TaskNotificationCenter() {
       await markNotificationsRead({ notificationIds: [notification.id] });
       closeDrawer();
       router.refresh();
-      router.push(buildNotificationTaskHref(notification));
+      if (isTaskNotificationItem(notification)) {
+        router.push(buildNotificationTaskHref(notification));
+      }
     } catch {
       setUnreadNotifications((current) => prependUniqueById([notification], current));
       setUnreadTotal((current) => current + 1);
@@ -342,6 +360,7 @@ export function TaskNotificationCenter() {
           isLoading={drawerLoading}
           isLoadingMore={drawerLoadingMore}
           hasMore={drawerHasMore}
+          now={drawerOpenedAt ?? undefined}
           pendingReadNotificationIds={pendingReadNotificationIds}
           onNotificationClick={markNotificationRead}
           onShowHistory={showHistory}

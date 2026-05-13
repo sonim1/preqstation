@@ -57,6 +57,7 @@ vi.mock('@/app/components/status-history-breadcrumb', () => ({
 }));
 
 vi.mock('@/app/components/task-copy-actions', () => ({
+  getSendShortcutLabel: () => 'Cmd+Enter',
   TaskCopyActions: (props: unknown) => {
     taskCopyActionsPropsMock(props);
     return React.createElement('div', { 'data-component': 'TaskCopyActions' }, 'Dispatch');
@@ -1162,6 +1163,7 @@ describe('app/components/task-edit-form', () => {
   });
 
   it('submits UI comments through the queued dispatch flow', async () => {
+    const onTaskQueued = vi.fn();
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -1234,6 +1236,7 @@ describe('app/components/task-edit-form', () => {
             todoLabels={[]}
             taskPriorityOptions={[{ value: 'none', label: 'None' }]}
             updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
+            onTaskQueued={onTaskQueued}
           />
         </TerminologyProvider>
       </MantineProvider>,
@@ -1258,10 +1261,58 @@ describe('app/components/task-edit-form', () => {
         body: JSON.stringify({ body: 'Please check this' }),
       });
     });
+    expect(onTaskQueued).toHaveBeenCalledWith(
+      'PROJ-187',
+      '2026-05-05T00:00:00.000Z',
+      'hermes-telegram',
+    );
     expect(await screen.findByText('Owner')).toBeTruthy();
     expect(await screen.findByText('Comment queued.')).toBeTruthy();
     expect(screen.queryByText('queued')).toBeNull();
     expect(screen.getByLabelText('User comment')).toBeTruthy();
+  });
+
+  it('moves the Mod+Enter shortcut to Add comment while the comment composer is active', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        comments: [],
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderTaskEditFormClient();
+
+    const commentInput = screen.getByLabelText('Add task comment');
+    fireEvent.focus(commentInput);
+    fireEvent.change(commentInput, {
+      target: { value: 'Please check this' },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Add comment/ }).textContent).toContain(
+        'Cmd+Enter',
+      );
+    });
+    await waitFor(() => {
+      expect(taskCopyActionsPropsMock.mock.calls.at(-1)?.[0]).toEqual(
+        expect.objectContaining({
+          suppressShortcut: true,
+        }),
+      );
+    });
+
+    fireEvent.change(commentInput, {
+      target: { value: '' },
+    });
+
+    await waitFor(() => {
+      expect(taskCopyActionsPropsMock.mock.calls.at(-1)?.[0]).toEqual(
+        expect.objectContaining({
+          suppressShortcut: false,
+        }),
+      );
+    });
   });
 
   it('announces the empty comments state through a polite status', async () => {

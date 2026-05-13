@@ -108,7 +108,9 @@ describe('LiveMarkdownEditor links', () => {
     expect(source).toContain('$applyLiveChecklistShortcut(');
     expect(source).toContain('function LiveChecklistSourcePlugin(');
     expect(source).not.toContain('const recentlyCreatedChecklistItemKeys = new Set<string>();');
-    expect(source).toContain('const recentlyCreatedChecklistItemKeysRef = useRef(new Set<string>());');
+    expect(source).toContain(
+      'const recentlyCreatedChecklistItemKeysRef = useRef(new Set<string>());',
+    );
     expect(source).toMatch(shortcutPluginPattern);
     expect(source).toMatch(sourcePluginPattern);
     expect(source.search(shortcutPluginPattern)).toBeLessThan(

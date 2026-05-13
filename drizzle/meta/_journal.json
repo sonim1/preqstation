@@ -176,6 +176,13 @@
       "when": 1778580000000,
       "tag": "0024_owner_totp_2fa",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1778580001000,
+      "tag": "0025_connection_notification_reads",
+      "breakpoints": true
     }
   ]
 }

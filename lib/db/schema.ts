@@ -714,6 +714,31 @@ export const taskNotifications = pgTable(
   ],
 ).enableRLS();
 
+// ─── Connection Notification Reads ──────────────────────────────────
+export const connectionNotificationReads = pgTable(
+  'connection_notification_reads',
+  {
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    notificationKey: text('notification_key').notNull(),
+    readAt: timestamp('read_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => [
+    pgPolicy('connection_notification_reads_owner_all', {
+      for: 'all',
+      using: appUserMatches(table.ownerId),
+      withCheck: appUserMatches(table.ownerId),
+    }),
+    uniqueIndex('connection_notification_reads_owner_id_notification_key_idx').on(
+      table.ownerId,
+      table.notificationKey,
+    ),
+    index('connection_notification_reads_owner_id_read_at_idx').on(table.ownerId, table.readAt),
+  ],
+).enableRLS();
+
 // ─── Events Outbox ───────────────────────────────────────────────────
 export const eventsOutbox = pgTable(
   'events_outbox',
