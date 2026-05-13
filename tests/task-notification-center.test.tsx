@@ -61,7 +61,7 @@ function makeNotification(
     projectId: 'project-1',
     taskId: 'task-1',
     taskKey: overrides.taskKey ?? 'PROJ-327',
-    taskTitle: overrides.taskTitle ?? 'Browser Notification 추가',
+    taskTitle: overrides.taskTitle ?? 'Add browser notifications',
     statusFrom: overrides.statusFrom ?? 'todo',
     statusTo: overrides.statusTo ?? 'ready',
     readAt: overrides.readAt ?? null,

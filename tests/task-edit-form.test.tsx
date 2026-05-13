@@ -160,7 +160,7 @@ function taskEditFormElement(
           editableTodo={{
             id: '1',
             taskKey: 'PROJ-187',
-            title: 'OpenClaw 기능 UI수정',
+            title: 'Update OpenClaw feature UI',
             note: 'Move the actions into the form meta header.',
             projectId: 'project-1',
             labelIds: [],
@@ -267,7 +267,7 @@ describe('app/components/task-edit-form', () => {
       draftBaseTitleFingerprint: 'task-title:v1:19:abc123',
       draftNote: 'Move the actions into the form meta header.',
       draftRevision: 0,
-      draftTitle: 'OpenClaw 기능 UI수정',
+      draftTitle: 'Update OpenClaw feature UI',
       hasNoteConflict: false,
       hasTitleConflict: false,
       markAutoSaveDraftFailed: vi.fn(),
@@ -317,7 +317,7 @@ describe('app/components/task-edit-form', () => {
         projectId: 'project-1',
         selectedLabelIds: [],
         labelOptions: [],
-        triggerAriaLabel: 'Edit labels for OpenClaw 기능 UI수정',
+        triggerAriaLabel: 'Edit labels for Update OpenClaw feature UI',
         triggerLabel: 'Labels',
         emptyStateLabel: 'Select labels',
         searchPlaceholder: 'Search labels',
@@ -345,7 +345,7 @@ describe('app/components/task-edit-form', () => {
             editableTodo={{
               id: '1',
               taskKey: 'PROJ-187',
-              title: 'OpenClaw 기능 UI수정',
+              title: 'Update OpenClaw feature UI',
               note: 'Move the actions into the form meta header.',
               projectId: 'project-1',
               labelIds: [],
@@ -429,12 +429,12 @@ describe('app/components/task-edit-form', () => {
       draftBaseTitleFingerprint: 'task-title:v1:18:feedface',
       draftNote: 'Move the actions into the form meta header.',
       draftRevision: 1,
-      draftTitle: 'OpenClaw 기능 UI수정',
+      draftTitle: 'Update OpenClaw feature UI',
       hasNoteConflict: true,
       markAutoSaveDraftFailed: vi.fn(),
       restoreDraft: vi.fn(),
       restoreDraftPreview: {
-        title: '복구될 브라우저 초안',
+        title: 'Browser draft to restore',
         note: '## Local rewrite\n\nSaved from browser draft.',
         updatedAt: '2026-04-28T15:00:00.000Z',
       },
@@ -453,7 +453,7 @@ describe('app/components/task-edit-form', () => {
     expect(html).toContain('Restore preview · PROJ-187');
     expect(html).toContain('Saved ');
     expect(html).not.toContain('Restores into PROJ-187');
-    expect(html).toContain('복구될 브라우저 초안');
+    expect(html).toContain('Browser draft to restore');
     expect(html).toContain('Saved from browser draft.');
   });
 
@@ -477,7 +477,7 @@ describe('app/components/task-edit-form', () => {
       draftBaseTitleFingerprint: 'task-title:v1:18:feedface',
       draftNote: 'Move the actions into the form meta header.',
       draftRevision: 1,
-      draftTitle: 'OpenClaw 기능 UI수정',
+      draftTitle: 'Update OpenClaw feature UI',
       hasNoteConflict: true,
       markAutoSaveDraftFailed: vi.fn(),
       restoreDraft,
@@ -493,7 +493,7 @@ describe('app/components/task-edit-form', () => {
             editableTodo={{
               id: '1',
               taskKey: 'PROJ-187',
-              title: 'OpenClaw 기능 UI수정',
+              title: 'Update OpenClaw feature UI',
               note: 'Move the actions into the form meta header.',
               projectId: 'project-1',
               labelIds: [],
@@ -533,7 +533,7 @@ describe('app/components/task-edit-form', () => {
       draftBaseTitleFingerprint: 'task-title:v1:18:feedface',
       draftNote: 'Move the actions into the form meta header.',
       draftRevision: 1,
-      draftTitle: 'OpenClaw 기능 UI수정',
+      draftTitle: 'Update OpenClaw feature UI',
       hasNoteConflict: true,
       markAutoSaveDraftFailed: vi.fn(),
       restoreDraft,
@@ -549,7 +549,7 @@ describe('app/components/task-edit-form', () => {
             editableTodo={{
               id: '1',
               taskKey: 'PROJ-187',
-              title: 'OpenClaw 기능 UI수정',
+              title: 'Update OpenClaw feature UI',
               note: 'Move the actions into the form meta header.',
               projectId: 'project-1',
               labelIds: [],
@@ -702,7 +702,7 @@ describe('app/components/task-edit-form', () => {
       draftBaseTitleFingerprint: 'task-title:v1:18:feedface',
       draftNote: '## Original note',
       draftRevision: 0,
-      draftTitle: 'OpenClaw 기능 UI수정',
+      draftTitle: 'Update OpenClaw feature UI',
       hasNoteConflict: false,
       hasTitleConflict: false,
       markAutoSaveDraftFailed: vi.fn(),
@@ -732,7 +732,7 @@ describe('app/components/task-edit-form', () => {
             editableTodo={{
               id: '1',
               taskKey: 'PROJ-187',
-              title: 'OpenClaw 기능 UI수정',
+              title: 'Update OpenClaw feature UI',
               note: 'Move the actions into the form meta header.',
               projectId: 'project-1',
               labelIds: [],
@@ -832,7 +832,7 @@ describe('app/components/task-edit-form', () => {
       draftBaseTitleFingerprint: 'task-title:v1:18:feedface',
       draftNote: 'Move the actions into the form meta header.',
       draftRevision: 0,
-      draftTitle: 'OpenClaw 기능 UI수정',
+      draftTitle: 'Update OpenClaw feature UI',
       hasNoteConflict: false,
       hasTitleConflict: false,
       markAutoSaveDraftFailed: vi.fn(),
@@ -850,7 +850,7 @@ describe('app/components/task-edit-form', () => {
             editableTodo={{
               id: '1',
               taskKey: 'PROJ-187',
-              title: 'OpenClaw 기능 UI수정',
+              title: 'Update OpenClaw feature UI',
               note: 'Move the actions into the form meta header.',
               projectId: 'project-1',
               labelIds: ['11111111-1111-4111-8111-111111111111'],
@@ -948,7 +948,7 @@ describe('app/components/task-edit-form', () => {
       draftBaseTitleFingerprint: 'task-title:v1:18:feedface',
       draftNote: 'Move the actions into the form meta header.',
       draftRevision: 0,
-      draftTitle: 'OpenClaw 기능 UI수정',
+      draftTitle: 'Update OpenClaw feature UI',
       hasNoteConflict: false,
       hasTitleConflict: false,
       markAutoSaveDraftFailed: vi.fn(),
@@ -965,7 +965,7 @@ describe('app/components/task-edit-form', () => {
             editableTodo={{
               id: '1',
               taskKey: 'PROJ-187',
-              title: 'OpenClaw 기능 UI수정',
+              title: 'Update OpenClaw feature UI',
               note: 'Move the actions into the form meta header.',
               projectId: 'project-1',
               labelIds: [],
@@ -1104,7 +1104,7 @@ describe('app/components/task-edit-form', () => {
             editableTodo={{
               id: '1',
               taskKey: 'PROJ-187',
-              title: 'OpenClaw 기능 UI수정',
+              title: 'Update OpenClaw feature UI',
               note: 'Move the actions into the form meta header.',
               projectId: 'project-1',
               labelIds: [],
@@ -1217,7 +1217,7 @@ describe('app/components/task-edit-form', () => {
             editableTodo={{
               id: '1',
               taskKey: 'PROJ-187',
-              title: 'OpenClaw 기능 UI수정',
+              title: 'Update OpenClaw feature UI',
               note: 'Move the actions into the form meta header.',
               projectId: 'project-1',
               labelIds: [],
@@ -1280,7 +1280,7 @@ describe('app/components/task-edit-form', () => {
             editableTodo={{
               id: '1',
               taskKey: 'PROJ-187',
-              title: 'OpenClaw 기능 UI수정',
+              title: 'Update OpenClaw feature UI',
               note: 'Move the actions into the form meta header.',
               projectId: 'project-1',
               labelIds: [],
@@ -1341,7 +1341,7 @@ describe('app/components/task-edit-form', () => {
             editableTodo={{
               id: '1',
               taskKey: 'PROJ-187',
-              title: 'OpenClaw 기능 UI수정',
+              title: 'Update OpenClaw feature UI',
               note: 'Move the actions into the form meta header.',
               projectId: 'project-1',
               labelIds: [],
@@ -1417,7 +1417,7 @@ describe('app/components/task-edit-form', () => {
             editableTodo={{
               id: '1',
               taskKey: 'PROJ-187',
-              title: 'OpenClaw 기능 UI수정',
+              title: 'Update OpenClaw feature UI',
               note: 'Move the actions into the form meta header.',
               projectId: 'project-1',
               labelIds: [],

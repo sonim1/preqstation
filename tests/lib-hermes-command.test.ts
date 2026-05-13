@@ -35,9 +35,9 @@ describe('lib/hermes-command', () => {
         status: 'todo',
         engineKey: 'claude-code',
         objective: 'ask',
-        askHint: 'Acceptance criteria 중심으로 정리해줘',
+        askHint: 'Summarize around acceptance criteria',
       }),
-    ).toContain('ask_hint=Acceptance criteria 중심으로 정리해줘');
+    ).toContain('ask_hint=Summarize around acceptance criteria');
 
     expect(
       buildHermesTaskCommand({
@@ -45,7 +45,7 @@ describe('lib/hermes-command', () => {
         status: 'todo',
         engineKey: 'claude-code',
         objective: 'implement',
-        askHint: 'Acceptance criteria 중심으로 정리해줘',
+        askHint: 'Summarize around acceptance criteria',
       }),
     ).not.toContain('ask_hint=');
   });
@@ -55,21 +55,21 @@ describe('lib/hermes-command', () => {
       buildHermesProjectInsightCommand({
         projectKey: 'proj',
         engineKey: 'codex',
-        insightPrompt: 'Connections 페이지 개편 작업을 나눠줘',
+        insightPrompt: 'Break down the Connections page redesign',
       }),
     ).toContain('/preqstation_dispatch@PreqHermesBot');
     expect(
       buildHermesProjectInsightCommand({
         projectKey: 'proj',
         engineKey: 'codex',
-        insightPrompt: 'Connections 페이지 개편 작업을 나눠줘',
+        insightPrompt: 'Break down the Connections page redesign',
       }),
     ).toContain('objective=insight');
     expect(
       buildHermesProjectInsightCommand({
         projectKey: 'proj',
         engineKey: 'codex',
-        insightPrompt: 'Connections 페이지 개편 작업을 나눠줘',
+        insightPrompt: 'Break down the Connections page redesign',
       }),
     ).toContain('insight_prompt_b64=');
   });

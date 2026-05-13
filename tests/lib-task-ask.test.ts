@@ -12,7 +12,7 @@ describe('lib/task-ask', () => {
 
   it('reuses an existing trailing Ask block and extracts its hint', () => {
     const markdown =
-      '## Context\n\nCurrent note\n\n---\n\nAsk:\nAcceptance criteria 중심으로 정리해줘';
+      '## Context\n\nCurrent note\n\n---\n\nAsk:\nSummarize around acceptance criteria';
 
     expect(ensureTaskAskPrompt(markdown)).toEqual({
       markdown,
@@ -20,7 +20,7 @@ describe('lib/task-ask', () => {
     });
     expect(extractTaskAskPrompt(markdown)).toEqual({
       baseMarkdown: '## Context\n\nCurrent note',
-      askHint: 'Acceptance criteria 중심으로 정리해줘',
+      askHint: 'Summarize around acceptance criteria',
       hasAskBlock: true,
     });
   });
