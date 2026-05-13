@@ -334,6 +334,48 @@ describe('app/components/task-copy-actions', () => {
     await waitFor(() => expect(onTaskQueued).toHaveBeenCalledTimes(1));
   });
 
+  it('suppresses the Mod+Enter dispatch shortcut when another composer owns it', async () => {
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal('fetch', fetchMock);
+    const suppressedShortcutProps = { suppressShortcut: true } as unknown as Partial<
+      React.ComponentProps<typeof TaskCopyActions>
+    >;
+
+    const html = renderTaskCopyActions(suppressedShortcutProps);
+    expect(html).toContain('aria-label="Send dispatch"');
+    expect(html).not.toContain('Cmd+Enter');
+
+    render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+          {...suppressedShortcutProps}
+        />
+      </MantineProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Send dispatch' }).textContent).not.toContain(
+      'Cmd+Enter',
+    );
+
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          metaKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('keeps a later dispatch loading when an earlier reset timer expires', async () => {
     vi.useFakeTimers();
     const firstSend = createTelegramSendResponse();

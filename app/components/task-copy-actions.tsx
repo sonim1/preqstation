@@ -75,6 +75,7 @@ type TaskCopyActionsProps = {
   noteMarkdown?: string | null;
   telegramEnabled?: boolean;
   hermesTelegramEnabled?: boolean;
+  suppressShortcut?: boolean;
   onTaskQueued?: (taskKey: string, queuedAt: string, dispatchTarget: TaskDispatchTarget) => void;
 };
 
@@ -217,6 +218,7 @@ export function TaskCopyActions({
   noteMarkdown,
   telegramEnabled = false,
   hermesTelegramEnabled,
+  suppressShortcut = false,
   onTaskQueued,
 }: TaskCopyActionsProps) {
   const resolvedHermesTelegramEnabled = hermesTelegramEnabled ?? telegramEnabled;
@@ -407,6 +409,7 @@ export function TaskCopyActions({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
+      if (suppressShortcut) return;
 
       const isSendShortcut = (event.metaKey || event.ctrlKey) && event.key === 'Enter';
       if (!isSendShortcut) return;
@@ -418,7 +421,7 @@ export function TaskCopyActions({
 
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, []);
+  }, [suppressShortcut]);
 
   if (availableModes.length === 0 || availableActions.length === 0) {
     return null;
@@ -560,9 +563,11 @@ export function TaskCopyActions({
             }}
           >
             <span>{getSendLabel(dispatchState)}</span>
-            <Kbd size="xs" className="task-dispatch-send-shortcut">
-              {SEND_SHORTCUT_LABEL}
-            </Kbd>
+            {suppressShortcut ? null : (
+              <Kbd size="xs" className="task-dispatch-send-shortcut">
+                {SEND_SHORTCUT_LABEL}
+              </Kbd>
+            )}
           </UnstyledButton>
         </div>
 
