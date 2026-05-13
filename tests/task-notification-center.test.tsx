@@ -220,16 +220,14 @@ describe('app/components/task-notification-center', () => {
     });
   });
 
-  it('marks only the clicked notification as read', async () => {
+  it('closes and navigates before marking only the clicked notification as read', async () => {
+    const markReadRequest = deferred<{ ok: boolean; json: () => Promise<{ ok: true }> }>();
     fetchMock
       .mockResolvedValueOnce({
         ok: true,
         json: async () => makePage(3, buildNotifications(3)),
       })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ ok: true, updatedIds: ['notif-1'] }),
-      });
+      .mockReturnValueOnce(markReadRequest.promise);
 
     renderTaskNotificationCenter();
 
@@ -243,6 +241,10 @@ describe('app/components/task-notification-center', () => {
     )(makeNotification({ id: 'notif-1' }));
 
     await waitFor(() => {
+      expect(routerPushMock).toHaveBeenCalledWith(
+        '/board?panel=task-edit&taskId=PROJ-327&focus=PROJ-327',
+      );
+      expect(routerRefreshMock).toHaveBeenCalledTimes(1);
       expect(fetchMock).toHaveBeenNthCalledWith(
         2,
         '/api/notifications',
@@ -252,15 +254,24 @@ describe('app/components/task-notification-center', () => {
           body: JSON.stringify({ notificationIds: ['notif-1'] }),
         }),
       );
-      expect(routerPushMock).toHaveBeenCalledWith(
-        '/board?panel=task-edit&taskId=PROJ-327&focus=PROJ-327',
-      );
-      expect(routerRefreshMock).toHaveBeenCalledTimes(1);
-      expect(routerRefreshMock.mock.invocationCallOrder[0]).toBeLessThan(
-        routerPushMock.mock.invocationCallOrder[0],
-      );
       expect(screen.getByLabelText('Open notifications (2 unread)')).toBeTruthy();
       expect(screen.queryByTestId('task-notification-drawer')).toBeNull();
+    });
+    expect(routerRefreshMock.mock.invocationCallOrder[0]).toBeLessThan(
+      routerPushMock.mock.invocationCallOrder[0],
+    );
+    expect(routerPushMock.mock.invocationCallOrder[0]).toBeLessThan(
+      fetchMock.mock.invocationCallOrder[1],
+    );
+
+    markReadRequest.resolve({
+      ok: true,
+      json: async () => ({ ok: true }),
+    });
+
+    await waitFor(() => {
+      expect(routerRefreshMock).toHaveBeenCalledTimes(2);
+      expect(routerPushMock).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -293,9 +304,17 @@ describe('app/components/task-notification-center', () => {
       expect(showErrorNotificationMock).toHaveBeenCalledWith(
         'Failed to mark notification as read.',
       );
-      expect(routerPushMock).not.toHaveBeenCalled();
-      expect(routerRefreshMock).not.toHaveBeenCalled();
+      expect(routerPushMock).toHaveBeenCalledWith(
+        '/board?panel=task-edit&taskId=PROJ-327&focus=PROJ-327',
+      );
+      expect(routerRefreshMock).toHaveBeenCalledTimes(1);
       expect(screen.getByLabelText('Open notifications (3 unread)')).toBeTruthy();
+      expect(screen.queryByTestId('task-notification-drawer')).toBeNull();
+    });
+
+    fireEvent.click(screen.getByLabelText('Open notifications (3 unread)'));
+
+    await waitFor(() => {
       expect(drawerProps?.total).toBe(3);
       expect((drawerProps?.notifications as Array<{ id: string }>).map(({ id }) => id)).toEqual([
         'notif-1',
@@ -339,8 +358,17 @@ describe('app/components/task-notification-center', () => {
       expect(showErrorNotificationMock).toHaveBeenCalledWith(
         'Failed to mark notification as read.',
       );
-      expect(routerPushMock).not.toHaveBeenCalled();
-      expect(routerRefreshMock).not.toHaveBeenCalled();
+      expect(routerPushMock).toHaveBeenCalledWith(
+        '/board?panel=task-edit&taskId=PROJ-327&focus=PROJ-327',
+      );
+      expect(routerRefreshMock).toHaveBeenCalledTimes(1);
+      expect(screen.getByLabelText('Open notifications (4 unread)')).toBeTruthy();
+      expect(screen.queryByTestId('task-notification-drawer')).toBeNull();
+    });
+
+    fireEvent.click(screen.getByLabelText('Open notifications (4 unread)'));
+
+    await waitFor(() => {
       expect(drawerProps?.total).toBe(4);
       expect((drawerProps?.notifications as Array<{ id: string }>).map(({ id }) => id)).toEqual([
         'notif-1',

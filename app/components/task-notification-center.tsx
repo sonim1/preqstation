@@ -278,13 +278,23 @@ export function TaskNotificationCenter() {
     setUnreadNotifications((current) => current.filter((item) => item.id !== notification.id));
     setUnreadTotal((current) => Math.max(0, current - 1));
 
-    try {
-      await markNotificationsRead({ notificationIds: [notification.id] });
-      closeDrawer();
+    const taskHref = isTaskNotificationItem(notification)
+      ? buildNotificationTaskHref(notification)
+      : null;
+
+    closeDrawer();
+    if (taskHref !== null) {
       router.refresh();
-      if (isTaskNotificationItem(notification)) {
-        router.push(buildNotificationTaskHref(notification));
-      }
+      router.push(taskHref);
+    }
+
+    try {
+      await markNotificationsRead({ notificationIds: [notification.id] }).catch(
+        (error: unknown) => {
+          throw error;
+        },
+      );
+      router.refresh();
     } catch {
       setUnreadNotifications((current) => prependUniqueById([notification], current));
       setUnreadTotal((current) => current + 1);
