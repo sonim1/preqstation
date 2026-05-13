@@ -247,8 +247,10 @@ function mockMobileBoardState(params: {
     .mockReturnValueOnce([params.activeTab ?? 'todo', params.setActiveTab ?? vi.fn()]);
 }
 
-function runHydrationEffect() {
-  const hydrationEffect = useEffectMock.mock.calls[3]?.[0];
+function runHydrationEffect(serverColumns: KanbanColumns) {
+  const hydrationEffect = useEffectMock.mock.calls.find(
+    ([, deps]) => Array.isArray(deps) && deps.includes(serverColumns),
+  )?.[0];
   if (typeof hydrationEffect !== 'function') {
     throw new Error('Expected the server snapshot hydration effect to be registered.');
   }
@@ -296,6 +298,7 @@ describe('app/components/kanban-board store hydration', () => {
   });
 
   it('clears a stale focused task when hydrating a different project board', () => {
+    const serverColumns = buildColumns('BETA-1');
     mocked.storeState.focusedTask = buildFocusedTask({
       taskKey: 'ALPHA-1',
       projectId: 'project-alpha',
@@ -304,7 +307,7 @@ describe('app/components/kanban-board store hydration', () => {
 
     renderToStaticMarkup(
       <KanbanBoard
-        serverColumns={buildColumns('BETA-1')}
+        serverColumns={serverColumns}
         editHrefBase="/board/BETA"
         projectOptions={[]}
         labelOptions={[]}
@@ -313,7 +316,7 @@ describe('app/components/kanban-board store hydration', () => {
       />,
     );
 
-    runHydrationEffect();
+    runHydrationEffect(serverColumns);
 
     expect(mocked.storeState.hydrate).toHaveBeenCalledWith(
       expect.objectContaining({
