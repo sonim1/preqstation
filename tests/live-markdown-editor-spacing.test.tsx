@@ -1,10 +1,21 @@
 /* @vitest-environment jsdom */
 
+import { ListItemNode, ListNode } from '@lexical/list';
+import { LexicalComposer } from '@lexical/react/LexicalComposer';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
+import { ContentEditable } from '@lexical/react/LexicalContentEditable';
+import { LexicalErrorBoundary } from '@lexical/react/LexicalErrorBoundary';
+import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
 import { MantineProvider } from '@mantine/core';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { $createParagraphNode, $createTextNode, $getRoot, type LexicalEditor } from 'lexical';
+import { useEffect } from 'react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { LiveMarkdownEditor } from '@/app/components/live-markdown-editor';
+import {
+  LiveChecklistShortcutPlugin,
+  LiveMarkdownEditor,
+} from '@/app/components/live-markdown-editor';
 
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
@@ -117,6 +128,68 @@ function getHiddenMarkdownInput(container: HTMLElement) {
   return input as HTMLInputElement;
 }
 
+function EditorHandlePlugin({ onReady }: { onReady: (editor: LexicalEditor) => void }) {
+  const [editor] = useLexicalComposerContext();
+
+  useEffect(() => {
+    onReady(editor);
+  }, [editor, onReady]);
+
+  return null;
+}
+
+function renderChecklistShortcutHarness() {
+  let editor: LexicalEditor | null = null;
+  const onReady = vi.fn((nextEditor: LexicalEditor) => {
+    editor = nextEditor;
+  });
+  const view = render(
+    <LexicalComposer
+      initialConfig={{
+        namespace: 'checklist-shortcut-test',
+        onError: (error: Error) => {
+          throw error;
+        },
+        theme: {
+          paragraph: 'live-editor-paragraph',
+          list: {
+            listitemChecked: 'live-editor-li-checked',
+            listitemUnchecked: 'live-editor-li-unchecked',
+          },
+        },
+        nodes: [ListNode, ListItemNode],
+      }}
+    >
+      <RichTextPlugin
+        contentEditable={<ContentEditable aria-label="Checklist shortcut test editor" />}
+        placeholder={null}
+        ErrorBoundary={LexicalErrorBoundary}
+      />
+      <LiveChecklistShortcutPlugin />
+      <EditorHandlePlugin onReady={onReady} />
+    </LexicalComposer>,
+  );
+
+  expect(onReady).toHaveBeenCalled();
+  expect(editor).not.toBeNull();
+  return { editor: editor!, ...view };
+}
+
+function setHarnessParagraph(editor: LexicalEditor, text: string) {
+  act(() => {
+    editor.update(() => {
+      const root = $getRoot();
+      const paragraph = $createParagraphNode();
+      const textNode = $createTextNode(text);
+
+      root.clear();
+      paragraph.append(textNode);
+      root.append(paragraph);
+      textNode.select(text.length, text.length);
+    });
+  });
+}
+
 describe('LiveMarkdownEditor spacing reconciliation', () => {
   it('renders stable classes for live and markdown reading surfaces', async () => {
     const { container } = renderEditor('Read me');
@@ -161,6 +234,26 @@ describe('LiveMarkdownEditor spacing reconciliation', () => {
 
     expect(getHiddenMarkdownInput(container).value).toBe(markdown);
     expect(onContentChange).not.toHaveBeenCalled();
+  });
+
+  it('converts an unchecked checklist marker as soon as the closing bracket lands', async () => {
+    const { container, editor } = renderChecklistShortcutHarness();
+
+    setHarnessParagraph(editor, '- [ ]');
+
+    await waitFor(() => {
+      expect(container.querySelector('.live-editor-li-unchecked')).not.toBeNull();
+    });
+  });
+
+  it('converts a checked checklist marker as soon as the closing bracket lands', async () => {
+    const { container, editor } = renderChecklistShortcutHarness();
+
+    setHarnessParagraph(editor, '- [x]');
+
+    await waitFor(() => {
+      expect(container.querySelector('.live-editor-li-checked')).not.toBeNull();
+    });
   });
 
   it('preserves deliberate blank lines between paragraphs during bootstrap', async () => {

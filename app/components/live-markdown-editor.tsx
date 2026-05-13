@@ -74,6 +74,7 @@ import { resolveAutoSaveContentChange } from '@/app/hooks/use-auto-save';
 import { normalizeUnsupportedBlockAlignment } from '@/lib/live-markdown-alignment';
 import {
   isCursorInsideLiveChecklistMarker,
+  LIVE_CHECKLIST_MARKER_ONLY_LENGTH,
   parseLiveChecklistMarker,
 } from '@/lib/live-markdown-checklist';
 import {
@@ -134,6 +135,8 @@ type LiveEditorBridge = {
 };
 
 const LIVE_CHECKLIST_SOURCE_SYNC_TAG = 'live-checklist-source-sync';
+const LIVE_CHECKLIST_SHORTCUT_SYNC_TAG = 'live-checklist-shortcut-sync';
+const recentlyCreatedChecklistItemKeys = new Set<string>();
 
 const LIVE_MARKDOWN_HEADING_TRANSFORMER: ElementTransformer = {
   ...HEADING,
@@ -349,17 +352,20 @@ function appendChildrenSkippingLeadingCharacters(
 
 function $collapseLiveChecklistSourceNode(
   source: ReturnType<typeof $createParagraphNode>,
-  options: { selectStart?: boolean } = {},
+  options: { selectStart?: boolean; skipImmediateReveal?: boolean } = {},
 ) {
   const parsed = parseLiveChecklistMarker(source.getTextContent());
   if (!parsed) return source;
 
-  const { selectStart = true } = options;
+  const { selectStart = true, skipImmediateReveal = false } = options;
   const list = $createListNode('check');
   const listItem = $createListItemNode(parsed.checked);
   list.append(listItem);
   appendChildrenSkippingLeadingCharacters(source, listItem, parsed.markerLength);
   source.replace(list);
+  if (skipImmediateReveal) {
+    recentlyCreatedChecklistItemKeys.add(listItem.getKey());
+  }
   if (selectStart) {
     listItem.selectStart();
   }
@@ -409,6 +415,7 @@ function $applyLiveChecklistShortcut(
   listItem.append(...nextSiblings);
   list.append(listItem);
   parentNode.replace(list);
+  recentlyCreatedChecklistItemKeys.add(listItem.getKey());
   listItem.selectStart();
   return true;
 }
@@ -777,11 +784,11 @@ function LiveHeadingShortcutPlugin() {
   return null;
 }
 
-function LiveChecklistShortcutPlugin() {
+export function LiveChecklistShortcutPlugin() {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
-    return editor.registerCommand(
+    const unregisterSpace = editor.registerCommand(
       KEY_SPACE_COMMAND,
       (event) => {
         const selection = $getSelection();
@@ -803,6 +810,44 @@ function LiveChecklistShortcutPlugin() {
       },
       COMMAND_PRIORITY_HIGH,
     );
+
+    const unregisterUpdate = editor.registerUpdateListener(({ editorState, tags }) => {
+      if (tags.has(LIVE_CHECKLIST_SHORTCUT_SYNC_TAG)) return;
+
+      let sourceKeyToCollapse: string | null = null;
+
+      editorState.read(() => {
+        const selection = $getSelection();
+        if (!$isRangeSelection(selection) || !selection.isCollapsed()) return;
+
+        const blockNode = selection.anchor.getNode().getTopLevelElement();
+        if (!$isParagraphNode(blockNode)) return;
+
+        const parsed = parseLiveChecklistMarker(blockNode.getTextContent());
+        if (!parsed || parsed.markerLength !== LIVE_CHECKLIST_MARKER_ONLY_LENGTH) return;
+        if (resolveListItemCursor(selection, blockNode).cursor !== parsed.markerLength) return;
+
+        sourceKeyToCollapse = blockNode.getKey();
+      });
+
+      if (!sourceKeyToCollapse) return;
+      const sourceKey = sourceKeyToCollapse;
+
+      editor.update(
+        () => {
+          const sourceNode = $getNodeByKey(sourceKey);
+          if ($isParagraphNode(sourceNode)) {
+            $collapseLiveChecklistSourceNode(sourceNode, { skipImmediateReveal: true });
+          }
+        },
+        { tag: LIVE_CHECKLIST_SHORTCUT_SYNC_TAG },
+      );
+    });
+
+    return () => {
+      unregisterSpace();
+      unregisterUpdate();
+    };
   }, [editor]);
 
   return null;
@@ -840,6 +885,9 @@ function LiveChecklistSourcePlugin() {
 
         if ($isListItemNode(blockNode) && blockNode.getChecked() !== undefined) {
           if (resolveListItemCursor(selection, blockNode).cursor === 0) {
+            if (recentlyCreatedChecklistItemKeys.delete(blockNode.getKey())) {
+              return;
+            }
             checklistItemKeyToReveal = blockNode.getKey();
           }
         }
