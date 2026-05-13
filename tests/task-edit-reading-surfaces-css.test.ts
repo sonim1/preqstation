@@ -196,4 +196,28 @@ describe('task edit reading surface CSS', () => {
       'var(--ui-reading-surface-soft)',
     );
   });
+
+  it('animates the comment submit shortcut slot instead of snapping button width', () => {
+    const buttonRule = getRuleBody(taskEditFormCss, '.commentSubmitButton');
+    const slotRule = getRuleBody(taskEditFormCss, '.commentShortcutSlot');
+    const visibleSlotRule = getRuleBody(
+      taskEditFormCss,
+      ".commentShortcutSlot[data-visible='true']",
+    );
+    const reducedMotionRule = getRuleBody(
+      taskEditFormCss,
+      '@media (prefers-reduced-motion: reduce)',
+    );
+
+    expect(buttonRule).toContain('transition:');
+    expect(buttonRule).toContain('width 160ms ease');
+    expect(slotRule).toContain('max-width: 0;');
+    expect(slotRule).toContain('overflow: hidden;');
+    expect(slotRule).toContain('transition:');
+    expect(slotRule).toContain('max-width 160ms ease');
+    expect(visibleSlotRule).toContain('max-width: 6rem;');
+    expect(visibleSlotRule).toContain('opacity: 1;');
+    expect(reducedMotionRule).toContain('.commentShortcutSlot');
+    expect(reducedMotionRule).toContain('transition: none;');
+  });
 });

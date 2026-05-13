@@ -635,8 +635,10 @@ function TaskCommentsSection({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('Loading comments.');
-  const commentShortcutActive = isComposerFocused && Boolean(draft.trim());
+  const canSubmitComment = Boolean(draft.trim());
+  const commentShortcutActive = isComposerFocused;
   const sendShortcutLabel = getSendShortcutLabel();
+  const showCommentShortcut = commentShortcutActive && Boolean(sendShortcutLabel);
 
   const loadComments = useCallback(async () => {
     setIsLoading(true);
@@ -761,7 +763,7 @@ function TaskCommentsSection({
             onKeyDown={(event) => {
               const isCommentSubmitShortcut =
                 (event.metaKey || event.ctrlKey) && event.key === 'Enter';
-              if (!isCommentSubmitShortcut || !draft.trim()) return;
+              if (!isCommentSubmitShortcut || !canSubmitComment) return;
 
               event.preventDefault();
               event.stopPropagation();
@@ -777,18 +779,23 @@ function TaskCommentsSection({
             <Button
               type="button"
               size="xs"
+              className={classes.commentSubmitButton}
               onClick={handleSubmit}
               loading={isSubmitting}
-              disabled={!draft.trim()}
+              disabled={!canSubmitComment}
             >
-              <Group component="span" gap="xs" wrap="nowrap">
+              <span className={classes.commentSubmitContent}>
                 <span>Add comment</span>
-                {commentShortcutActive ? (
+                <span
+                  className={classes.commentShortcutSlot}
+                  data-visible={showCommentShortcut ? 'true' : 'false'}
+                  aria-hidden={!showCommentShortcut}
+                >
                   <Kbd size="xs" className="task-dispatch-send-shortcut">
                     {sendShortcutLabel}
                   </Kbd>
-                ) : null}
-              </Group>
+                </span>
+              </span>
             </Button>
           </Group>
         </Stack>

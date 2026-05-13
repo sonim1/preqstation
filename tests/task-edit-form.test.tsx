@@ -1272,7 +1272,7 @@ describe('app/components/task-edit-form', () => {
     expect(screen.getByLabelText('User comment')).toBeTruthy();
   });
 
-  it('moves the Mod+Enter shortcut to Add comment while the comment composer is active', async () => {
+  it('moves the Mod+Enter shortcut to Add comment as soon as the comment composer is focused', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce({
       ok: true,
       json: async () => ({
@@ -1285,9 +1285,6 @@ describe('app/components/task-edit-form', () => {
 
     const commentInput = screen.getByLabelText('Add task comment');
     fireEvent.focus(commentInput);
-    fireEvent.change(commentInput, {
-      target: { value: 'Please check this' },
-    });
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Add comment/ }).textContent).toContain(
@@ -1302,9 +1299,10 @@ describe('app/components/task-edit-form', () => {
       );
     });
 
-    fireEvent.change(commentInput, {
-      target: { value: '' },
-    });
+    fireEvent.keyDown(commentInput, { key: 'Enter', metaKey: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    fireEvent.blur(commentInput);
 
     await waitFor(() => {
       expect(taskCopyActionsPropsMock.mock.calls.at(-1)?.[0]).toEqual(
