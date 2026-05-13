@@ -1,4 +1,5 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { and, desc, eq, gte, inArray, lt, or } from 'drizzle-orm';
 import { z } from 'zod';
 
 import { GET as getProjectSettingsRoute } from '@/app/api/projects/[id]/settings/route';
@@ -18,6 +19,8 @@ import {
 import { PATCH as patchTaskStatusRoute } from '@/app/api/tasks/[id]/status/route';
 import { GET as listTasksRoute, POST as createTaskRoute } from '@/app/api/tasks/route';
 import { createInternalApiToken } from '@/lib/api-tokens';
+import { withOwnerDb } from '@/lib/db/rls';
+import { projects, taskComments, tasks, workLogs } from '@/lib/db/schema';
 import type { McpAuthContext } from '@/lib/mcp/context';
 
 const PREQ_TASK_STATUSES = ['inbox', 'todo', 'hold', 'ready', 'done', 'archived'] as const;
@@ -137,6 +140,80 @@ function belongsToProjectKey(task: Record<string, unknown>, projectKey: string) 
   return taskKey.startsWith(`${projectKey}-`);
 }
 
+function parseIsoDateRangeBoundary(input: string, name: string) {
+  const date = new Date(input);
+  if (!Number.isFinite(date.getTime())) {
+    throw new Error(`${name} must be a valid ISO timestamp.`);
+  }
+  return date;
+}
+
+function encodeActivityCursor(event: { occurred_at: string; event_id: string }) {
+  return Buffer.from(
+    JSON.stringify({ occurred_at: event.occurred_at, event_id: event.event_id }),
+  ).toString('base64url');
+}
+
+function decodeActivityCursor(cursor: string | null | undefined) {
+  if (!cursor) return null;
+  try {
+    const parsed = JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')) as {
+      occurred_at?: unknown;
+      event_id?: unknown;
+    };
+    if (typeof parsed.occurred_at !== 'string' || typeof parsed.event_id !== 'string') {
+      throw new Error('Invalid cursor');
+    }
+    return { occurred_at: parsed.occurred_at, event_id: parsed.event_id };
+  } catch {
+    throw new Error('cursor must be a valid preq_list_project_activity cursor.');
+  }
+}
+
+function summarizeActivityTask(task: Record<string, unknown> | null | undefined) {
+  if (!task) return null;
+  return {
+    id: task.id ?? null,
+    task_key: task.taskKey ?? task.task_key ?? null,
+    title: task.title ?? null,
+    status: task.status ?? null,
+    priority: task.taskPriority ?? task.priority ?? null,
+    branch_name: task.branch ?? task.branch_name ?? null,
+    engine: task.engine ?? null,
+    dispatch_target: task.dispatchTarget ?? task.dispatch_target ?? null,
+    run_state: task.runState ?? task.run_state ?? null,
+  };
+}
+
+function summarizeActivityProject(project: Record<string, unknown> | null | undefined) {
+  if (!project) return null;
+  return {
+    id: project.id ?? null,
+    key: project.projectKey ?? null,
+    name: project.name ?? null,
+    repoUrl: project.repoUrl ?? null,
+  };
+}
+
+type ProjectActivityEvent = {
+  event_id: string;
+  type: string;
+  occurred_at: string;
+  project_key: string | null;
+  task_key: string | null;
+  title: string | null;
+  summary: string | null;
+  source: 'task' | 'task_comment' | 'work_log';
+  task: ReturnType<typeof summarizeActivityTask>;
+  project: ReturnType<typeof summarizeActivityProject>;
+};
+
+function compareActivityEvents(a: ProjectActivityEvent, b: ProjectActivityEvent) {
+  const time = b.occurred_at.localeCompare(a.occurred_at);
+  if (time !== 0) return time;
+  return b.event_id.localeCompare(a.event_id);
+}
+
 function looksLikeJsonResponse(response: Response, trimmed: string) {
   const contentType = response.headers.get('content-type') || '';
   if (contentType.toLowerCase().includes('application/json')) {
@@ -231,6 +308,192 @@ async function callListProjects(context: McpToolContext) {
   const request = await createInternalRequest(context, '/api/projects');
   const response = await listProjectsRoute(request);
   return readJsonResponse(response, '/api/projects');
+}
+
+async function callListProjectActivity(
+  context: McpToolContext,
+  params: {
+    projectKeys?: string[];
+    from: string;
+    to: string;
+    limit?: number;
+    cursor?: string | null;
+  },
+) {
+  const fromDate = parseIsoDateRangeBoundary(params.from, 'from');
+  const toDate = parseIsoDateRangeBoundary(params.to, 'to');
+  if (fromDate >= toDate) {
+    throw new Error('from must be before to.');
+  }
+
+  const limit = Math.min(Math.max(params.limit ?? 500, 1), 500);
+  const fetchLimit = limit + 1;
+  const normalizedProjectKeys = params.projectKeys?.map(normalizeProjectKey) ?? [];
+  const cursor = decodeActivityCursor(params.cursor);
+
+  const [taskEvents, commentEvents, workLogEvents] = await withOwnerDb(
+    context.userId,
+    async (client) => {
+      let projectIds: string[] | null = null;
+      if (normalizedProjectKeys.length) {
+        const projectRows = await client.query.projects.findMany({
+          where: and(
+            eq(projects.ownerId, context.userId),
+            inArray(projects.projectKey, normalizedProjectKeys),
+          ),
+          columns: { id: true },
+        });
+        projectIds = projectRows.map((project) => project.id);
+        if (!projectIds.length) {
+          return [[], [], []] as const;
+        }
+      }
+
+      const taskProjectFilter = projectIds ? inArray(tasks.projectId, projectIds) : undefined;
+      const commentProjectFilter = projectIds
+        ? inArray(taskComments.projectId, projectIds)
+        : undefined;
+      const workLogProjectFilter = projectIds ? inArray(workLogs.projectId, projectIds) : undefined;
+
+      const taskRows = await client.query.tasks.findMany({
+        where: and(
+          eq(tasks.ownerId, context.userId),
+          gte(tasks.updatedAt, fromDate),
+          lt(tasks.updatedAt, toDate),
+          taskProjectFilter,
+        ),
+        orderBy: [desc(tasks.updatedAt), desc(tasks.id)],
+        limit: fetchLimit,
+        with: {
+          project: { columns: { id: true, name: true, projectKey: true, repoUrl: true } },
+        },
+      });
+
+      const commentRows = await client.query.taskComments.findMany({
+        where: and(
+          eq(taskComments.ownerId, context.userId),
+          gte(taskComments.updatedAt, fromDate),
+          lt(taskComments.updatedAt, toDate),
+          commentProjectFilter,
+        ),
+        orderBy: [desc(taskComments.updatedAt), desc(taskComments.id)],
+        limit: fetchLimit,
+        with: {
+          project: { columns: { id: true, name: true, projectKey: true, repoUrl: true } },
+          task: {
+            columns: {
+              id: true,
+              taskKey: true,
+              title: true,
+              status: true,
+              taskPriority: true,
+              branch: true,
+              engine: true,
+              dispatchTarget: true,
+              runState: true,
+            },
+          },
+        },
+      });
+
+      const workLogRows = await client.query.workLogs.findMany({
+        where: and(
+          eq(workLogs.ownerId, context.userId),
+          or(
+            and(gte(workLogs.workedAt, fromDate), lt(workLogs.workedAt, toDate)),
+            and(gte(workLogs.createdAt, fromDate), lt(workLogs.createdAt, toDate)),
+          ),
+          workLogProjectFilter,
+        ),
+        orderBy: [desc(workLogs.workedAt), desc(workLogs.createdAt), desc(workLogs.id)],
+        limit: fetchLimit,
+        with: {
+          project: { columns: { id: true, name: true, projectKey: true, repoUrl: true } },
+          task: {
+            columns: {
+              id: true,
+              taskKey: true,
+              title: true,
+              status: true,
+              taskPriority: true,
+              branch: true,
+              engine: true,
+              dispatchTarget: true,
+              runState: true,
+            },
+          },
+        },
+      });
+
+      return [taskRows, commentRows, workLogRows] as const;
+    },
+  );
+
+  const events: ProjectActivityEvent[] = [
+    ...taskEvents.map((task) => ({
+      event_id: `task:${task.id}:updated:${task.updatedAt.toISOString()}`,
+      type: task.createdAt.getTime() === task.updatedAt.getTime() ? 'task.created' : 'task.updated',
+      occurred_at: task.updatedAt.toISOString(),
+      project_key: task.project?.projectKey ?? task.taskPrefix ?? null,
+      task_key: task.taskKey,
+      title: task.title,
+      summary: task.note ?? null,
+      source: 'task' as const,
+      task: summarizeActivityTask(task),
+      project: summarizeActivityProject(task.project),
+    })),
+    ...commentEvents.map((comment) => ({
+      event_id: `task_comment:${comment.id}:updated:${comment.updatedAt.toISOString()}`,
+      type:
+        comment.createdAt.getTime() === comment.updatedAt.getTime()
+          ? 'task_comment.created'
+          : 'task_comment.updated',
+      occurred_at: comment.updatedAt.toISOString(),
+      project_key: comment.project?.projectKey ?? comment.task?.taskKey?.split('-')[0] ?? null,
+      task_key: comment.task?.taskKey ?? null,
+      title: comment.authorType ? `${comment.authorType} comment` : 'Task comment',
+      summary: comment.body,
+      source: 'task_comment' as const,
+      task: summarizeActivityTask(comment.task),
+      project: summarizeActivityProject(comment.project),
+    })),
+    ...workLogEvents.map((log) => {
+      const occurredAt = log.workedAt ?? log.createdAt;
+      return {
+        event_id: `work_log:${log.id}:worked:${occurredAt.toISOString()}`,
+        type: 'work_log.created',
+        occurred_at: occurredAt.toISOString(),
+        project_key: log.project?.projectKey ?? log.task?.taskKey?.split('-')[0] ?? null,
+        task_key: log.task?.taskKey ?? null,
+        title: log.title,
+        summary: log.detail ?? null,
+        source: 'work_log' as const,
+        task: summarizeActivityTask(log.task),
+        project: summarizeActivityProject(log.project),
+      };
+    }),
+  ].sort(compareActivityEvents);
+
+  const cursorFiltered = cursor
+    ? events.filter(
+        (event) =>
+          event.occurred_at < cursor.occurred_at ||
+          (event.occurred_at === cursor.occurred_at && event.event_id < cursor.event_id),
+      )
+    : events;
+  const sliced = cursorFiltered.slice(0, limit);
+  const hasMore = cursorFiltered.length > limit;
+  const last = sliced.at(-1) ?? null;
+
+  return {
+    from: fromDate.toISOString(),
+    to: toDate.toISOString(),
+    project_keys: normalizedProjectKeys,
+    count: sliced.length,
+    has_more: hasMore,
+    next_cursor: hasMore && last ? encodeActivityCursor(last) : null,
+    events: sliced,
+  };
 }
 
 async function callCreateTask(context: McpToolContext, payload: Record<string, unknown>) {
@@ -471,6 +734,24 @@ export function registerPreqTools(server: McpServer, context: McpToolContext) {
             : sliced.map((task) => summarizeTask(task as Record<string, unknown>)),
       });
     },
+  );
+
+  server.registerTool(
+    'preq_list_project_activity',
+    {
+      title: 'List PREQSTATION project activity',
+      description:
+        'Read-only sync feed for project activity by date range. Use for GBrain/cron sync instead of status-limited board snapshots.',
+      inputSchema: {
+        projectKeys: z.array(z.string().trim().min(1).max(20)).max(20).optional(),
+        from: z.string().datetime(),
+        to: z.string().datetime(),
+        limit: z.number().int().min(1).max(500).optional(),
+        cursor: z.string().trim().min(1).optional(),
+      },
+    },
+    async ({ projectKeys, from, to, limit, cursor }) =>
+      contentText(await callListProjectActivity(context, { projectKeys, from, to, limit, cursor })),
   );
 
   server.registerTool(
