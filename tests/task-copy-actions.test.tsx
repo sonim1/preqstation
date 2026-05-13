@@ -92,7 +92,18 @@ const originalClipboardDescriptor = Object.getOwnPropertyDescriptor(
   originalWindow.navigator,
   'clipboard',
 );
+const originalPlatformDescriptor = Object.getOwnPropertyDescriptor(
+  originalWindow.navigator,
+  'platform',
+);
 const legacyClaudeDispatchAction = ['send', 'claude-code'].join('-');
+
+function setNavigatorPlatform(platform: string) {
+  Object.defineProperty(originalWindow.navigator, 'platform', {
+    configurable: true,
+    value: platform,
+  });
+}
 
 function renderTaskCopyActions(props: Partial<React.ComponentProps<typeof TaskCopyActions>> = {}) {
   return renderToStaticMarkup(
@@ -143,6 +154,7 @@ describe('app/components/task-copy-actions', () => {
   let localStorage: MemoryStorage;
 
   beforeEach(() => {
+    setNavigatorPlatform('MacIntel');
     localStorage = new MemoryStorage();
     Object.defineProperty(originalWindow, 'localStorage', {
       configurable: true,
@@ -179,6 +191,11 @@ describe('app/components/task-copy-actions', () => {
       Object.defineProperty(originalWindow.navigator, 'clipboard', originalClipboardDescriptor);
     } else {
       Reflect.deleteProperty(originalWindow.navigator, 'clipboard');
+    }
+    if (originalPlatformDescriptor) {
+      Object.defineProperty(originalWindow.navigator, 'platform', originalPlatformDescriptor);
+    } else {
+      Reflect.deleteProperty(originalWindow.navigator, 'platform');
     }
   });
 
@@ -233,7 +250,6 @@ describe('app/components/task-copy-actions', () => {
     expect(html.indexOf('data-task-dispatch-prompt')).toBeLessThan(
       html.indexOf('aria-label="Send dispatch"'),
     );
-    expect(html).toContain('Cmd+Enter');
     expect(html).toContain('role="status"');
     expect(html).toContain('aria-live="polite"');
     expect(html).toContain('🦞 Telegram');
@@ -250,6 +266,50 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Send to Telegram');
     expect(html).not.toContain('Copy Telegram');
     expect(html).not.toContain('Selected action:');
+  });
+
+  it('omits the platform-dependent send shortcut during static render', () => {
+    const html = renderTaskCopyActions({ engine: 'codex' });
+
+    expect(html).not.toContain('Cmd+Enter');
+    expect(html).not.toContain('Ctrl+Enter');
+    expect(html).not.toContain('task-dispatch-send-shortcut');
+  });
+
+  it('uses Cmd+Enter for the send shortcut label after mounting on Apple platforms', async () => {
+    render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+        />
+      </MantineProvider>,
+    );
+
+    expect(await screen.findByText('Cmd+Enter')).toBeTruthy();
+    expect(screen.queryByText('Ctrl+Enter')).toBeNull();
+  });
+
+  it('uses Ctrl+Enter for the send shortcut label after mounting on non-Apple platforms', async () => {
+    setNavigatorPlatform('Win32');
+
+    render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+        />
+      </MantineProvider>,
+    );
+
+    expect(await screen.findByText('Ctrl+Enter')).toBeTruthy();
+    expect(screen.queryByText('Cmd+Enter')).toBeNull();
   });
 
   it('persists the current dispatch preference when copying the prompt', async () => {
@@ -332,6 +392,48 @@ describe('app/components/task-copy-actions', () => {
 
     resolveResponse();
     await waitFor(() => expect(onTaskQueued).toHaveBeenCalledTimes(1));
+  });
+
+  it('suppresses the Mod+Enter dispatch shortcut when another composer owns it', async () => {
+    const fetchMock = vi.fn<typeof fetch>();
+    vi.stubGlobal('fetch', fetchMock);
+    const suppressedShortcutProps = { suppressShortcut: true } as unknown as Partial<
+      React.ComponentProps<typeof TaskCopyActions>
+    >;
+
+    const html = renderTaskCopyActions(suppressedShortcutProps);
+    expect(html).toContain('aria-label="Send dispatch"');
+    expect(html).not.toContain('Cmd+Enter');
+
+    render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+          {...suppressedShortcutProps}
+        />
+      </MantineProvider>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Send dispatch' }).textContent).not.toContain(
+      'Cmd+Enter',
+    );
+
+    await act(async () => {
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Enter',
+          metaKey: true,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('keeps a later dispatch loading when an earlier reset timer expires', async () => {

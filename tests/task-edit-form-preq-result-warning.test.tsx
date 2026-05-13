@@ -20,6 +20,7 @@ vi.mock('@/app/components/status-history-breadcrumb', () => ({
 }));
 
 vi.mock('@/app/components/task-copy-actions', () => ({
+  getSendShortcutLabel: () => 'Cmd+Enter',
   TaskCopyActions: () => <div data-slot="task-copy-actions" />,
 }));
 

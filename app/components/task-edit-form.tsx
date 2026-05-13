@@ -5,6 +5,7 @@ import {
   Alert,
   Button,
   Group,
+  Kbd,
   Loader,
   SegmentedControl,
   Stack,
@@ -38,7 +39,7 @@ import { type EditorMode, LiveMarkdownEditor } from '@/app/components/live-markd
 import { MarkdownViewer } from '@/app/components/markdown-viewer';
 import { useOfflineStatus } from '@/app/components/offline-status-provider';
 import { StatusHistoryBreadcrumb } from '@/app/components/status-history-breadcrumb';
-import { TaskCopyActions } from '@/app/components/task-copy-actions';
+import { getSendShortcutLabel, TaskCopyActions } from '@/app/components/task-copy-actions';
 import { TaskMetadataPriorityPicker } from '@/app/components/task-metadata-controls';
 import { WorkLogTimeline } from '@/app/components/work-log-timeline';
 import { shouldFlushAutoSaveOnBlur, useAutoSave } from '@/app/hooks/use-auto-save';
@@ -134,6 +135,8 @@ type TaskComment = {
   author_type: 'user' | 'agent' | 'system';
   author_name?: string | null;
   run_state?: 'queued' | 'working' | 'done' | 'failed' | null;
+  run_state_updated_at?: string | null;
+  dispatch_target?: KanbanTask['dispatchTarget'];
   engine?: string | null;
   parent_comment_id?: string | null;
   created_at: string;
@@ -614,13 +617,26 @@ function TaskCommentIdentity({ comment }: { comment: TaskComment }) {
   );
 }
 
-function TaskCommentsSection({ taskKey }: { taskKey: string }) {
+function TaskCommentsSection({
+  taskKey,
+  dispatchTarget,
+  onTaskQueued,
+  onShortcutActiveChange,
+}: {
+  taskKey: string;
+  dispatchTarget?: KanbanTask['dispatchTarget'];
+  onTaskQueued?: TaskEditFormProps['onTaskQueued'];
+  onShortcutActiveChange?: (active: boolean) => void;
+}) {
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [draft, setDraft] = useState('');
+  const [isComposerFocused, setIsComposerFocused] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState('Loading comments.');
+  const commentShortcutActive = isComposerFocused && Boolean(draft.trim());
+  const sendShortcutLabel = getSendShortcutLabel();
 
   const loadComments = useCallback(async () => {
     setIsLoading(true);
@@ -657,6 +673,16 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
     void loadComments();
   }, [loadComments]);
 
+  useEffect(() => {
+    onShortcutActiveChange?.(commentShortcutActive);
+  }, [commentShortcutActive, onShortcutActiveChange]);
+
+  useEffect(() => {
+    return () => {
+      onShortcutActiveChange?.(false);
+    };
+  }, [onShortcutActiveChange]);
+
   async function handleSubmit() {
     const body = draft.trim();
     if (!body) {
@@ -679,6 +705,13 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
       }
       setDraft('');
       setComments((current) => [...current, payload.comment as TaskComment]);
+      if (payload.comment.run_state === 'queued') {
+        onTaskQueued?.(
+          taskKey,
+          payload.comment.run_state_updated_at ?? new Date().toISOString(),
+          payload.comment.dispatch_target ?? dispatchTarget ?? null,
+        );
+      }
       setStatusMessage('Comment queued.');
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : 'Failed to add comment.';
@@ -722,7 +755,20 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
             placeholder="Ask a follow-up or request a small note update..."
             minRows={3}
             value={draft}
+            onFocus={() => setIsComposerFocused(true)}
+            onBlur={() => setIsComposerFocused(false)}
             onChange={(event) => setDraft(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              const isCommentSubmitShortcut =
+                (event.metaKey || event.ctrlKey) && event.key === 'Enter';
+              if (!isCommentSubmitShortcut || !draft.trim()) return;
+
+              event.preventDefault();
+              event.stopPropagation();
+              if (!isSubmitting) {
+                void handleSubmit();
+              }
+            }}
           />
           <Group justify="space-between" gap="sm" wrap="wrap">
             <Text size="xs" c="dimmed">
@@ -735,7 +781,14 @@ function TaskCommentsSection({ taskKey }: { taskKey: string }) {
               loading={isSubmitting}
               disabled={!draft.trim()}
             >
-              Add comment
+              <Group component="span" gap="xs" wrap="nowrap">
+                <span>Add comment</span>
+                {commentShortcutActive ? (
+                  <Kbd size="xs" className="task-dispatch-send-shortcut">
+                    {sendShortcutLabel}
+                  </Kbd>
+                ) : null}
+              </Group>
             </Button>
           </Group>
         </Stack>
@@ -902,6 +955,7 @@ function TaskEditFormContent({
     taskKey,
   });
   const [noteMarkdown, setNoteMarkdown] = useState(draftNote);
+  const [commentShortcutActive, setCommentShortcutActive] = useState(false);
   const draftWarningKey =
     noteConflict || (canRestoreNoteDraft && !autoSaveDraft)
       ? `${taskKey}:${noteConflict ? 'conflict' : 'restore'}:${canRestoreNoteDraft ? 'restorable' : 'no-restore'}:${activeNotesRevision}`
@@ -1090,7 +1144,14 @@ function TaskEditFormContent({
               </Stack>
             </section>
 
-            {!isOffline ? <TaskCommentsSection taskKey={taskKey} /> : null}
+            {!isOffline ? (
+              <TaskCommentsSection
+                taskKey={taskKey}
+                dispatchTarget={editableTodo.dispatchTarget ?? null}
+                onTaskQueued={onTaskQueued}
+                onShortcutActiveChange={setCommentShortcutActive}
+              />
+            ) : null}
 
             <section
               className={`${classes.activityCard} ${classes.sectionSurface}`}
@@ -1159,6 +1220,7 @@ function TaskEditFormContent({
                   noteMarkdown={noteMarkdown}
                   telegramEnabled={telegramEnabled ?? false}
                   hermesTelegramEnabled={hermesTelegramEnabled}
+                  suppressShortcut={commentShortcutActive}
                   onTaskQueued={handleDispatchQueued}
                 />
               </section>
