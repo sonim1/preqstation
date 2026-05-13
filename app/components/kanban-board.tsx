@@ -142,6 +142,7 @@ type KanbanBoardProps = {
 };
 
 const ARCHIVED_TASK_PAGE_SIZE = 30;
+const FOCUS_DIM_DURATION_MS = 1600;
 
 function buildInitialArchivedDrawerState(total: number): ArchivedDrawerPageState {
   return {
@@ -476,6 +477,7 @@ export function KanbanBoard({
   } | null>(null);
   const columnsRef = useRef(columns);
   const appliedFocusTabRef = useRef<{ status: KanbanStatus; taskKey: string } | null>(null);
+  const dimTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const persistQueueRef = useRef<QueuedKanbanMutation[]>([]);
   const isPersistingRef = useRef(false);
   const archiveRequestIdRef = useRef(0);
@@ -486,8 +488,12 @@ export function KanbanBoard({
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('inbox');
   const [dimmedFocusTaskKey, setDimmedFocusTaskKey] = useState<string | null>(null);
-  const focusedTaskLocation = focusedTaskKey ? findTaskLocation(columns, focusedTaskKey) : null;
+  const focusedTaskLocation = useMemo(
+    () => (focusedTaskKey ? findTaskLocation(columns, focusedTaskKey) : null),
+    [columns, focusedTaskKey],
+  );
   const focusedTaskStatus = focusedTaskLocation?.status ?? null;
+  const dimmedFocusTargetKey = focusedTaskStatus ? focusedTaskKey : null;
 
   useEffect(() => {
     if (!focusedTaskKey) {
@@ -514,18 +520,29 @@ export function KanbanBoard({
   }, [focusedTaskKey, focusedTaskStatus, isMobile]);
 
   useEffect(() => {
-    if (!focusedTaskKey || !focusedTaskStatus) {
+    if (dimTimeoutRef.current) {
+      clearTimeout(dimTimeoutRef.current);
+      dimTimeoutRef.current = null;
+    }
+
+    if (!dimmedFocusTargetKey) {
       setDimmedFocusTaskKey(null);
       return;
     }
 
-    setDimmedFocusTaskKey(focusedTaskKey);
-    const timeout = setTimeout(() => {
+    setDimmedFocusTaskKey(dimmedFocusTargetKey);
+    dimTimeoutRef.current = setTimeout(() => {
       setDimmedFocusTaskKey(null);
-    }, 1600);
+      dimTimeoutRef.current = null;
+    }, FOCUS_DIM_DURATION_MS);
 
-    return () => clearTimeout(timeout);
-  }, [focusedTaskKey, focusedTaskStatus]);
+    return () => {
+      if (dimTimeoutRef.current) {
+        clearTimeout(dimTimeoutRef.current);
+        dimTimeoutRef.current = null;
+      }
+    };
+  }, [dimmedFocusTargetKey]);
 
   const boardFlowStatuses = useMemo(() => getBoardFlowStatuses(), []);
   const visibleBoardStatuses = useMemo(() => getVisibleBoardStatuses(columns), [columns]);

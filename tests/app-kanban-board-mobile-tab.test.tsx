@@ -371,6 +371,41 @@ describe('app/components/kanban-board mobile tab selection', () => {
     expect(setActiveTab).toHaveBeenCalledWith('ready');
   });
 
+  it('keys the focus dimming effect to focused task changes only', () => {
+    const searchParams = new URLSearchParams('panel=task-edit&taskId=PROJ-2');
+    const columns = {
+      ...emptyColumns(),
+      ready: [makeTask({ id: '2', taskKey: 'PROJ-2', status: 'ready' })],
+    };
+    const setActiveTab = vi.fn();
+    const setIsMobile = vi.fn();
+
+    useSearchParamsMock.mockReturnValue(searchParams);
+    mockBoardState({ columns, activeTab: 'inbox', setActiveTab, setIsMobile });
+    useEffectMock.mockImplementation(() => {});
+
+    KanbanBoard({
+      initialInboxTasks: columns.inbox,
+      initialTodoTasks: columns.todo,
+      initialHoldTasks: columns.hold,
+      initialReadyTasks: columns.ready,
+      initialDoneTasks: columns.done,
+      initialArchivedTasks: columns.archived,
+      editHrefBase: '/board',
+      projectOptions: [],
+      labelOptions: [],
+      selectedProject: null,
+      enginePresets: null,
+    });
+
+    const focusEffectDeps = useEffectMock.mock.calls
+      .map(([, deps]) => deps)
+      .filter((deps): deps is unknown[] => Array.isArray(deps) && deps.includes('PROJ-2'));
+
+    expect(focusEffectDeps).toContainEqual(['PROJ-2', 'ready', true]);
+    expect(focusEffectDeps).toContainEqual(['PROJ-2']);
+  });
+
   it('does not reapply the focused mobile tab after the focus has been processed', () => {
     const searchParams = new URLSearchParams('focus=PROJ-2');
     const columns = {

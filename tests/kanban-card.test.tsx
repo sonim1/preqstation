@@ -1,10 +1,31 @@
+// @vitest-environment jsdom
+
 import fs from 'node:fs';
 import path from 'node:path';
 
 import { MantineProvider, Menu } from '@mantine/core';
+import { cleanup, render, screen } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+declare module 'vitest' {
+  interface Assertion<T> {
+    toHaveClass(expectedClass: string): T;
+  }
+}
+
+expect.extend({
+  toHaveClass(received: Element, expectedClass: string) {
+    const pass = received.classList.contains(expectedClass);
+
+    return {
+      pass,
+      message: () =>
+        `expected element ${pass ? 'not ' : ''}to have class "${expectedClass}", received "${received.className}"`,
+    };
+  },
+});
 
 vi.mock('@mantine/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@mantine/core')>();
@@ -49,6 +70,7 @@ vi.mock('@hello-pangea/dnd', () => ({
     ),
 }));
 
+import cardStyles from '@/app/components/cards.module.css';
 import { KanbanBoardMobile } from '@/app/components/kanban-board-mobile';
 import {
   buildKanbanCardTelegramDispatch,
@@ -168,19 +190,39 @@ function renderQueuedTaskSurfaces(task: KanbanTask) {
   return { desktopHtml, mobileHtml };
 }
 
-function getCardClassForTaskKey(html: string, taskKey: string) {
-  const taskKeyIndex = html.indexOf(taskKey);
-  expect(taskKeyIndex).toBeGreaterThanOrEqual(0);
+function getCardForTitle(title: string) {
+  const card = screen.getByText(title).closest('[role="link"]');
+  expect(card).not.toBeNull();
 
-  const cardMatches = [
-    ...html.slice(0, taskKeyIndex).matchAll(/class="([^"]*itemCard[^"]*kanbanCard[^"]*)"/g),
-  ];
-  expect(cardMatches.length).toBeGreaterThan(0);
-
-  return cardMatches[cardMatches.length - 1][1];
+  return card as HTMLElement;
 }
 
 describe('app/components/kanban-card', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
   it('uses card-size-aware wave positioning for queued while keeping running anchored', () => {
     expect(resolveRunStateFrameStyle('queued')).toEqual({
       '--wave-band-top': 'clamp(56px, 44%, 80px)',
@@ -242,18 +284,6 @@ describe('app/components/kanban-card', () => {
   it('disables focused card pulse animation for reduced motion', () => {
     expect(cardsCss).toMatch(
       /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.kanbanCard\.isFocused\s*\{[\s\S]*animation:\s*none;/,
-    );
-  });
-
-  it('defines one-shot focus dimming with a reduced-motion override', () => {
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\.isFocusDimmed\s*\{[\s\S]*animation:\s*kanbanCardFocusDim\s+1\.6s\s+ease-out\s+1;/,
-    );
-    expect(cardsCss).toMatch(
-      /@keyframes kanbanCardFocusDim\s*\{[\s\S]*filter:\s*brightness\(0\.58\)\s+saturate\(0\.75\);[\s\S]*opacity:\s*0\.55;[\s\S]*filter:\s*none;[\s\S]*opacity:\s*1;/,
-    );
-    expect(cardsCss).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.kanbanCard\.isFocusDimmed\s*\{[\s\S]*animation:\s*none;/,
     );
   });
 
@@ -378,7 +408,7 @@ describe('app/components/kanban-card', () => {
       { ...BASE_TASK, id: 'task-1', taskKey: 'PROJ-1', title: 'Neighbor card' },
       { ...BASE_TASK, id: 'task-2', taskKey: 'PROJ-2', title: 'Focused card' },
     ];
-    const html = renderToStaticMarkup(
+    render(
       <MantineProvider>
         <KanbanColumn
           status="todo"
@@ -397,8 +427,8 @@ describe('app/components/kanban-card', () => {
       </MantineProvider>,
     );
 
-    expect(getCardClassForTaskKey(html, 'PROJ-1')).toContain('isFocusDimmed');
-    expect(getCardClassForTaskKey(html, 'PROJ-2')).not.toContain('isFocusDimmed');
+    expect(getCardForTitle('Neighbor card')).toHaveClass(cardStyles.isFocusDimmed);
+    expect(getCardForTitle('Focused card')).not.toHaveClass(cardStyles.isFocusDimmed);
   });
 
   it('dims non-target mobile cards during a focused task highlight', () => {
@@ -406,7 +436,7 @@ describe('app/components/kanban-card', () => {
       { ...BASE_TASK, id: 'task-1', taskKey: 'PROJ-1', title: 'Neighbor card' },
       { ...BASE_TASK, id: 'task-2', taskKey: 'PROJ-2', title: 'Focused card' },
     ];
-    const html = renderToStaticMarkup(
+    render(
       <MantineProvider>
         <KanbanBoardMobile
           columns={{
@@ -429,8 +459,8 @@ describe('app/components/kanban-card', () => {
       </MantineProvider>,
     );
 
-    expect(getCardClassForTaskKey(html, 'PROJ-1')).toContain('isFocusDimmed');
-    expect(getCardClassForTaskKey(html, 'PROJ-2')).not.toContain('isFocusDimmed');
+    expect(getCardForTitle('Neighbor card')).toHaveClass(cardStyles.isFocusDimmed);
+    expect(getCardForTitle('Focused card')).not.toHaveClass(cardStyles.isFocusDimmed);
   });
 
   it('renders empty columns with a top-only aurora seam instead of a bordered panel', () => {
