@@ -50,6 +50,7 @@ type KanbanColumnProps = {
   headerActions?: ReactNode;
   className?: string;
   focusedTaskKey?: string | null;
+  dimmedFocusTaskKey?: string | null;
 };
 
 type KanbanColumnTaskCardProps = {
@@ -80,6 +81,7 @@ type KanbanColumnTaskCardProps = {
   ) => void;
   enginePresets?: EnginePresets | null;
   isFocused?: boolean;
+  isFocusDimmed?: boolean;
 };
 
 function KanbanColumnTaskCard({
@@ -101,6 +103,7 @@ function KanbanColumnTaskCard({
   onProjectLabelOptionsChange,
   enginePresets,
   isFocused,
+  isFocusDimmed,
 }: KanbanColumnTaskCardProps) {
   const isStaleQueued = useStaleQueuedTask(task.runState, task.runStateUpdatedAt);
   const hasUnreadNotification = Boolean(task.hasUnreadNotification);
@@ -109,7 +112,7 @@ function KanbanColumnTaskCard({
 
   useEffect(() => {
     if (isFocused && cardRef.current) {
-      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
     }
   }, [isFocused]);
 
@@ -142,6 +145,7 @@ function KanbanColumnTaskCard({
             hasUnreadNotification ? cardStyles.kanbanCardUpdated : null,
             snapshot.isDragging ? cardStyles.isDragging : null,
             isFocused ? cardStyles.isFocused : null,
+            isFocusDimmed ? cardStyles.isFocusDimmed : null,
           ]
             .filter(Boolean)
             .join(' ')}
@@ -213,6 +217,7 @@ export function KanbanColumn({
   headerActions,
   className,
   focusedTaskKey,
+  dimmedFocusTaskKey,
 }: KanbanColumnProps) {
   const terminology = useTerminology();
   const label = statusLabel ?? boardStatusLabel(status, terminology);
@@ -249,29 +254,39 @@ export function KanbanColumn({
               {tasks.length === 0 && !snapshot.isDraggingOver ? (
                 <KanbanEmptyLane className="kanban-empty-state--compact kanban-fill-height" />
               ) : null}
-              {tasks.map((task, index) => (
-                <KanbanColumnTaskCard
-                  key={task.id}
-                  task={task}
-                  index={index}
-                  isPending={isPending}
-                  isMobile={isMobile}
-                  editHrefBase={editHrefBase}
-                  editHrefJoiner={editHrefJoiner}
-                  telegramEnabled={telegramEnabled}
-                  router={router}
-                  onTaskQueued={onTaskQueued}
-                  onOpenTaskEditor={onOpenTaskEditor}
-                  onQuickMoveTask={onQuickMoveTask}
-                  onDeleteTask={onDeleteTask}
-                  labelOptions={labelOptions}
-                  resolveTaskLabelOptions={resolveTaskLabelOptions}
-                  onUpdateTaskLabels={onUpdateTaskLabels}
-                  onProjectLabelOptionsChange={onProjectLabelOptionsChange}
-                  enginePresets={enginePresets}
-                  isFocused={task.taskKey === focusedTaskKey || task.id === focusedTaskKey}
-                />
-              ))}
+              {tasks.map((task, index) => {
+                const isFocused = task.taskKey === focusedTaskKey || task.id === focusedTaskKey;
+                const isFocusDimmed = Boolean(
+                  dimmedFocusTaskKey &&
+                  task.taskKey !== dimmedFocusTaskKey &&
+                  task.id !== dimmedFocusTaskKey,
+                );
+
+                return (
+                  <KanbanColumnTaskCard
+                    key={task.id}
+                    task={task}
+                    index={index}
+                    isPending={isPending}
+                    isMobile={isMobile}
+                    editHrefBase={editHrefBase}
+                    editHrefJoiner={editHrefJoiner}
+                    telegramEnabled={telegramEnabled}
+                    router={router}
+                    onTaskQueued={onTaskQueued}
+                    onOpenTaskEditor={onOpenTaskEditor}
+                    onQuickMoveTask={onQuickMoveTask}
+                    onDeleteTask={onDeleteTask}
+                    labelOptions={labelOptions}
+                    resolveTaskLabelOptions={resolveTaskLabelOptions}
+                    onUpdateTaskLabels={onUpdateTaskLabels}
+                    onProjectLabelOptionsChange={onProjectLabelOptionsChange}
+                    enginePresets={enginePresets}
+                    isFocused={isFocused}
+                    isFocusDimmed={isFocusDimmed}
+                  />
+                );
+              })}
               {provided.placeholder}
               <div className="kanban-column-drop-tail" aria-hidden="true" />
               <div className="kanban-bottom-gradient" aria-hidden="true" />

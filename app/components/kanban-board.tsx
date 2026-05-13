@@ -142,6 +142,7 @@ type KanbanBoardProps = {
 };
 
 const ARCHIVED_TASK_PAGE_SIZE = 30;
+const FOCUS_DIM_DURATION_MS = 1600;
 
 function buildInitialArchivedDrawerState(total: number): ArchivedDrawerPageState {
   return {
@@ -454,7 +455,9 @@ export function KanbanBoard({
   const openFocusedTaskFromBoardTask = useOpenFocusedTaskFromBoardTask();
   const setKanbanReconciliationPaused = useSetKanbanReconciliationPaused();
   const columns = useKanbanColumns();
-  const focusedTaskKey = searchParams.get('focus');
+  const panelTaskKey =
+    searchParams.get('panel') === 'task-edit' ? searchParams.get('taskId') : null;
+  const focusedTaskKey = panelTaskKey || searchParams.get('focus');
   const [isPending, startTransition] = useTransition();
   const [saveError, setSaveError] = useState<string | null>(null);
   const [archiveDrawerOpened, setArchiveDrawerOpened] = useState(false);
@@ -474,6 +477,7 @@ export function KanbanBoard({
   } | null>(null);
   const columnsRef = useRef(columns);
   const appliedFocusTabRef = useRef<{ status: KanbanStatus; taskKey: string } | null>(null);
+  const dimTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const persistQueueRef = useRef<QueuedKanbanMutation[]>([]);
   const isPersistingRef = useRef(false);
   const archiveRequestIdRef = useRef(0);
@@ -483,6 +487,13 @@ export function KanbanBoard({
 
   const [isMobile, setIsMobile] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('inbox');
+  const [dimmedFocusTaskKey, setDimmedFocusTaskKey] = useState<string | null>(null);
+  const focusedTaskLocation = useMemo(
+    () => (focusedTaskKey ? findTaskLocation(columns, focusedTaskKey) : null),
+    [columns, focusedTaskKey],
+  );
+  const focusedTaskStatus = focusedTaskLocation?.status ?? null;
+  const dimmedFocusTargetKey = focusedTaskStatus ? focusedTaskKey : null;
 
   useEffect(() => {
     if (!focusedTaskKey) {
@@ -490,24 +501,48 @@ export function KanbanBoard({
       return;
     }
 
-    const location = findTaskLocation(columns, focusedTaskKey);
     if (
       appliedFocusTabRef.current?.taskKey === focusedTaskKey &&
-      appliedFocusTabRef.current.status === location?.status
+      appliedFocusTabRef.current.status === focusedTaskStatus
     ) {
       return;
     }
 
-    if (location) {
+    if (focusedTaskStatus) {
       if (isMobile) {
-        setActiveTab(location.status);
+        setActiveTab(focusedTaskStatus);
         appliedFocusTabRef.current = {
-          status: location.status,
+          status: focusedTaskStatus,
           taskKey: focusedTaskKey,
         };
       }
     }
-  }, [columns, focusedTaskKey, isMobile]);
+  }, [focusedTaskKey, focusedTaskStatus, isMobile]);
+
+  useEffect(() => {
+    if (dimTimeoutRef.current) {
+      clearTimeout(dimTimeoutRef.current);
+      dimTimeoutRef.current = null;
+    }
+
+    if (!dimmedFocusTargetKey) {
+      setDimmedFocusTaskKey(null);
+      return;
+    }
+
+    setDimmedFocusTaskKey(dimmedFocusTargetKey);
+    dimTimeoutRef.current = setTimeout(() => {
+      setDimmedFocusTaskKey(null);
+      dimTimeoutRef.current = null;
+    }, FOCUS_DIM_DURATION_MS);
+
+    return () => {
+      if (dimTimeoutRef.current) {
+        clearTimeout(dimTimeoutRef.current);
+        dimTimeoutRef.current = null;
+      }
+    };
+  }, [dimmedFocusTargetKey]);
 
   const boardFlowStatuses = useMemo(() => getBoardFlowStatuses(), []);
   const visibleBoardStatuses = useMemo(() => getVisibleBoardStatuses(columns), [columns]);
@@ -1410,6 +1445,7 @@ export function KanbanBoard({
             enginePresets={enginePresets}
             onOpenTaskEditor={openTaskEditor}
             focusedTaskKey={focusedTaskKey}
+            dimmedFocusTaskKey={dimmedFocusTaskKey}
             actionIsland={renderActionIsland(
               'kanban-action-island-anchor kanban-mobile-action-island-anchor',
             )}
@@ -1465,6 +1501,7 @@ export function KanbanBoard({
                       onOpenTaskEditor={openTaskEditor}
                       headerActions={headerActions}
                       focusedTaskKey={focusedTaskKey}
+                      dimmedFocusTaskKey={dimmedFocusTaskKey}
                     />
                   );
                 })}

@@ -137,6 +137,28 @@
   }
 }
 
+.kanbanCard.isFocusDimmed {
+  animation: kanbanCardFocusDim 1.6s ease-out 1;
+}
+
+@keyframes kanbanCardFocusDim {
+  0% {
+    filter: none;
+    opacity: 1;
+  }
+
+  18%,
+  72% {
+    filter: brightness(0.58) saturate(0.75);
+    opacity: 0.55;
+  }
+
+  100% {
+    filter: none;
+    opacity: 1;
+  }
+}
+
 .kanbanCard:active {
   cursor: grabbing;
 }
@@ -991,8 +1013,15 @@
   }
 
   .kanbanRunWaveLayer1,
-  .kanbanRunWaveLayer2,
+  .kanbanRunWaveLayer2 {
+    animation: none;
+  }
+
   .kanbanCard.isFocused {
+    animation: none;
+  }
+
+  .kanbanCard.isFocusDimmed {
     animation: none;
   }
 }

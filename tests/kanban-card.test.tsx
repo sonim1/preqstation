@@ -1,10 +1,31 @@
+// @vitest-environment jsdom
+
 import fs from 'node:fs';
 import path from 'node:path';
 
 import { MantineProvider, Menu } from '@mantine/core';
+import { cleanup, render, screen } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+declare module 'vitest' {
+  interface Assertion<T> {
+    toHaveClass(expectedClass: string): T;
+  }
+}
+
+expect.extend({
+  toHaveClass(received: Element, expectedClass: string) {
+    const pass = received.classList.contains(expectedClass);
+
+    return {
+      pass,
+      message: () =>
+        `expected element ${pass ? 'not ' : ''}to have class "${expectedClass}", received "${received.className}"`,
+    };
+  },
+});
 
 vi.mock('@mantine/core', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@mantine/core')>();
@@ -49,6 +70,7 @@ vi.mock('@hello-pangea/dnd', () => ({
     ),
 }));
 
+import cardStyles from '@/app/components/cards.module.css';
 import { KanbanBoardMobile } from '@/app/components/kanban-board-mobile';
 import {
   buildKanbanCardTelegramDispatch,
@@ -168,7 +190,39 @@ function renderQueuedTaskSurfaces(task: KanbanTask) {
   return { desktopHtml, mobileHtml };
 }
 
+function getCardForTitle(title: string) {
+  const card = screen.getByText(title).closest('[role="link"]');
+  expect(card).not.toBeNull();
+
+  return card as HTMLElement;
+}
+
 describe('app/components/kanban-card', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    );
+    Object.defineProperty(window.HTMLElement.prototype, 'scrollIntoView', {
+      configurable: true,
+      value: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+  });
+
   it('uses card-size-aware wave positioning for queued while keeping running anchored', () => {
     expect(resolveRunStateFrameStyle('queued')).toEqual({
       '--wave-band-top': 'clamp(56px, 44%, 80px)',
@@ -347,6 +401,66 @@ describe('app/components/kanban-card', () => {
       );
       expect(html).toContain('Queued for more than 1 hour. Mark as done');
     }
+  });
+
+  it('dims non-target desktop cards during a focused task highlight', () => {
+    const tasks = [
+      { ...BASE_TASK, id: 'task-1', taskKey: 'PROJ-1', title: 'Neighbor card' },
+      { ...BASE_TASK, id: 'task-2', taskKey: 'PROJ-2', title: 'Focused card' },
+    ];
+    render(
+      <MantineProvider>
+        <KanbanColumn
+          status="todo"
+          tasks={tasks}
+          isPending={false}
+          isMobile={false}
+          editHrefBase="/board"
+          editHrefJoiner="?"
+          router={{ push: () => {} } as any}
+          onQuickMoveTask={() => {}}
+          onDeleteTask={() => {}}
+          enginePresets={null}
+          focusedTaskKey="PROJ-2"
+          dimmedFocusTaskKey="PROJ-2"
+        />
+      </MantineProvider>,
+    );
+
+    expect(getCardForTitle('Neighbor card')).toHaveClass(cardStyles.isFocusDimmed);
+    expect(getCardForTitle('Focused card')).not.toHaveClass(cardStyles.isFocusDimmed);
+  });
+
+  it('dims non-target mobile cards during a focused task highlight', () => {
+    const tasks = [
+      { ...BASE_TASK, id: 'task-1', taskKey: 'PROJ-1', title: 'Neighbor card' },
+      { ...BASE_TASK, id: 'task-2', taskKey: 'PROJ-2', title: 'Focused card' },
+    ];
+    render(
+      <MantineProvider>
+        <KanbanBoardMobile
+          columns={{
+            ...emptyColumns(),
+            todo: tasks,
+          }}
+          activeTab="todo"
+          onTabChange={() => {}}
+          isPending={false}
+          editHrefBase="/board"
+          editHrefJoiner="?"
+          router={{ push: () => {}, refresh: () => {} } as any}
+          onQuickMoveTask={() => {}}
+          onDeleteTask={() => {}}
+          saveError={null}
+          enginePresets={null}
+          focusedTaskKey="PROJ-2"
+          dimmedFocusTaskKey="PROJ-2"
+        />
+      </MantineProvider>,
+    );
+
+    expect(getCardForTitle('Neighbor card')).toHaveClass(cardStyles.isFocusDimmed);
+    expect(getCardForTitle('Focused card')).not.toHaveClass(cardStyles.isFocusDimmed);
   });
 
   it('renders empty columns with a top-only aurora seam instead of a bordered panel', () => {

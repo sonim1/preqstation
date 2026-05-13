@@ -93,6 +93,7 @@ type KanbanBoardMobileProps = {
   saveError: string | null;
   enginePresets?: EnginePresets | null;
   focusedTaskKey?: string | null;
+  dimmedFocusTaskKey?: string | null;
 };
 
 type KanbanBoardMobileTaskCardProps = {
@@ -120,6 +121,7 @@ type KanbanBoardMobileTaskCardProps = {
   ) => void;
   enginePresets?: EnginePresets | null;
   isFocused?: boolean;
+  isFocusDimmed?: boolean;
 };
 
 function KanbanBoardMobileTaskCard({
@@ -138,6 +140,7 @@ function KanbanBoardMobileTaskCard({
   onProjectLabelOptionsChange,
   enginePresets,
   isFocused,
+  isFocusDimmed,
 }: KanbanBoardMobileTaskCardProps) {
   const isStaleQueued = useStaleQueuedTask(task.runState, task.runStateUpdatedAt);
   const hasUnreadNotification = Boolean(task.hasUnreadNotification);
@@ -145,7 +148,7 @@ function KanbanBoardMobileTaskCard({
 
   useEffect(() => {
     if (isFocused && cardRef.current) {
-      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      cardRef.current.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
     }
   }, [isFocused]);
 
@@ -161,6 +164,7 @@ function KanbanBoardMobileTaskCard({
         hasUnreadNotification ? cardStyles.kanbanCardUpdated : null,
         'kanban-mobile-card',
         isFocused ? cardStyles.isFocused : null,
+        isFocusDimmed ? cardStyles.isFocusDimmed : null,
       ]
         .filter(Boolean)
         .join(' ')}
@@ -228,6 +232,7 @@ export function KanbanBoardMobile({
   saveError,
   enginePresets,
   focusedTaskKey,
+  dimmedFocusTaskKey,
 }: KanbanBoardMobileProps) {
   const terminology = useTerminology();
   const mobileStatuses = getMobileBoardStatuses(columns, activeTab);
@@ -375,6 +380,14 @@ export function KanbanBoardMobile({
                     ) : (
                       tasks.map((task) => {
                         const editHref = `${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(task.taskKey)}`;
+                        const isFocused =
+                          task.taskKey === focusedTaskKey || task.id === focusedTaskKey;
+                        const isFocusDimmed = Boolean(
+                          dimmedFocusTaskKey &&
+                          task.taskKey !== dimmedFocusTaskKey &&
+                          task.id !== dimmedFocusTaskKey,
+                        );
+
                         return (
                           <KanbanBoardMobileTaskCard
                             key={task.id}
@@ -392,9 +405,8 @@ export function KanbanBoardMobile({
                             onUpdateTaskLabels={onUpdateTaskLabels}
                             onProjectLabelOptionsChange={onProjectLabelOptionsChange}
                             enginePresets={enginePresets}
-                            isFocused={
-                              task.taskKey === focusedTaskKey || task.id === focusedTaskKey
-                            }
+                            isFocused={isFocused}
+                            isFocusDimmed={isFocusDimmed}
                           />
                         );
                       })

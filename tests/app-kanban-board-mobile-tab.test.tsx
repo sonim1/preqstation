@@ -211,7 +211,8 @@ function mockBoardState(params: {
     .mockReturnValueOnce([false, vi.fn()])
     .mockReturnValueOnce([null, vi.fn()])
     .mockReturnValueOnce([true, params.setIsMobile])
-    .mockReturnValueOnce([params.activeTab, params.setActiveTab]);
+    .mockReturnValueOnce([params.activeTab, params.setActiveTab])
+    .mockReturnValueOnce([null, vi.fn()]);
 
   useRefMock.mockImplementation((initialValue: unknown) => {
     if (initialValue === params.columns) {
@@ -301,6 +302,108 @@ describe('app/components/kanban-board mobile tab selection', () => {
     });
 
     expect(treeHasFocusedTaskKey(tree, 'PROJ-2')).toBe(true);
+  });
+
+  it('uses the task edit panel taskId as the focused task key', () => {
+    const searchParams = new URLSearchParams('panel=task-edit&taskId=PROJ-2&focus=PROJ-1');
+    const columns = {
+      ...emptyColumns(),
+      inbox: [makeTask({ id: '1', taskKey: 'PROJ-1', status: 'inbox' })],
+      ready: [makeTask({ id: '2', taskKey: 'PROJ-2', status: 'ready' })],
+    };
+    const setActiveTab = vi.fn();
+    const setIsMobile = vi.fn();
+
+    useSearchParamsMock.mockReturnValue(searchParams);
+    mockBoardState({ columns, activeTab: 'inbox', setActiveTab, setIsMobile });
+    useEffectMock.mockImplementation(() => {});
+
+    const tree = KanbanBoard({
+      initialInboxTasks: columns.inbox,
+      initialTodoTasks: columns.todo,
+      initialHoldTasks: columns.hold,
+      initialReadyTasks: columns.ready,
+      initialDoneTasks: columns.done,
+      initialArchivedTasks: columns.archived,
+      editHrefBase: '/board',
+      projectOptions: [],
+      labelOptions: [],
+      selectedProject: null,
+      enginePresets: null,
+    });
+
+    expect(treeHasFocusedTaskKey(tree, 'PROJ-2')).toBe(true);
+    expect(treeHasFocusedTaskKey(tree, 'PROJ-1')).toBe(false);
+  });
+
+  it('moves the mobile tab to the task edit panel taskId column', () => {
+    const searchParams = new URLSearchParams('panel=task-edit&taskId=PROJ-2');
+    const columns = {
+      ...emptyColumns(),
+      ready: [makeTask({ id: '2', taskKey: 'PROJ-2', status: 'ready' })],
+    };
+    const setActiveTab = vi.fn();
+    const setIsMobile = vi.fn();
+    const effects: Array<() => void> = [];
+
+    useSearchParamsMock.mockReturnValue(searchParams);
+    mockBoardState({ columns, activeTab: 'inbox', setActiveTab, setIsMobile });
+    useEffectMock.mockImplementation((effect: () => void) => {
+      effects.push(effect);
+    });
+
+    KanbanBoard({
+      initialInboxTasks: columns.inbox,
+      initialTodoTasks: columns.todo,
+      initialHoldTasks: columns.hold,
+      initialReadyTasks: columns.ready,
+      initialDoneTasks: columns.done,
+      initialArchivedTasks: columns.archived,
+      editHrefBase: '/board',
+      projectOptions: [],
+      labelOptions: [],
+      selectedProject: null,
+      enginePresets: null,
+    });
+
+    effects[0]?.();
+
+    expect(setActiveTab).toHaveBeenCalledWith('ready');
+  });
+
+  it('keys the focus dimming effect to focused task changes only', () => {
+    const searchParams = new URLSearchParams('panel=task-edit&taskId=PROJ-2');
+    const columns = {
+      ...emptyColumns(),
+      ready: [makeTask({ id: '2', taskKey: 'PROJ-2', status: 'ready' })],
+    };
+    const setActiveTab = vi.fn();
+    const setIsMobile = vi.fn();
+
+    useSearchParamsMock.mockReturnValue(searchParams);
+    mockBoardState({ columns, activeTab: 'inbox', setActiveTab, setIsMobile });
+    useEffectMock.mockImplementation(() => {});
+
+    KanbanBoard({
+      initialInboxTasks: columns.inbox,
+      initialTodoTasks: columns.todo,
+      initialHoldTasks: columns.hold,
+      initialReadyTasks: columns.ready,
+      initialDoneTasks: columns.done,
+      initialArchivedTasks: columns.archived,
+      editHrefBase: '/board',
+      projectOptions: [],
+      labelOptions: [],
+      selectedProject: null,
+      enginePresets: null,
+    });
+
+    const focusEffectDeps = useEffectMock.mock.calls
+      .map(([, deps]) => deps)
+      .filter((deps): deps is unknown[] => Array.isArray(deps) && deps.includes('PROJ-2'));
+
+    expect(focusEffectDeps).toContainEqual(['PROJ-2', 'ready', true]);
+    expect(focusEffectDeps).toContainEqual(['PROJ-2']);
   });
 
   it('does not reapply the focused mobile tab after the focus has been processed', () => {
