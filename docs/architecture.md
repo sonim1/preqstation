@@ -458,20 +458,21 @@ codex mcp add preqstation \
 
 ### MCP Tools
 
-| Tool                        | Type     | Purpose                                                                                                                               |
-| --------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `preq_list_projects`        | Read     | List projects for setup flows such as local repository mapping                                                                        |
-| `preq_list_tasks`           | Read     | List tasks by status, label, engine, projectKey                                                                                       |
-| `preq_get_task`             | Read     | Fetch task details by ticket number or UUID                                                                                           |
-| `preq_get_project_settings` | Read     | Fetch project settings such as deploy strategy and agent instructions                                                                 |
-| `preq_create_task`          | Mutation | Create new task (→ inbox)                                                                                                             |
-| `preq_plan_task`            | Mutation | Upload plan markdown, move inbox → todo                                                                                               |
-| `preq_start_task`           | Mutation | Mark a todo task as actively running (`runState=running`)                                                                             |
-| `preq_update_task_status`   | Mutation | Status-only update                                                                                                                    |
-| `preq_complete_task`        | Mutation | Upload result, move → ready, clear execution state; requires `branchName` + `prUrl` for `feature_branch + auto_pr + commit_on_review` |
-| `preq_review_task`          | Mutation | Verify a ready task and move → done (or → hold)                                                                                       |
-| `preq_block_task`           | Mutation | Move task → hold with a blocking reason                                                                                               |
-| `preq_delete_task`          | Mutation | Permanently delete task                                                                                                               |
+| Tool                         | Type     | Purpose                                                                                                                               |
+| ---------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `preq_list_projects`         | Read     | List projects for setup flows such as local repository mapping                                                                        |
+| `preq_list_tasks`            | Read     | List tasks by status, label, engine, projectKey                                                                                       |
+| `preq_list_project_activity` | Read     | Page through project activity events across tasks, task comments, and work logs by ISO date range                                     |
+| `preq_get_task`              | Read     | Fetch task details by ticket number or UUID                                                                                           |
+| `preq_get_project_settings`  | Read     | Fetch project settings such as deploy strategy and agent instructions                                                                 |
+| `preq_create_task`           | Mutation | Create new task (→ inbox)                                                                                                             |
+| `preq_plan_task`             | Mutation | Upload plan markdown, move inbox → todo                                                                                               |
+| `preq_start_task`            | Mutation | Mark a todo task as actively running (`runState=running`)                                                                             |
+| `preq_update_task_status`    | Mutation | Status-only update                                                                                                                    |
+| `preq_complete_task`         | Mutation | Upload result, move → ready, clear execution state; requires `branchName` + `prUrl` for `feature_branch + auto_pr + commit_on_review` |
+| `preq_review_task`           | Mutation | Verify a ready task and move → done (or → hold)                                                                                       |
+| `preq_block_task`            | Mutation | Move task → hold with a blocking reason                                                                                               |
+| `preq_delete_task`           | Mutation | Permanently delete task                                                                                                               |
 
 ### Engine Resolution Priority
 
