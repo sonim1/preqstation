@@ -1,0 +1,150 @@
+import { describe, expect, it } from 'vitest';
+
+import {
+  buildConnectionExpirationNotifications,
+  getConnectionExpirationNotificationKey,
+} from '@/lib/connection-expiration-notifications';
+
+const OWNER_ID = '11111111-1111-4111-8111-111111111111';
+const NOW = new Date('2026-03-25T12:00:00.000Z');
+
+describe('lib/connection-expiration-notifications', () => {
+  it('includes active expiring-soon MCP connections and browser sessions only', () => {
+    const notifications = buildConnectionExpirationNotifications({
+      ownerId: OWNER_ID,
+      now: NOW,
+      mcpConnections: [
+        {
+          id: 'mcp-expiring',
+          displayName: 'Codex',
+          redirectUri: 'http://127.0.0.1:3456/callback',
+          expiresAt: new Date('2026-03-27T11:00:00.000Z'),
+          revokedAt: null,
+          createdAt: new Date('2026-03-20T12:00:00.000Z'),
+        },
+        {
+          id: 'mcp-healthy',
+          displayName: 'Healthy bridge',
+          redirectUri: 'http://127.0.0.1:4567/callback',
+          expiresAt: new Date('2026-04-05T12:00:00.000Z'),
+          revokedAt: null,
+          createdAt: new Date('2026-03-20T12:00:00.000Z'),
+        },
+        {
+          id: 'mcp-expired',
+          displayName: 'Expired bridge',
+          redirectUri: 'http://127.0.0.1:5678/callback',
+          expiresAt: new Date('2026-03-25T11:00:00.000Z'),
+          revokedAt: null,
+          createdAt: new Date('2026-03-20T12:00:00.000Z'),
+        },
+        {
+          id: 'mcp-revoked',
+          displayName: 'Revoked bridge',
+          redirectUri: 'http://127.0.0.1:6789/callback',
+          expiresAt: new Date('2026-03-27T11:00:00.000Z'),
+          revokedAt: new Date('2026-03-25T11:30:00.000Z'),
+          createdAt: new Date('2026-03-20T12:00:00.000Z'),
+        },
+      ],
+      browserSessions: [
+        {
+          id: 'browser-expiring',
+          ipAddress: '203.0.113.10',
+          browserName: 'Chrome',
+          osName: 'macOS',
+          expiresAt: new Date('2026-03-26T15:00:00.000Z'),
+          revokedAt: null,
+          createdAt: new Date('2026-03-23T12:00:00.000Z'),
+        },
+        {
+          id: 'browser-healthy',
+          ipAddress: '198.51.100.10',
+          browserName: 'Safari',
+          osName: 'iOS',
+          expiresAt: new Date('2026-04-01T12:00:00.000Z'),
+          revokedAt: null,
+          createdAt: new Date('2026-03-23T12:00:00.000Z'),
+        },
+        {
+          id: 'browser-expired',
+          ipAddress: '198.51.100.20',
+          browserName: 'Firefox',
+          osName: 'Linux',
+          expiresAt: new Date('2026-03-25T11:00:00.000Z'),
+          revokedAt: null,
+          createdAt: new Date('2026-03-23T12:00:00.000Z'),
+        },
+        {
+          id: 'browser-revoked',
+          ipAddress: '198.51.100.30',
+          browserName: 'Edge',
+          osName: 'Windows',
+          expiresAt: new Date('2026-03-26T15:00:00.000Z'),
+          revokedAt: new Date('2026-03-25T11:30:00.000Z'),
+          createdAt: new Date('2026-03-23T12:00:00.000Z'),
+        },
+      ],
+      reads: [],
+    });
+
+    expect(notifications).toEqual([
+      expect.objectContaining({
+        id: 'connection-expiring-soon:browser:browser-expiring:2026-03-26T15:00:00.000Z',
+        type: 'connection-expiration',
+        source: 'browser',
+        title: 'Browser session expires soon',
+        targetName: 'Chrome',
+        targetDetail: 'macOS · 203.0.113.10',
+        readAt: null,
+      }),
+      expect.objectContaining({
+        id: 'connection-expiring-soon:mcp:mcp-expiring:2026-03-27T11:00:00.000Z',
+        type: 'connection-expiration',
+        source: 'mcp',
+        title: 'Connection expires soon',
+        targetName: 'Codex',
+        targetDetail: '127.0.0.1:3456/callback',
+        readAt: null,
+      }),
+    ]);
+  });
+
+  it('uses deterministic keys and applies read state by notification key', () => {
+    const key = getConnectionExpirationNotificationKey({
+      source: 'mcp',
+      recordId: 'mcp-expiring',
+      expiresAt: new Date('2026-03-27T11:00:00.000Z'),
+    });
+    const notifications = buildConnectionExpirationNotifications({
+      ownerId: OWNER_ID,
+      now: NOW,
+      mcpConnections: [
+        {
+          id: 'mcp-expiring',
+          displayName: 'Codex',
+          redirectUri: 'http://127.0.0.1:3456/callback',
+          expiresAt: new Date('2026-03-27T11:00:00.000Z'),
+          revokedAt: null,
+          createdAt: new Date('2026-03-20T12:00:00.000Z'),
+        },
+      ],
+      browserSessions: [],
+      reads: [
+        {
+          notificationKey: key,
+          readAt: new Date('2026-03-25T13:00:00.000Z'),
+          createdAt: new Date('2026-03-25T13:00:00.000Z'),
+        },
+      ],
+    });
+
+    expect(key).toBe('connection-expiring-soon:mcp:mcp-expiring:2026-03-27T11:00:00.000Z');
+    expect(notifications).toEqual([
+      expect.objectContaining({
+        id: key,
+        readAt: new Date('2026-03-25T13:00:00.000Z'),
+      }),
+    ]);
+  });
+});

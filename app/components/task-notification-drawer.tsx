@@ -4,14 +4,16 @@ import { Badge, Button, Drawer, Group, Stack, Text } from '@mantine/core';
 import { IconBell, IconHistory } from '@tabler/icons-react';
 
 import { EmptyState } from '@/app/components/empty-state';
+import { formatConnectionTimeRemaining } from '@/lib/connection-expiration';
 import { formatDateTimeForDisplay } from '@/lib/date-time';
 import { TASK_STATUS_LABELS } from '@/lib/task-meta';
 
 import { LoadMoreButton } from './load-more-button';
 import { useTimeZone } from './timezone-provider';
 
-export type TaskNotificationItem = {
+export type TaskCompletionNotificationItem = {
   id: string;
+  type?: 'task';
   projectId: string | null;
   taskId: string;
   taskKey: string;
@@ -21,6 +23,22 @@ export type TaskNotificationItem = {
   readAt: string | null;
   createdAt: string;
 };
+
+type ConnectionExpirationNotificationItem = {
+  id: string;
+  type: 'connection-expiration';
+  source: 'mcp' | 'browser';
+  title: string;
+  targetName: string;
+  targetDetail: string | null;
+  expiresAt: string;
+  readAt: string | null;
+  createdAt: string;
+};
+
+export type TaskNotificationItem =
+  | TaskCompletionNotificationItem
+  | ConnectionExpirationNotificationItem;
 
 export type TaskNotificationDrawerMode = 'unread' | 'history';
 
@@ -33,6 +51,7 @@ type TaskNotificationDrawerProps = {
   isLoading: boolean;
   isLoadingMore: boolean;
   hasMore: boolean;
+  now?: string;
   onShowHistory: () => void;
   onShowUnread: () => void;
   onLoadMore: () => void;
@@ -40,6 +59,12 @@ type TaskNotificationDrawerProps = {
 
 function labelForStatus(status: string) {
   return TASK_STATUS_LABELS[status as keyof typeof TASK_STATUS_LABELS] ?? status;
+}
+
+function isConnectionExpirationNotification(
+  notification: TaskNotificationItem,
+): notification is ConnectionExpirationNotificationItem {
+  return notification.type === 'connection-expiration';
 }
 
 export function TaskNotificationDrawer({
@@ -51,6 +76,7 @@ export function TaskNotificationDrawer({
   isLoading,
   isLoadingMore,
   hasMore,
+  now,
   onShowHistory,
   onShowUnread,
   onLoadMore,
@@ -66,7 +92,7 @@ export function TaskNotificationDrawer({
       size="md"
       title={
         <Group gap={8} wrap="nowrap">
-          <Text fw={700}>Task Notifications</Text>
+          <Text fw={700}>Notifications</Text>
           <Badge size="sm" color="gray" variant="light">
             {total}
           </Badge>
@@ -111,20 +137,51 @@ export function TaskNotificationDrawer({
 
           {notifications.map((notification) => (
             <div key={notification.id} className="task-notification-item">
-              <Group justify="space-between" align="flex-start" wrap="nowrap">
-                <div className="task-notification-copy">
-                  <Text size="sm" fw={600}>
-                    {notification.taskKey} · {notification.taskTitle}
-                  </Text>
+              {isConnectionExpirationNotification(notification) ? (
+                <Group justify="space-between" align="flex-start" wrap="nowrap">
+                  <div className="task-notification-copy">
+                    <Text size="sm" fw={600}>
+                      {notification.title}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {notification.targetName}
+                    </Text>
+                    {notification.targetDetail ? (
+                      <Text size="xs" c="dimmed">
+                        {notification.targetDetail}
+                      </Text>
+                    ) : null}
+                    <Text size="xs" c="dimmed">
+                      Expires {formatDateTimeForDisplay(notification.expiresAt, timeZone)}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {formatConnectionTimeRemaining(
+                        new Date(notification.expiresAt).getTime() -
+                          new Date(now ?? notification.createdAt).getTime(),
+                      )}{' '}
+                      remaining
+                    </Text>
+                  </div>
                   <Text size="xs" c="dimmed">
-                    {labelForStatus(notification.statusFrom)} -&gt;{' '}
-                    {labelForStatus(notification.statusTo)}
+                    {formatDateTimeForDisplay(notification.createdAt, timeZone)}
                   </Text>
-                </div>
-                <Text size="xs" c="dimmed">
-                  {formatDateTimeForDisplay(notification.createdAt, timeZone)}
-                </Text>
-              </Group>
+                </Group>
+              ) : (
+                <Group justify="space-between" align="flex-start" wrap="nowrap">
+                  <div className="task-notification-copy">
+                    <Text size="sm" fw={600}>
+                      {notification.taskKey} · {notification.taskTitle}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {labelForStatus(notification.statusFrom)} -&gt;{' '}
+                      {labelForStatus(notification.statusTo)}
+                    </Text>
+                  </div>
+                  <Text size="xs" c="dimmed">
+                    {formatDateTimeForDisplay(notification.createdAt, timeZone)}
+                  </Text>
+                </Group>
+              )}
             </div>
           ))}
         </Stack>

@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import {
+  type ConnectionExpirationNotification,
+  listConnectionExpirationNotifications,
+  markAllConnectionExpirationNotificationsRead,
+  markConnectionExpirationNotificationsRead,
+} from '@/lib/connection-expiration-notifications';
 import { withOwnerDb } from '@/lib/db/rls';
 import { requireOwnerUser } from '@/lib/owner';
 import { assertSameOrigin } from '@/lib/request-security';
@@ -67,10 +73,35 @@ function parseLimit(value: string | null) {
 
 function serializeNotification(notification: TaskNotification) {
   return {
+    type: 'task' as const,
     ...notification,
     readAt: notification.readAt?.toISOString() ?? null,
     createdAt: notification.createdAt.toISOString(),
   };
+}
+
+function serializeConnectionNotification(notification: ConnectionExpirationNotification) {
+  return {
+    id: notification.id,
+    type: notification.type,
+    source: notification.source,
+    title: notification.title,
+    targetName: notification.targetName,
+    targetDetail: notification.targetDetail,
+    expiresAt: notification.expiresAt.toISOString(),
+    readAt: notification.readAt?.toISOString() ?? null,
+    createdAt: notification.createdAt.toISOString(),
+  };
+}
+
+type SerializedNotification =
+  | ReturnType<typeof serializeNotification>
+  | ReturnType<typeof serializeConnectionNotification>;
+
+function sortNotificationsByCreatedAt(left: SerializedNotification, right: SerializedNotification) {
+  const createdAtDelta = new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime();
+  if (createdAtDelta !== 0) return createdAtDelta;
+  return right.id.localeCompare(left.id);
 }
 
 export async function GET(req: Request) {
@@ -78,27 +109,44 @@ export async function GET(req: Request) {
   const history = parseHistoryFlag(searchParams.get('history'));
   const offset = parseOffset(searchParams.get('offset'));
   const limit = parseLimit(searchParams.get('limit'));
+  const mergedFetchLimit = Math.max(offset + limit, limit);
 
   try {
     const owner = await requireOwnerUser();
 
     return await withOwnerDb(owner.id, async (client) => {
-      const result = await listTaskNotifications(
+      const taskResult = await listTaskNotifications(
         {
           ownerId: owner.id,
           history,
-          offset,
-          limit,
+          offset: 0,
+          limit: mergedFetchLimit,
+          maxLimit: mergedFetchLimit,
         },
         client,
       );
+      const connectionResult = await listConnectionExpirationNotifications(
+        {
+          ownerId: owner.id,
+          history,
+          offset: 0,
+          limit: mergedFetchLimit,
+        },
+        client,
+      );
+      const mergedNotifications = [
+        ...taskResult.notifications.map(serializeNotification),
+        ...connectionResult.notifications.map(serializeConnectionNotification),
+      ].sort(sortNotificationsByCreatedAt);
+      const notifications = mergedNotifications.slice(offset, offset + limit);
+      const total = taskResult.total + connectionResult.total;
 
       return NextResponse.json({
-        notifications: result.notifications.map(serializeNotification),
-        total: result.total,
-        offset: result.offset,
-        limit: result.limit,
-        hasMore: result.hasMore,
+        notifications,
+        total,
+        offset,
+        limit,
+        hasMore: offset + notifications.length < total,
       });
     });
   } catch (error) {
@@ -127,19 +175,36 @@ export async function PATCH(req: Request) {
     return await withOwnerDb(owner.id, async (client) => {
       const updatedIds =
         'markAll' in payload
-          ? await markAllTaskNotificationsRead(
-              {
-                ownerId: owner.id,
-              },
-              client,
-            )
-          : await markTaskNotificationsRead(
-              {
-                ownerId: owner.id,
-                notificationIds: payload.notificationIds,
-              },
-              client,
-            );
+          ? [
+              ...(await markAllTaskNotificationsRead(
+                {
+                  ownerId: owner.id,
+                },
+                client,
+              )),
+              ...(await markAllConnectionExpirationNotificationsRead(
+                {
+                  ownerId: owner.id,
+                },
+                client,
+              )),
+            ]
+          : [
+              ...(await markTaskNotificationsRead(
+                {
+                  ownerId: owner.id,
+                  notificationIds: payload.notificationIds,
+                },
+                client,
+              )),
+              ...(await markConnectionExpirationNotificationsRead(
+                {
+                  ownerId: owner.id,
+                  notificationIds: payload.notificationIds,
+                },
+                client,
+              )),
+            ];
 
       return NextResponse.json({
         ok: true,
