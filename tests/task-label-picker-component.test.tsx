@@ -260,6 +260,29 @@ describe('app/components/task-label-picker UI behavior', () => {
     expect(trigger.textContent).not.toContain('Select labels');
   });
 
+  it('keeps a visible focus ring available for custom trigger renderers', () => {
+    render(
+      <TaskLabelPicker
+        labelOptions={labelOptions}
+        onChange={vi.fn()}
+        projectId="project-1"
+        renderTrigger={() => <span data-testid="custom-label-trigger">Custom labels</span>}
+        selectedLabelIds={[]}
+        triggerAriaLabel="Edit labels"
+      />,
+    );
+
+    const trigger = screen.getByRole('button', { name: 'Edit labels' });
+    const css = readTaskLabelPickerCss();
+
+    expect(screen.getByTestId('custom-label-trigger')).toBeTruthy();
+    expect(trigger.querySelector('[data-task-label-trigger="default"]')).toBeNull();
+    expect(css).not.toBeNull();
+    expect(css ?? '').toMatch(
+      /\.triggerButton:focus-visible > :not\(\.defaultTrigger\)\s*\{[\s\S]*box-shadow: 0 0 0 2px color-mix\(in srgb, var\(--ui-focus-ring\), transparent 18%\);/,
+    );
+  });
+
   it('opens the dropdown when the trigger is clicked, even when the caller stops propagation', () => {
     const onTriggerClick = vi.fn((event: React.MouseEvent<HTMLButtonElement>) => {
       event.stopPropagation();

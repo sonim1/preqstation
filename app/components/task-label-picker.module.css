@@ -39,6 +39,10 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-focus-ring), transparent 18%);
 }
 
+.triggerButton:focus-visible > :not(.defaultTrigger) {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-focus-ring), transparent 18%);
+}
+
 .defaultTrigger[data-disabled='true'] {
   opacity: 0.6;
 }
