@@ -39,7 +39,7 @@ import {
 
 const engineOptions = Object.values(ENGINE_CONFIGS);
 const dispatchFlowHelp = 'Choose an engine, review the prompt, then send it.';
-const SEND_SHORTCUT_LABEL = 'Cmd+Enter';
+export const SEND_SHORTCUT_LABEL = 'Cmd+Enter';
 const TASK_DISPATCH_PREFERENCE_STATUSES: TaskDispatchPreferenceStatus[] = [
   'inbox',
   'todo',

@@ -39,7 +39,7 @@ import { type EditorMode, LiveMarkdownEditor } from '@/app/components/live-markd
 import { MarkdownViewer } from '@/app/components/markdown-viewer';
 import { useOfflineStatus } from '@/app/components/offline-status-provider';
 import { StatusHistoryBreadcrumb } from '@/app/components/status-history-breadcrumb';
-import { TaskCopyActions } from '@/app/components/task-copy-actions';
+import { SEND_SHORTCUT_LABEL, TaskCopyActions } from '@/app/components/task-copy-actions';
 import { TaskMetadataPriorityPicker } from '@/app/components/task-metadata-controls';
 import { WorkLogTimeline } from '@/app/components/work-log-timeline';
 import { shouldFlushAutoSaveOnBlur, useAutoSave } from '@/app/hooks/use-auto-save';
@@ -784,7 +784,7 @@ function TaskCommentsSection({
                 <span>Add comment</span>
                 {commentShortcutActive ? (
                   <Kbd size="xs" className="task-dispatch-send-shortcut">
-                    Cmd+Enter
+                    {SEND_SHORTCUT_LABEL}
                   </Kbd>
                 ) : null}
               </Group>
