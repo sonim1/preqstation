@@ -33,6 +33,8 @@ type TaskNotificationDrawerProps = {
   isLoading: boolean;
   isLoadingMore: boolean;
   hasMore: boolean;
+  pendingReadNotificationIds?: Set<string>;
+  onNotificationClick: (notification: TaskNotificationItem) => void;
   onShowHistory: () => void;
   onShowUnread: () => void;
   onLoadMore: () => void;
@@ -51,6 +53,8 @@ export function TaskNotificationDrawer({
   isLoading,
   isLoadingMore,
   hasMore,
+  pendingReadNotificationIds,
+  onNotificationClick,
   onShowHistory,
   onShowUnread,
   onLoadMore,
@@ -110,7 +114,14 @@ export function TaskNotificationDrawer({
           ) : null}
 
           {notifications.map((notification) => (
-            <div key={notification.id} className="task-notification-item">
+            <button
+              key={notification.id}
+              type="button"
+              className="task-notification-item"
+              aria-label={`Mark ${notification.taskKey} notification as read`}
+              disabled={pendingReadNotificationIds?.has(notification.id) ?? false}
+              onClick={() => onNotificationClick(notification)}
+            >
               <Group justify="space-between" align="flex-start" wrap="nowrap">
                 <div className="task-notification-copy">
                   <Text size="sm" fw={600}>
@@ -125,7 +136,7 @@ export function TaskNotificationDrawer({
                   {formatDateTimeForDisplay(notification.createdAt, timeZone)}
                 </Text>
               </Group>
-            </div>
+            </button>
           ))}
         </Stack>
 

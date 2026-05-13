@@ -112,6 +112,7 @@ describe('app/components/task-notification-drawer', () => {
         isLoading={false}
         isLoadingMore={false}
         hasMore={false}
+        onNotificationClick={vi.fn()}
         onShowHistory={vi.fn()}
         onShowUnread={vi.fn()}
         onLoadMore={vi.fn()}
@@ -125,6 +126,8 @@ describe('app/components/task-notification-drawer', () => {
     expect(html).toContain('Browser Notification 추가');
     expect(html).toContain('Ready');
     expect(html).toContain('Done');
+    expect(html).toContain('type="button"');
+    expect(html).toContain('aria-label="Mark PROJ-327 notification as read"');
     expect(html).toContain('2026-04-08 05:10');
   });
 
@@ -148,6 +151,7 @@ describe('app/components/task-notification-drawer', () => {
         isLoading={false}
         isLoadingMore={false}
         hasMore={true}
+        onNotificationClick={vi.fn()}
         onShowHistory={vi.fn()}
         onShowUnread={vi.fn()}
         onLoadMore={vi.fn()}
@@ -171,6 +175,7 @@ describe('app/components/task-notification-drawer', () => {
         isLoading={false}
         isLoadingMore={false}
         hasMore={false}
+        onNotificationClick={vi.fn()}
         onShowHistory={vi.fn()}
         onShowUnread={vi.fn()}
         onLoadMore={vi.fn()}
@@ -186,6 +191,7 @@ describe('app/components/task-notification-drawer', () => {
         isLoading={false}
         isLoadingMore={false}
         hasMore={false}
+        onNotificationClick={vi.fn()}
         onShowHistory={vi.fn()}
         onShowUnread={vi.fn()}
         onLoadMore={vi.fn()}
@@ -196,5 +202,27 @@ describe('app/components/task-notification-drawer', () => {
     expect(unreadHtml).toContain('Completed work will appear here.');
     expect(historyHtml).toContain('No notification history');
     expect(historyHtml).toContain('Read notifications will appear here once they arrive.');
+  });
+
+  it('disables notification rows while their read request is pending', () => {
+    const html = renderToStaticMarkup(
+      <TaskNotificationDrawer
+        opened={true}
+        onClose={vi.fn()}
+        mode="unread"
+        notifications={[makeNotification()]}
+        total={1}
+        isLoading={false}
+        isLoadingMore={false}
+        hasMore={false}
+        pendingReadNotificationIds={new Set(['notif-1'])}
+        onNotificationClick={vi.fn()}
+        onShowHistory={vi.fn()}
+        onShowUnread={vi.fn()}
+        onLoadMore={vi.fn()}
+      />,
+    );
+
+    expect(html).toContain('disabled=""');
   });
 });

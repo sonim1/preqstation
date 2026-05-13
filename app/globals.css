@@ -1534,10 +1534,35 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 }
 
 .task-notification-item {
+  display: block;
+  width: 100%;
   padding: 10px 12px;
   border-radius: var(--mantine-radius-sm);
   background: color-mix(in srgb, var(--ui-surface-soft), white 18%);
   border: 1px solid color-mix(in srgb, var(--ui-border), transparent 10%);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  appearance: none;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    opacity 120ms ease;
+}
+
+.task-notification-item:hover:not(:disabled) {
+  background: var(--mantine-color-default-hover);
+}
+
+.task-notification-item:focus-visible {
+  outline: 2px solid var(--mantine-color-blue-6);
+  outline-offset: 2px;
+}
+
+.task-notification-item:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .task-notification-copy {
