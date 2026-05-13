@@ -256,6 +256,9 @@ describe('app/components/task-notification-center', () => {
         '/board?panel=task-edit&taskId=PROJ-327&focus=PROJ-327',
       );
       expect(routerRefreshMock).toHaveBeenCalledTimes(1);
+      expect(routerRefreshMock.mock.invocationCallOrder[0]).toBeLessThan(
+        routerPushMock.mock.invocationCallOrder[0],
+      );
       expect(screen.getByLabelText('Open notifications (2 unread)')).toBeTruthy();
       expect(screen.queryByTestId('task-notification-drawer')).toBeNull();
     });

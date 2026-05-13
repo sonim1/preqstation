@@ -265,8 +265,8 @@ export function TaskNotificationCenter() {
     try {
       await markNotificationsRead({ notificationIds: [notification.id] });
       closeDrawer();
-      router.push(buildNotificationTaskHref(notification));
       router.refresh();
+      router.push(buildNotificationTaskHref(notification));
     } catch {
       setUnreadNotifications((current) => prependUniqueById([notification], current));
       setUnreadTotal((current) => current + 1);
