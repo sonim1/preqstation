@@ -256,6 +256,21 @@ describe('app/components/panels/project-labels-panel', () => {
     expect(screen.queryByRole('button', { name: 'Save label' })).toBeNull();
   });
 
+  it('keeps label accessibility text in sync with active name edits', () => {
+    renderInteractivePanel();
+
+    const nameInput = screen.getByLabelText('Bug label name');
+    fireEvent.change(nameInput, { target: { value: 'Defect' } });
+
+    expect(screen.getByLabelText('Defect label name')).toBe(nameInput);
+    expect(screen.getByLabelText('Defect label color')).not.toBeNull();
+    const deleteButton = screen.getByRole('button', { name: 'Delete Defect label' });
+    expect(deleteButton.getAttribute('data-confirm-title')).toBe('Delete Defect?');
+    expect(deleteButton.getAttribute('title')).toBe('Delete Defect label');
+    expect(screen.queryByLabelText('Bug label color')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Delete Bug label' })).toBeNull();
+  });
+
   it('preserves an active label edit when refreshed label props change', () => {
     const { rerender } = renderInteractivePanel();
 
@@ -276,7 +291,7 @@ describe('app/components/panels/project-labels-panel', () => {
       </MantineProvider>,
     );
 
-    const refreshedInput = screen.getByLabelText('Bug from server label name');
+    const refreshedInput = screen.getByLabelText('Local edit label name');
     expect((refreshedInput as HTMLInputElement).value).toBe('Local edit');
     expect(document.activeElement).toBe(refreshedInput);
   });

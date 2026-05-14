@@ -110,10 +110,6 @@
   background: color-mix(in srgb, var(--ui-surface-soft), transparent 22%);
 }
 
-.labelRow + .labelRow {
-  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 22%);
-}
-
 .labelRowHeader {
   display: flex;
   align-items: center;

@@ -127,7 +127,7 @@ export function ProjectLabelTile({
               type="button"
               variant="default"
               size="sm"
-              aria-label={`${label.name} label color`}
+              aria-label={`${name} label color`}
               aria-describedby={colorError ? feedbackId : undefined}
               aria-invalid={colorError || undefined}
               title="Change label color"
@@ -151,7 +151,7 @@ export function ProjectLabelTile({
         </Popover>
         <TextInput
           name="name"
-          aria-label={`${label.name} label name`}
+          aria-label={`${name} label name`}
           aria-describedby={nameError ? feedbackId : undefined}
           aria-invalid={nameError || undefined}
           value={name}
@@ -203,15 +203,15 @@ export function ProjectLabelTile({
       >
         <input type="hidden" name="id" value={label.id} />
         <ConfirmActionButton
-          aria-label={`Delete ${label.name} label`}
+          aria-label={`Delete ${name} label`}
           color="red"
           variant="subtle"
           size="xs"
           formId={deleteFormId}
-          confirmTitle={`Delete ${label.name}?`}
+          confirmTitle={`Delete ${name}?`}
           confirmMessage={deleteConfirmMessage}
           confirmLabel="Delete label"
-          title={`Delete ${label.name} label`}
+          title={`Delete ${name} label`}
           className={settingsClasses.labelDeleteButton}
         >
           <IconTrash size={15} aria-hidden="true" />

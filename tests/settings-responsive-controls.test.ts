@@ -61,6 +61,7 @@ describe('settings responsive control fixes', () => {
     expect(settingsPageCss).toContain(
       'grid-template-columns: repeat(auto-fill, minmax(min(100%, 176px), 220px));',
     );
+    expect(settingsPageCss).not.toContain('.labelRow + .labelRow');
     expect(settingsPageCss).toMatch(/@media \(max-width: 36rem\)[\s\S]*\.labelList/);
     expect(settingsPageCss).not.toMatch(/\.labelRowDanger[\s\S]{0,120}width: 100%;/);
   });
