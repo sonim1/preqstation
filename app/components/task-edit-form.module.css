@@ -8,6 +8,14 @@
   padding-bottom: var(--mantine-spacing-xs);
 }
 
+.rootWithBottomDispatch {
+  padding-bottom: calc(var(--mantine-spacing-xs) + 7rem + env(safe-area-inset-bottom, 0px));
+}
+
+.bottomDispatch {
+  display: contents;
+}
+
 .mobileSavingOverlay {
   position: absolute;
   inset: 0;
@@ -424,6 +432,10 @@
 }
 
 @media (max-width: 48em) {
+  .rootWithBottomDispatch {
+    padding-bottom: calc(var(--mantine-spacing-xs) + 10.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .mobileSavingOverlay {
     display: flex;
   }

@@ -4,9 +4,11 @@ import { ActionIcon, Kbd, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { IconInfoCircle } from '@tabler/icons-react';
 import Image from 'next/image';
 import {
+  type ChangeEvent,
   type CSSProperties,
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -83,6 +85,7 @@ type TaskCopyActionsProps = {
   telegramEnabled?: boolean;
   hermesTelegramEnabled?: boolean;
   suppressShortcut?: boolean;
+  placement?: 'rail' | 'bottom';
   onTaskQueued?: (taskKey: string, queuedAt: string, dispatchTarget: TaskDispatchTarget) => void;
 };
 
@@ -188,6 +191,15 @@ function getTaskEditDispatchActionLabel(action: TaskEditDispatchAction) {
   }
 }
 
+function getTaskEditDispatchTargetName(action: TaskEditDispatchAction) {
+  switch (action) {
+    case 'send-telegram':
+      return 'Telegram';
+    case 'send-hermes-telegram':
+      return 'Hermes Telegram';
+  }
+}
+
 function getDispatchStatusMessage(state: DispatchState, action: TaskEditDispatchAction) {
   const noun = action === 'send-hermes-telegram' ? 'Telegram message' : 'Telegram message';
 
@@ -226,8 +238,10 @@ export function TaskCopyActions({
   telegramEnabled = false,
   hermesTelegramEnabled,
   suppressShortcut = false,
+  placement = 'rail',
   onTaskQueued,
 }: TaskCopyActionsProps) {
+  const bottomControlId = useId();
   const resolvedHermesTelegramEnabled = hermesTelegramEnabled ?? telegramEnabled;
   const preferenceStatus = normalizeTaskDispatchPreferenceStatus(status);
   const availableModes = getDispatchModesForStatus(status);
@@ -254,6 +268,7 @@ export function TaskCopyActions({
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dispatchState, setDispatchState] = useState<DispatchState>('idle');
   const [sendShortcutLabel, setSendShortcutLabel] = useState<string | null>(null);
+  const [messageText, setMessageText] = useState('');
   const isSending = dispatchState === 'loading';
   const clearDispatchResetTimeout = useCallback(() => {
     if (!resetTimeoutRef.current) return;
@@ -275,6 +290,12 @@ export function TaskCopyActions({
     availableModes.includes(mode.key),
   );
   const { askHint } = extractTaskAskPrompt(noteMarkdown);
+  const messageAskHint = messageText.trim();
+  const effectiveAskHint =
+    placement === 'bottom' && effectiveObjective === 'ask' && messageAskHint
+      ? messageAskHint
+      : askHint;
+  const dispatchAskHint = effectiveObjective === 'ask' ? effectiveAskHint : null;
   const dispatchPrompt =
     effectiveAction === 'send-hermes-telegram'
       ? buildHermesTaskTelegramMessage({
@@ -283,7 +304,7 @@ export function TaskCopyActions({
           engine: selectedEngine?.key,
           branchName,
           objective: effectiveObjective,
-          askHint,
+          askHint: dispatchAskHint,
         })
       : buildTaskTelegramMessage({
           taskKey,
@@ -291,7 +312,7 @@ export function TaskCopyActions({
           engine: selectedEngine?.key,
           branchName,
           objective: effectiveObjective,
-          askHint,
+          askHint: dispatchAskHint,
         });
 
   const persistDispatchPreference = (
@@ -335,6 +356,27 @@ export function TaskCopyActions({
     persistDispatchPreference(selectedEngine, nextObjective, effectiveAction);
   };
 
+  const handleEngineSelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextEngine = getEngineConfig(event.currentTarget.value);
+    if (nextEngine) {
+      selectEngine(nextEngine);
+    }
+  };
+
+  const handleTargetSelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextAction = event.currentTarget.value as TaskEditDispatchAction;
+    if (availableActions.includes(nextAction)) {
+      selectAction(nextAction);
+    }
+  };
+
+  const handleModeSelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextObjective = event.currentTarget.value as TaskDispatchMode;
+    if (availableModes.includes(nextObjective)) {
+      selectMode(nextObjective);
+    }
+  };
+
   const sendDispatch = async () => {
     if (dispatchInFlightRef.current) return;
 
@@ -356,7 +398,7 @@ export function TaskCopyActions({
               engine: selectedEngine?.key,
               branchName,
               objective: effectiveObjective,
-              askHint: effectiveObjective === 'ask' ? askHint : null,
+              askHint: dispatchAskHint,
             })
           : buildTaskTelegramMessage({
               taskKey,
@@ -364,7 +406,7 @@ export function TaskCopyActions({
               engine: selectedEngine?.key,
               branchName,
               objective: effectiveObjective,
-              askHint: effectiveObjective === 'ask' ? askHint : null,
+              askHint: dispatchAskHint,
             }),
         dispatchTarget,
       );
@@ -412,6 +454,7 @@ export function TaskCopyActions({
     clearDispatchResetTimeout();
     dispatchInFlightRef.current = false;
     setDispatchState('idle');
+    setMessageText('');
 
     return clearDispatchResetTimeout;
   }, [clearDispatchResetTimeout, taskKey]);
@@ -439,6 +482,186 @@ export function TaskCopyActions({
 
   if (availableModes.length === 0 || availableActions.length === 0) {
     return null;
+  }
+
+  if (placement === 'bottom') {
+    const engineSelectId = `${bottomControlId}-engine`;
+    const targetSelectId = `${bottomControlId}-target`;
+    const modeSelectId = `${bottomControlId}-mode`;
+    const messageInputId = `${bottomControlId}-message`;
+
+    return (
+      <div className="task-dispatch-bottom-bar" data-placement="bottom">
+        <div className="task-dispatch-bottom-inner">
+          <div className="task-dispatch-bottom-title">
+            <Text component="span" size="sm" fw={800} className="openclaw-actions-label">
+              Dispatch
+            </Text>
+            <Tooltip label={dispatchFlowHelp} withArrow multiline w={220}>
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="sm"
+                radius="xl"
+                aria-label="Dispatch help"
+                className="openclaw-dispatch-help"
+              >
+                <IconInfoCircle size={16} />
+              </ActionIcon>
+            </Tooltip>
+          </div>
+
+          <div className="task-dispatch-bottom-field task-dispatch-bottom-engine-field">
+            <label className="task-dispatch-bottom-label" htmlFor={engineSelectId}>
+              Engine
+            </label>
+            <div className="task-dispatch-bottom-select-wrap">
+              {selectedEngine ? (
+                <span
+                  className="task-dispatch-engine-icon"
+                  aria-hidden="true"
+                  data-engine-icon={selectedEngine.key}
+                  style={
+                    {
+                      '--engine-color': selectedEngine.iconColor,
+                      '--engine-icon': `url(${selectedEngine.icon})`,
+                    } as CSSProperties
+                  }
+                />
+              ) : null}
+              <select
+                id={engineSelectId}
+                aria-label="Engine"
+                className="task-dispatch-bottom-select"
+                value={selectedEngine?.key ?? ''}
+                disabled={isSending}
+                onChange={handleEngineSelectChange}
+              >
+                {engineOptions.map((engineOption) => (
+                  <option key={engineOption.key} value={engineOption.key}>
+                    {getEngineShortLabel(engineOption)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="task-dispatch-bottom-field task-dispatch-bottom-target-field">
+            <label className="task-dispatch-bottom-label" htmlFor={targetSelectId}>
+              Target
+            </label>
+            <div className="task-dispatch-bottom-select-wrap">
+              {effectiveAction === 'send-telegram' ? (
+                <span className="task-dispatch-target-emoji" aria-hidden="true">
+                  🦞
+                </span>
+              ) : (
+                <Image
+                  className="task-dispatch-target-logo"
+                  src="/icons/hermes-agent.png"
+                  alt=""
+                  width={16}
+                  height={16}
+                  aria-hidden="true"
+                />
+              )}
+              <select
+                id={targetSelectId}
+                aria-label="Target"
+                className="task-dispatch-bottom-select"
+                value={effectiveAction}
+                disabled={isSending}
+                onChange={handleTargetSelectChange}
+              >
+                {availableActions.map((action) => (
+                  <option key={action} value={action}>
+                    {getTaskEditDispatchTargetName(action)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="task-dispatch-bottom-field task-dispatch-bottom-mode-field">
+            <label className="task-dispatch-bottom-label" htmlFor={modeSelectId}>
+              Mode
+            </label>
+            <select
+              id={modeSelectId}
+              aria-label="Mode"
+              className="task-dispatch-bottom-select"
+              value={effectiveObjective}
+              disabled={isSending}
+              onChange={handleModeSelectChange}
+            >
+              {visibleModeOptions.map((mode) => (
+                <option key={mode.key} value={mode.key}>
+                  {mode.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="task-dispatch-bottom-field task-dispatch-bottom-message-field">
+            <label className="task-dispatch-bottom-label" htmlFor={messageInputId}>
+              Message
+            </label>
+            <input
+              id={messageInputId}
+              type="text"
+              aria-label="Message"
+              className="task-dispatch-bottom-message"
+              value={messageText}
+              disabled={isSending || effectiveObjective !== 'ask'}
+              autoComplete="off"
+              onChange={(event) => setMessageText(event.currentTarget.value)}
+            />
+          </div>
+
+          <div className="task-dispatch-bottom-field task-dispatch-bottom-prompt-field">
+            <Text component="span" size="xs" fw={700} className="task-dispatch-bottom-label">
+              Prompt
+            </Text>
+            <DispatchPromptPreview
+              prompt={dispatchPrompt}
+              promptProps={{
+                'data-task-dispatch-prompt': true,
+                className: 'task-dispatch-bottom-prompt',
+              }}
+              collapseMode="single-line"
+              onCopy={() => persistDispatchPreference()}
+            />
+          </div>
+
+          <UnstyledButton
+            type="button"
+            className="task-dispatch-send task-dispatch-bottom-send"
+            data-state={dispatchState === 'idle' ? undefined : dispatchState}
+            disabled={isSending}
+            onClick={() => {
+              void sendDispatch();
+            }}
+          >
+            <span>{getSendLabel(dispatchState)}</span>
+            {!suppressShortcut && sendShortcutLabel ? (
+              <Kbd size="xs" className="task-dispatch-send-shortcut">
+                {sendShortcutLabel}
+              </Kbd>
+            ) : null}
+          </UnstyledButton>
+        </div>
+
+        <Text
+          component="span"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          style={visuallyHiddenStyles}
+        >
+          {getDispatchStatusMessage(dispatchState, effectiveAction)}
+        </Text>
+      </div>
+    );
   }
 
   return (
