@@ -494,7 +494,7 @@ export function TaskCopyActions({
       <div className="task-dispatch-bottom-bar" data-placement="bottom">
         <div className="task-dispatch-bottom-inner">
           <div className="task-dispatch-bottom-title">
-            <Text component="h2" size="sm" fw={800} className="openclaw-actions-label">
+            <Text component="span" size="sm" fw={800} className="openclaw-actions-label">
               Dispatch
             </Text>
             <Tooltip label={dispatchFlowHelp} withArrow multiline w={220}>
@@ -612,7 +612,7 @@ export function TaskCopyActions({
               aria-label="Message"
               className="task-dispatch-bottom-message"
               value={messageText}
-              disabled={isSending}
+              disabled={isSending || effectiveObjective !== 'ask'}
               autoComplete="off"
               onChange={(event) => setMessageText(event.currentTarget.value)}
             />

@@ -305,6 +305,13 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('task-dispatch-mode-segments');
   });
 
+  it('renders the bottom dispatch label without adding a heading', () => {
+    const html = renderTaskCopyActions({ placement: 'bottom' });
+
+    expect(html).toContain('task-dispatch-bottom-title');
+    expect(html).not.toContain('<h2');
+  });
+
   it('uses the bottom message as ask_hint only when Ask is selected', async () => {
     const pendingSend = createTelegramSendResponse();
     const fetchMock = vi.fn<typeof fetch>(() => pendingSend.response);
@@ -338,6 +345,19 @@ describe('app/components/task-copy-actions', () => {
         '!/skill preqstation-dispatch ask PROJ-224 using codex branch_name="task/proj-224/move-status-test-button" ask_hint="Use bottom message"',
     });
     expect(String(options?.body)).not.toContain('Use note ask hint');
+  });
+
+  it('enables the bottom message only while Ask is selected', () => {
+    renderTaskCopyActionsClient({ placement: 'bottom' });
+
+    const messageInput = screen.getByRole('textbox', { name: 'Message' }) as HTMLInputElement;
+    const modeSelect = screen.getByRole('combobox', { name: 'Mode' });
+
+    expect(messageInput.matches(':disabled')).toBe(true);
+
+    fireEvent.change(modeSelect, { target: { value: 'ask' } });
+
+    expect(messageInput.matches(':disabled')).toBe(false);
   });
 
   it('clears the bottom message when the task key changes', async () => {
