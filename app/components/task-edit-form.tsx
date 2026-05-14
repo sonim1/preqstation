@@ -996,7 +996,11 @@ function TaskEditFormContent({
   }, [draftNote, noteRenderKey]);
 
   return (
-    <div className={classes.root}>
+    <div
+      className={[classes.root, showDispatchPanel ? classes.rootWithBottomDispatch : null]
+        .filter(Boolean)
+        .join(' ')}
+    >
       {saveStatus === 'saving' ? (
         <div
           className={classes.mobileSavingOverlay}
@@ -1206,26 +1210,6 @@ function TaskEditFormContent({
           </div>
 
           <aside className={classes.sidebar} data-panel="task-edit-sidebar">
-            {showDispatchPanel ? (
-              <section
-                className={`${classes.dispatchRail} ${classes.sectionSurface}`}
-                data-panel="task-edit-dispatch"
-              >
-                <TaskCopyActions
-                  taskKey={taskKey}
-                  branchName={branchName}
-                  status={status}
-                  engine={engine}
-                  dispatchTarget={editableTodo.dispatchTarget ?? null}
-                  noteMarkdown={noteMarkdown}
-                  telegramEnabled={telegramEnabled ?? false}
-                  hermesTelegramEnabled={hermesTelegramEnabled}
-                  suppressShortcut={commentShortcutActive}
-                  onTaskQueued={handleDispatchQueued}
-                />
-              </section>
-            ) : null}
-
             <section
               className={`${classes.metadataSection} ${classes.sectionSurface}`}
               data-panel="task-edit-metadata"
@@ -1305,6 +1289,24 @@ function TaskEditFormContent({
           </aside>
         </div>
       </form>
+
+      {showDispatchPanel ? (
+        <div className={classes.bottomDispatch} data-panel="task-edit-bottom-dispatch">
+          <TaskCopyActions
+            placement="bottom"
+            taskKey={taskKey}
+            branchName={branchName}
+            status={status}
+            engine={engine}
+            dispatchTarget={editableTodo.dispatchTarget ?? null}
+            noteMarkdown={noteMarkdown}
+            telegramEnabled={telegramEnabled ?? false}
+            hermesTelegramEnabled={hermesTelegramEnabled}
+            suppressShortcut={commentShortcutActive}
+            onTaskQueued={handleDispatchQueued}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
