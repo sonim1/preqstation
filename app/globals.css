@@ -3569,7 +3569,7 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 }
 
 .task-dispatch-bottom-select option {
-  color: #0f172a;
+  color: var(--ui-text);
 }
 
 .task-dispatch-bottom-message {

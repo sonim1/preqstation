@@ -299,7 +299,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('aria-label="Message"');
     expect(html).toContain('Prompt');
     expect(html).toContain('data-task-dispatch-prompt');
-    expect(html).toContain('aria-label="Send dispatch"');
+    expect(html).not.toContain('aria-label="Send dispatch"');
     expect(html).not.toContain('task-dispatch-engine-segments');
     expect(html).not.toContain('task-dispatch-target-segments');
     expect(html).not.toContain('task-dispatch-mode-segments');
@@ -328,7 +328,7 @@ describe('app/components/task-copy-actions', () => {
     fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
       target: { value: 'Use bottom message' },
     });
-    fireEvent.click(screen.getByRole('button', { name: 'Send dispatch' }));
+    fireEvent.click(screen.getByRole('button', { name: /^send/i }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     const [, options] = fetchMock.mock.calls[0] ?? [];
@@ -338,6 +338,61 @@ describe('app/components/task-copy-actions', () => {
         '!/skill preqstation-dispatch ask PROJ-224 using codex branch_name="task/proj-224/move-status-test-button" ask_hint="Use bottom message"',
     });
     expect(String(options?.body)).not.toContain('Use note ask hint');
+  });
+
+  it('clears the bottom message when the task key changes', async () => {
+    localStorage.setItem(
+      TASK_DISPATCH_PREFERENCES_STORAGE,
+      JSON.stringify({
+        todo: {
+          engine: 'codex',
+          action: 'send-telegram',
+          objective: 'ask',
+        },
+      }),
+    );
+
+    const view = render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+          placement="bottom"
+        />
+      </MantineProvider>,
+    );
+
+    const messageInput = screen.getByRole('textbox', { name: 'Message' }) as HTMLInputElement;
+
+    fireEvent.change(messageInput, {
+      target: { value: 'Use bottom message' },
+    });
+
+    expect(messageInput.value).toBe('Use bottom message');
+
+    await act(async () => {
+      view.rerender(
+        <MantineProvider>
+          <TaskCopyActions
+            taskKey="PROJ-225"
+            branchName="task/proj-225/move-status-test-button"
+            status="todo"
+            engine="codex"
+            telegramEnabled
+            placement="bottom"
+          />
+        </MantineProvider>,
+      );
+    });
+
+    await waitFor(() => {
+      expect((screen.getByRole('textbox', { name: 'Message' }) as HTMLInputElement).value).toBe(
+        '',
+      );
+    });
   });
 
   it('omits the platform-dependent send shortcut during static render', () => {

@@ -454,6 +454,7 @@ export function TaskCopyActions({
     clearDispatchResetTimeout();
     dispatchInFlightRef.current = false;
     setDispatchState('idle');
+    setMessageText('');
 
     return clearDispatchResetTimeout;
   }, [clearDispatchResetTimeout, taskKey]);
@@ -634,7 +635,6 @@ export function TaskCopyActions({
 
           <UnstyledButton
             type="button"
-            aria-label="Send dispatch"
             className="task-dispatch-send task-dispatch-bottom-send"
             data-state={dispatchState === 'idle' ? undefined : dispatchState}
             disabled={isSending}

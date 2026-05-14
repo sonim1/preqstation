@@ -40,6 +40,13 @@ describe('theme token usage audit fixes', () => {
     expect(globalsCss).toMatch(/--ui-status-running:/);
   });
 
+  it('keeps task dispatch bottom select options on theme text tokens', () => {
+    const optionRule = globalsCss.match(/\.task-dispatch-bottom-select option\s*\{([^}]*)\}/);
+
+    expect(optionRule?.[1]).toContain('color: var(--ui-text);');
+    expect(optionRule?.[1]).not.toContain('#0f172a');
+  });
+
   it('moves the global error page onto app tokens instead of a file-local palette', () => {
     expect(globalErrorSource).toContain('var(--ui-surface');
     expect(globalErrorSource).toContain('var(--ui-text');
