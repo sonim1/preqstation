@@ -284,4 +284,64 @@ describe('app/hooks/use-auto-save helpers', () => {
 
     expect(customSubmit).toHaveBeenCalledTimes(2);
   });
+
+  it('retries changes queued while an autosave submit is in flight', async () => {
+    vi.useFakeTimers();
+
+    try {
+      const formState = {
+        title: 'Task',
+        noteMd: 'Before',
+      };
+      let finishFirstSave: () => void = () => undefined;
+      const firstSave = new Promise<void>((resolve) => {
+        finishFirstSave = resolve;
+      });
+      let submitCount = 0;
+      const customSubmit = vi.fn<() => Promise<void>>(() => {
+        submitCount += 1;
+        return submitCount === 1 ? firstSave : Promise.resolve();
+      });
+      const formRef = {
+        current: {
+          requestSubmit: vi.fn(),
+        },
+      } as unknown as RefObject<HTMLFormElement | null>;
+
+      vi.stubGlobal(
+        'FormData',
+        class extends FormData {
+          constructor() {
+            super();
+            Object.entries(formState).forEach(([key, value]) => this.set(key, value));
+          }
+        } as typeof FormData,
+      );
+
+      const harness = createAutoSaveHarness(formRef, { submit: customSubmit });
+
+      let hook = harness.useHook();
+      hook.syncSnapshot();
+
+      formState.noteMd = 'First';
+      hook = harness.useHook();
+      hook.triggerSave(0);
+      vi.advanceTimersByTime(0);
+
+      formState.noteMd = 'Second';
+      hook = harness.useHook();
+      hook.triggerSave(0);
+      vi.advanceTimersByTime(0);
+
+      expect(customSubmit).toHaveBeenCalledTimes(1);
+
+      finishFirstSave();
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(customSubmit).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

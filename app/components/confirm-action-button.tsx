@@ -15,6 +15,8 @@ type ConfirmActionButtonProps = ButtonProps & {
   formId?: string;
   /** If provided, called on confirm (used when no formId) */
   onConfirm?: () => void | Promise<void>;
+  /** Native tooltip text for icon-only triggers */
+  title?: string;
   /** Button children (trigger label) */
   children: ReactNode;
 };
