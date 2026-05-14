@@ -120,6 +120,23 @@ function renderTaskCopyActions(props: Partial<React.ComponentProps<typeof TaskCo
   );
 }
 
+function renderTaskCopyActionsClient(
+  props: Partial<React.ComponentProps<typeof TaskCopyActions>> = {},
+) {
+  return render(
+    <MantineProvider>
+      <TaskCopyActions
+        taskKey="PROJ-224"
+        branchName="task/proj-224/move-status-test-button"
+        status="todo"
+        engine="codex"
+        telegramEnabled
+        {...props}
+      />
+    </MantineProvider>,
+  );
+}
+
 function createPendingTelegramSend() {
   const pendingSend = createTelegramSendResponse();
   const fetchMock = vi.fn<typeof fetch>(() => pendingSend.response);
@@ -266,6 +283,134 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Send to Telegram');
     expect(html).not.toContain('Copy Telegram');
     expect(html).not.toContain('Selected action:');
+  });
+
+  it('renders the bottom dispatch bar with dropdown controls and prompt preview', () => {
+    const html = renderTaskCopyActions({
+      placement: 'bottom',
+      dispatchTarget: 'hermes-telegram',
+    });
+
+    expect(html).toContain('task-dispatch-bottom-bar');
+    expect(html).toContain('data-placement="bottom"');
+    expect(html).toContain('aria-label="Engine"');
+    expect(html).toContain('aria-label="Target"');
+    expect(html).toContain('aria-label="Mode"');
+    expect(html).toContain('aria-label="Message"');
+    expect(html).toContain('Prompt');
+    expect(html).toContain('data-task-dispatch-prompt');
+    expect(html).not.toContain('aria-label="Send dispatch"');
+    expect(html).not.toContain('task-dispatch-engine-segments');
+    expect(html).not.toContain('task-dispatch-target-segments');
+    expect(html).not.toContain('task-dispatch-mode-segments');
+  });
+
+  it('renders the bottom dispatch label without adding a heading', () => {
+    const html = renderTaskCopyActions({ placement: 'bottom' });
+
+    expect(html).toContain('task-dispatch-bottom-title');
+    expect(html).not.toContain('<h2');
+  });
+
+  it('uses the bottom message as ask_hint only when Ask is selected', async () => {
+    const pendingSend = createTelegramSendResponse();
+    const fetchMock = vi.fn<typeof fetch>(() => pendingSend.response);
+    vi.stubGlobal('fetch', fetchMock);
+    localStorage.setItem(
+      TASK_DISPATCH_PREFERENCES_STORAGE,
+      JSON.stringify({
+        todo: {
+          engine: 'codex',
+          action: 'send-telegram',
+          objective: 'ask',
+        },
+      }),
+    );
+
+    renderTaskCopyActionsClient({
+      placement: 'bottom',
+      noteMarkdown: '## Context\n\n---\n\nAsk:\nUse note ask hint',
+    });
+
+    fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
+      target: { value: 'Use bottom message' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^send/i }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, options] = fetchMock.mock.calls[0] ?? [];
+    expect(JSON.parse(String(options?.body))).toEqual({
+      taskKey: 'PROJ-224',
+      message:
+        '!/skill preqstation-dispatch ask PROJ-224 using codex branch_name="task/proj-224/move-status-test-button" ask_hint="Use bottom message"',
+    });
+    expect(String(options?.body)).not.toContain('Use note ask hint');
+  });
+
+  it('enables the bottom message only while Ask is selected', () => {
+    renderTaskCopyActionsClient({ placement: 'bottom' });
+
+    const messageInput = screen.getByRole('textbox', { name: 'Message' }) as HTMLInputElement;
+    const modeSelect = screen.getByRole('combobox', { name: 'Mode' });
+
+    expect(messageInput.matches(':disabled')).toBe(true);
+
+    fireEvent.change(modeSelect, { target: { value: 'ask' } });
+
+    expect(messageInput.matches(':disabled')).toBe(false);
+  });
+
+  it('clears the bottom message when the task key changes', async () => {
+    localStorage.setItem(
+      TASK_DISPATCH_PREFERENCES_STORAGE,
+      JSON.stringify({
+        todo: {
+          engine: 'codex',
+          action: 'send-telegram',
+          objective: 'ask',
+        },
+      }),
+    );
+
+    const view = render(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-224"
+          branchName="task/proj-224/move-status-test-button"
+          status="todo"
+          engine="codex"
+          telegramEnabled
+          placement="bottom"
+        />
+      </MantineProvider>,
+    );
+
+    const messageInput = screen.getByRole('textbox', { name: 'Message' }) as HTMLInputElement;
+
+    fireEvent.change(messageInput, {
+      target: { value: 'Use bottom message' },
+    });
+
+    expect(messageInput.value).toBe('Use bottom message');
+
+    await act(async () => {
+      view.rerender(
+        <MantineProvider>
+          <TaskCopyActions
+            taskKey="PROJ-225"
+            branchName="task/proj-225/move-status-test-button"
+            status="todo"
+            engine="codex"
+            telegramEnabled
+            placement="bottom"
+          />
+        </MantineProvider>,
+      );
+    });
+
+    await waitFor(() => {
+      expect((screen.getByRole('textbox', { name: 'Message' }) as HTMLInputElement).value).toBe('');
+    });
   });
 
   it('omits the platform-dependent send shortcut during static render', () => {

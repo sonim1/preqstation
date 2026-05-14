@@ -120,7 +120,7 @@ function renderTaskEditForm(overrides: RenderOverrides = {}) {
 }
 
 describe('app/components/task-edit-form layout', () => {
-  it('renders the edit form as a desktop workbench with metadata, notes, and dispatch rails', () => {
+  it('renders the edit form as a desktop workbench with metadata, notes, and bottom dispatch', () => {
     const html = renderTaskEditForm();
 
     expect(html).toContain('Notes');
@@ -134,7 +134,8 @@ describe('app/components/task-edit-form layout', () => {
     expect(html).toContain('data-layout="task-edit-shell"');
     expect(html).toContain('data-panel="task-edit-sidebar"');
     expect(html).toContain('data-panel="task-edit-main-column"');
-    expect(html).toContain('data-panel="task-edit-dispatch"');
+    expect(html).toContain('data-panel="task-edit-bottom-dispatch"');
+    expect(html).not.toContain('data-panel="task-edit-dispatch"');
     expect(html).toContain('data-panel="task-edit-metadata"');
     expect(html).toContain('data-panel="task-edit-notes-primary"');
     expect(html).toContain('data-panel="task-edit-activity"');
@@ -146,11 +147,11 @@ describe('app/components/task-edit-form layout', () => {
     expect(html.indexOf('data-panel="task-edit-main-column"')).toBeLessThan(
       html.indexOf('data-panel="task-edit-sidebar"'),
     );
-    expect(html.indexOf('data-panel="task-edit-dispatch"')).toBeLessThan(
+    expect(html.indexOf('data-panel="task-edit-bottom-dispatch"')).toBeLessThan(
       html.indexOf('data-slot="task-copy-actions"'),
     );
-    expect(html.indexOf('data-panel="task-edit-dispatch"')).toBeLessThan(
-      html.indexOf('data-panel="task-edit-metadata"'),
+    expect(html.indexOf('data-panel="task-edit-metadata"')).toBeLessThan(
+      html.indexOf('data-panel="task-edit-bottom-dispatch"'),
     );
     expect(html.indexOf('data-panel="task-edit-main-column"')).toBeLessThan(
       html.indexOf('data-panel="task-edit-notes-primary"'),

@@ -116,16 +116,14 @@ function renderTaskEditForm(saveStatus: 'idle' | 'saving' = 'idle') {
 }
 
 describe('task edit modal scroll-shell rendered layout regressions', () => {
-  it('renders the edit form as a two-column workbench with dispatch above task settings', () => {
+  it('renders the edit form as a two-column workbench with bottom dispatch', () => {
     const html = renderTaskEditForm();
 
     expect(html).toContain(`class="${taskEditFormClasses.shell}"`);
     expect(html).toContain('data-layout="task-edit-shell"');
     expect(html).toContain(`class="${taskEditFormClasses.mainColumn}"`);
     expect(html).toContain(`class="${taskEditFormClasses.sidebar}"`);
-    expect(html).toContain(
-      `class="${taskEditFormClasses.dispatchRail} ${taskEditFormClasses.sectionSurface}"`,
-    );
+    expect(html).toContain(`class="${taskEditFormClasses.bottomDispatch}"`);
     expect(html).toContain(
       `class="${taskEditFormClasses.metadataSection} ${taskEditFormClasses.sectionSurface}"`,
     );
@@ -137,7 +135,8 @@ describe('task edit modal scroll-shell rendered layout regressions', () => {
     );
     expect(html).toContain('data-panel="task-edit-main-column"');
     expect(html).toContain('data-panel="task-edit-sidebar"');
-    expect(html).toContain('data-panel="task-edit-dispatch"');
+    expect(html).toContain('data-panel="task-edit-bottom-dispatch"');
+    expect(html).not.toContain('data-panel="task-edit-dispatch"');
     expect(html).toContain('data-panel="task-edit-metadata"');
     expect(html).toContain('data-panel="task-edit-notes-primary"');
     expect(html).toContain('data-panel="task-edit-activity"');
@@ -146,8 +145,8 @@ describe('task edit modal scroll-shell rendered layout regressions', () => {
     expect(html.indexOf('data-panel="task-edit-main-column"')).toBeLessThan(
       html.indexOf('data-panel="task-edit-sidebar"'),
     );
-    expect(html.indexOf('data-panel="task-edit-dispatch"')).toBeLessThan(
-      html.indexOf('data-panel="task-edit-metadata"'),
+    expect(html.indexOf('data-panel="task-edit-metadata"')).toBeLessThan(
+      html.indexOf('data-panel="task-edit-bottom-dispatch"'),
     );
     expect(html.indexOf('data-panel="task-edit-notes-primary"')).toBeLessThan(
       html.indexOf('data-panel="task-edit-activity"'),

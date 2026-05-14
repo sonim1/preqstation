@@ -1,7 +1,17 @@
+// @vitest-environment jsdom
+
 import { MantineProvider } from '@mantine/core';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const notifications = vi.hoisted(() => ({
+  showErrorNotification: vi.fn(),
+  showSuccessNotification: vi.fn(),
+}));
+
+vi.mock('@/lib/notifications', () => notifications);
 
 vi.mock('@/app/components/confirm-action-button', () => ({
   ConfirmActionButton: ({
@@ -10,19 +20,21 @@ vi.mock('@/app/components/confirm-action-button', () => ({
     confirmMessage,
     confirmTitle,
     formId,
+    ...props
   }: {
     children: React.ReactNode;
     confirmLabel?: React.ReactNode;
     confirmMessage?: React.ReactNode;
     confirmTitle?: React.ReactNode;
     formId?: string;
-  }) => (
+  } & React.ButtonHTMLAttributes<HTMLButtonElement>) => (
     <button
       type="button"
       data-confirm-label={String(confirmLabel ?? '')}
       data-confirm-message={String(confirmMessage ?? '')}
       data-confirm-title={String(confirmTitle ?? '')}
       data-form-id={formId ?? ''}
+      {...props}
     >
       {children}
     </button>
@@ -89,6 +101,11 @@ vi.mock('@/app/components/submit-button', () => ({
 
 import { ProjectLabelsPanel } from '@/app/components/panels/project-labels-panel';
 
+type LabelActionState =
+  | { ok: true }
+  | { ok: false; message: string; field?: 'color' | 'form' | 'name' }
+  | null;
+
 function renderPanel(
   labels: Array<{ id: string; name: string; color: string; usageCount: number }> = [],
   options: { taskPluralLower?: string; taskSingularLower?: string } = {},
@@ -107,7 +124,51 @@ function renderPanel(
   );
 }
 
+function renderInteractivePanel({
+  deleteLabelAction = vi.fn(async () => null),
+  labels = [{ id: 'label-1', name: 'Bug', color: 'red', usageCount: 2 }],
+  updateLabelAction = vi.fn(async () => ({ ok: true as const })),
+}: {
+  deleteLabelAction?: (prevState: unknown, formData: FormData) => Promise<LabelActionState>;
+  labels?: Array<{ id: string; name: string; color: string; usageCount: number }>;
+  updateLabelAction?: (prevState: unknown, formData: FormData) => Promise<LabelActionState>;
+} = {}) {
+  return render(
+    <MantineProvider>
+      <ProjectLabelsPanel
+        labels={labels}
+        taskPluralLower="tasks"
+        taskSingularLower="task"
+        createLabelAction={vi.fn(async () => null)}
+        updateLabelAction={updateLabelAction}
+        deleteLabelAction={deleteLabelAction}
+      />
+    </MantineProvider>,
+  );
+}
+
 describe('app/components/panels/project-labels-panel', () => {
+  beforeEach(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
   it('renders the empty state when a project has no labels yet', () => {
     const html = renderPanel();
 
@@ -152,14 +213,116 @@ describe('app/components/panels/project-labels-panel', () => {
     );
   });
 
-  it('renders subsection headings, visible field labels, and specific row action copy', () => {
+  it('renders compact label tiles without per-label save controls or inline status copy', () => {
     const html = renderPanel([{ id: 'label-1', name: 'Bug', color: 'red', usageCount: 1 }]);
 
     expect(html).toMatch(/<h[1-6][^>]*>Create label<\/h[1-6]>/);
     expect(html).toMatch(/<h[1-6][^>]*>Manage labels<\/h[1-6]>/);
     expect(html).toMatch(/<label[^>]*>Name<input/);
     expect(html).toContain('>Color<');
-    expect(html).toMatch(/<button[^>]*>Save label<\/button>/);
-    expect(html).toMatch(/<button[^>]*>Delete label<\/button>/);
+    expect(html).toContain('data-label-tile="label-1"');
+    expect(html).toContain('data-slot="label-row-editor"');
+    expect(html).toContain('aria-label="Bug label color"');
+    expect(html).toContain('aria-label="Delete Bug label"');
+    expect(html).not.toMatch(/<button[^>]*>Save label<\/button>/);
+    expect(html).not.toContain('Unsaved changes.');
+    expect(html).not.toContain('Saved.');
+    expect(html).not.toContain('Saving...');
+    expect(html).not.toMatch(/<button[^>]*>Delete label<\/button>/);
+  });
+
+  it('auto-saves label name edits through the existing update action on blur', async () => {
+    const updateLabelAction = vi.fn(
+      async (_prevState: unknown, _formData: FormData): Promise<LabelActionState> => ({
+        ok: true,
+      }),
+    );
+
+    renderInteractivePanel({ updateLabelAction });
+
+    const nameInput = screen.getByLabelText('Bug label name');
+    fireEvent.change(nameInput, { target: { value: 'Defect' } });
+    fireEvent.blur(nameInput);
+
+    await waitFor(() => {
+      expect(updateLabelAction).toHaveBeenCalledTimes(1);
+    });
+
+    const submittedFormData = updateLabelAction.mock.calls[0]?.[1] as FormData;
+    expect(submittedFormData.get('id')).toBe('label-1');
+    expect(submittedFormData.get('name')).toBe('Defect');
+    expect(submittedFormData.get('color')).toBe('red');
+    expect(notifications.showSuccessNotification).toHaveBeenCalledWith('Label saved.');
+    expect(screen.queryByRole('button', { name: 'Save label' })).toBeNull();
+  });
+
+  it('keeps label accessibility text in sync with active name edits', () => {
+    renderInteractivePanel();
+
+    const nameInput = screen.getByLabelText('Bug label name');
+    fireEvent.change(nameInput, { target: { value: 'Defect' } });
+
+    expect(screen.getByLabelText('Defect label name')).toBe(nameInput);
+    expect(screen.getByLabelText('Defect label color')).not.toBeNull();
+    const deleteButton = screen.getByRole('button', { name: 'Delete Defect label' });
+    expect(deleteButton.getAttribute('data-confirm-title')).toBe('Delete Defect?');
+    expect(deleteButton.getAttribute('title')).toBe('Delete Defect label');
+    expect(screen.queryByLabelText('Bug label color')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Delete Bug label' })).toBeNull();
+  });
+
+  it('preserves an active label edit when refreshed label props change', () => {
+    const { rerender } = renderInteractivePanel();
+
+    const nameInput = screen.getByLabelText('Bug label name');
+    fireEvent.change(nameInput, { target: { value: 'Local edit' } });
+    nameInput.focus();
+
+    rerender(
+      <MantineProvider>
+        <ProjectLabelsPanel
+          labels={[{ id: 'label-1', name: 'Bug from server', color: 'blue', usageCount: 2 }]}
+          taskPluralLower="tasks"
+          taskSingularLower="task"
+          createLabelAction={vi.fn(async () => null)}
+          updateLabelAction={vi.fn(async () => ({ ok: true as const }))}
+          deleteLabelAction={vi.fn(async () => null)}
+        />
+      </MantineProvider>,
+    );
+
+    const refreshedInput = screen.getByLabelText('Local edit label name');
+    expect((refreshedInput as HTMLInputElement).value).toBe('Local edit');
+    expect(document.activeElement).toBe(refreshedInput);
+  });
+
+  it('notifies when deleting a label throws before returning a promise', () => {
+    const deleteLabelAction = vi.fn(() => {
+      throw new Error('Delete exploded');
+    }) as unknown as (prevState: unknown, formData: FormData) => Promise<LabelActionState>;
+
+    renderInteractivePanel({ deleteLabelAction });
+
+    const deleteForm = document.getElementById('project-label-delete-label-1');
+    expect(deleteForm).not.toBeNull();
+    expect(() => fireEvent.submit(deleteForm as HTMLFormElement)).not.toThrow();
+
+    expect(notifications.showErrorNotification).toHaveBeenCalledWith('Delete exploded');
+  });
+
+  it('notifies when deleting a label rejects asynchronously', async () => {
+    const deleteLabelAction = vi.fn(async () => {
+      throw new Error('Network lost');
+    });
+
+    renderInteractivePanel({ deleteLabelAction });
+
+    const deleteForm = document.getElementById('project-label-delete-label-1');
+    expect(deleteForm).not.toBeNull();
+    fireEvent.submit(deleteForm as HTMLFormElement);
+
+    await waitFor(() => {
+      expect(notifications.showErrorNotification).toHaveBeenCalledWith('Network lost');
+    });
   });
 });
