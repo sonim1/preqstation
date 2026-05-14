@@ -2,18 +2,16 @@ import { Stack, Text, Title } from '@mantine/core';
 import { IconTag } from '@tabler/icons-react';
 
 import settingsClasses from '@/app/(workspace)/(main)/settings/settings-page.module.css';
-import { ConfirmActionButton } from '@/app/components/confirm-action-button';
 import { EmptyState } from '@/app/components/empty-state';
+import { ProjectLabelTile } from '@/app/components/panels/project-label-tile';
 import controlClasses from '@/app/components/settings-controls.module.css';
 import {
   SettingsLabelForm,
   SettingsLabelNameInput,
-  SettingsLabelSubmitButton,
   TaskLabelColorField,
 } from '@/app/components/settings-label-form';
 import { SubmitButton } from '@/app/components/submit-button';
 import { TODO_LABEL_NAME_MAX_LENGTH } from '@/lib/content-limits';
-import { resolveTaskLabelSwatchColor } from '@/lib/task-meta';
 
 type LabelActionState =
   | { ok: true }
@@ -115,82 +113,24 @@ export function ProjectLabelsPanel({
           />
         ) : (
           <div className={settingsClasses.labelList}>
-            {labels.map((label) => {
-              const deleteFormId = `project-label-delete-${label.id}`;
-
-              return (
-                <article
-                  key={label.id}
-                  className={settingsClasses.labelRow}
-                  data-label-row={label.id}
-                >
-                  <div className={settingsClasses.labelRowHeader}>
-                    <span
-                      className={settingsClasses.labelSwatch}
-                      aria-hidden="true"
-                      style={{ backgroundColor: resolveTaskLabelSwatchColor(label.color) }}
-                    />
-                    <Text fw={600}>{label.name}</Text>
-                  </div>
-
-                  <Text className={settingsClasses.labelRowMeta} size="sm">
-                    {formatLabelUsageCopy(label.usageCount, taskSingularLower, taskPluralLower)}
-                  </Text>
-
-                  <SettingsLabelForm action={updateLabelAction}>
-                    <div className={settingsClasses.labelRowEditor} data-slot="label-row-editor">
-                      <input type="hidden" name="id" value={label.id} />
-                      <SettingsLabelNameInput
-                        label="Name"
-                        name="name"
-                        aria-label={`${label.name} label name`}
-                        defaultValue={label.name}
-                        required
-                        maxLength={TODO_LABEL_NAME_MAX_LENGTH}
-                        className={`${settingsClasses.labelNameInput} ${controlClasses.touchInput}`}
-                        size="sm"
-                      />
-                      <TaskLabelColorField
-                        defaultColor={label.color}
-                        usedColors={usedLabelColors}
-                        label="Color"
-                        ariaLabel={`${label.name} label color`}
-                        size="sm"
-                      />
-                      <SettingsLabelSubmitButton
-                        variant="default"
-                        size="sm"
-                        className={controlClasses.touchButton}
-                      >
-                        Save label
-                      </SettingsLabelSubmitButton>
-                    </div>
-                  </SettingsLabelForm>
-
-                  <SettingsLabelForm action={deleteLabelAction} id={deleteFormId}>
-                    <input type="hidden" name="id" value={label.id} />
-                    <div className={settingsClasses.labelRowDanger} data-slot="label-row-danger">
-                      <ConfirmActionButton
-                        color="red"
-                        variant="subtle"
-                        size="sm"
-                        formId={deleteFormId}
-                        confirmTitle={`Delete ${label.name}?`}
-                        confirmMessage={formatDeleteConfirmMessage(
-                          label.usageCount,
-                          taskSingularLower,
-                          taskPluralLower,
-                        )}
-                        confirmLabel="Delete label"
-                        className={controlClasses.touchButton}
-                      >
-                        Delete label
-                      </ConfirmActionButton>
-                    </div>
-                  </SettingsLabelForm>
-                </article>
-              );
-            })}
+            {labels.map((label) => (
+              <ProjectLabelTile
+                key={`${label.id}:${label.name}:${label.color}`}
+                label={label}
+                usageCopy={formatLabelUsageCopy(
+                  label.usageCount,
+                  taskSingularLower,
+                  taskPluralLower,
+                )}
+                deleteConfirmMessage={formatDeleteConfirmMessage(
+                  label.usageCount,
+                  taskSingularLower,
+                  taskPluralLower,
+                )}
+                updateLabelAction={updateLabelAction}
+                deleteLabelAction={deleteLabelAction}
+              />
+            ))}
           </div>
         )}
       </div>

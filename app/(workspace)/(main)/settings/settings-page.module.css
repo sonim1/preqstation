@@ -92,16 +92,26 @@
 
 .labelList {
   display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 176px), 220px));
+  justify-content: start;
+  gap: 0.65rem;
 }
 
 .labelRow {
   display: grid;
-  gap: 0.85rem;
-  padding: 0.85rem 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  min-width: 0;
+  padding: 0.7rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 22%);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-surface-soft), transparent 22%);
 }
 
 .labelRow + .labelRow {
-  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 20%);
+  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 22%);
 }
 
 .labelRowHeader {
@@ -121,13 +131,16 @@
 
 .labelRowMeta {
   color: var(--ui-muted-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .labelRowEditor {
   display: grid;
-  grid-template-columns: minmax(12rem, 1fr) auto auto;
-  gap: 0.75rem;
-  align-items: end;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.45rem;
+  align-items: center;
   min-width: 0;
 }
 
@@ -136,7 +149,30 @@
 }
 
 .labelRowDanger {
-  width: fit-content;
+  display: flex;
+  width: auto;
+  justify-content: flex-end;
+}
+
+.labelColorButton,
+.labelDeleteButton {
+  flex-shrink: 0;
+}
+
+.labelDeleteButton {
+  width: 1.9rem;
+  min-width: 1.9rem;
+  padding-inline: 0;
+}
+
+.labelColorPicker {
+  padding: 0.65rem;
+}
+
+.labelRowFeedback {
+  grid-column: 1 / -1;
+  min-width: 0;
+  font-size: 0.75rem;
 }
 
 .sectionBody {
@@ -179,16 +215,17 @@
 }
 
 @media (max-width: 62rem) {
-  .labelRowEditor,
   .labelCreateForm {
     grid-template-columns: 1fr;
   }
+}
 
-  .labelRowDanger {
-    width: 100%;
+@media (max-width: 36rem) {
+  .labelList {
+    grid-template-columns: 1fr;
   }
 
-  .labelRowDanger :global(button) {
-    width: 100%;
+  .labelRow {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 }
