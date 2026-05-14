@@ -27,7 +27,7 @@ const triggerQaRunSchema = z
     engine: z.enum(ENGINE_KEYS).optional(),
     dispatchTarget: z.enum(['telegram', 'hermes-telegram']).optional().default('telegram'),
     taskKeys: z
-      .array(z.string().min(1), { required_error: 'Select at least one ready task for QA' })
+      .array(z.string().min(1), { error: 'Select at least one ready task for QA' })
       .min(1, 'Select at least one ready task for QA'),
   })
   .strict();
@@ -44,7 +44,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     );
     if (!parseResult.success) {
       return NextResponse.json(
-        { error: parseResult.error.errors[0]?.message || 'Invalid request payload' },
+        { error: parseResult.error.issues[0]?.message || 'Invalid request payload' },
         { status: 400 },
       );
     }
