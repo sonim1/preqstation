@@ -2,7 +2,7 @@
 
 import { ActionIcon, ColorPicker, ColorSwatch, Popover, Text, TextInput } from '@mantine/core';
 import { IconTrash } from '@tabler/icons-react';
-import { useCallback, useId, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import settingsClasses from '@/app/(workspace)/(main)/settings/settings-page.module.css';
 import { ConfirmActionButton } from '@/app/components/confirm-action-button';
@@ -34,6 +34,13 @@ type FieldError = {
   message: string;
 };
 
+const COLOR_SAVE_TRIGGER_DELAY_MS = 0;
+const DELETE_LABEL_ERROR_MESSAGE = 'Failed to delete label.';
+
+function resolveDeleteLabelErrorMessage(error: unknown) {
+  return error instanceof Error && error.message ? error.message : DELETE_LABEL_ERROR_MESSAGE;
+}
+
 export function ProjectLabelTile({
   label,
   usageCopy,
@@ -42,6 +49,7 @@ export function ProjectLabelTile({
   deleteLabelAction,
 }: ProjectLabelTileProps) {
   const formRef = useRef<HTMLFormElement | null>(null);
+  const colorSaveTimerRef = useRef<number | null>(null);
   const [name, setName] = useState(label.name);
   const [color, setColor] = useState<TaskLabelColorValue>(parseTaskLabelColor(label.color));
   const [fieldError, setFieldError] = useState<FieldError | null>(null);
@@ -76,12 +84,24 @@ export function ProjectLabelTile({
     submit: submitLabelUpdate,
   });
 
+  useEffect(() => {
+    return () => {
+      if (colorSaveTimerRef.current !== null) {
+        window.clearTimeout(colorSaveTimerRef.current);
+      }
+    };
+  }, []);
+
   function queueColorSave(nextValue: string) {
     setColor(parseTaskLabelColor(nextValue));
     setFieldError(null);
-    window.setTimeout(() => {
+    if (colorSaveTimerRef.current !== null) {
+      window.clearTimeout(colorSaveTimerRef.current);
+    }
+    colorSaveTimerRef.current = window.setTimeout(() => {
+      colorSaveTimerRef.current = null;
       triggerSave(0);
-    }, 0);
+    }, COLOR_SAVE_TRIGGER_DELAY_MS);
   }
 
   return (
@@ -166,11 +186,19 @@ export function ProjectLabelTile({
         className={settingsClasses.labelRowDanger}
         onSubmit={(event) => {
           event.preventDefault();
-          void deleteLabelAction(null, new FormData(event.currentTarget)).then((result) => {
-            if (result && !result.ok) {
-              showErrorNotification(result.message || 'Failed to delete label.');
-            }
-          });
+          try {
+            void deleteLabelAction(null, new FormData(event.currentTarget))
+              .then((result) => {
+                if (result && !result.ok) {
+                  showErrorNotification(result.message || DELETE_LABEL_ERROR_MESSAGE);
+                }
+              })
+              .catch((error: unknown) => {
+                showErrorNotification(resolveDeleteLabelErrorMessage(error));
+              });
+          } catch (error) {
+            showErrorNotification(resolveDeleteLabelErrorMessage(error));
+          }
         }}
       >
         <input type="hidden" name="id" value={label.id} />

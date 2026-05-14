@@ -71,6 +71,7 @@ export function useAutoSave(
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submittingRef = useRef(false);
+  const pendingSubmitRef = useRef(false);
   const isDirtyRef = useRef(false);
   const lastSubmittedSnapshotRef = useRef<string | null>(null);
 
@@ -92,40 +93,57 @@ export function useAutoSave(
   }, []);
 
   const doSubmit = useCallback(() => {
-    const form = formRef.current;
-    if (!form || submittingRef.current) return;
+    const runSubmit = () => {
+      const form = formRef.current;
+      if (!form) return;
 
-    const nextSnapshot = getSnapshot();
-    if (!nextSnapshot || !hasAutoSaveChanges(lastSubmittedSnapshotRef.current, nextSnapshot)) {
+      if (submittingRef.current) {
+        pendingSubmitRef.current = true;
+        return;
+      }
+
+      const nextSnapshot = getSnapshot();
+      if (!nextSnapshot || !hasAutoSaveChanges(lastSubmittedSnapshotRef.current, nextSnapshot)) {
+        pendingSubmitRef.current = false;
+        isDirtyRef.current = false;
+        setIsDirty(false);
+        setStatus('idle');
+        return;
+      }
+
+      submittingRef.current = true;
       isDirtyRef.current = false;
       setIsDirty(false);
-      setStatus('idle');
-      return;
-    }
+      const previousSnapshot = lastSubmittedSnapshotRef.current;
+      lastSubmittedSnapshotRef.current = nextSnapshot;
+      setStatus('saving');
 
-    submittingRef.current = true;
-    isDirtyRef.current = false;
-    setIsDirty(false);
-    const previousSnapshot = lastSubmittedSnapshotRef.current;
-    lastSubmittedSnapshotRef.current = nextSnapshot;
-    setStatus('saving');
+      Promise.resolve(
+        (options?.submit ?? ((activeForm: HTMLFormElement) => activeForm.requestSubmit()))(form),
+      )
+        .then(() => {
+          submittingRef.current = false;
+          if (pendingSubmitRef.current || isDirtyRef.current) {
+            pendingSubmitRef.current = false;
+            runSubmit();
+            return;
+          }
 
-    Promise.resolve(
-      (options?.submit ?? ((activeForm: HTMLFormElement) => activeForm.requestSubmit()))(form),
-    )
-      .then(() => {
-        submittingRef.current = false;
-        setStatus('saved');
-        if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
-        savedTimerRef.current = setTimeout(() => setStatus('idle'), 2000);
-      })
-      .catch(() => {
-        submittingRef.current = false;
-        lastSubmittedSnapshotRef.current = previousSnapshot;
-        isDirtyRef.current = true;
-        setIsDirty(true);
-        setStatus('idle');
-      });
+          setStatus('saved');
+          if (savedTimerRef.current) clearTimeout(savedTimerRef.current);
+          savedTimerRef.current = setTimeout(() => setStatus('idle'), 2000);
+        })
+        .catch(() => {
+          submittingRef.current = false;
+          pendingSubmitRef.current = false;
+          lastSubmittedSnapshotRef.current = previousSnapshot;
+          isDirtyRef.current = true;
+          setIsDirty(true);
+          setStatus('idle');
+        });
+    };
+
+    runSubmit();
   }, [formRef, getSnapshot, options?.submit]);
 
   const triggerSave = useCallback(
@@ -149,6 +167,7 @@ export function useAutoSave(
 
   const syncSnapshot = useCallback(() => {
     cleanup();
+    pendingSubmitRef.current = false;
     isDirtyRef.current = false;
     setIsDirty(false);
     lastSubmittedSnapshotRef.current = syncAutoSaveSnapshot(

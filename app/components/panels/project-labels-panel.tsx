@@ -115,7 +115,7 @@ export function ProjectLabelsPanel({
           <div className={settingsClasses.labelList}>
             {labels.map((label) => (
               <ProjectLabelTile
-                key={`${label.id}:${label.name}:${label.color}`}
+                key={label.id}
                 label={label}
                 usageCopy={formatLabelUsageCopy(
                   label.usageCount,

@@ -126,15 +126,17 @@ function renderPanel(
 
 function renderInteractivePanel({
   deleteLabelAction = vi.fn(async () => null),
+  labels = [{ id: 'label-1', name: 'Bug', color: 'red', usageCount: 2 }],
   updateLabelAction = vi.fn(async () => ({ ok: true as const })),
 }: {
   deleteLabelAction?: (prevState: unknown, formData: FormData) => Promise<LabelActionState>;
+  labels?: Array<{ id: string; name: string; color: string; usageCount: number }>;
   updateLabelAction?: (prevState: unknown, formData: FormData) => Promise<LabelActionState>;
 } = {}) {
-  render(
+  return render(
     <MantineProvider>
       <ProjectLabelsPanel
-        labels={[{ id: 'label-1', name: 'Bug', color: 'red', usageCount: 2 }]}
+        labels={labels}
         taskPluralLower="tasks"
         taskSingularLower="task"
         createLabelAction={vi.fn(async () => null)}
@@ -252,5 +254,60 @@ describe('app/components/panels/project-labels-panel', () => {
     expect(submittedFormData.get('color')).toBe('red');
     expect(notifications.showSuccessNotification).toHaveBeenCalledWith('Label saved.');
     expect(screen.queryByRole('button', { name: 'Save label' })).toBeNull();
+  });
+
+  it('preserves an active label edit when refreshed label props change', () => {
+    const { rerender } = renderInteractivePanel();
+
+    const nameInput = screen.getByLabelText('Bug label name');
+    fireEvent.change(nameInput, { target: { value: 'Local edit' } });
+    nameInput.focus();
+
+    rerender(
+      <MantineProvider>
+        <ProjectLabelsPanel
+          labels={[{ id: 'label-1', name: 'Bug from server', color: 'blue', usageCount: 2 }]}
+          taskPluralLower="tasks"
+          taskSingularLower="task"
+          createLabelAction={vi.fn(async () => null)}
+          updateLabelAction={vi.fn(async () => ({ ok: true as const }))}
+          deleteLabelAction={vi.fn(async () => null)}
+        />
+      </MantineProvider>,
+    );
+
+    const refreshedInput = screen.getByLabelText('Bug from server label name');
+    expect((refreshedInput as HTMLInputElement).value).toBe('Local edit');
+    expect(document.activeElement).toBe(refreshedInput);
+  });
+
+  it('notifies when deleting a label throws before returning a promise', () => {
+    const deleteLabelAction = vi.fn(() => {
+      throw new Error('Delete exploded');
+    }) as unknown as (prevState: unknown, formData: FormData) => Promise<LabelActionState>;
+
+    renderInteractivePanel({ deleteLabelAction });
+
+    const deleteForm = document.getElementById('project-label-delete-label-1');
+    expect(deleteForm).not.toBeNull();
+    expect(() => fireEvent.submit(deleteForm as HTMLFormElement)).not.toThrow();
+
+    expect(notifications.showErrorNotification).toHaveBeenCalledWith('Delete exploded');
+  });
+
+  it('notifies when deleting a label rejects asynchronously', async () => {
+    const deleteLabelAction = vi.fn(async () => {
+      throw new Error('Network lost');
+    });
+
+    renderInteractivePanel({ deleteLabelAction });
+
+    const deleteForm = document.getElementById('project-label-delete-label-1');
+    expect(deleteForm).not.toBeNull();
+    fireEvent.submit(deleteForm as HTMLFormElement);
+
+    await waitFor(() => {
+      expect(notifications.showErrorNotification).toHaveBeenCalledWith('Network lost');
+    });
   });
 });
