@@ -33,7 +33,7 @@
     "@mantine/core": "^9.1.1",
     "@mantine/hooks": "^9.1.1",
     "@mantine/notifications": "^9.1.1",
-    "@mantine/spotlight": "^9.1.1",
+    "@mantine/spotlight": "^9.2.0",
     "@modelcontextprotocol/sdk": "^1.28.0",
     "@tabler/icons-react": "^3.38.0",
     "any-ascii": "^0.3.3",
