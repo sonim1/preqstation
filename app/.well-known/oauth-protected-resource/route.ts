@@ -1,5 +1,7 @@
 import { buildMcpProtectedResourceMetadata } from '@/lib/mcp/discovery';
 
 export async function GET(request: Request) {
-  return Response.json(buildMcpProtectedResourceMetadata(request.url));
+  const origin = new URL(request.url).origin;
+
+  return Response.json({ ...buildMcpProtectedResourceMetadata(request.url), resource: origin });
 }

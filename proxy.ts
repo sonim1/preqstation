@@ -10,12 +10,6 @@ function isPublicPath(pathname: string) {
     pathname === '/' ||
     pathname === '/login' ||
     pathname === '/mcp' ||
-    pathname === '/.well-known/oauth-authorization-server' ||
-    pathname === '/.well-known/oauth-authorization-server/mcp' ||
-    pathname === '/.well-known/oauth-protected-resource' ||
-    pathname === '/.well-known/oauth-protected-resource/mcp' ||
-    pathname === '/.well-known/openid-configuration/mcp' ||
-    pathname === '/mcp/.well-known/openid-configuration' ||
     pathname === '/api/oauth/authorize' ||
     pathname === '/api/oauth/register' ||
     pathname === '/api/oauth/token' ||
@@ -103,7 +97,9 @@ export default async function proxy(req: NextRequest) {
           ? {
               'WWW-Authenticate': buildMcpBearerChallenge(req.url),
             }
-          : undefined;
+          : {
+              'WWW-Authenticate': 'Bearer realm="preqstation"',
+            };
 
       return setSecurityHeaders(
         NextResponse.json(

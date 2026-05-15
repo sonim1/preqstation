@@ -102,10 +102,19 @@ describe('proxy bearer API allowlist', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
-  it('still rejects QA API requests without bearer auth', async () => {
+  it('rejects QA API requests without bearer auth with a bearer challenge', async () => {
     const response = await proxy(makeRequest('/api/qa-runs/run-123', { method: 'PATCH' }));
 
     expect(response.status).toBe(401);
+    expect(response.headers.get('WWW-Authenticate')).toBe('Bearer realm="preqstation"');
+    expect(response.headers.get('location')).toBeNull();
+  });
+
+  it('rejects task API requests without bearer auth with a bearer challenge', async () => {
+    const response = await proxy(makeRequest('/api/tasks', { method: 'GET' }));
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get('WWW-Authenticate')).toBe('Bearer realm="preqstation"');
     expect(response.headers.get('location')).toBeNull();
   });
 
@@ -124,36 +133,14 @@ describe('proxy bearer API allowlist', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
-  it('allows oauth discovery and exchange routes without owner session cookies', async () => {
-    const discoveryResponse = await proxy(makeRequest('/.well-known/oauth-authorization-server'));
-    const protectedRootResponse = await proxy(makeRequest('/.well-known/oauth-protected-resource'));
-    const protectedMcpResponse = await proxy(
-      makeRequest('/.well-known/oauth-protected-resource/mcp'),
-    );
-    const authorizationMcpResponse = await proxy(
-      makeRequest('/.well-known/oauth-authorization-server/mcp'),
-    );
-    const openIdMcpResponse = await proxy(makeRequest('/.well-known/openid-configuration/mcp'));
-    const mcpOpenIdResponse = await proxy(makeRequest('/mcp/.well-known/openid-configuration'));
+  it('allows oauth exchange routes without owner session cookies', async () => {
     const authorizeResponse = await proxy(makeRequest('/api/oauth/authorize'));
     const registerResponse = await proxy(makeRequest('/api/oauth/register', { method: 'POST' }));
     const tokenResponse = await proxy(makeRequest('/api/oauth/token', { method: 'POST' }));
 
-    expect(discoveryResponse.status).toBe(200);
-    expect(protectedRootResponse.status).toBe(200);
-    expect(protectedMcpResponse.status).toBe(200);
-    expect(authorizationMcpResponse.status).toBe(200);
-    expect(openIdMcpResponse.status).toBe(200);
-    expect(mcpOpenIdResponse.status).toBe(200);
     expect(authorizeResponse.status).toBe(200);
     expect(registerResponse.status).toBe(200);
     expect(tokenResponse.status).toBe(200);
-    expect(discoveryResponse.headers.get('location')).toBeNull();
-    expect(protectedRootResponse.headers.get('location')).toBeNull();
-    expect(protectedMcpResponse.headers.get('location')).toBeNull();
-    expect(authorizationMcpResponse.headers.get('location')).toBeNull();
-    expect(openIdMcpResponse.headers.get('location')).toBeNull();
-    expect(mcpOpenIdResponse.headers.get('location')).toBeNull();
     expect(authorizeResponse.headers.get('location')).toBeNull();
     expect(registerResponse.headers.get('location')).toBeNull();
     expect(tokenResponse.headers.get('location')).toBeNull();
