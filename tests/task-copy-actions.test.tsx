@@ -354,31 +354,25 @@ describe('app/components/task-copy-actions', () => {
     expect(screen.queryByRole('combobox', { name: 'Engine' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Engine: Codex' }));
-    expect(await screen.findByRole('menuitemradio', { name: /Claude/, hidden: true })).toBeTruthy();
+    expect(await screen.findByRole('menuitem', { name: /Claude/, hidden: true })).toBeTruthy();
     expect(
-      screen
-        .getByRole('menuitemradio', { name: /Codex/, hidden: true })
-        .getAttribute('aria-checked'),
+      screen.getByRole('menuitem', { name: /Codex/, hidden: true }).getAttribute('data-selected'),
     ).toBe('true');
-    fireEvent.click(screen.getByRole('menuitemradio', { name: /Gemini/, hidden: true }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /Gemini/, hidden: true }));
     expect(screen.getByRole('button', { name: 'Engine: Gemini' })).toBeTruthy();
     expect(screen.getByText(/using gemini-cli/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Target: Telegram' }));
     expect(
-      await screen.findByRole('menuitemradio', { name: /OpenClaw Telegram/, hidden: true }),
+      await screen.findByRole('menuitem', { name: /OpenClaw Telegram/, hidden: true }),
     ).toBeTruthy();
-    expect(
-      screen.getByRole('menuitemradio', { name: /Hermes Telegram/, hidden: true }),
-    ).toBeTruthy();
-    fireEvent.click(screen.getByRole('menuitemradio', { name: /Hermes Telegram/, hidden: true }));
+    expect(screen.getByRole('menuitem', { name: /Hermes Telegram/, hidden: true })).toBeTruthy();
+    fireEvent.click(screen.getByRole('menuitem', { name: /Hermes Telegram/, hidden: true }));
     expect(screen.getByRole('button', { name: 'Target: Hermes Telegram' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Mode: Implement' }));
-    expect(
-      await screen.findByRole('menuitemradio', { name: /Implement/, hidden: true }),
-    ).toBeTruthy();
-    expect(screen.queryByRole('menuitemradio', { name: /Ask/, hidden: true })).toBeNull();
+    expect(await screen.findByRole('menuitem', { name: /Implement/, hidden: true })).toBeTruthy();
+    expect(screen.queryByRole('menuitem', { name: /Ask/, hidden: true })).toBeNull();
 
     expect(
       JSON.parse(window.localStorage.getItem(TASK_DISPATCH_PREFERENCES_STORAGE) ?? '{}'),
@@ -389,6 +383,46 @@ describe('app/components/task-copy-actions', () => {
         objective: 'implement',
       },
     });
+  });
+
+  it('opens a bottom dropdown from the keyboard and focuses the selected option', async () => {
+    renderTaskCopyActionsClient({ placement: 'bottom' });
+
+    const trigger = screen.getByRole('button', { name: 'Engine: Codex' });
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: 'ArrowDown' });
+
+    const selectedOption = await screen.findByRole('menuitem', { name: /Codex/, hidden: true });
+    await waitFor(() => expect(document.activeElement).toBe(selectedOption));
+  });
+
+  it('uses Mantine menu item navigation for bottom dropdown options', async () => {
+    renderTaskCopyActionsClient({ placement: 'bottom' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Engine: Codex' }));
+    const firstOption = await screen.findByRole('menuitem', { name: /Claude/, hidden: true });
+    const lastOption = screen.getByRole('menuitem', { name: /Gemini/, hidden: true });
+
+    firstOption.focus();
+    fireEvent.keyDown(firstOption, { key: 'End' });
+    expect(document.activeElement).toBe(lastOption);
+
+    fireEvent.keyDown(lastOption, { key: 'Home' });
+    expect(document.activeElement).toBe(firstOption);
+  });
+
+  it('announces Hermes Telegram while sending a Hermes dispatch from the bottom bar', async () => {
+    const send = createPendingTelegramSend();
+
+    renderTaskCopyActionsClient({
+      placement: 'bottom',
+      dispatchTarget: 'hermes-telegram',
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /^send/i }));
+
+    await waitFor(() => expect(send.fetchMock).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole('status').textContent).toContain('Sending Hermes Telegram message.');
   });
 
   it('omits the platform-dependent send shortcut during static render', () => {

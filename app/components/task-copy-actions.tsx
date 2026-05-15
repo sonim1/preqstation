@@ -264,22 +264,18 @@ function BottomDispatchPicker<T extends string>({
   onSelect,
 }: BottomDispatchPickerProps<T>) {
   const [opened, setOpened] = useState(false);
-  const handleMenuItemKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (event.key === 'Escape') {
-      setOpened(false);
+  const handleTriggerKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (
+      event.key !== 'ArrowDown' &&
+      event.key !== 'ArrowUp' &&
+      event.key !== 'Enter' &&
+      event.key !== ' '
+    ) {
       return;
     }
-    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
 
     event.preventDefault();
-    const menu = event.currentTarget.closest('[role="menu"]');
-    const items = Array.from(
-      menu?.querySelectorAll<HTMLButtonElement>('[role="menuitemradio"]') ?? [],
-    );
-    const currentIndex = items.indexOf(event.currentTarget);
-    const offset = event.key === 'ArrowDown' ? 1 : -1;
-    const nextIndex = (currentIndex + offset + items.length) % items.length;
-    items[nextIndex]?.focus();
+    setOpened(true);
   };
 
   return (
@@ -287,13 +283,21 @@ function BottomDispatchPicker<T extends string>({
       <Text component="span" size="xs" fw={700} className="task-dispatch-bottom-label">
         {label}
       </Text>
-      <Menu opened={opened} onChange={setOpened} position="top-start" shadow="md" withinPortal>
+      <Menu
+        opened={opened}
+        onChange={setOpened}
+        position="top-start"
+        shadow="md"
+        withinPortal
+        withInitialFocusPlaceholder={false}
+      >
         <Menu.Target>
           <UnstyledButton
             type="button"
             className="task-dispatch-bottom-picker"
             aria-label={`${label}: ${selectedLabel}`}
             disabled={disabled}
+            onKeyDown={handleTriggerKeyDown}
           >
             <span className="task-dispatch-bottom-picker-main">
               {selectedIcon}
@@ -307,32 +311,34 @@ function BottomDispatchPicker<T extends string>({
             const selected = option.value === value;
 
             return (
-              <UnstyledButton
+              <Menu.Item
                 key={option.value}
-                type="button"
                 className="task-dispatch-bottom-menu-item"
-                role="menuitemradio"
-                aria-checked={selected}
                 data-selected={selected ? 'true' : undefined}
+                data-autofocus={selected ? true : undefined}
+                closeMenuOnClick={false}
+                leftSection={
+                  option.icon ? (
+                    <span className="task-dispatch-bottom-option-icon">{option.icon}</span>
+                  ) : null
+                }
+                rightSection={
+                  <span className="task-dispatch-bottom-option-check">
+                    {selected ? <IconCheck size={14} aria-hidden="true" /> : null}
+                  </span>
+                }
                 onClick={() => {
                   onSelect(option.value);
                   setOpened(false);
                 }}
-                onKeyDown={handleMenuItemKeyDown}
               >
-                {option.icon ? (
-                  <span className="task-dispatch-bottom-option-icon">{option.icon}</span>
-                ) : null}
                 <span className="task-dispatch-bottom-option-text">
                   <span className="task-dispatch-bottom-option-label">{option.label}</span>
                   {option.detail ? (
                     <span className="task-dispatch-bottom-option-detail">{option.detail}</span>
                   ) : null}
                 </span>
-                <span className="task-dispatch-bottom-option-check">
-                  {selected ? <IconCheck size={14} aria-hidden="true" /> : null}
-                </span>
-              </UnstyledButton>
+              </Menu.Item>
             );
           })}
         </Menu.Dropdown>
@@ -342,7 +348,7 @@ function BottomDispatchPicker<T extends string>({
 }
 
 function getDispatchStatusMessage(state: DispatchState, action: TaskEditDispatchAction) {
-  const noun = action === 'send-hermes-telegram' ? 'Telegram message' : 'Telegram message';
+  const noun = action === 'send-hermes-telegram' ? 'Hermes Telegram message' : 'Telegram message';
 
   switch (state) {
     case 'loading':
