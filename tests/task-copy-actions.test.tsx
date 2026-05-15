@@ -14,6 +14,7 @@ vi.mock('@tabler/icons-react', () => {
 
   return {
     IconCheck: icon('check'),
+    IconChevronDown: icon('chevron-down'),
     IconCopy: icon('copy'),
     IconInfoCircle: icon('info-circle'),
     IconLoader2: icon('loader'),
@@ -230,7 +231,7 @@ describe('app/components/task-copy-actions', () => {
       /task-dispatch-engine-segments"[^>]*data-option-count="3"[^>]*data-selected-index="1"/,
     );
     expect(html).toMatch(
-      /task-dispatch-mode-segments"[^>]*data-option-count="2"[^>]*data-selected-index="0"/,
+      /task-dispatch-mode-segments"[^>]*data-option-count="1"[^>]*data-selected-index="0"/,
     );
     expect(html).toContain('Claude');
     expect(html).toContain('Codex');
@@ -244,7 +245,7 @@ describe('app/components/task-copy-actions', () => {
       '--engine-color:linear-gradient(135deg, #1a73e8 0%, #4285f4 50%, #8ab4f8 100%)',
     );
     expect(html).toContain('Implement');
-    expect(html).toContain('Ask');
+    expect(html).not.toContain('Ask');
     expect(html).not.toContain('Review');
     expect(html).not.toContain('Plan');
     expect(html).not.toContain('QA');
@@ -293,12 +294,15 @@ describe('app/components/task-copy-actions', () => {
 
     expect(html).toContain('task-dispatch-bottom-bar');
     expect(html).toContain('data-placement="bottom"');
-    expect(html).toContain('aria-label="Engine"');
-    expect(html).toContain('aria-label="Target"');
-    expect(html).toContain('aria-label="Mode"');
-    expect(html).toContain('aria-label="Message"');
+    expect(html).toContain('task-dispatch-bottom-picker');
+    expect(html).toContain('aria-label="Engine: Codex"');
+    expect(html).toContain('aria-label="Target: Hermes Telegram"');
+    expect(html).toContain('aria-label="Mode: Implement"');
     expect(html).toContain('Prompt');
     expect(html).toContain('data-task-dispatch-prompt');
+    expect(html).not.toContain('aria-label="Message"');
+    expect(html).not.toContain('task-dispatch-bottom-message-field');
+    expect(html).not.toContain('>Ask<');
     expect(html).not.toContain('aria-label="Send dispatch"');
     expect(html).not.toContain('task-dispatch-engine-segments');
     expect(html).not.toContain('task-dispatch-target-segments');
@@ -312,7 +316,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('<h2');
   });
 
-  it('uses the bottom message as ask_hint only when Ask is selected', async () => {
+  it('omits bottom message ask_hint from dispatch payloads', async () => {
     const pendingSend = createTelegramSendResponse();
     const fetchMock = vi.fn<typeof fetch>(() => pendingSend.response);
     vi.stubGlobal('fetch', fetchMock);
@@ -329,12 +333,8 @@ describe('app/components/task-copy-actions', () => {
 
     renderTaskCopyActionsClient({
       placement: 'bottom',
-      noteMarkdown: '## Context\n\n---\n\nAsk:\nUse note ask hint',
     });
 
-    fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
-      target: { value: 'Use bottom message' },
-    });
     fireEvent.click(screen.getByRole('button', { name: /^send/i }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
@@ -342,76 +342,52 @@ describe('app/components/task-copy-actions', () => {
     expect(JSON.parse(String(options?.body))).toEqual({
       taskKey: 'PROJ-224',
       message:
-        '!/skill preqstation-dispatch ask PROJ-224 using codex branch_name="task/proj-224/move-status-test-button" ask_hint="Use bottom message"',
+        '!/skill preqstation-dispatch implement PROJ-224 using codex branch_name="task/proj-224/move-status-test-button"',
     });
-    expect(String(options?.body)).not.toContain('Use note ask hint');
+    expect(String(options?.body)).not.toContain('ask_hint');
   });
 
-  it('enables the bottom message only while Ask is selected', () => {
+  it('renders styled bottom dropdown menus with icons, details, and selected state', async () => {
     renderTaskCopyActionsClient({ placement: 'bottom' });
 
-    const messageInput = screen.getByRole('textbox', { name: 'Message' }) as HTMLInputElement;
-    const modeSelect = screen.getByRole('combobox', { name: 'Mode' });
+    expect(screen.queryByRole('textbox', { name: 'Message' })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: 'Engine' })).toBeNull();
 
-    expect(messageInput.matches(':disabled')).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Engine: Codex' }));
+    expect(await screen.findByRole('menuitemradio', { name: /Claude/, hidden: true })).toBeTruthy();
+    expect(
+      screen
+        .getByRole('menuitemradio', { name: /Codex/, hidden: true })
+        .getAttribute('aria-checked'),
+    ).toBe('true');
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /Gemini/, hidden: true }));
+    expect(screen.getByRole('button', { name: 'Engine: Gemini' })).toBeTruthy();
+    expect(screen.getByText(/using gemini-cli/)).toBeTruthy();
 
-    fireEvent.change(modeSelect, { target: { value: 'ask' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Target: Telegram' }));
+    expect(
+      await screen.findByRole('menuitemradio', { name: /OpenClaw Telegram/, hidden: true }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole('menuitemradio', { name: /Hermes Telegram/, hidden: true }),
+    ).toBeTruthy();
+    fireEvent.click(screen.getByRole('menuitemradio', { name: /Hermes Telegram/, hidden: true }));
+    expect(screen.getByRole('button', { name: 'Target: Hermes Telegram' })).toBeTruthy();
 
-    expect(messageInput.matches(':disabled')).toBe(false);
-  });
+    fireEvent.click(screen.getByRole('button', { name: 'Mode: Implement' }));
+    expect(
+      await screen.findByRole('menuitemradio', { name: /Implement/, hidden: true }),
+    ).toBeTruthy();
+    expect(screen.queryByRole('menuitemradio', { name: /Ask/, hidden: true })).toBeNull();
 
-  it('clears the bottom message when the task key changes', async () => {
-    localStorage.setItem(
-      TASK_DISPATCH_PREFERENCES_STORAGE,
-      JSON.stringify({
-        todo: {
-          engine: 'codex',
-          action: 'send-telegram',
-          objective: 'ask',
-        },
-      }),
-    );
-
-    const view = render(
-      <MantineProvider>
-        <TaskCopyActions
-          taskKey="PROJ-224"
-          branchName="task/proj-224/move-status-test-button"
-          status="todo"
-          engine="codex"
-          telegramEnabled
-          placement="bottom"
-        />
-      </MantineProvider>,
-    );
-
-    const messageInput = screen.getByRole('textbox', { name: 'Message' }) as HTMLInputElement;
-
-    fireEvent.change(messageInput, {
-      target: { value: 'Use bottom message' },
-    });
-
-    expect(messageInput.value).toBe('Use bottom message');
-
-    await act(async () => {
-      view.rerender(
-        <MantineProvider>
-          <TaskCopyActions
-            taskKey="PROJ-225"
-            branchName="task/proj-225/move-status-test-button"
-            status="todo"
-            engine="codex"
-            telegramEnabled
-            placement="bottom"
-          />
-        </MantineProvider>,
-      );
-    });
-
-    await waitFor(() => {
-      expect((screen.getByRole('textbox', { name: 'Message' }) as HTMLInputElement).value).toBe(
-        '',
-      );
+    expect(
+      JSON.parse(window.localStorage.getItem(TASK_DISPATCH_PREFERENCES_STORAGE) ?? '{}'),
+    ).toEqual({
+      todo: {
+        engine: 'gemini-cli',
+        action: 'send-hermes-telegram',
+        objective: 'implement',
+      },
     });
   });
 
@@ -917,11 +893,11 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Channels');
   });
 
-  it('shows plan and ask only for inbox tasks', () => {
+  it('shows plan only for inbox tasks', () => {
     const html = renderTaskCopyActions({ status: 'inbox' });
 
     expect(html).toContain('Plan');
-    expect(html).toContain('Ask');
+    expect(html).not.toContain('Ask');
     expect(html).not.toContain('Implement');
     expect(html).not.toContain('Review');
     expect(html).not.toContain('QA');
@@ -930,13 +906,13 @@ describe('app/components/task-copy-actions', () => {
     );
   });
 
-  it('shows review, QA, and ask only for ready tasks', () => {
+  it('shows review and QA only for ready tasks', () => {
     const html = renderTaskCopyActions({ status: 'ready' });
 
     expect(html).toContain('Review');
     expect(html).toContain('QA');
-    expect(html).toContain('Ask');
-    expect(html).toContain('data-option-count="3"');
+    expect(html).not.toContain('Ask');
+    expect(html).toContain('data-option-count="2"');
     expect(html).not.toContain('Implement');
     expect(html).not.toContain('Plan');
     expect(html).toContain(
@@ -944,11 +920,11 @@ describe('app/components/task-copy-actions', () => {
     );
   });
 
-  it('shows QA and ask only for done tasks', () => {
+  it('shows QA only for done tasks', () => {
     const html = renderTaskCopyActions({ status: 'done' });
 
     expect(html).toContain('QA');
-    expect(html).toContain('Ask');
+    expect(html).not.toContain('Ask');
     expect(html).not.toContain('Review');
     expect(html).not.toContain('Implement');
     expect(html).not.toContain('Plan');
@@ -964,7 +940,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('task-dispatch-panel');
   });
 
-  it('keeps ask mode available with the note hint in the prompt', () => {
+  it('falls back from stored ask mode without adding a note hint to the prompt', () => {
     localStorage.setItem(
       TASK_DISPATCH_PREFERENCES_STORAGE,
       JSON.stringify({
@@ -976,16 +952,14 @@ describe('app/components/task-copy-actions', () => {
       }),
     );
 
-    const html = renderTaskCopyActions({
-      noteMarkdown:
-        '## Context\n\nCurrent note\n\n---\n\nAsk:\nSummarize around acceptance criteria',
-    });
+    const html = renderTaskCopyActions();
 
     expect(html).toContain('aria-label="Selected engine: Claude"');
-    expect(html).toContain('aria-label="Selected mode: Ask"');
+    expect(html).toContain('aria-label="Selected mode: Implement"');
     expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
     expect(html).toContain(
-      '!/skill preqstation-dispatch ask PROJ-224 using claude-code branch_name=&quot;task/proj-224/move-status-test-button&quot; ask_hint=&quot;Summarize around acceptance criteria&quot;',
+      '!/skill preqstation-dispatch implement PROJ-224 using claude-code branch_name=&quot;task/proj-224/move-status-test-button&quot;',
     );
+    expect(html).not.toContain('ask_hint');
   });
 });

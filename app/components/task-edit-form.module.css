@@ -9,7 +9,7 @@
 }
 
 .rootWithBottomDispatch {
-  padding-bottom: calc(var(--mantine-spacing-xs) + 7rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(var(--mantine-spacing-xs) + 5.75rem + env(safe-area-inset-bottom, 0px));
 }
 
 .bottomDispatch {
@@ -433,7 +433,7 @@
 
 @media (max-width: 48em) {
   .rootWithBottomDispatch {
-    padding-bottom: calc(var(--mantine-spacing-xs) + 10.75rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(var(--mantine-spacing-xs) + 7.75rem + env(safe-area-inset-bottom, 0px));
   }
 
   .mobileSavingOverlay {
