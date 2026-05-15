@@ -409,9 +409,7 @@ describe('app/components/task-copy-actions', () => {
     });
 
     await waitFor(() => {
-      expect((screen.getByRole('textbox', { name: 'Message' }) as HTMLInputElement).value).toBe(
-        '',
-      );
+      expect((screen.getByRole('textbox', { name: 'Message' }) as HTMLInputElement).value).toBe('');
     });
   });
 
