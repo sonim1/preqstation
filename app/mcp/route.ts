@@ -6,14 +6,15 @@ import {
   touchMcpConnectionLastUsed,
   updateMcpConnectionEngine,
 } from '@/lib/mcp/connections';
+import { buildMcpBearerChallenge } from '@/lib/mcp/discovery';
 import { createPreqMcpServer } from '@/lib/mcp/server';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
-function unauthorized() {
+function unauthorized(request: Request) {
   return new Response('Unauthorized', {
     status: 401,
     headers: {
-      'WWW-Authenticate': 'Bearer realm="preqstation"',
+      'WWW-Authenticate': buildMcpBearerChallenge(request.url),
     },
   });
 }
@@ -157,13 +158,13 @@ export async function POST(request: Request) {
 
   if (!token) {
     logMcpRequestSummary({ request, summary, authOutcome: 'missing_token' });
-    return unauthorized();
+    return unauthorized(request);
   }
 
   const payload = await verifyMcpAccessToken(token);
   if (!payload) {
     logMcpRequestSummary({ request, summary, authOutcome: 'invalid_token' });
-    return unauthorized();
+    return unauthorized(request);
   }
   const connection = await getMcpConnectionById(payload.connectionId);
   if (!connection) {
@@ -173,19 +174,19 @@ export async function POST(request: Request) {
       authOutcome: 'connection_missing',
       connectionId: payload.connectionId,
     });
-    return unauthorized();
+    return unauthorized(request);
   }
   if (connection.ownerId !== payload.sub) {
     logMcpRequestSummary({ request, summary, authOutcome: 'owner_mismatch', connection });
-    return unauthorized();
+    return unauthorized(request);
   }
   if (connection.revokedAt) {
     logMcpRequestSummary({ request, summary, authOutcome: 'revoked', connection });
-    return unauthorized();
+    return unauthorized(request);
   }
   if (connection.expiresAt.getTime() < Date.now()) {
     logMcpRequestSummary({ request, summary, authOutcome: 'expired', connection });
-    return unauthorized();
+    return unauthorized(request);
   }
 
   logMcpRequestSummary({ request, summary, authOutcome: 'authorized', connection });
