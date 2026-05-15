@@ -1,14 +1,14 @@
 'use client';
 
-import { ActionIcon, Kbd, Text, Tooltip, UnstyledButton } from '@mantine/core';
-import { IconInfoCircle } from '@tabler/icons-react';
+import { ActionIcon, Kbd, Menu, Text, Tooltip, UnstyledButton } from '@mantine/core';
+import { IconCheck, IconChevronDown, IconInfoCircle } from '@tabler/icons-react';
 import Image from 'next/image';
 import {
-  type ChangeEvent,
   type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
   useCallback,
   useEffect,
-  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -31,7 +31,6 @@ import {
 } from '@/lib/engine-icons';
 import { showErrorNotification } from '@/lib/notifications';
 import type { TaskDispatchObjective } from '@/lib/openclaw-command';
-import { extractTaskAskPrompt } from '@/lib/task-ask';
 import type { TaskDispatchTarget } from '@/lib/task-dispatch';
 import {
   buildHermesTaskTelegramMessage,
@@ -52,7 +51,6 @@ const TASK_DISPATCH_PREFERENCE_STATUSES: TaskDispatchPreferenceStatus[] = [
 const dispatchModeOptions = [
   { key: 'plan', label: 'Plan' },
   { key: 'implement', label: 'Implement' },
-  { key: 'ask', label: 'Ask' },
   { key: 'review', label: 'Review' },
   { key: 'qa', label: 'QA' },
 ] satisfies Array<{ key: TaskDispatchMode; label: string }>;
@@ -81,7 +79,6 @@ type TaskCopyActionsProps = {
   status: string;
   engine?: string | null;
   dispatchTarget?: TaskDispatchTarget | null;
-  noteMarkdown?: string | null;
   telegramEnabled?: boolean;
   hermesTelegramEnabled?: boolean;
   suppressShortcut?: boolean;
@@ -90,14 +87,26 @@ type TaskCopyActionsProps = {
 };
 
 type DispatchState = 'idle' | 'loading' | 'success' | 'error';
-type TaskDispatchMode = Extract<
-  TaskDispatchObjective,
-  'plan' | 'implement' | 'ask' | 'review' | 'qa'
->;
+type TaskDispatchMode = Extract<TaskDispatchObjective, 'plan' | 'implement' | 'review' | 'qa'>;
 type TaskEditDispatchAction = Extract<
   TaskDispatchPreferenceAction,
   'send-telegram' | 'send-hermes-telegram'
 >;
+type BottomDispatchPickerOption<T extends string> = {
+  value: T;
+  label: string;
+  detail?: string;
+  icon?: ReactNode;
+};
+type BottomDispatchPickerProps<T extends string> = {
+  label: string;
+  value: T;
+  selectedLabel: string;
+  selectedIcon?: ReactNode;
+  options: Array<BottomDispatchPickerOption<T>>;
+  disabled?: boolean;
+  onSelect: (value: T) => void;
+};
 
 function normalizeTaskDispatchPreferenceStatus(
   status: string,
@@ -111,7 +120,6 @@ function isTaskDispatchMode(objective: TaskDispatchObjective | null | undefined)
   return (
     objective === 'plan' ||
     objective === 'implement' ||
-    objective === 'ask' ||
     objective === 'review' ||
     objective === 'qa'
   );
@@ -120,14 +128,14 @@ function isTaskDispatchMode(objective: TaskDispatchObjective | null | undefined)
 function getDispatchModesForStatus(status: string): TaskDispatchMode[] {
   switch (status) {
     case 'inbox':
-      return ['plan', 'ask'];
+      return ['plan'];
     case 'todo':
     case 'hold':
-      return ['implement', 'ask'];
+      return ['implement'];
     case 'ready':
-      return ['review', 'qa', 'ask'];
+      return ['review', 'qa'];
     case 'done':
-      return ['qa', 'ask'];
+      return ['qa'];
     default:
       return [];
   }
@@ -138,7 +146,7 @@ function resolveInitialMode(
   objective: TaskDispatchObjective | null | undefined,
 ) {
   if (isTaskDispatchMode(objective) && availableModes.includes(objective)) return objective;
-  return availableModes[0] ?? 'ask';
+  return availableModes[0] ?? 'plan';
 }
 
 function isTaskEditDispatchAction(
@@ -200,8 +208,147 @@ function getTaskEditDispatchTargetName(action: TaskEditDispatchAction) {
   }
 }
 
+function getDispatchModeDetail(mode: TaskDispatchMode) {
+  switch (mode) {
+    case 'plan':
+      return 'Plan only';
+    case 'implement':
+      return 'Run the task';
+    case 'review':
+      return 'Verify ready work';
+    case 'qa':
+      return 'Browser QA';
+  }
+}
+
+function renderEngineIcon(engineOption: EngineConfig) {
+  return (
+    <span
+      className="task-dispatch-engine-icon"
+      aria-hidden="true"
+      data-engine-icon={engineOption.key}
+      style={
+        {
+          '--engine-color': engineOption.iconColor,
+          '--engine-icon': `url(${engineOption.icon})`,
+        } as CSSProperties
+      }
+    />
+  );
+}
+
+function renderTargetIcon(action: TaskEditDispatchAction) {
+  return action === 'send-telegram' ? (
+    <span className="task-dispatch-target-emoji" aria-hidden="true">
+      🦞
+    </span>
+  ) : (
+    <Image
+      className="task-dispatch-target-logo"
+      src="/icons/hermes-agent.png"
+      alt=""
+      width={16}
+      height={16}
+      aria-hidden="true"
+    />
+  );
+}
+
+function BottomDispatchPicker<T extends string>({
+  label,
+  value,
+  selectedLabel,
+  selectedIcon,
+  options,
+  disabled = false,
+  onSelect,
+}: BottomDispatchPickerProps<T>) {
+  const [opened, setOpened] = useState(false);
+  const handleTriggerKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (
+      event.key !== 'ArrowDown' &&
+      event.key !== 'ArrowUp' &&
+      event.key !== 'Enter' &&
+      event.key !== ' '
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    setOpened(true);
+  };
+
+  return (
+    <div className="task-dispatch-bottom-field">
+      <Text component="span" size="xs" fw={700} className="task-dispatch-bottom-label">
+        {label}
+      </Text>
+      <Menu
+        opened={opened}
+        onChange={setOpened}
+        position="top-start"
+        shadow="md"
+        withinPortal
+        withInitialFocusPlaceholder={false}
+      >
+        <Menu.Target>
+          <UnstyledButton
+            type="button"
+            className="task-dispatch-bottom-picker"
+            aria-label={`${label}: ${selectedLabel}`}
+            disabled={disabled}
+            onKeyDown={handleTriggerKeyDown}
+          >
+            <span className="task-dispatch-bottom-picker-main">
+              {selectedIcon}
+              <span>{selectedLabel}</span>
+            </span>
+            <IconChevronDown size={14} aria-hidden="true" />
+          </UnstyledButton>
+        </Menu.Target>
+        <Menu.Dropdown className="task-dispatch-bottom-menu">
+          {options.map((option) => {
+            const selected = option.value === value;
+
+            return (
+              <Menu.Item
+                key={option.value}
+                className="task-dispatch-bottom-menu-item"
+                data-selected={selected ? 'true' : undefined}
+                data-autofocus={selected ? true : undefined}
+                closeMenuOnClick={false}
+                leftSection={
+                  option.icon ? (
+                    <span className="task-dispatch-bottom-option-icon">{option.icon}</span>
+                  ) : null
+                }
+                rightSection={
+                  <span className="task-dispatch-bottom-option-check">
+                    {selected ? <IconCheck size={14} aria-hidden="true" /> : null}
+                  </span>
+                }
+                onClick={() => {
+                  onSelect(option.value);
+                  setOpened(false);
+                }}
+              >
+                <span className="task-dispatch-bottom-option-text">
+                  <span className="task-dispatch-bottom-option-label">{option.label}</span>
+                  {option.detail ? (
+                    <span className="task-dispatch-bottom-option-detail">{option.detail}</span>
+                  ) : null}
+                </span>
+              </Menu.Item>
+            );
+          })}
+        </Menu.Dropdown>
+      </Menu>
+    </div>
+  );
+}
+
 function getDispatchStatusMessage(state: DispatchState, action: TaskEditDispatchAction) {
-  const noun = action === 'send-hermes-telegram' ? 'Telegram message' : 'Telegram message';
+  const noun = action === 'send-hermes-telegram' ? 'Hermes Telegram message' : 'Telegram message';
 
   switch (state) {
     case 'loading':
@@ -234,14 +381,12 @@ export function TaskCopyActions({
   status,
   engine,
   dispatchTarget,
-  noteMarkdown,
   telegramEnabled = false,
   hermesTelegramEnabled,
   suppressShortcut = false,
   placement = 'rail',
   onTaskQueued,
 }: TaskCopyActionsProps) {
-  const bottomControlId = useId();
   const resolvedHermesTelegramEnabled = hermesTelegramEnabled ?? telegramEnabled;
   const preferenceStatus = normalizeTaskDispatchPreferenceStatus(status);
   const availableModes = getDispatchModesForStatus(status);
@@ -268,7 +413,6 @@ export function TaskCopyActions({
   const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dispatchState, setDispatchState] = useState<DispatchState>('idle');
   const [sendShortcutLabel, setSendShortcutLabel] = useState<string | null>(null);
-  const [messageText, setMessageText] = useState('');
   const isSending = dispatchState === 'loading';
   const clearDispatchResetTimeout = useCallback(() => {
     if (!resetTimeoutRef.current) return;
@@ -289,13 +433,6 @@ export function TaskCopyActions({
   const visibleModeOptions = dispatchModeOptions.filter((mode) =>
     availableModes.includes(mode.key),
   );
-  const { askHint } = extractTaskAskPrompt(noteMarkdown);
-  const messageAskHint = messageText.trim();
-  const effectiveAskHint =
-    placement === 'bottom' && effectiveObjective === 'ask' && messageAskHint
-      ? messageAskHint
-      : askHint;
-  const dispatchAskHint = effectiveObjective === 'ask' ? effectiveAskHint : null;
   const dispatchPrompt =
     effectiveAction === 'send-hermes-telegram'
       ? buildHermesTaskTelegramMessage({
@@ -304,7 +441,6 @@ export function TaskCopyActions({
           engine: selectedEngine?.key,
           branchName,
           objective: effectiveObjective,
-          askHint: dispatchAskHint,
         })
       : buildTaskTelegramMessage({
           taskKey,
@@ -312,7 +448,6 @@ export function TaskCopyActions({
           engine: selectedEngine?.key,
           branchName,
           objective: effectiveObjective,
-          askHint: dispatchAskHint,
         });
 
   const persistDispatchPreference = (
@@ -356,27 +491,6 @@ export function TaskCopyActions({
     persistDispatchPreference(selectedEngine, nextObjective, effectiveAction);
   };
 
-  const handleEngineSelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const nextEngine = getEngineConfig(event.currentTarget.value);
-    if (nextEngine) {
-      selectEngine(nextEngine);
-    }
-  };
-
-  const handleTargetSelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const nextAction = event.currentTarget.value as TaskEditDispatchAction;
-    if (availableActions.includes(nextAction)) {
-      selectAction(nextAction);
-    }
-  };
-
-  const handleModeSelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
-    const nextObjective = event.currentTarget.value as TaskDispatchMode;
-    if (availableModes.includes(nextObjective)) {
-      selectMode(nextObjective);
-    }
-  };
-
   const sendDispatch = async () => {
     if (dispatchInFlightRef.current) return;
 
@@ -398,7 +512,6 @@ export function TaskCopyActions({
               engine: selectedEngine?.key,
               branchName,
               objective: effectiveObjective,
-              askHint: dispatchAskHint,
             })
           : buildTaskTelegramMessage({
               taskKey,
@@ -406,7 +519,6 @@ export function TaskCopyActions({
               engine: selectedEngine?.key,
               branchName,
               objective: effectiveObjective,
-              askHint: dispatchAskHint,
             }),
         dispatchTarget,
       );
@@ -454,7 +566,6 @@ export function TaskCopyActions({
     clearDispatchResetTimeout();
     dispatchInFlightRef.current = false;
     setDispatchState('idle');
-    setMessageText('');
 
     return clearDispatchResetTimeout;
   }, [clearDispatchResetTimeout, taskKey]);
@@ -485,10 +596,11 @@ export function TaskCopyActions({
   }
 
   if (placement === 'bottom') {
-    const engineSelectId = `${bottomControlId}-engine`;
-    const targetSelectId = `${bottomControlId}-target`;
-    const modeSelectId = `${bottomControlId}-mode`;
-    const messageInputId = `${bottomControlId}-message`;
+    const selectedEngineLabel = selectedEngine ? getEngineShortLabel(selectedEngine) : 'Engine';
+    const selectedActionLabel = getTaskEditDispatchTargetName(effectiveAction);
+    const selectedModeLabel =
+      visibleModeOptions.find((mode) => mode.key === effectiveObjective)?.label ??
+      effectiveObjective;
 
     return (
       <div className="task-dispatch-bottom-bar" data-placement="bottom">
@@ -511,110 +623,60 @@ export function TaskCopyActions({
             </Tooltip>
           </div>
 
-          <div className="task-dispatch-bottom-field task-dispatch-bottom-engine-field">
-            <label className="task-dispatch-bottom-label" htmlFor={engineSelectId}>
-              Engine
-            </label>
-            <div className="task-dispatch-bottom-select-wrap">
-              {selectedEngine ? (
-                <span
-                  className="task-dispatch-engine-icon"
-                  aria-hidden="true"
-                  data-engine-icon={selectedEngine.key}
-                  style={
-                    {
-                      '--engine-color': selectedEngine.iconColor,
-                      '--engine-icon': `url(${selectedEngine.icon})`,
-                    } as CSSProperties
-                  }
-                />
-              ) : null}
-              <select
-                id={engineSelectId}
-                aria-label="Engine"
-                className="task-dispatch-bottom-select"
-                value={selectedEngine?.key ?? ''}
-                disabled={isSending}
-                onChange={handleEngineSelectChange}
-              >
-                {engineOptions.map((engineOption) => (
-                  <option key={engineOption.key} value={engineOption.key}>
-                    {getEngineShortLabel(engineOption)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="task-dispatch-bottom-field task-dispatch-bottom-target-field">
-            <label className="task-dispatch-bottom-label" htmlFor={targetSelectId}>
-              Target
-            </label>
-            <div className="task-dispatch-bottom-select-wrap">
-              {effectiveAction === 'send-telegram' ? (
-                <span className="task-dispatch-target-emoji" aria-hidden="true">
-                  🦞
-                </span>
-              ) : (
-                <Image
-                  className="task-dispatch-target-logo"
-                  src="/icons/hermes-agent.png"
-                  alt=""
-                  width={16}
-                  height={16}
-                  aria-hidden="true"
-                />
-              )}
-              <select
-                id={targetSelectId}
-                aria-label="Target"
-                className="task-dispatch-bottom-select"
-                value={effectiveAction}
-                disabled={isSending}
-                onChange={handleTargetSelectChange}
-              >
-                {availableActions.map((action) => (
-                  <option key={action} value={action}>
-                    {getTaskEditDispatchTargetName(action)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="task-dispatch-bottom-field task-dispatch-bottom-mode-field">
-            <label className="task-dispatch-bottom-label" htmlFor={modeSelectId}>
-              Mode
-            </label>
-            <select
-              id={modeSelectId}
-              aria-label="Mode"
-              className="task-dispatch-bottom-select"
-              value={effectiveObjective}
+          <div className="task-dispatch-bottom-engine-field">
+            <BottomDispatchPicker
+              label="Engine"
+              value={selectedEngine?.key ?? ''}
+              selectedLabel={selectedEngineLabel}
+              selectedIcon={selectedEngine ? renderEngineIcon(selectedEngine) : null}
+              options={engineOptions.map((engineOption) => ({
+                value: engineOption.key,
+                label: getEngineShortLabel(engineOption),
+                detail: engineOption.label,
+                icon: renderEngineIcon(engineOption),
+              }))}
               disabled={isSending}
-              onChange={handleModeSelectChange}
-            >
-              {visibleModeOptions.map((mode) => (
-                <option key={mode.key} value={mode.key}>
-                  {mode.label}
-                </option>
-              ))}
-            </select>
+              onSelect={(value) => {
+                const nextEngine = getEngineConfig(value);
+                if (nextEngine) {
+                  selectEngine(nextEngine);
+                }
+              }}
+            />
           </div>
 
-          <div className="task-dispatch-bottom-field task-dispatch-bottom-message-field">
-            <label className="task-dispatch-bottom-label" htmlFor={messageInputId}>
-              Message
-            </label>
-            <input
-              id={messageInputId}
-              type="text"
-              aria-label="Message"
-              className="task-dispatch-bottom-message"
-              value={messageText}
-              disabled={isSending || effectiveObjective !== 'ask'}
-              autoComplete="off"
-              onChange={(event) => setMessageText(event.currentTarget.value)}
+          <div className="task-dispatch-bottom-target-field">
+            <BottomDispatchPicker
+              label="Target"
+              value={effectiveAction}
+              selectedLabel={selectedActionLabel}
+              selectedIcon={renderTargetIcon(effectiveAction)}
+              options={availableActions.map((action) => ({
+                value: action,
+                label:
+                  action === 'send-telegram'
+                    ? 'OpenClaw Telegram'
+                    : getTaskEditDispatchTargetName(action),
+                detail: action === 'send-telegram' ? 'Telegram' : 'Hermes Telegram',
+                icon: renderTargetIcon(action),
+              }))}
+              disabled={isSending}
+              onSelect={selectAction}
+            />
+          </div>
+
+          <div className="task-dispatch-bottom-mode-field">
+            <BottomDispatchPicker
+              label="Mode"
+              value={effectiveObjective}
+              selectedLabel={selectedModeLabel}
+              options={visibleModeOptions.map((mode) => ({
+                value: mode.key,
+                label: mode.label,
+                detail: getDispatchModeDetail(mode.key),
+              }))}
+              disabled={isSending}
+              onSelect={selectMode}
             />
           </div>
 

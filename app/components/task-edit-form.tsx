@@ -1311,7 +1311,6 @@ function TaskEditFormContent({
             status={status}
             engine={engine}
             dispatchTarget={editableTodo.dispatchTarget ?? null}
-            noteMarkdown={noteMarkdown}
             telegramEnabled={telegramEnabled ?? false}
             hermesTelegramEnabled={hermesTelegramEnabled}
             suppressShortcut={commentShortcutActive}

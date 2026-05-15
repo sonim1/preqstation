@@ -303,6 +303,7 @@ describe('app/components/task-edit-form', () => {
       suppressShortcut: false,
     });
     expect(taskCopyActionsPropsMock.mock.calls[0]?.[0]).not.toHaveProperty('onAskRequested');
+    expect(taskCopyActionsPropsMock.mock.calls[0]?.[0]).not.toHaveProperty('noteMarkdown');
   });
 
   it('renders the Notes mode switch on the Notes header row instead of the editor header', () => {
