@@ -43,6 +43,9 @@ vi.mock('@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js', () => (
 
 import { POST } from '@/app/mcp/route';
 
+const expectedBearerChallenge =
+  'Bearer realm="preqstation", resource_metadata="http://localhost/.well-known/oauth-protected-resource/mcp"';
+
 describe('app/mcp/route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -81,7 +84,7 @@ describe('app/mcp/route', () => {
     );
 
     expect(response.status).toBe(401);
-    expect(response.headers.get('WWW-Authenticate')).toBe('Bearer realm="preqstation"');
+    expect(response.headers.get('WWW-Authenticate')).toBe(expectedBearerChallenge);
     expect(infoSpy).toHaveBeenCalledWith(
       '[mcp] request.summary',
       expect.objectContaining({
@@ -108,7 +111,7 @@ describe('app/mcp/route', () => {
     );
 
     expect(response.status).toBe(401);
-    expect(response.headers.get('WWW-Authenticate')).toBe('Bearer realm="preqstation"');
+    expect(response.headers.get('WWW-Authenticate')).toBe(expectedBearerChallenge);
     expect(infoSpy).toHaveBeenCalledWith(
       '[mcp] request.summary',
       expect.objectContaining({
@@ -239,6 +242,7 @@ describe('app/mcp/route', () => {
     );
 
     expect(response.status).toBe(401);
+    expect(response.headers.get('WWW-Authenticate')).toBe(expectedBearerChallenge);
     expect(mocked.createPreqMcpServer).not.toHaveBeenCalled();
     expect(infoSpy).toHaveBeenCalledWith(
       '[mcp] request.summary',
