@@ -92,10 +92,29 @@ describe('proxy bearer API allowlist', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
-  it('still rejects QA API requests without bearer auth', async () => {
+  it('rejects unauthenticated mcp requests with resource metadata discovery', async () => {
+    const response = await proxy(makeRequest('/mcp', { method: 'POST' }));
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get('WWW-Authenticate')).toBe(
+      'Bearer realm="preqstation", resource_metadata="https://example.com/.well-known/oauth-protected-resource/mcp"',
+    );
+    expect(response.headers.get('location')).toBeNull();
+  });
+
+  it('rejects QA API requests without bearer auth with a bearer challenge', async () => {
     const response = await proxy(makeRequest('/api/qa-runs/run-123', { method: 'PATCH' }));
 
     expect(response.status).toBe(401);
+    expect(response.headers.get('WWW-Authenticate')).toBe('Bearer realm="preqstation"');
+    expect(response.headers.get('location')).toBeNull();
+  });
+
+  it('rejects task API requests without bearer auth with a bearer challenge', async () => {
+    const response = await proxy(makeRequest('/api/tasks', { method: 'GET' }));
+
+    expect(response.status).toBe(401);
+    expect(response.headers.get('WWW-Authenticate')).toBe('Bearer realm="preqstation"');
     expect(response.headers.get('location')).toBeNull();
   });
 
@@ -114,17 +133,14 @@ describe('proxy bearer API allowlist', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
-  it('allows oauth discovery and exchange routes without owner session cookies', async () => {
-    const discoveryResponse = await proxy(makeRequest('/.well-known/oauth-authorization-server'));
+  it('allows oauth exchange routes without owner session cookies', async () => {
     const authorizeResponse = await proxy(makeRequest('/api/oauth/authorize'));
     const registerResponse = await proxy(makeRequest('/api/oauth/register', { method: 'POST' }));
     const tokenResponse = await proxy(makeRequest('/api/oauth/token', { method: 'POST' }));
 
-    expect(discoveryResponse.status).toBe(200);
     expect(authorizeResponse.status).toBe(200);
     expect(registerResponse.status).toBe(200);
     expect(tokenResponse.status).toBe(200);
-    expect(discoveryResponse.headers.get('location')).toBeNull();
     expect(authorizeResponse.headers.get('location')).toBeNull();
     expect(registerResponse.headers.get('location')).toBeNull();
     expect(tokenResponse.headers.get('location')).toBeNull();

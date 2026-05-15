@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { isOwnerEmail, SESSION_COOKIE_NAME, verifySessionToken } from './lib/auth';
+import { buildMcpBearerChallenge } from './lib/mcp/discovery';
 import { checkRateLimit, getClientIp } from './lib/rate-limit';
 import { setSecurityHeaders } from './lib/security-headers';
 
@@ -9,7 +10,6 @@ function isPublicPath(pathname: string) {
     pathname === '/' ||
     pathname === '/login' ||
     pathname === '/mcp' ||
-    pathname === '/.well-known/oauth-authorization-server' ||
     pathname === '/api/oauth/authorize' ||
     pathname === '/api/oauth/register' ||
     pathname === '/api/oauth/token' ||
@@ -92,7 +92,24 @@ export default async function proxy(req: NextRequest) {
   if (isBearerApiPath(pathname)) {
     const authHeader = req.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return setSecurityHeaders(NextResponse.json({ error: 'Unauthorized' }, { status: 401 }));
+      const headers =
+        pathname === '/mcp'
+          ? {
+              'WWW-Authenticate': buildMcpBearerChallenge(req.url),
+            }
+          : {
+              'WWW-Authenticate': 'Bearer realm="preqstation"',
+            };
+
+      return setSecurityHeaders(
+        NextResponse.json(
+          { error: 'Unauthorized' },
+          {
+            status: 401,
+            headers,
+          },
+        ),
+      );
     }
     return setSecurityHeaders(NextResponse.next({ request: { headers: pathHeaders } }));
   }

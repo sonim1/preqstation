@@ -25,7 +25,10 @@ Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `a
 ### MCP over HTTP
 
 - Endpoint: `/mcp`
-- Discovery: `/.well-known/oauth-authorization-server`
+- Protected Resource Metadata: `/.well-known/oauth-protected-resource/mcp`
+- Discovery challenge: unauthenticated `/mcp` requests return `WWW-Authenticate: Bearer realm="preqstation", resource_metadata="https://<your-domain>/.well-known/oauth-protected-resource/mcp"`
+- Authorization Server Metadata: `/.well-known/oauth-authorization-server`
+- Compatibility endpoints for path-aware MCP/OIDC discovery: `/.well-known/oauth-authorization-server/mcp`, `/.well-known/openid-configuration/mcp`, and `/mcp/.well-known/openid-configuration`
 - Auth: OAuth authorization code flow with browser login
 - Owner visibility: `/connections` shows client name, engine, status, last-used time, and expiry
 - Claude Code install: `claude mcp add --transport http preqstation https://<your-domain>/mcp`
