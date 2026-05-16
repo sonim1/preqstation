@@ -1,12 +1,12 @@
 .topSection {
-  --project-bg: #fffefb;
-  --project-card-bg: #fffdf9;
-  --project-fg: #201515;
-  --project-body: #36342e;
-  --project-muted: #939084;
-  --project-border: #c5c0b1;
-  --project-soft: #eceae3;
-  --project-accent: #ff4f00;
+  --project-bg: var(--workspace-paper-bg);
+  --project-card-bg: var(--workspace-paper-surface);
+  --project-fg: var(--workspace-paper-fg);
+  --project-body: var(--workspace-paper-body);
+  --project-muted: var(--workspace-paper-muted);
+  --project-border: var(--workspace-paper-border);
+  --project-soft: var(--workspace-paper-soft);
+  --project-accent: var(--workspace-paper-accent);
   min-width: 0;
   border-color: var(--project-border);
   background: var(--project-card-bg);
@@ -54,21 +54,21 @@
   gap: 0.18rem;
   min-width: 0;
   padding: 0.75rem 0.85rem;
-  border: 1px solid #c5c0b1;
+  border: 1px solid var(--project-border);
   border-radius: 8px;
-  background: #fffefb;
+  background: var(--project-bg);
 }
 
 .summaryPill strong {
   font-size: 1.15rem;
   line-height: 1;
-  color: #201515;
+  color: var(--project-fg);
 }
 
 .summaryPill span {
   font-size: 0.72rem;
   line-height: 1.35;
-  color: #939084;
+  color: var(--project-muted);
   font-weight: 750;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -124,17 +124,17 @@
 }
 
 .projectCard {
-  --project-card-bg: #fffdf9;
-  --project-bg: #fffefb;
-  --project-fg: #201515;
-  --project-body: #36342e;
-  --project-muted: #939084;
-  --project-border: #c5c0b1;
-  --project-soft: #eceae3;
-  --project-accent: #ff4f00;
-  --project-ok: #297a4a;
-  --project-warn: #9b5d00;
-  --project-info: #275f8f;
+  --project-card-bg: var(--workspace-paper-surface);
+  --project-bg: var(--workspace-paper-bg);
+  --project-fg: var(--workspace-paper-fg);
+  --project-body: var(--workspace-paper-body);
+  --project-muted: var(--workspace-paper-muted);
+  --project-border: var(--workspace-paper-border);
+  --project-soft: var(--workspace-paper-soft);
+  --project-accent: var(--workspace-paper-accent);
+  --project-ok: var(--ui-success);
+  --project-warn: var(--ui-warning);
+  --project-info: var(--ui-accent);
   position: relative;
   min-width: 0;
   min-height: 0;
@@ -174,7 +174,7 @@
 }
 
 .projectCard[data-tone='drifting'] {
-  border-color: color-mix(in srgb, #a33a32, var(--project-border) 48%);
+  border-color: color-mix(in srgb, var(--ui-danger), var(--project-border) 48%);
 }
 
 .projectCard[data-tone='heavy'] {

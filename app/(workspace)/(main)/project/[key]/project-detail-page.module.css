@@ -1,12 +1,12 @@
 .detailLayout {
-  --detail-bg: #fffefb;
-  --detail-surface: #fffdf9;
-  --detail-fg: #201515;
-  --detail-body: #36342e;
-  --detail-muted: #939084;
-  --detail-border: #c5c0b1;
-  --detail-soft: #eceae3;
-  --detail-accent: #ff4f00;
+  --detail-bg: var(--workspace-paper-bg);
+  --detail-surface: var(--workspace-paper-surface);
+  --detail-fg: var(--workspace-paper-fg);
+  --detail-body: var(--workspace-paper-body);
+  --detail-muted: var(--workspace-paper-muted);
+  --detail-border: var(--workspace-paper-border);
+  --detail-soft: var(--workspace-paper-soft);
+  --detail-accent: var(--workspace-paper-accent);
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(17rem, 24rem);
   gap: 0.875rem;

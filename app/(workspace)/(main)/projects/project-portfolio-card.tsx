@@ -142,7 +142,7 @@ export function ProjectPortfolioCard({
           </div>
         </div>
 
-        <div className={styles.badgeRail} aria-label={`${card.name} project facts`}>
+        <div className={styles.badgeRail}>
           <span className={styles.badge}>
             Status <strong>{card.statusLabel}</strong>
           </span>

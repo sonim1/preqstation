@@ -634,8 +634,9 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('View detail');
     expect(html).toContain('Open board');
     expect(projectPortfolioCardSource).toContain('className={styles.badgeRail}');
+    expect(projectPortfolioCardSource).not.toContain('aria-label={`${card.name} project facts`}');
     expect(projectPortfolioCardSource).toContain('className={styles.directActions}');
-    expect(projectsPageCss).toMatch(/--project-card-bg:\s*#fffdf9;/);
+    expect(projectsPageCss).toMatch(/--project-card-bg:\s*var\(--workspace-paper-surface\);/);
     expect(projectsPageCss).toMatch(/\.badgeRail\s*\{[\s\S]*gap:\s*5px;/);
     expect(projectsPageCss).toMatch(
       /\.projectCard:hover,\s*\.projectCard:focus-within\s*\{[\s\S]*border-color:\s*var\(--project-accent\);/,
@@ -760,7 +761,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectsPageCss).toMatch(/\.portfolioSection\s*\{[^}]*min-width:\s*0;/);
     expect(projectsPageCss).toMatch(/\.resumeGrid\s*\{[^}]*min-width:\s*0;/);
     expect(projectsPageCss).toMatch(/\.quietGrid\s*\{[^}]*min-width:\s*0;/);
-    expect(projectsPageCss).toContain('--project-card-bg: #fffdf9;');
+    expect(projectsPageCss).toContain('--project-card-bg: var(--workspace-paper-surface);');
     expect(projectsPageCss).toMatch(/\.projectCard::before\s*\{[\s\S]*content:\s*none;/);
     expect(projectsPageCss).not.toMatch(/\.mosaic\s*\{/);
     expect(projectsPageCss).not.toMatch(/\.quietLane\s*\{/);
