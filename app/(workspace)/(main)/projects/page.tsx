@@ -289,7 +289,8 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
       statusLabel: isProjectStatus(summary.project.status)
         ? PROJECT_STATUS_LABELS[summary.project.status]
         : summary.project.status,
-      priorityLabel: `Priority ${summary.project.priority ?? 2}`,
+      priorityLabel:
+        summary.project.priority != null ? `Priority ${summary.project.priority}` : 'No priority',
       repoUrl: summary.project.repoUrl,
       vercelUrl: summary.project.vercelUrl,
       detailsHref: `/project/${summary.project.projectKey}`,

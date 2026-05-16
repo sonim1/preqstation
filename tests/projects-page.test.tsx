@@ -643,6 +643,32 @@ describe('app/(workspace)/(main)/projects/page', () => {
     );
   });
 
+  it('labels missing project priority without implying a default value', async () => {
+    mocked.state.projects = [
+      {
+        id: 'project-1',
+        name: 'Unprioritized Project',
+        projectKey: 'NONE',
+        description: 'No priority has been assigned.',
+        status: 'active',
+        updatedAt: new Date('2026-03-14T10:00:00Z'),
+        repoUrl: null,
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+    ];
+    mocked.state.statusCounts = [];
+
+    const page = await ProjectsPage();
+    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
+
+    expect(html).toContain('No priority');
+    expect(html).not.toContain('Priority 2');
+  });
+
   it('renders resume and quiet sections through Mantine SimpleGrid wrappers', async () => {
     mocked.state.projects = [
       {
