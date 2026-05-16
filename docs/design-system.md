@@ -32,7 +32,11 @@ consumers need it. This repo is currently the canonical implementation.
 Use semantic tokens before adding new colors:
 
 - Surfaces: `--ui-surface`, `--ui-surface-soft`, `--ui-surface-strong`,
-  `--ui-surface-panel`, `--ui-surface-muted`, `--ui-surface-elevated`.
+  `--ui-surface-panel`, `--ui-surface-panel-strong`,
+  `--ui-surface-muted`, `--ui-surface-muted-strong`,
+  `--ui-surface-elevated`, `--ui-surface-elevated-strong`,
+  `--ui-card-bg`, `--ui-hero-bg`, `--ui-reading-surface`, and
+  `--ui-reading-surface-soft`.
 - Text: `--ui-text`, `--ui-muted-text`.
 - Accent: `--ui-accent`, `--ui-accent-strong`, `--ui-accent-soft`.
 - State: `--ui-success`, `--ui-danger`, `--ui-warning`,
