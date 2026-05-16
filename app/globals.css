@@ -49,6 +49,15 @@
   --ui-status-running-glow: rgba(56, 189, 248, 0.22);
   --ui-hit-min: 24px;
   --ui-hit-touch-min: 44px;
+  --workspace-control-size: 40px;
+  --workspace-paper-bg: #fffefb;
+  --workspace-paper-surface: #fffdf9;
+  --workspace-paper-fg: #201515;
+  --workspace-paper-body: #36342e;
+  --workspace-paper-muted: #939084;
+  --workspace-paper-border: #c5c0b1;
+  --workspace-paper-soft: #eceae3;
+  --workspace-paper-accent: #ff4f00;
   --ui-control-sm: 28px;
   --ui-control-md: 32px;
   --ui-elevation-0: none;
@@ -459,9 +468,9 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 }
 
 .workspace-navbar {
-  border-right: 1px solid var(--ui-border);
-  background: var(--ui-surface);
-  box-shadow: 10px 0 22px -22px rgba(20, 44, 84, 0.34);
+  border-right: 1px solid var(--workspace-paper-border);
+  background: var(--workspace-paper-surface);
+  box-shadow: none;
 }
 
 .workspace-brand-link {
@@ -488,11 +497,14 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 }
 
 .workspace-brand-mark {
-  width: auto;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   display: block;
   flex: 0 0 auto;
-  border-radius: 8px;
+  border: 1px solid var(--ui-text);
+  border-radius: 5px;
+  background: var(--workspace-paper-surface);
+  padding: 3px;
 }
 
 .workspace-brand-title,
@@ -528,8 +540,14 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 }
 
 .workspace-nav-link {
-  border-radius: 10px;
-  padding: 8px 12px;
+  min-height: var(--workspace-control-size);
+  border-radius: 6px;
+  padding: 0 10px;
+  color: var(--workspace-paper-body);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   transition:
     background-color 140ms ease,
     color 140ms ease,

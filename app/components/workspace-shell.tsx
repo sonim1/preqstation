@@ -392,8 +392,8 @@ export function WorkspaceShell({
                 <Image
                   src="/brand/preqstation-app-icon.svg"
                   alt=""
-                  width={32}
-                  height={28}
+                  width={34}
+                  height={34}
                   className="workspace-brand-mark"
                   priority
                 />
@@ -431,7 +431,7 @@ export function WorkspaceShell({
                     className="workspace-avatar-trigger"
                     aria-label="Open account menu"
                   >
-                    <Avatar color="blue" radius="xl" size={44}>
+                    <Avatar color="blue" radius="xl" size={40}>
                       {initialFromEmail(email)}
                     </Avatar>
                   </UnstyledButton>

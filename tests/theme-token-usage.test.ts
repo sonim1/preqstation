@@ -60,11 +60,13 @@ describe('theme token usage audit fixes', () => {
     expect(globalErrorSource).not.toContain("color: '#e8effa'");
   });
 
-  it('reuses shared ui tokens across panels, project surfaces, and kanban card chrome', () => {
+  it('reuses shared ui tokens across panels, handoff project surfaces, and kanban card chrome', () => {
     expect(panelsCss).toContain('var(--ui-panel-orb)');
     expect(panelsCss).toContain('blur(var(--ui-panel-blur))');
     expect(projectsCss).toContain('var(--ui-surface-panel)');
-    expect(projectsCss).toContain('var(--ui-surface-muted)');
+    expect(projectsCss).toContain('--project-card-bg: #fffdf9;');
+    expect(projectsCss).toContain('--project-accent: #ff4f00;');
+    expect(projectsCss).toContain('var(--project-border)');
     expect(projectsCss).toContain('var(--ui-surface-elevated)');
     expect(projectsCss).not.toContain('#112136');
     expect(cardsCss).toContain('var(--ui-surface-elevated)');

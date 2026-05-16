@@ -6,7 +6,6 @@ import {
   Container,
   Group,
   Paper,
-  SimpleGrid,
   Stack,
   Text,
   ThemeIcon,
@@ -50,6 +49,7 @@ import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 import { listWorkLogsPage } from '@/lib/work-log-list';
 import { PROJECT_WORK_LOG_PAGE_SIZE } from '@/lib/work-log-pagination';
 
+import detailStyles from './project-detail-page.module.css';
 import { ProjectSectionAnchorOffset } from './project-section-anchor-offset';
 
 type ProjectDetailPageProps = {
@@ -564,219 +564,245 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           p={{ base: 'md', sm: 'xl' }}
           className={panelStyles.heroPanel}
         >
-          <Stack gap="lg">
-            <Group justify="space-between" align="flex-start" wrap="wrap">
-              <div>
-                <Title order={2} size="h3">
+          <Stack gap="md">
+            <div className={detailStyles.detailLayout} data-project-detail-layout="handoff">
+              <div className={detailStyles.detailMain} data-project-detail-main="true">
+                <Text className={detailStyles.eyebrow}>Project detail</Text>
+                <Title order={2} size="h3" className={detailStyles.detailTitle}>
                   {project.name}
                 </Title>
-                <Badge mt={6} variant="outline" color="indigo" w="fit-content">
-                  Key {projectKey.toUpperCase()}
-                </Badge>
-                <Text c="dimmed" size="sm">
-                  Project detail and delivery status
-                </Text>
-              </div>
-              <Group gap="xs" wrap="wrap">
-                <LinkButton href={boardHref} variant="default">
-                  Open Kanban
-                </LinkButton>
-                <LinkButton href={newTaskHref}>{`New ${terminology.task.singular}`}</LinkButton>
-                <LinkButton href={editProjectHref} variant="default">
-                  Edit Details
-                </LinkButton>
-                <ProjectHeroMenu workLogHref={newWorkLogHref} editProjectHref={editProjectHref} />
-              </Group>
-            </Group>
-
-            <Paper
-              withBorder
-              p="md"
-              radius="md"
-              className={metricStyles.metricTile}
-              style={{
-                borderLeft: `4px solid var(--mantine-color-${setupBadgeColor}-6)`,
-              }}
-            >
-              <Stack gap="xs">
-                <Group justify="space-between" align="flex-start" wrap="wrap" gap="xs">
-                  <div>
-                    <Text fw={700} size="xs" c="dimmed" tt="uppercase">
-                      Setup health
-                    </Text>
-                    <Title order={3} size="h5">
-                      {setupReadyCount === 4 ? 'Ready to dispatch work' : 'Finish project setup'}
-                    </Title>
-                  </div>
-                  <Badge color={setupBadgeColor} variant="light">
-                    {setupBadgeLabel}
+                <div className={detailStyles.heroBadges}>
+                  <Badge variant="outline" color="indigo" w="fit-content">
+                    Key {projectKey.toUpperCase()}
                   </Badge>
-                </Group>
-                <Text size="sm" c="dimmed">
-                  {setupSummary}
-                </Text>
-                <Group gap="xs" wrap="wrap">
                   <Badge color={projectStatus.color} variant="light">
                     {projectStatus.label}
                   </Badge>
                   <Badge color={openTaskCount === 0 ? 'gray' : 'blue'} variant="light">
                     {`${openTaskCount} open ${openTaskLabel}`}
                   </Badge>
+                </div>
+                <Text className={detailStyles.detailCopy}>
+                  Project detail and delivery status. {setupSummary}
+                </Text>
+              </div>
+              <aside className={detailStyles.detailSide} data-project-detail-side="true">
+                <Text className={detailStyles.sideTitle}>Project facts</Text>
+                <Text className={detailStyles.sideCopy}>{recentActivityDescription}</Text>
+                <Group gap="xs" wrap="wrap" className={detailStyles.sideActions}>
+                  <LinkButton href={boardHref} variant="default">
+                    Open Kanban
+                  </LinkButton>
+                  <LinkButton href={newTaskHref}>{`New ${terminology.task.singular}`}</LinkButton>
+                  <LinkButton href={editProjectHref} variant="default">
+                    Edit Details
+                  </LinkButton>
+                  <ProjectHeroMenu workLogHref={newWorkLogHref} editProjectHref={editProjectHref} />
                 </Group>
-              </Stack>
-            </Paper>
+              </aside>
+            </div>
 
-            <SimpleGrid cols={{ base: 1, md: 2, xl: 4 }} spacing="sm">
-              <Paper
-                withBorder
-                p="sm"
-                radius="md"
-                className={metricStyles.metricTile}
-                style={{
-                  borderLeft: hasRepo
-                    ? '3px solid var(--mantine-color-blue-6)'
-                    : '3px solid var(--mantine-color-gray-4)',
-                }}
-              >
-                <Group gap="xs" align="flex-start" mb={6}>
-                  <ThemeIcon
-                    variant="light"
-                    color={hasRepo ? 'blue' : 'gray'}
-                    size="sm"
-                    radius="xl"
-                  >
-                    <IconLink size={14} />
-                  </ThemeIcon>
-                  <Text fw={600} size="sm">
-                    Repository
-                  </Text>
-                </Group>
-                <Stack gap={8} align="flex-start">
-                  <Badge color={hasRepo ? 'blue' : 'gray'} variant="light">
-                    {hasRepo ? 'Connected' : 'Missing'}
-                  </Badge>
-                  <Text size="sm" c="dimmed">
-                    {hasRepo
-                      ? 'Repository linked for branch and PR work.'
-                      : 'Add the repository URL in Edit Details before dispatching coding work.'}
-                  </Text>
-                  <Button
-                    component="a"
-                    href={hasRepo ? (project.repoUrl ?? editProjectHref) : editProjectHref}
-                    target={hasRepo ? '_blank' : undefined}
-                    rel={hasRepo ? 'noopener noreferrer' : undefined}
-                    variant="subtle"
-                    size="compact-xs"
-                  >
-                    {hasRepo ? 'Open' : 'Edit Details'}
-                  </Button>
-                </Stack>
-              </Paper>
-              <Paper
-                withBorder
-                p="sm"
-                radius="md"
-                className={metricStyles.metricTile}
-                style={{
-                  borderLeft: '3px solid var(--mantine-color-blue-6)',
-                }}
-              >
-                <Group gap="xs" align="flex-start" mb={6}>
-                  <ThemeIcon variant="light" color="blue" size="sm" radius="xl">
-                    <IconCloud size={14} />
-                  </ThemeIcon>
-                  <Text fw={600} size="sm">
-                    Deployment
-                  </Text>
-                </Group>
-                <Stack gap={8} align="flex-start">
-                  <Badge color="blue" variant="light">
-                    {DEPLOY_STRATEGY_LABELS[deployStrategy.strategy]}
-                  </Badge>
-                  <Text size="sm" c="dimmed">
-                    {describeDeployStrategy(deployStrategy)}
-                  </Text>
-                </Stack>
-              </Paper>
-              <Paper
-                withBorder
-                p="sm"
-                radius="md"
-                className={metricStyles.metricTile}
-                style={{
-                  borderLeft: hasAgentInstructions
-                    ? '3px solid var(--mantine-color-blue-6)'
-                    : '3px solid var(--mantine-color-gray-4)',
-                }}
-              >
-                <Group gap="xs" align="flex-start" mb={6}>
-                  <ThemeIcon
-                    variant="light"
-                    color={hasAgentInstructions ? 'blue' : 'gray'}
-                    size="sm"
-                    radius="xl"
-                  >
-                    <IconClipboardList size={14} />
-                  </ThemeIcon>
-                  <Text fw={600} size="sm">
-                    Agent instructions
-                  </Text>
-                </Group>
-                <Stack gap={8} align="flex-start">
-                  <Badge color={hasAgentInstructions ? 'blue' : 'gray'} variant="light">
-                    {hasAgentInstructions ? 'Configured' : 'Missing'}
-                  </Badge>
-                  <Text size="sm" c="dimmed">
-                    {hasAgentInstructions
-                      ? 'Instructions saved for dispatched agents.'
-                      : 'Add agent instructions so workers inherit project-specific rules.'}
-                  </Text>
-                  {!hasAgentInstructions ? (
+            <div className={detailStyles.factGrid} data-project-fact-grid="true">
+              <div data-project-fact-panel="setup">
+                <Paper
+                  withBorder
+                  p="md"
+                  radius="md"
+                  className={`${metricStyles.metricTile} ${detailStyles.factPanel}`}
+                  style={{
+                    borderLeft: `4px solid var(--mantine-color-${setupBadgeColor}-6)`,
+                  }}
+                >
+                  <Stack gap="xs">
+                    <Group justify="space-between" align="flex-start" wrap="wrap" gap="xs">
+                      <div>
+                        <Text fw={700} size="xs" c="dimmed" tt="uppercase">
+                          Setup health
+                        </Text>
+                        <Title order={3} size="h5">
+                          {setupReadyCount === 4
+                            ? 'Ready to dispatch work'
+                            : 'Finish project setup'}
+                        </Title>
+                      </div>
+                      <Badge color={setupBadgeColor} variant="light">
+                        {setupBadgeLabel}
+                      </Badge>
+                    </Group>
+                    <Text size="sm" c="dimmed">
+                      {setupSummary}
+                    </Text>
+                  </Stack>
+                </Paper>
+              </div>
+              <div data-project-fact-panel="repository">
+                <Paper
+                  withBorder
+                  p="sm"
+                  radius="md"
+                  className={`${metricStyles.metricTile} ${detailStyles.factPanel}`}
+                  style={{
+                    borderLeft: hasRepo
+                      ? '3px solid var(--mantine-color-blue-6)'
+                      : '3px solid var(--mantine-color-gray-4)',
+                  }}
+                >
+                  <Group gap="xs" align="flex-start" mb={6}>
+                    <ThemeIcon
+                      variant="light"
+                      color={hasRepo ? 'blue' : 'gray'}
+                      size="sm"
+                      radius="xl"
+                    >
+                      <IconLink size={14} />
+                    </ThemeIcon>
+                    <Text fw={600} size="sm">
+                      Repository
+                    </Text>
+                  </Group>
+                  <Stack gap={8} align="flex-start">
+                    <Badge color={hasRepo ? 'blue' : 'gray'} variant="light">
+                      {hasRepo ? 'Connected' : 'Missing'}
+                    </Badge>
+                    <Text size="sm" c="dimmed">
+                      {hasRepo
+                        ? 'Repository linked for branch and PR work.'
+                        : 'Add the repository URL in Edit Details before dispatching coding work.'}
+                    </Text>
                     <Button
                       component="a"
-                      href="#project-configuration"
+                      href={hasRepo ? (project.repoUrl ?? editProjectHref) : editProjectHref}
+                      target={hasRepo ? '_blank' : undefined}
+                      rel={hasRepo ? 'noopener noreferrer' : undefined}
                       variant="subtle"
                       size="compact-xs"
                     >
-                      Add instructions
+                      {hasRepo ? 'Open' : 'Edit Details'}
                     </Button>
-                  ) : null}
-                </Stack>
-              </Paper>
-              <Paper
-                withBorder
-                p="sm"
-                radius="md"
-                className={metricStyles.metricTile}
-                style={{
-                  borderLeft: lastWorkedAt
-                    ? `3px solid ${activityStatus.color}`
-                    : '3px solid var(--mantine-color-gray-4)',
-                }}
-              >
-                <Group gap="xs" align="flex-start" mb={6}>
-                  <ThemeIcon variant="light" color={recentActivityBadgeColor} size="sm" radius="xl">
-                    <IconFlag size={14} />
-                  </ThemeIcon>
-                  <Text fw={600} size="sm">
-                    Recent activity
-                  </Text>
-                </Group>
-                <Stack gap={8} align="flex-start">
-                  <Badge color={recentActivityBadgeColor} variant="light">
-                    {lastWorkedAt ? activityStatus.label : 'No work logs'}
-                  </Badge>
-                  <Text size="sm" c="dimmed">
-                    {recentActivityDescription}
-                  </Text>
-                  {!hasRecentActivity ? (
-                    <Button component="a" href={newWorkLogHref} variant="subtle" size="compact-xs">
-                      New Work Log
-                    </Button>
-                  ) : null}
-                </Stack>
-              </Paper>
-            </SimpleGrid>
+                  </Stack>
+                </Paper>
+              </div>
+              <div data-project-fact-panel="deployment">
+                <Paper
+                  withBorder
+                  p="sm"
+                  radius="md"
+                  className={`${metricStyles.metricTile} ${detailStyles.factPanel}`}
+                  style={{
+                    borderLeft: '3px solid var(--mantine-color-blue-6)',
+                  }}
+                >
+                  <Group gap="xs" align="flex-start" mb={6}>
+                    <ThemeIcon variant="light" color="blue" size="sm" radius="xl">
+                      <IconCloud size={14} />
+                    </ThemeIcon>
+                    <Text fw={600} size="sm">
+                      Deployment
+                    </Text>
+                  </Group>
+                  <Stack gap={8} align="flex-start">
+                    <Badge color="blue" variant="light">
+                      {DEPLOY_STRATEGY_LABELS[deployStrategy.strategy]}
+                    </Badge>
+                    <Text size="sm" c="dimmed">
+                      {describeDeployStrategy(deployStrategy)}
+                    </Text>
+                  </Stack>
+                </Paper>
+              </div>
+              <div data-project-fact-panel="agent-instructions">
+                <Paper
+                  withBorder
+                  p="sm"
+                  radius="md"
+                  className={`${metricStyles.metricTile} ${detailStyles.factPanel}`}
+                  style={{
+                    borderLeft: hasAgentInstructions
+                      ? '3px solid var(--mantine-color-blue-6)'
+                      : '3px solid var(--mantine-color-gray-4)',
+                  }}
+                >
+                  <Group gap="xs" align="flex-start" mb={6}>
+                    <ThemeIcon
+                      variant="light"
+                      color={hasAgentInstructions ? 'blue' : 'gray'}
+                      size="sm"
+                      radius="xl"
+                    >
+                      <IconClipboardList size={14} />
+                    </ThemeIcon>
+                    <Text fw={600} size="sm">
+                      Agent instructions
+                    </Text>
+                  </Group>
+                  <Stack gap={8} align="flex-start">
+                    <Badge color={hasAgentInstructions ? 'blue' : 'gray'} variant="light">
+                      {hasAgentInstructions ? 'Configured' : 'Missing'}
+                    </Badge>
+                    <Text size="sm" c="dimmed">
+                      {hasAgentInstructions
+                        ? 'Instructions saved for dispatched agents.'
+                        : 'Add agent instructions so workers inherit project-specific rules.'}
+                    </Text>
+                    {!hasAgentInstructions ? (
+                      <Button
+                        component="a"
+                        href="#project-configuration"
+                        variant="subtle"
+                        size="compact-xs"
+                      >
+                        Add instructions
+                      </Button>
+                    ) : null}
+                  </Stack>
+                </Paper>
+              </div>
+              <div data-project-fact-panel="activity">
+                <Paper
+                  withBorder
+                  p="sm"
+                  radius="md"
+                  className={`${metricStyles.metricTile} ${detailStyles.factPanel}`}
+                  style={{
+                    borderLeft: lastWorkedAt
+                      ? `3px solid ${activityStatus.color}`
+                      : '3px solid var(--mantine-color-gray-4)',
+                  }}
+                >
+                  <Group gap="xs" align="flex-start" mb={6}>
+                    <ThemeIcon
+                      variant="light"
+                      color={recentActivityBadgeColor}
+                      size="sm"
+                      radius="xl"
+                    >
+                      <IconFlag size={14} />
+                    </ThemeIcon>
+                    <Text fw={600} size="sm">
+                      Recent activity
+                    </Text>
+                  </Group>
+                  <Stack gap={8} align="flex-start">
+                    <Badge color={recentActivityBadgeColor} variant="light">
+                      {lastWorkedAt ? activityStatus.label : 'No work logs'}
+                    </Badge>
+                    <Text size="sm" c="dimmed">
+                      {recentActivityDescription}
+                    </Text>
+                    {!hasRecentActivity ? (
+                      <Button
+                        component="a"
+                        href={newWorkLogHref}
+                        variant="subtle"
+                        size="compact-xs"
+                      >
+                        New Work Log
+                      </Button>
+                    ) : null}
+                  </Stack>
+                </Paper>
+              </div>
+            </div>
           </Stack>
         </Paper>
 
