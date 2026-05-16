@@ -93,6 +93,7 @@ The app runs at `http://localhost:3000` by default. See [docs/INSTALLATION.md](d
 - [Installation](docs/INSTALLATION.md) — local setup, env vars, first-run onboarding, and development commands
 - [Architecture](docs/architecture.md) — current system structure and workflow contract
 - [API](docs/API.md) — REST and MCP integration surfaces
+- [Design System](docs/design-system.md) — product UI direction, token usage, component rules, and contribution checklist
 - [Offline Board](docs/OFFLINE_BOARD.md) — browser offline cache, IndexedDB state, and replay behavior
 - [Project Structure](docs/PROJECT_STRUCTURE.md) — repository layout
 - [Security](docs/security.md) — full security design
