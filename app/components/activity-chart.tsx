@@ -22,7 +22,6 @@ const emptySubscribe = () => () => {};
 type DailyActivity = { date: string; count: number };
 
 const ACTIVITY_CHART_STROKE = 'var(--ui-dashboard-chart-primary)';
-const ACTIVITY_CHART_FILL = 'var(--ui-dashboard-chart-primary-soft)';
 const ACTIVITY_CHART_GRID = 'var(--ui-dashboard-chart-grid)';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -130,8 +129,8 @@ export function ActivityChart({
           <RechartsAreaChart width={chartWidth} height={200} data={chartData}>
             <defs>
               <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={ACTIVITY_CHART_FILL} stopOpacity={1} />
-                <stop offset="95%" stopColor={ACTIVITY_CHART_FILL} stopOpacity={0.18} />
+                <stop offset="5%" stopColor={ACTIVITY_CHART_STROKE} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={ACTIVITY_CHART_STROKE} stopOpacity={0.05} />
               </linearGradient>
             </defs>
             <CartesianGrid stroke={ACTIVITY_CHART_GRID} strokeDasharray="4 4" vertical={false} />
