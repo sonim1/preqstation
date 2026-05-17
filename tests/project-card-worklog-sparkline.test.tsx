@@ -26,6 +26,10 @@ describe('app/components/project-card-worklog-sparkline', () => {
 
     expect(html).toContain('data-project-card-activity-strip="true"');
     expect(html).toContain('aria-label="7 work logs across the last 7 days"');
+    expect(html).not.toContain('role="img"');
+    expect(html).toContain('tabindex="0"');
+    expect(html).toContain('aria-label="Activity for Sun, Mar 8: no work logs"');
+    expect(html).toContain('aria-label="Activity for Mon, Mar 9: 1 work log"');
     expect(html).toContain('data-activity-date="2026-03-08"');
     expect(html).toContain('data-activity-date="2026-03-14"');
     expect(html).toContain('data-activity-level="0"');

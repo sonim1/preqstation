@@ -48,7 +48,7 @@ import { listProjectTaskLabels, listProjectTaskLabelUsageCounts } from '@/lib/ta
 import { normalizeTaskLabelColor, parseTaskLabelColor } from '@/lib/task-meta';
 import { resolveTerminology } from '@/lib/terminology';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
-import { listWorkLogsPage } from '@/lib/work-log-list';
+import { listProjectWorkLogYearActivity, listWorkLogsPage } from '@/lib/work-log-list';
 import { PROJECT_WORK_LOG_PAGE_SIZE } from '@/lib/work-log-pagination';
 
 import { ProjectSectionAnchorOffset } from './project-section-anchor-offset';
@@ -83,22 +83,6 @@ function toValidDate(value: Date | string | null | undefined) {
 function formatUtcDate(value: Date | string | null | undefined) {
   const parsed = toValidDate(value);
   return parsed ? parsed.toISOString().slice(0, 10) : null;
-}
-
-function buildVisibleWorkLogActivity(
-  workLogsList: Array<{ workedAt: Date | string | null | undefined }>,
-) {
-  const activityByDate = new Map<string, number>();
-
-  for (const log of workLogsList) {
-    const dateKey = formatUtcDate(log.workedAt);
-    if (!dateKey) continue;
-    activityByDate.set(dateKey, (activityByDate.get(dateKey) ?? 0) + 1);
-  }
-
-  return Array.from(activityByDate.entries())
-    .map(([date, count]) => ({ date, count }))
-    .sort((left, right) => left.date.localeCompare(right.date));
 }
 
 function formatCountLabel(count: number, singular: string, plural: string) {
@@ -139,41 +123,58 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   );
   if (!resolved) notFound();
 
-  const [project, kitchenMode, todos, rawLabels, labelUsageCounts, projectWorkLogPage] =
-    await withOwnerDb(owner.id, async (client) =>
-      Promise.all([
-        client.query.projects.findFirst({
-          where: and(
-            eq(projects.id, resolved.id),
-            eq(projects.ownerId, owner.id),
-            isNull(projects.deletedAt),
-          ),
-          with: {
-            projectSettings: {
-              columns: { key: true, value: true },
-            },
+  const [
+    project,
+    kitchenMode,
+    todos,
+    rawLabels,
+    labelUsageCounts,
+    projectWorkLogPage,
+    projectWorkLogYearActivity,
+  ] = await withOwnerDb(owner.id, async (client) => {
+    const timeZonePromise = getUserSetting(owner.id, SETTING_KEYS.TIMEZONE, client);
+
+    return Promise.all([
+      client.query.projects.findFirst({
+        where: and(
+          eq(projects.id, resolved.id),
+          eq(projects.ownerId, owner.id),
+          isNull(projects.deletedAt),
+        ),
+        with: {
+          projectSettings: {
+            columns: { key: true, value: true },
           },
-        }),
-        getUserSetting(owner.id, SETTING_KEYS.KITCHEN_MODE, client),
-        client.query.tasks.findMany({
-          where: and(eq(tasks.ownerId, owner.id), eq(tasks.projectId, resolved.id)),
-          orderBy: [asc(tasks.status), asc(tasks.sortOrder), desc(tasks.createdAt)],
-          with: {
-            label: {
-              columns: { id: true, name: true, color: true },
-            },
+        },
+      }),
+      getUserSetting(owner.id, SETTING_KEYS.KITCHEN_MODE, client),
+      client.query.tasks.findMany({
+        where: and(eq(tasks.ownerId, owner.id), eq(tasks.projectId, resolved.id)),
+        orderBy: [asc(tasks.status), asc(tasks.sortOrder), desc(tasks.createdAt)],
+        with: {
+          label: {
+            columns: { id: true, name: true, color: true },
           },
-        }),
-        listProjectTaskLabels(owner.id, resolved.id, client),
-        listProjectTaskLabelUsageCounts(owner.id, resolved.id, client),
-        listWorkLogsPage({
+        },
+      }),
+      listProjectTaskLabels(owner.id, resolved.id, client),
+      listProjectTaskLabelUsageCounts(owner.id, resolved.id, client),
+      listWorkLogsPage({
+        ownerId: owner.id,
+        projectId: resolved.id,
+        limit: PROJECT_WORK_LOG_PAGE_SIZE,
+        client,
+      }),
+      timeZonePromise.then((timeZone) =>
+        listProjectWorkLogYearActivity({
           ownerId: owner.id,
           projectId: resolved.id,
-          limit: PROJECT_WORK_LOG_PAGE_SIZE,
+          timeZone,
           client,
         }),
-      ]),
-    );
+      ),
+    ]);
+  });
 
   const labelUsageCountById = new Map(
     labelUsageCounts.map((row) => [row.labelId, row.usageCount] as const),
@@ -208,7 +209,6 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   const hasAgentInstructions = trimmedAgentInstructions.length > 0;
   const hasRepo = Boolean(project.repoUrl);
   const latestWorkLog = projectWorkLogPage.workLogs[0] ?? null;
-  const visibleWorkLogActivity = buildVisibleWorkLogActivity(projectWorkLogPage.workLogs);
   const recentWorkLogCount = projectWorkLogPage.workLogs.length;
   const lastWorkedAt = toValidDate(latestWorkLog?.workedAt);
   const lastProjectUpdate = toValidDate(project.updatedAt);
@@ -961,7 +961,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
             </Group>
 
             <DashboardYearlyHeatmap
-              data={visibleWorkLogActivity}
+              data={projectWorkLogYearActivity}
               title="Activity evidence"
               description={`${formatCountLabel(todos.length, 'total task', 'total tasks')} · ${formatCountLabel(recentWorkLogCount, 'recent work log', 'recent work logs')}`}
             />

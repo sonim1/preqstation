@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocked = vi.hoisted(() => ({
   getOwnerUserOrNull: vi.fn(),
   getUserSetting: vi.fn(),
+  listProjectWorkLogYearActivity: vi.fn(),
   listProjectTaskLabels: vi.fn(),
   listProjectTaskLabelUsageCounts: vi.fn(),
   listWorkLogsPage: vi.fn(),
@@ -297,11 +298,12 @@ vi.mock('@/lib/terminology', () => ({
 }));
 
 vi.mock('@/lib/user-settings', () => ({
-  SETTING_KEYS: { KITCHEN_MODE: 'kitchenMode' },
+  SETTING_KEYS: { KITCHEN_MODE: 'kitchenMode', TIMEZONE: 'timezone' },
   getUserSetting: mocked.getUserSetting,
 }));
 
 vi.mock('@/lib/work-log-list', () => ({
+  listProjectWorkLogYearActivity: mocked.listProjectWorkLogYearActivity,
   listWorkLogsPage: mocked.listWorkLogsPage,
 }));
 
@@ -340,7 +342,10 @@ describe('project detail page', () => {
       projectSettings: [],
     });
     mocked.tasksFindMany.mockResolvedValue([]);
-    mocked.getUserSetting.mockResolvedValue('false');
+    mocked.getUserSetting.mockImplementation((_ownerId: string, key: string) =>
+      Promise.resolve(key === 'timezone' ? 'UTC' : 'false'),
+    );
+    mocked.listProjectWorkLogYearActivity.mockResolvedValue([]);
     mocked.listWorkLogsPage.mockResolvedValue({
       workLogs: [],
       nextOffset: null,
@@ -523,6 +528,11 @@ describe('project detail page', () => {
       ],
       nextOffset: null,
     });
+    mocked.listProjectWorkLogYearActivity.mockResolvedValueOnce([
+      { date: '2026-01-01', count: 0 },
+      { date: '2026-04-25', count: 7 },
+      { date: '2026-04-26', count: 4 },
+    ]);
 
     const html = renderToStaticMarkup(
       await ProjectDetailPage({
@@ -533,9 +543,15 @@ describe('project detail page', () => {
     expect(html).toContain('Activity evidence');
     expect(html).toContain('Task pipeline evidence');
     expect(html).toContain('data-testid="dashboard-yearly-heatmap"');
-    expect(html).toContain('data-values="2026-04-25:1,2026-04-26:2"');
+    expect(html).toContain('data-values="2026-01-01:0,2026-04-25:7,2026-04-26:4"');
     expect(html).toContain('4 total tasks');
     expect(html).toContain('3 recent work logs');
+    expect(mocked.listProjectWorkLogYearActivity).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      projectId: 'project-1',
+      timeZone: 'UTC',
+      client: mocked.db,
+    });
   });
 
   it('uses the neutral recent-activity color for inactive projects with work logs', async () => {

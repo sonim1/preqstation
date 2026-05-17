@@ -34,3 +34,8 @@
   background: color-mix(in srgb, var(--ui-status-running), transparent 16%);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-status-running-glow), transparent 22%);
 }
+
+.cell:focus-visible {
+  outline: 2px solid var(--mantine-color-blue-6);
+  outline-offset: 2px;
+}

@@ -26,6 +26,10 @@ function formatLogCount(count: number) {
   return `${count} work log${count === 1 ? '' : 's'}`;
 }
 
+function formatActivityCount(count: number) {
+  return count === 0 ? 'no work logs' : formatLogCount(count);
+}
+
 function getActivityLevel(count: number) {
   if (count <= 0) return 0;
   if (count === 1) return 1;
@@ -44,14 +48,9 @@ export function ProjectCardWorklogSparkline({
   const label = `${formatLogCount(total)} across the last ${data.length} days`;
 
   return (
-    <div
-      aria-label={label}
-      className={classes.strip}
-      data-project-card-activity-strip="true"
-      role="img"
-    >
+    <div aria-label={label} className={classes.strip} data-project-card-activity-strip="true">
       {data.map((point) => {
-        const pointLabel = `${formatSparklineDate(point.date)}: ${formatLogCount(point.count)}`;
+        const pointLabel = `Activity for ${formatSparklineDate(point.date)}: ${formatActivityCount(point.count)}`;
 
         return (
           <Tooltip key={point.date} label={pointLabel} withArrow>
@@ -60,6 +59,7 @@ export function ProjectCardWorklogSparkline({
               className={classes.cell}
               data-activity-date={point.date}
               data-activity-level={getActivityLevel(point.count)}
+              tabIndex={0}
             />
           </Tooltip>
         );
