@@ -121,6 +121,47 @@ function expectComputedToken(selector: string, property: string, token: string) 
   expect(value).not.toContain('black');
 }
 
+function parseHexColor(value: string): [number, number, number] {
+  const match = value.trim().match(/^#([0-9a-f]{6})$/i);
+
+  expect(match, `Expected ${value} to be a six-digit hex color`).not.toBeNull();
+
+  const hex = match![1];
+
+  return [0, 2, 4].map((offset) => Number.parseInt(hex.slice(offset, offset + 2), 16)) as [
+    number,
+    number,
+    number,
+  ];
+}
+
+function relativeLuminance([red, green, blue]: [number, number, number]) {
+  const [r, g, b] = [red, green, blue].map((channel) => {
+    const scaled = channel / 255;
+
+    return scaled <= 0.03928 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
+  });
+
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+function contrastRatio(foreground: [number, number, number], background: [number, number, number]) {
+  const foregroundLum = relativeLuminance(foreground);
+  const backgroundLum = relativeLuminance(background);
+  const lighter = Math.max(foregroundLum, backgroundLum);
+  const darker = Math.min(foregroundLum, backgroundLum);
+
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function expectTokenContrast(token: string, backgroundHex: string, minimumRatio: number) {
+  const rootStyle = window.getComputedStyle(document.documentElement);
+  const foreground = parseHexColor(rootStyle.getPropertyValue(token));
+  const background = parseHexColor(backgroundHex);
+
+  expect(contrastRatio(foreground, background)).toBeGreaterThanOrEqual(minimumRatio);
+}
+
 describe('board frame token contract', () => {
   beforeAll(() => {
     Object.defineProperty(window, 'matchMedia', {
@@ -144,6 +185,7 @@ describe('board frame token contract', () => {
   });
 
   beforeEach(() => {
+    document.documentElement.setAttribute('data-mantine-color-scheme', 'light');
     droppableState.isDraggingOver = false;
     pullToRefreshState.isArmed = false;
     pullToRefreshState.pullDistance = 0;
@@ -169,10 +211,39 @@ describe('board frame token contract', () => {
       '--kanban-frame-chrome-surface',
       '--kanban-frame-chrome-surface-hover',
       '--kanban-frame-chrome-border',
+      '--kanban-frame-chrome-highlight',
       '--kanban-frame-chrome-shadow',
+      '--kanban-frame-mobile-tab-shadow',
     ]) {
       expect(rootStyle.getPropertyValue(token).trim().length).toBeGreaterThan(0);
     }
+  });
+
+  it('keeps the mobile tab bar separator shadow pointed upward', () => {
+    const rootStyle = window.getComputedStyle(document.documentElement);
+
+    expect(rootStyle.getPropertyValue('--kanban-frame-mobile-tab-shadow')).toMatch(/^0px\s+-/);
+    expect(globalsCss).toMatch(
+      /\.kanban-mobile-tab-bar\s*\{[\s\S]*box-shadow:\s*var\(--kanban-frame-mobile-tab-shadow\);/,
+    );
+  });
+
+  it('keeps light-mode status button foreground tokens contrast-safe', () => {
+    expectTokenContrast('--ui-status-queued-foreground', '#ffffff', 3);
+    expectTokenContrast('--ui-status-running-foreground', '#ffffff', 3);
+  });
+
+  it('maps dark-mode status button foreground tokens back to status colors', () => {
+    document.documentElement.setAttribute('data-mantine-color-scheme', 'dark');
+
+    const rootStyle = window.getComputedStyle(document.documentElement);
+
+    expect(rootStyle.getPropertyValue('--ui-status-queued-foreground')).toContain(
+      'var(--ui-status-queued)',
+    );
+    expect(rootStyle.getPropertyValue('--ui-status-running-foreground')).toContain(
+      'var(--ui-status-running)',
+    );
   });
 
   it('computes desktop columns, quick add, and action island chrome from board tokens', () => {
@@ -297,9 +368,13 @@ describe('board frame token contract', () => {
     );
     expectComputedToken('.kanban-column.is-drag-over', 'box-shadow', '--ui-status-running-border');
     expectComputedToken('.kanban-archive-error', 'color', '--ui-danger');
-    expectComputedToken('.kanban-status-button.is-inbox', 'color', '--ui-status-queued');
+    expectComputedToken('.kanban-status-button.is-inbox', 'color', '--ui-status-queued-foreground');
     expectComputedToken('.kanban-status-button.is-hold', 'color', '--ui-warning');
-    expectComputedToken('.kanban-status-button.is-ready', 'color', '--ui-status-running');
+    expectComputedToken(
+      '.kanban-status-button.is-ready',
+      'color',
+      '--ui-status-running-foreground',
+    );
     expectComputedToken('.kanban-status-button.is-done', 'color', '--ui-success');
   });
 });

@@ -42,8 +42,10 @@
   --ui-panel-orb: radial-gradient(circle, rgba(56, 189, 248, 0.16), transparent 70%);
   --ui-panel-blur: 4px;
   --ui-status-queued: #a8bfff;
+  --ui-status-queued-foreground: #4d7496;
   --ui-status-queued-border: rgba(62, 106, 225, 0.26);
   --ui-status-running: #38bdf8;
+  --ui-status-running-foreground: #c27318;
   --ui-status-running-soft: rgba(56, 189, 248, 0.12);
   --ui-status-running-border: rgba(56, 189, 248, 0.26);
   --ui-status-running-border-strong: rgba(56, 189, 248, 0.42);
@@ -72,6 +74,7 @@
   --kanban-frame-chrome-border: color-mix(in srgb, var(--ui-border), transparent 10%);
   --kanban-frame-chrome-highlight: color-mix(in srgb, var(--ui-surface-strong) 54%, transparent);
   --kanban-frame-chrome-shadow: var(--ui-elevation-3);
+  --kanban-frame-mobile-tab-shadow: 0px -18px 30px -28px rgba(21, 45, 89, 0.46);
   --kanban-stage-surface: var(--kanban-frame-stage-surface);
 }
 
@@ -129,6 +132,8 @@ html[data-mantine-color-scheme='dark'] {
   --ui-hero-bg: linear-gradient(170deg, rgba(14, 25, 42, 0.96), rgba(20, 35, 57, 0.92));
   --ui-card-bg: linear-gradient(180deg, rgba(22, 35, 57, 0.96), rgba(16, 26, 43, 0.95));
   --ui-panel-orb: radial-gradient(circle, rgba(59, 130, 246, 0.14), transparent 70%);
+  --ui-status-queued-foreground: var(--ui-status-queued);
+  --ui-status-running-foreground: var(--ui-status-running);
   --ui-status-running-soft: rgba(56, 189, 248, 0.18);
   --ui-status-running-glow: rgba(56, 189, 248, 0.28);
   --mantine-color-text: var(--ui-text);
@@ -157,6 +162,7 @@ html[data-mantine-color-scheme='dark'] {
   --kanban-frame-chrome-border: color-mix(in srgb, var(--ui-border), transparent 12%);
   --kanban-frame-chrome-highlight: color-mix(in srgb, var(--ui-surface-strong) 36%, transparent);
   --kanban-frame-chrome-shadow: var(--ui-elevation-3);
+  --kanban-frame-mobile-tab-shadow: 0px -18px 30px -28px rgba(0, 0, 0, 0.82);
   --kanban-stage-surface: var(--kanban-frame-stage-surface);
 }
 
@@ -1656,7 +1662,7 @@ button.task-notification-item:disabled {
 }
 
 .kanban-status-button.is-inbox {
-  color: var(--ui-status-queued);
+  color: var(--ui-status-queued-foreground);
 }
 
 .kanban-status-button.is-hold {
@@ -1664,7 +1670,7 @@ button.task-notification-item:disabled {
 }
 
 .kanban-status-button.is-ready {
-  color: var(--ui-status-running);
+  color: var(--ui-status-running-foreground);
 }
 
 .kanban-status-button.is-done {
@@ -2454,7 +2460,7 @@ html[data-mantine-color-scheme='dark'] .kanban-mobile-panel {
 
   html[data-mantine-color-scheme='dark'] .kanban-mobile-tab-bar {
     background: var(--kanban-frame-chrome-surface);
-    box-shadow: var(--kanban-frame-chrome-shadow);
+    box-shadow: var(--kanban-frame-mobile-tab-shadow);
   }
 
   html[data-mantine-color-scheme='dark'] .workspace-header,
@@ -2630,7 +2636,7 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
     min-height: var(--kanban-mobile-tab-bar-height);
     padding: 0 0 env(safe-area-inset-bottom);
     background: var(--kanban-frame-chrome-surface);
-    box-shadow: var(--kanban-frame-chrome-shadow);
+    box-shadow: var(--kanban-frame-mobile-tab-shadow);
     backdrop-filter: blur(16px) saturate(1.12);
     -webkit-backdrop-filter: blur(16px) saturate(1.12);
   }
