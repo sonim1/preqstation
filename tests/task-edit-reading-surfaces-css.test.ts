@@ -72,17 +72,33 @@ function findClosingBrace(source: string, openingBraceIndex: number) {
 }
 
 function getRuleBody(source: string, selector: string) {
-  const selectorIndex = source.indexOf(selector);
-  if (selectorIndex < 0) {
-    throw new Error(`Missing CSS selector: ${selector}`);
+  for (let searchStart = 0; searchStart < source.length; ) {
+    const selectorIndex = source.indexOf(selector, searchStart);
+    if (selectorIndex < 0) {
+      break;
+    }
+
+    const openingBraceIndex = source.indexOf('{', selectorIndex + selector.length);
+    if (openingBraceIndex < 0) {
+      break;
+    }
+
+    const selectorStart =
+      Math.max(source.lastIndexOf('}', selectorIndex), source.lastIndexOf('{', selectorIndex)) + 1;
+    const selectorList = source.slice(selectorStart, openingBraceIndex);
+    const selectorMatches = selectorList
+      .split(',')
+      .map((candidate) => candidate.trim())
+      .includes(selector);
+
+    if (selectorMatches) {
+      return source.slice(openingBraceIndex + 1, findClosingBrace(source, openingBraceIndex));
+    }
+
+    searchStart = selectorIndex + selector.length;
   }
 
-  const openingBraceIndex = source.indexOf('{', selectorIndex + selector.length);
-  if (openingBraceIndex < 0) {
-    throw new Error(`Missing rule body for CSS selector: ${selector}`);
-  }
-
-  return source.slice(openingBraceIndex + 1, findClosingBrace(source, openingBraceIndex));
+  throw new Error(`Missing CSS selector: ${selector}`);
 }
 
 function expectTokenBackground(ruleBody: string, tokenName: string) {
@@ -91,6 +107,16 @@ function expectTokenBackground(ruleBody: string, tokenName: string) {
 }
 
 describe('task edit reading surface CSS', () => {
+  it('matches exact selector names when reading rule bodies', () => {
+    const ruleBody = getRuleBody(
+      '.live-editor-link-button { color: red; } .live-editor-link { color: blue; }',
+      '.live-editor-link',
+    );
+
+    expect(ruleBody).toContain('color: blue;');
+    expect(ruleBody).not.toContain('color: red;');
+  });
+
   it('defines shared reading surface tokens in light and dark scopes', () => {
     const lightTokens = getRuleBody(globalsCss, ':root');
     const darkTokens = getRuleBody(globalsCss, "html[data-mantine-color-scheme='dark']");
@@ -159,11 +185,16 @@ describe('task edit reading surface CSS', () => {
   });
 
   it('uses semantic tokens for editor and markdown text accents', () => {
+    const rootTokens = getRuleBody(globalsCss, ':root');
     const markdownCodeRule = getRuleBody(globalsCss, '.markdown-output code');
     const liveEditorCodeRule = getRuleBody(globalsCss, '.live-editor-code');
     const liveEditorCodeBlockRule = getRuleBody(globalsCss, '.live-editor-code-block');
     const liveEditorQuoteRule = getRuleBody(globalsCss, '.live-editor-quote');
     const liveEditorLinkRule = getRuleBody(globalsCss, '.live-editor-link');
+    const tokenSelectorRule = getRuleBody(globalsCss, '.live-editor-tokenSelector');
+    const tokenFunctionRule = getRuleBody(globalsCss, '.live-editor-tokenFunction');
+    const selectorTokenValue = rootTokens.match(/--ui-syntax-selector:\s*([^;]+);/)?.[1];
+    const functionTokenValue = rootTokens.match(/--ui-syntax-function:\s*([^;]+);/)?.[1];
 
     for (const ruleBody of [
       markdownCodeRule,
@@ -176,6 +207,12 @@ describe('task edit reading surface CSS', () => {
       expect(ruleBody).not.toContain('var(--mantine-color-');
       expect(ruleBody).not.toMatch(/#[0-9a-fA-F]{3,8}|rgba?\(/);
     }
+
+    expect(tokenSelectorRule).toContain('color: var(--ui-syntax-selector);');
+    expect(tokenFunctionRule).toContain('color: var(--ui-syntax-function);');
+    expect(selectorTokenValue).toBeTruthy();
+    expect(functionTokenValue).toBeTruthy();
+    expect(selectorTokenValue).not.toBe(functionTokenValue);
   });
 
   it('keeps mermaid fallback source readable on the tokenized canvas in dark mode', () => {
