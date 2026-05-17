@@ -2,9 +2,6 @@
 .kanbanCard {
   --kanban-card-radius: 6px;
   --kanban-card-focus-ring: inset 0 0 0 0 transparent;
-  --kanban-card-tooltip-surface: var(--ui-surface-elevated-strong);
-  --kanban-card-tooltip-text: var(--ui-text);
-  --kanban-card-tooltip-border: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
   --kanban-card-chip-inset: inset 0 0 0 1px
     color-mix(in srgb, var(--ui-surface-strong), transparent 76%);
   --kanban-card-shadow-outline: color-mix(in srgb, var(--ui-surface-strong), transparent 44%);
@@ -429,9 +426,9 @@
 
 .kanbanCardMenuDispatchTooltip {
   max-width: 16rem;
-  --kanban-card-tooltip-surface: var(--ui-surface-elevated-strong);
-  --kanban-card-tooltip-text: var(--ui-text);
-  --kanban-card-tooltip-border: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
+  --kanban-card-tooltip-surface: var(--ui-tooltip-surface);
+  --kanban-card-tooltip-text: var(--ui-tooltip-text);
+  --kanban-card-tooltip-border: var(--ui-tooltip-border);
 
   background: var(--kanban-card-tooltip-surface);
   color: var(--kanban-card-tooltip-text);
@@ -615,9 +612,9 @@
 }
 
 .kanbanLabelTooltipSurface {
-  --kanban-card-tooltip-surface: var(--ui-surface-elevated-strong);
-  --kanban-card-tooltip-text: var(--ui-text);
-  --kanban-card-tooltip-border: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
+  --kanban-card-tooltip-surface: var(--ui-tooltip-surface);
+  --kanban-card-tooltip-text: var(--ui-tooltip-text);
+  --kanban-card-tooltip-border: var(--ui-tooltip-border);
 
   background: var(--kanban-card-tooltip-surface);
   color: var(--kanban-card-tooltip-text);

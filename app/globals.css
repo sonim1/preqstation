@@ -60,7 +60,11 @@
   --ui-workflow-status-hold: var(--ui-warning);
   --ui-workflow-status-ready: color-mix(in srgb, var(--ui-warning), var(--ui-accent) 18%);
   --ui-workflow-status-done: var(--ui-success);
+  --ui-workflow-status-done-indicator: var(--ui-workflow-status-done);
   --ui-workflow-status-archived: var(--ui-muted-text);
+  --ui-tooltip-surface: var(--ui-surface-elevated-strong);
+  --ui-tooltip-text: var(--ui-text);
+  --ui-tooltip-border: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
   --ui-hit-min: 24px;
   --ui-hit-touch-min: 44px;
   --ui-control-sm: 28px;
@@ -159,6 +163,11 @@ html[data-mantine-color-scheme='dark'] {
   --ui-panel-orb: radial-gradient(circle, rgba(59, 130, 246, 0.14), transparent 70%);
   --ui-status-running-soft: rgba(56, 189, 248, 0.18);
   --ui-status-running-glow: rgba(56, 189, 248, 0.28);
+  --ui-workflow-status-done-indicator: color-mix(
+    in srgb,
+    var(--ui-success),
+    var(--mantine-color-body) 42%
+  );
   --mantine-color-text: var(--ui-text);
   --mantine-color-dimmed: var(--ui-muted-text);
   --mantine-color-body: #0b1426;
@@ -1651,10 +1660,6 @@ button.task-notification-item:disabled {
   --kanban-workflow-status-color: var(--ui-workflow-status-inbox);
 }
 
-.kanban-status-button.is-todo {
-  --kanban-workflow-status-color: var(--ui-workflow-status-todo);
-}
-
 .kanban-status-button.is-hold {
   --kanban-workflow-status-color: var(--ui-workflow-status-hold);
 }
@@ -1710,8 +1715,8 @@ button.task-notification-item:disabled {
 }
 
 .kanban-status-indicator.is-done {
-  background: var(--ui-workflow-status-done);
-  border-color: var(--ui-workflow-status-done);
+  background: var(--ui-workflow-status-done-indicator);
+  border-color: var(--ui-workflow-status-done-indicator);
 }
 
 .kanban-status-indicator.is-done .kanban-status-indicator-fill {

@@ -197,6 +197,32 @@ function getCardForTitle(title: string) {
   return card as HTMLElement;
 }
 
+function renderCardsCssFixture(markup: string, includeGlobals = false) {
+  const style = document.createElement('style');
+  const fixture = document.createElement('div');
+
+  style.textContent = `${includeGlobals ? `${globalsCss}\n` : ''}${cardsCss}`;
+  fixture.innerHTML = markup;
+  document.head.append(style);
+  document.body.append(fixture);
+
+  return {
+    fixture,
+    cleanup: () => {
+      fixture.remove();
+      style.remove();
+    },
+  };
+}
+
+function getRequiredFixtureElement(fixture: HTMLElement, testId: string) {
+  const element = fixture.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+
+  expect(element).not.toBeNull();
+
+  return element!;
+}
+
 describe('app/components/kanban-card', () => {
   beforeEach(() => {
     vi.stubGlobal(
@@ -330,16 +356,41 @@ describe('app/components/kanban-card', () => {
   });
 
   it('keeps card state shadows on semantic local variables instead of raw shadow colors', () => {
-    const cardRule = getCssRuleBody(cardsCss, '.kanbanCard');
+    const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
+      '<article class="kanbanCard" data-testid="card"></article>',
+    );
 
-    expect(cardRule).toContain('--kanban-card-shadow-outline: color-mix(');
-    expect(cardRule).toContain('--kanban-card-shadow-ambient: color-mix(');
-    expect(cardRule).toContain('--kanban-card-shadow-queued-glow: color-mix(');
-    expect(cardRule).toContain('--kanban-card-shadow-running-ambient: color-mix(');
-    expect(cardRule).toContain('0 0 0 1px var(--kanban-card-shadow-outline)');
-    expect(cardRule).toContain('var(--kanban-card-shadow-queued-glow)');
-    expect(cardRule).toContain('var(--kanban-card-shadow-running-ambient)');
-    expect(cardRule).not.toMatch(/rgba\((?:255, 255, 255|24, 44, 84|33, 56, 97|8, 23, 40)/);
+    try {
+      const cardStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'card'));
+      const shadowProperties = [
+        '--kanban-card-shadow-outline',
+        '--kanban-card-shadow-ambient',
+        '--kanban-card-shadow-queued-glow',
+        '--kanban-card-shadow-running-ambient',
+      ];
+
+      for (const property of shadowProperties) {
+        const value = cardStyle.getPropertyValue(property);
+
+        expect(value).toContain('color-mix(');
+        expect(value).not.toMatch(/rgba\((?:255, 255, 255|24, 44, 84|33, 56, 97|8, 23, 40)/);
+      }
+
+      expect(cardStyle.boxShadow).toBe(
+        'var(--kanban-card-focus-ring), var(--kanban-card-shadow-rest)',
+      );
+      expect(cardStyle.getPropertyValue('--kanban-card-shadow-rest')).toContain(
+        '0 0 0 1px var(--kanban-card-shadow-outline)',
+      );
+      expect(cardStyle.getPropertyValue('--kanban-card-shadow-queued')).toContain(
+        'var(--kanban-card-shadow-queued-glow)',
+      );
+      expect(cardStyle.getPropertyValue('--kanban-card-shadow-running')).toContain(
+        'var(--kanban-card-shadow-running-ambient)',
+      );
+    } finally {
+      cleanupFixture();
+    }
   });
 
   it('derives run-state wave chrome from execution tokens and local mechanics variables', () => {
@@ -384,25 +435,55 @@ describe('app/components/kanban-card', () => {
   });
 
   it('keeps label, metadata, and tooltip surfaces on the card surface hierarchy', () => {
-    const cardRule = getCssRuleBody(cardsCss, '.kanbanCard');
-    const metaChipRule = getCssRuleBody(cardsCss, '.kanbanMetaChip');
-    const runChipRule = getCssRuleBody(cardsCss, '.kanbanRunStateChip');
-    const menuTooltipRule = getCssRuleBody(cardsCss, '.kanbanCardMenuDispatchTooltip');
-    const labelTooltipRule = getCssRuleBody(cardsCss, '.kanbanLabelTooltipSurface');
+    const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(`
+      <article class="kanbanCard" data-testid="card">
+        <span class="kanbanMetaChip" data-testid="meta-chip"></span>
+        <span class="kanbanMetaChip kanbanRunStateChip" data-testid="run-chip"></span>
+      </article>
+      <div class="kanbanCardMenuDispatchTooltip" data-testid="menu-tooltip"></div>
+      <div class="kanbanLabelTooltipSurface" data-testid="label-tooltip"></div>
+    `);
 
-    expect(cardRule).toContain('--kanban-card-tooltip-surface: var(--ui-surface-elevated-strong);');
-    expect(cardRule).toContain('--kanban-card-tooltip-text: var(--ui-text);');
-    expect(metaChipRule).toContain('background: var(--ui-surface-elevated);');
-    expect(metaChipRule).toContain('box-shadow: var(--kanban-card-chip-inset);');
-    expect(runChipRule).toContain('background: var(--ui-surface-elevated-strong);');
+    try {
+      const cardStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'card'));
+      const metaChipStyle = window.getComputedStyle(
+        getRequiredFixtureElement(fixture, 'meta-chip'),
+      );
+      const runChipStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'run-chip'));
+      const tooltipStyles = ['menu-tooltip', 'label-tooltip'].map((testId) =>
+        window.getComputedStyle(getRequiredFixtureElement(fixture, testId)),
+      );
 
-    for (const tooltipRule of [menuTooltipRule, labelTooltipRule]) {
-      expect(tooltipRule).toContain('background: var(--kanban-card-tooltip-surface);');
-      expect(tooltipRule).toContain('color: var(--kanban-card-tooltip-text);');
-      expect(tooltipRule).toContain('border: var(--kanban-card-tooltip-border);');
+      expect(cardStyle.getPropertyValue('--kanban-card-tooltip-surface')).toBe('');
+      expect(cardStyle.getPropertyValue('--kanban-card-tooltip-text')).toBe('');
+      expect(cardStyle.getPropertyValue('--kanban-card-tooltip-border')).toBe('');
+      expect(metaChipStyle.background).toBe('var(--ui-surface-elevated)');
+      expect(metaChipStyle.boxShadow).toBe('var(--kanban-card-chip-inset)');
+      expect(runChipStyle.background).toBe('var(--ui-surface-elevated-strong)');
+
+      for (const tooltipStyle of tooltipStyles) {
+        expect(tooltipStyle.getPropertyValue('--kanban-card-tooltip-surface')).toBe(
+          'var(--ui-tooltip-surface)',
+        );
+        expect(tooltipStyle.getPropertyValue('--kanban-card-tooltip-text')).toBe(
+          'var(--ui-tooltip-text)',
+        );
+        expect(tooltipStyle.getPropertyValue('--kanban-card-tooltip-border')).toBe(
+          'var(--ui-tooltip-border)',
+        );
+        expect(tooltipStyle.background).toBe('var(--kanban-card-tooltip-surface)');
+        expect(tooltipStyle.color).toBe('var(--kanban-card-tooltip-text)');
+        expect(
+          [
+            tooltipStyle.getPropertyValue('--kanban-card-tooltip-surface'),
+            tooltipStyle.getPropertyValue('--kanban-card-tooltip-text'),
+            tooltipStyle.getPropertyValue('--kanban-card-tooltip-border'),
+          ].join('\n'),
+        ).not.toMatch(/#[0-9a-fA-F]{3,8}|rgba\(/);
+      }
+    } finally {
+      cleanupFixture();
     }
-
-    expect(`${menuTooltipRule}\n${labelTooltipRule}`).not.toMatch(/#[0-9a-fA-F]{3,8}|rgba\(/);
   });
 
   it('marks hold cards with a left warning accent instead of coloring the whole lane', () => {

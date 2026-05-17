@@ -163,8 +163,8 @@ describe('app/components/kanban-card label tooltip behavior', () => {
 
     expect(html).toContain('data-kanban-label="primary"');
     expect(html).toContain('data-tooltip-open-delay="0"');
-    expect(html).toContain('data-tooltip-style-bg="var(--ui-surface-elevated-strong)"');
-    expect(html).toContain('data-tooltip-style-color="var(--ui-text)"');
+    expect(html).toContain('data-tooltip-style-bg="var(--ui-tooltip-surface)"');
+    expect(html).toContain('data-tooltip-style-color="var(--ui-tooltip-text)"');
   });
 
   it('opens hidden-label tooltip immediately and uses the dedicated tooltip surface styling hook', () => {
@@ -182,8 +182,8 @@ describe('app/components/kanban-card label tooltip behavior', () => {
     );
 
     expect(html).toContain('data-tooltip-open-delay="0"');
-    expect(html).toContain('data-tooltip-style-bg="var(--ui-surface-elevated-strong)"');
-    expect(html).toContain('data-tooltip-style-color="var(--ui-text)"');
+    expect(html).toContain('data-tooltip-style-bg="var(--ui-tooltip-surface)"');
+    expect(html).toContain('data-tooltip-style-color="var(--ui-tooltip-text)"');
     expect(html).toContain('data-kanban-label-summary="true"');
     expect(html).toContain('>UI</span>');
     expect(html).toContain('>Manual</span>');
@@ -192,8 +192,8 @@ describe('app/components/kanban-card label tooltip behavior', () => {
         openDelay: 0,
         styles: expect.objectContaining({
           tooltip: expect.objectContaining({
-            background: 'var(--ui-surface-elevated-strong)',
-            color: 'var(--ui-text)',
+            background: 'var(--ui-tooltip-surface)',
+            color: 'var(--ui-tooltip-text)',
           }),
         }),
       }),
@@ -222,8 +222,8 @@ describe('app/components/kanban-card label tooltip behavior', () => {
 
     expect(html).toContain('data-kanban-label-shortcut="labels"');
     expect(html).toContain('data-tooltip-open-delay="0"');
-    expect(html).toContain('data-tooltip-style-bg="var(--ui-surface-elevated-strong)"');
-    expect(html).toContain('data-tooltip-style-color="var(--ui-text)"');
+    expect(html).toContain('data-tooltip-style-bg="var(--ui-tooltip-surface)"');
+    expect(html).toContain('data-tooltip-style-color="var(--ui-tooltip-text)"');
   });
 
   it('shows the telegram detail as separate rows in the desktop send tooltip', () => {
