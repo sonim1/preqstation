@@ -79,8 +79,7 @@
   --kanban-card-focus-ring: inset 0 0 0 2px var(--ui-accent);
   box-shadow:
     var(--kanban-card-focus-ring),
-    0 0 0 4px color-mix(in srgb, var(--ui-accent), transparent 82%),
-    var(--kanban-card-shadow-rest);
+    0 0 0 4px color-mix(in srgb, var(--ui-accent), transparent 82%);
   animation: kanbanCardFocusPulse 2s ease-in-out infinite;
   z-index: 10;
 }
@@ -89,20 +88,17 @@
   0% {
     box-shadow:
       var(--kanban-card-focus-ring),
-      0 0 0 0px color-mix(in srgb, var(--ui-accent), transparent 60%),
-      var(--kanban-card-shadow-rest);
+      0 0 0 0px color-mix(in srgb, var(--ui-accent), transparent 60%);
   }
   50% {
     box-shadow:
       var(--kanban-card-focus-ring),
-      0 0 0 8px color-mix(in srgb, var(--ui-accent), transparent 88%),
-      var(--kanban-card-shadow-rest);
+      0 0 0 8px color-mix(in srgb, var(--ui-accent), transparent 88%);
   }
   100% {
     box-shadow:
       var(--kanban-card-focus-ring),
-      0 0 0 0px color-mix(in srgb, var(--ui-accent), transparent 60%),
-      var(--kanban-card-shadow-rest);
+      0 0 0 0px color-mix(in srgb, var(--ui-accent), transparent 60%);
   }
 }
 

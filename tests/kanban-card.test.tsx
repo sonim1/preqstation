@@ -125,6 +125,28 @@ function getCssRuleBody(source: string, selector: string) {
   return match?.[1] ?? '';
 }
 
+function getCssBlockBody(source: string, prelude: string) {
+  const start = source.indexOf(prelude);
+  if (start === -1) return '';
+
+  const openBrace = source.indexOf('{', start);
+  if (openBrace === -1) return '';
+
+  let depth = 0;
+  for (let index = openBrace; index < source.length; index += 1) {
+    if (source[index] === '{') {
+      depth += 1;
+    } else if (source[index] === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(openBrace + 1, index);
+      }
+    }
+  }
+
+  return '';
+}
+
 function resolveWaveTopHeadroom(runState: 'queued' | 'running') {
   const { paths, waveHeight, waveShiftPercent, bandTopClearance } = getRunStateWaveConfig(runState);
   const highestCrest = Math.min(
@@ -285,6 +307,16 @@ describe('app/components/kanban-card', () => {
     expect(cardsCss).toMatch(
       /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.kanbanCard\.isFocused\s*\{[\s\S]*animation:\s*none;/,
     );
+  });
+
+  it('keeps focused card shadows valid when resting card elevation is disabled', () => {
+    const focusedRule = getCssBlockBody(cardsCss, '.kanbanCard.isFocused');
+    const focusPulseKeyframes = getCssBlockBody(cardsCss, '@keyframes kanbanCardFocusPulse');
+
+    expect(focusedRule).toContain('box-shadow:');
+    expect(focusPulseKeyframes).toContain('box-shadow:');
+    expect(focusedRule).not.toContain('var(--kanban-card-shadow-rest)');
+    expect(focusPulseKeyframes).not.toContain('var(--kanban-card-shadow-rest)');
   });
 
   it('keeps the wave band geometry tied to top-clearance variables', () => {
