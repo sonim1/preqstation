@@ -532,9 +532,10 @@
 }
 
 .kanbanLabelTooltipSurface {
-  background: var(--ui-surface-elevated-strong);
-  color: var(--ui-text);
-  border: 1px solid var(--ui-border);
+  background: rgba(11, 20, 38, 0.96);
+  color: #f5f8ff;
+  border: 1px solid
+    color-mix(in srgb, rgba(255, 255, 255, 0.08) 94%, var(--ui-surface-elevated-strong));
   box-shadow: none;
 }
 
