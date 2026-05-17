@@ -26,7 +26,7 @@ type MetricCardProps = {
 const METRIC_TONE_TOKENS: Record<MetricCardProps['tone'], string> = {
   focus: 'var(--ui-workflow-todo)',
   hold: 'var(--ui-workflow-hold)',
-  todo: 'var(--ui-workflow-ready)',
+  todo: 'var(--ui-workflow-todo)',
   done: 'var(--ui-workflow-done)',
   active: 'var(--ui-status-running)',
 };

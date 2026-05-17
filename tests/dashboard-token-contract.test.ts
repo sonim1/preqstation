@@ -155,6 +155,7 @@ vi.mock('next/link', () => ({
 
 import { ActivityChart } from '@/app/components/activity-chart';
 import { DashboardActivityFlowBarsList } from '@/app/components/dashboard-activity-flow-bars-list';
+import { DashboardMetrics } from '@/app/components/dashboard-metrics';
 import type { DashboardPortfolioOverviewData } from '@/app/components/dashboard-portfolio-overview';
 import { DashboardServicePaceSparkline } from '@/app/components/dashboard-service-pace-sparkline';
 import { TaskDistributionChart } from '@/app/components/task-distribution-chart';
@@ -273,6 +274,7 @@ describe('dashboard semantic token contract', () => {
       '--ui-workload-level-2',
       '--ui-workload-level-3',
       '--ui-workload-level-4',
+      '--ui-workload-border',
       '--ui-on-workload-level-0',
       '--ui-on-workload-level-1',
       '--ui-on-workload-level-2',
@@ -327,6 +329,35 @@ describe('dashboard semantic token contract', () => {
     );
     expect(readyBar?.getAttribute('style')).toContain('color: var(--ui-on-workload-level-3)');
     expect(screen.getByTestId('mantine-bars-list').getAttribute('data-auto-contrast')).toBe('true');
+  });
+
+  it('maps the Todo metric tone to the todo workflow token', () => {
+    renderWithMantine(
+      React.createElement(
+        TerminologyProvider,
+        { terminology: DEFAULT_TERMINOLOGY } as React.ComponentProps<typeof TerminologyProvider>,
+        React.createElement(DashboardMetrics, {
+          metrics: {
+            todayTodos: 1,
+            holdCount: 1,
+            todoCount: 2,
+            weeklyDoneCount: 1,
+          },
+          aiActiveCount: 1,
+        }),
+      ),
+    );
+
+    const todoLabel = screen.getByText('Todo');
+    let metricCard = todoLabel.parentElement;
+
+    while (metricCard && !metricCard.getAttribute('style')?.includes('border-left')) {
+      metricCard = metricCard.parentElement;
+    }
+
+    expect(metricCard?.getAttribute('style')).toContain(
+      'border-left: 3px solid var(--ui-workflow-todo)',
+    );
   });
 
   it('renders workflow and service-pace chart primitives with dashboard semantic tokens', () => {
