@@ -102,6 +102,21 @@ describe('task edit reading surface CSS', () => {
     }
   });
 
+  it('maps inline code borders through a shared semantic token', () => {
+    const rootTokens = getRuleBody(globalsCss, ':root');
+    const markdownCodeRule = getRuleBody(globalsCss, '.markdown-output code');
+    const liveEditorCodeRule = getRuleBody(globalsCss, '.live-editor-code');
+
+    expect(rootTokens).toContain('--ui-reading-code-border: var(--ui-reading-border);');
+
+    for (const ruleBody of [markdownCodeRule, liveEditorCodeRule]) {
+      expect(ruleBody).toContain('border: 1px solid var(--ui-reading-code-border);');
+      expect(ruleBody).not.toContain('color-mix(in srgb, var(--ui-border), transparent 24%)');
+    }
+
+    expect(globalsCss).not.toContain('color-mix(in srgb, var(--ui-border), transparent 24%)');
+  });
+
   it('uses reading surface tokens for markdown and live editor surfaces', () => {
     const markdownOutputRule = getRuleBody(globalsCss, '.markdown-output');
     const liveEditorShellRule = getRuleBody(globalsCss, '.live-editor-shell');

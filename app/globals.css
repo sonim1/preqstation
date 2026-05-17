@@ -14,6 +14,7 @@
     rgba(242, 240, 234, 0.95)
   );
   --ui-reading-border: rgba(118, 105, 86, 0.22);
+  --ui-reading-code-border: var(--ui-reading-border);
   --ui-shadow: 0 22px 52px -34px rgba(21, 45, 89, 0.5);
   --ui-text: #0f203d;
   --ui-muted-text: #4f668a;
@@ -63,6 +64,7 @@
   --ui-dashboard-chart-primary-soft: color-mix(in srgb, var(--ui-accent-soft), transparent 18%);
   --ui-dashboard-chart-grid: color-mix(in srgb, var(--ui-border), transparent 36%);
   --ui-dashboard-chart-tooltip: var(--ui-surface-strong);
+  --ui-work-log-marker-ring-spread: 4px;
   --ui-workflow-inbox: color-mix(in srgb, var(--ui-accent), var(--ui-success) 22%);
   --ui-workflow-todo: var(--ui-accent);
   --ui-workflow-hold: var(--ui-warning);
@@ -1875,7 +1877,7 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
 }
 
 .markdown-output code {
-  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 24%);
+  border: 1px solid var(--ui-reading-code-border);
   border-radius: 6px;
   background: var(--ui-neutral-soft);
   color: var(--ui-text);
@@ -2037,7 +2039,7 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
 }
 
 .live-editor-code {
-  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 24%);
+  border: 1px solid var(--ui-reading-code-border);
   border-radius: 6px;
   background: var(--ui-neutral-soft);
   color: var(--ui-text);

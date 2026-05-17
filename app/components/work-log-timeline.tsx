@@ -364,7 +364,7 @@ export function WorkLogTimeline({
                       top: 27,
                       bottom: -16,
                       width: 1,
-                      background: 'color-mix(in srgb, var(--ui-border), var(--ui-muted-text) 28%)',
+                      background: 'var(--ui-dashboard-chart-grid)',
                     }}
                   />
                 ) : null}
@@ -538,7 +538,7 @@ export function WorkLogTimeline({
                 style={{
                   flex: 1,
                   height: 1,
-                  background: 'color-mix(in srgb, var(--ui-border), transparent 28%)',
+                  background: 'var(--ui-dashboard-chart-grid)',
                 }}
               />
             </Group>
@@ -596,7 +596,7 @@ export function WorkLogTimeline({
                             top: -6,
                             bottom: -6,
                             width: 1,
-                            background: 'color-mix(in srgb, var(--ui-border), transparent 28%)',
+                            background: 'var(--ui-dashboard-chart-grid)',
                           }}
                         />
                         <div
@@ -607,8 +607,8 @@ export function WorkLogTimeline({
                             borderRadius: 999,
                             background: engineConfig ? 'var(--ui-accent)' : 'var(--ui-muted-text)',
                             boxShadow: engineConfig
-                              ? '0 0 0 4px var(--ui-accent-soft)'
-                              : '0 0 0 4px var(--ui-neutral-soft)',
+                              ? '0 0 0 var(--ui-work-log-marker-ring-spread) var(--ui-accent-soft)'
+                              : '0 0 0 var(--ui-work-log-marker-ring-spread) var(--ui-neutral-soft)',
                           }}
                         />
                       </div>
