@@ -20,6 +20,7 @@
   --ui-accent: #274dc4;
   --ui-accent-strong: #1f3ea0;
   --ui-accent-soft: rgba(39, 77, 196, 0.16);
+  --ui-on-accent: #f4f7ff;
   --ui-success: #1f5e35;
   --ui-success-soft: rgba(31, 94, 53, 0.16);
   --ui-danger: #8a2332;
@@ -102,6 +103,7 @@ html[data-mantine-color-scheme='dark'] {
   --ui-accent: #3e6ae1;
   --ui-accent-strong: #365fcd;
   --ui-accent-soft: rgba(94, 133, 242, 0.26);
+  --ui-on-accent: #f4f7ff;
   --ui-success: #79d39a;
   --ui-success-soft: rgba(121, 211, 154, 0.2);
   --ui-danger: #f39aa4;
@@ -2048,19 +2050,19 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   display: inline-block;
   width: 16px;
   height: 16px;
-  border: 1.5px solid var(--mantine-color-gray-6);
+  border: 1.5px solid var(--ui-border);
   border-radius: 4px;
   background: var(--ui-surface-strong);
   box-sizing: border-box;
 }
 
 .live-editor-li-unchecked::before {
-  border-color: var(--mantine-color-gray-6);
+  border-color: var(--ui-border);
 }
 
 .live-editor-li-checked::before {
-  border-color: var(--mantine-color-blue-6);
-  background: var(--mantine-color-blue-6);
+  border-color: var(--ui-accent);
+  background: var(--ui-accent);
   box-shadow: inset 0 0 0 3px var(--ui-surface-strong);
 }
 
@@ -2132,21 +2134,21 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
 .mantine-Badge-root[data-variant='outline']:not([data-color]),
 .mantine-Badge-root[data-variant='outline'][data-color='blue'] {
   background: var(--ui-accent-soft);
-  border-color: rgba(39, 77, 196, 0.34);
+  border-color: color-mix(in srgb, var(--ui-accent), transparent 66%);
   color: var(--ui-accent-strong);
 }
 
 .mantine-Badge-root[data-variant='light'][data-color='green'],
 .mantine-Badge-root[data-variant='outline'][data-color='green'] {
   background: var(--ui-success-soft);
-  border-color: rgba(31, 94, 53, 0.34);
+  border-color: color-mix(in srgb, var(--ui-success), transparent 66%);
   color: var(--ui-success);
 }
 
 .mantine-Badge-root[data-variant='light'][data-color='red'],
 .mantine-Badge-root[data-variant='outline'][data-color='red'] {
   background: var(--ui-danger-soft);
-  border-color: rgba(138, 35, 50, 0.32);
+  border-color: color-mix(in srgb, var(--ui-danger), transparent 68%);
   color: var(--ui-danger);
 }
 
@@ -2155,27 +2157,27 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
 .mantine-Badge-root[data-variant='outline'][data-color='orange'],
 .mantine-Badge-root[data-variant='outline'][data-color='yellow'] {
   background: var(--ui-warning-soft);
-  border-color: rgba(114, 80, 31, 0.32);
+  border-color: color-mix(in srgb, var(--ui-warning), transparent 68%);
   color: var(--ui-warning);
 }
 
 .mantine-Badge-root[data-variant='light'][data-color='gray'],
 .mantine-Badge-root[data-variant='outline'][data-color='gray'] {
   background: var(--ui-neutral-soft);
-  border-color: rgba(92, 102, 112, 0.3);
+  border-color: color-mix(in srgb, var(--ui-neutral-strong), transparent 70%);
   color: var(--ui-neutral-strong);
 }
 
 html[data-mantine-color-scheme='dark'] .workspace-divider-button {
   border-color: var(--ui-border);
-  background: rgba(23, 38, 62, 0.94);
-  color: #d5e3ff;
+  background: var(--ui-surface-soft);
+  color: var(--ui-text);
 }
 
 html[data-mantine-color-scheme='dark'] .workspace-divider-button:hover,
 html[data-mantine-color-scheme='dark'] .workspace-divider-button:focus-visible {
-  border-color: rgba(129, 162, 255, 0.72);
-  background: rgba(33, 50, 78, 0.96);
+  border-color: color-mix(in srgb, var(--ui-accent), var(--ui-border) 36%);
+  background: var(--ui-surface-muted);
 }
 
 html[data-mantine-color-scheme='dark'] .workspace-nav-link[data-active='true'] {
@@ -2187,21 +2189,21 @@ html[data-mantine-color-scheme='dark'] .workspace-signout-btn,
 html[data-mantine-color-scheme='dark'] .mantine-Button-root[data-variant='default'],
 html[data-mantine-color-scheme='dark'] .mantine-ActionIcon-root[data-variant='default'] {
   border-color: var(--ui-border);
-  background: rgba(27, 41, 64, 0.78);
+  background: var(--ui-surface-soft);
   color: var(--ui-text);
 }
 
 html[data-mantine-color-scheme='dark'] .workspace-signout-btn:hover,
 html[data-mantine-color-scheme='dark'] .mantine-Button-root[data-variant='default']:hover,
 html[data-mantine-color-scheme='dark'] .mantine-ActionIcon-root[data-variant='default']:hover {
-  background: rgba(36, 52, 79, 0.9);
+  background: var(--ui-surface-muted);
 }
 
 html[data-mantine-color-scheme='dark'] .mantine-Button-root[data-variant='light'],
 html[data-mantine-color-scheme='dark'] .mantine-ActionIcon-root[data-variant='light'] {
   border-color: var(--ui-border);
-  background: rgba(50, 68, 99, 0.42);
-  color: #e6eefb;
+  background: var(--ui-neutral-soft);
+  color: var(--ui-neutral-strong);
 }
 
 html[data-mantine-color-scheme='dark'] .mantine-Button-root[data-variant='light']:not([data-color]),
@@ -2211,23 +2213,23 @@ html[data-mantine-color-scheme='dark']
   .mantine-ActionIcon-root[data-variant='light']:not([data-color]),
 html[data-mantine-color-scheme='dark']
   .mantine-ActionIcon-root[data-variant='light'][data-color='blue'] {
-  background: rgba(72, 108, 205, 0.34);
-  color: #e8efff;
+  background: var(--ui-accent-soft);
+  color: color-mix(in srgb, var(--ui-accent), var(--ui-text) 68%);
 }
 
 html[data-mantine-color-scheme='dark']
   .mantine-Button-root[data-variant='light'][data-color='green'],
 html[data-mantine-color-scheme='dark']
   .mantine-ActionIcon-root[data-variant='light'][data-color='green'] {
-  background: rgba(66, 138, 96, 0.36);
-  color: #e7fff0;
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
 }
 
 html[data-mantine-color-scheme='dark'] .mantine-Button-root[data-variant='light'][data-color='red'],
 html[data-mantine-color-scheme='dark']
   .mantine-ActionIcon-root[data-variant='light'][data-color='red'] {
-  background: rgba(162, 74, 88, 0.35);
-  color: #ffe9ec;
+  background: var(--ui-danger-soft);
+  color: var(--ui-danger);
 }
 
 html[data-mantine-color-scheme='dark']
@@ -2238,22 +2240,22 @@ html[data-mantine-color-scheme='dark']
   .mantine-ActionIcon-root[data-variant='light'][data-color='orange'],
 html[data-mantine-color-scheme='dark']
   .mantine-ActionIcon-root[data-variant='light'][data-color='yellow'] {
-  background: rgba(156, 113, 57, 0.35);
-  color: #fff2dc;
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
 }
 
 html[data-mantine-color-scheme='dark']
   .mantine-Button-root[data-variant='light'][data-color='gray'],
 html[data-mantine-color-scheme='dark']
   .mantine-ActionIcon-root[data-variant='light'][data-color='gray'] {
-  background: rgba(115, 131, 158, 0.3);
-  color: #edf3ff;
+  background: var(--ui-neutral-soft);
+  color: var(--ui-neutral-strong);
 }
 
 html[data-mantine-color-scheme='dark'] .mantine-Button-root[data-variant='subtle'],
 html[data-mantine-color-scheme='dark'] .mantine-Badge-root[data-variant='outline'],
 html[data-mantine-color-scheme='dark'] .mantine-Badge-root[data-variant='light'] {
-  color: #eaf2ff;
+  color: var(--ui-text);
 }
 
 html[data-mantine-color-scheme='dark'] .workspace-brand-link,
@@ -2309,52 +2311,46 @@ html[data-mantine-color-scheme='dark'] .workspace-user-menu .workspace-signout-b
   background: var(--ui-accent-soft);
 }
 
-html[data-mantine-color-scheme='dark'] .mantine-Input-input,
-html[data-mantine-color-scheme='dark'] .mantine-Textarea-input,
-html[data-mantine-color-scheme='dark'] .mantine-Select-input,
-html[data-mantine-color-scheme='dark'] .mantine-NativeSelect-input {
-  border-color: rgba(142, 166, 203, 0.34);
-  background: rgba(12, 22, 38, 0.92);
+.mantine-Input-input,
+.mantine-Textarea-input,
+.mantine-Select-input,
+.mantine-NativeSelect-input {
+  border-color: var(--ui-border);
+  background: var(--ui-surface-soft);
   color: var(--ui-text);
 }
 
-html[data-mantine-color-scheme='dark'] [data-panel='task-edit-comments'] .mantine-Textarea-input {
-  background: var(--ui-reading-surface-soft);
+.mantine-Input-input::placeholder,
+.mantine-Textarea-input::placeholder,
+.mantine-Select-input::placeholder,
+.mantine-NativeSelect-input::placeholder {
+  color: color-mix(in srgb, var(--ui-muted-text), transparent 20%);
 }
 
-html[data-mantine-color-scheme='dark'] .mantine-Input-input::placeholder,
-html[data-mantine-color-scheme='dark'] .mantine-Textarea-input::placeholder,
-html[data-mantine-color-scheme='dark'] .mantine-Select-input::placeholder,
-html[data-mantine-color-scheme='dark'] .mantine-NativeSelect-input::placeholder {
-  color: rgba(158, 176, 205, 0.72);
+.mantine-Input-input:focus,
+.mantine-Textarea-input:focus,
+.mantine-Select-input:focus,
+.mantine-NativeSelect-input:focus {
+  border-color: var(--ui-accent);
 }
 
-html[data-mantine-color-scheme='dark'] .mantine-Input-input:focus,
-html[data-mantine-color-scheme='dark'] .mantine-Textarea-input:focus,
-html[data-mantine-color-scheme='dark'] .mantine-Select-input:focus,
-html[data-mantine-color-scheme='dark'] .mantine-NativeSelect-input:focus {
-  border-color: rgba(96, 165, 250, 0.72);
+.mantine-Combobox-dropdown {
+  border-color: var(--ui-border);
+  background: var(--ui-surface-strong);
+  box-shadow: var(--ui-elevation-3);
 }
 
-html[data-mantine-color-scheme='dark'] .mantine-Combobox-dropdown {
-  border-color: rgba(142, 166, 203, 0.34);
-  background: rgba(12, 22, 38, 0.98);
-  box-shadow: 0 20px 40px -28px rgba(0, 0, 0, 0.9);
-}
-
-html[data-mantine-color-scheme='dark'] .mantine-Combobox-option {
+.mantine-Combobox-option {
   color: var(--ui-text);
 }
 
-html[data-mantine-color-scheme='dark']
-  .mantine-Combobox-option:hover:not([data-combobox-selected], [data-combobox-disabled]),
-html[data-mantine-color-scheme='dark']
-  .mantine-Combobox-option:active:not([data-combobox-selected], [data-combobox-disabled]) {
-  background: rgba(32, 54, 84, 0.92);
+.mantine-Combobox-option:hover:not([data-combobox-selected], [data-combobox-disabled]),
+.mantine-Combobox-option:active:not([data-combobox-selected], [data-combobox-disabled]) {
+  background: var(--ui-surface-muted);
 }
 
-html[data-mantine-color-scheme='dark'] .mantine-Combobox-option[data-combobox-selected] {
-  background: color-mix(in srgb, var(--ui-accent) 74%, rgba(12, 22, 38, 0.98));
+.mantine-Combobox-option[data-combobox-selected] {
+  background: color-mix(in srgb, var(--ui-accent) 74%, var(--ui-surface-strong));
   color: var(--ui-text);
 }
 
@@ -2362,7 +2358,7 @@ html[data-mantine-color-scheme='dark'] input:-webkit-autofill,
 html[data-mantine-color-scheme='dark'] textarea:-webkit-autofill,
 html[data-mantine-color-scheme='dark'] select:-webkit-autofill {
   -webkit-text-fill-color: var(--ui-text);
-  -webkit-box-shadow: 0 0 0 1000px rgba(12, 22, 38, 0.92) inset;
+  -webkit-box-shadow: 0 0 0 1000px var(--ui-surface-soft) inset;
   transition: background-color 9999s ease-out;
 }
 
@@ -2701,7 +2697,7 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 
   .kanban-mobile-tabs .mantine-Tabs-tab[data-active='true'] .kanban-mobile-tab-count {
     background: var(--ui-accent-strong);
-    color: var(--ui-surface);
+    color: var(--ui-on-accent);
   }
 
   .kanban-mobile-tabs .mantine-Tabs-tabLabel {
@@ -2967,36 +2963,36 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 
 /* Project background image on cards */
 .project-grid-card.has-bg-image {
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 
 .project-grid-card.has-bg-image .mantine-Text-root {
-  color: rgba(255, 255, 255, 0.9);
+  color: color-mix(in srgb, var(--ui-on-accent), transparent 10%);
 }
 
 .project-grid-card.has-bg-image .mantine-Text-root[data-fw='700'] {
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 
 .project-grid-card.has-bg-image .project-card-action-btn {
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.15);
+  color: var(--ui-on-accent);
+  border-color: color-mix(in srgb, var(--ui-on-accent), transparent 75%);
+  background: color-mix(in srgb, var(--ui-on-accent), transparent 85%);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
 
 .project-grid-card.has-bg-image .project-card-action-btn:hover {
-  background: rgba(255, 255, 255, 0.28);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: color-mix(in srgb, var(--ui-on-accent), transparent 72%);
+  border-color: color-mix(in srgb, var(--ui-on-accent), transparent 60%);
 }
 
 .project-grid-card.has-bg-image .mantine-Badge-root {
-  background: rgba(255, 255, 255, 0.15);
+  background: color-mix(in srgb, var(--ui-on-accent), transparent 85%);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  color: #fff;
-  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--ui-on-accent);
+  border-color: color-mix(in srgb, var(--ui-on-accent), transparent 80%);
 }
 
 /* Project background picker */
@@ -3467,14 +3463,14 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
   border: 1px solid color-mix(in srgb, var(--ui-accent), var(--ui-border) 24%);
   border-radius: 8px;
   background: var(--ui-accent);
-  color: #f4f7ff;
+  color: var(--ui-on-accent);
   font-weight: 850;
 }
 
 .task-dispatch-send-shortcut {
-  border-color: color-mix(in srgb, white 30%, transparent);
-  background: color-mix(in srgb, black 18%, transparent);
-  color: rgba(255, 255, 255, 0.92);
+  border-color: color-mix(in srgb, var(--ui-on-accent), transparent 70%);
+  background: color-mix(in srgb, var(--ui-on-accent), transparent 82%);
+  color: color-mix(in srgb, var(--ui-on-accent), transparent 8%);
 }
 
 .task-dispatch-send:disabled {
@@ -3504,8 +3500,8 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
   padding: 0.625rem max(1rem, env(safe-area-inset-right, 0px))
     calc(0.625rem + env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px));
   border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
-  background: color-mix(in srgb, var(--ui-bg) 91%, transparent);
-  box-shadow: 0 -18px 40px color-mix(in srgb, black 32%, transparent);
+  background: color-mix(in srgb, var(--ui-surface-strong) 91%, transparent);
+  box-shadow: var(--ui-elevation-3);
   backdrop-filter: blur(18px);
 }
 

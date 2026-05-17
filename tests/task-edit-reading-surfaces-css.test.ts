@@ -191,10 +191,9 @@ describe('task edit reading surface CSS', () => {
 
     expect(defaultTextarea).toBeTruthy();
     expect(commentsTextarea).toBeTruthy();
-    expect(dom.window.getComputedStyle(defaultTextarea!).background).toBe('rgba(12, 22, 38, 0.92)');
+    expect(dom.window.getComputedStyle(defaultTextarea!).background).toBe('var(--ui-surface-soft)');
     expect(dom.window.getComputedStyle(commentsTextarea!).background).toBe(
       'var(--ui-reading-surface-soft)',
     );
   });
-
 });
