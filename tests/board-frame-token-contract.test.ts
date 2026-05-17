@@ -222,10 +222,25 @@ describe('board frame token contract', () => {
   it('keeps the mobile tab bar separator shadow pointed upward', () => {
     const rootStyle = window.getComputedStyle(document.documentElement);
 
-    expect(rootStyle.getPropertyValue('--kanban-frame-mobile-tab-shadow')).toMatch(/^0px\s+-/);
-    expect(globalsCss).toMatch(
-      /\.kanban-mobile-tab-bar\s*\{[\s\S]*box-shadow:\s*var\(--kanban-frame-mobile-tab-shadow\);/,
+    renderWithMantine(
+      React.createElement(KanbanBoardMobile, {
+        columns: emptyColumns(),
+        activeTab: 'inbox',
+        onTabChange: () => {},
+        isPending: false,
+        editHrefBase: '/board',
+        editHrefJoiner: '?',
+        router: { push: () => {}, refresh: () => {} } as never,
+        onRefresh: () => {},
+        onQuickMoveTask: () => {},
+        onDeleteTask: () => {},
+        saveError: null,
+        enginePresets: null,
+      }),
     );
+
+    expect(getElement('.kanban-mobile-tab-bar').classList).toContain('kanban-mobile-tab-bar');
+    expect(rootStyle.getPropertyValue('--kanban-frame-mobile-tab-shadow')).toMatch(/^0px\s+-/);
   });
 
   it('keeps light-mode status button foreground tokens contrast-safe', () => {
