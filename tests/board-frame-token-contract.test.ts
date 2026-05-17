@@ -291,6 +291,7 @@ describe('board frame token contract', () => {
 
     expectComputedToken('.kanban-action-island', 'background', '--kanban-frame-chrome-surface');
     expectComputedToken('.kanban-action-island', 'box-shadow', '--kanban-frame-chrome-shadow');
+    expectComputedToken('.kanban-action-island', 'box-shadow', '--kanban-frame-chrome-highlight');
     expectComputedToken('.kanban-column', 'background', '--kanban-frame-column-surface');
     expectComputedToken('.kanban-column', 'box-shadow', '--kanban-frame-column-border');
     expectComputedToken('.kanban-quickadd-panel', 'background', '--kanban-frame-chrome-surface');
@@ -359,7 +360,7 @@ describe('board frame token contract', () => {
         }),
         React.createElement('div', { className: 'kanban-column is-drag-over' }),
         React.createElement('p', { className: 'kanban-archive-error' }, 'Archive load failed'),
-        ...(['inbox', 'hold', 'ready', 'done'] satisfies KanbanStatus[]).map((status) =>
+        ...(['inbox', 'hold', 'ready', 'done', 'archived'] satisfies KanbanStatus[]).map((status) =>
           React.createElement(KanbanCardContent, {
             key: status,
             task: makeTask(status),
@@ -391,5 +392,6 @@ describe('board frame token contract', () => {
       '--ui-status-running-foreground',
     );
     expectComputedToken('.kanban-status-button.is-done', 'color', '--ui-success');
+    expectComputedToken('.kanban-status-button.is-archived', 'color', '--ui-muted-text');
   });
 });
