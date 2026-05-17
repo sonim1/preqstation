@@ -289,7 +289,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
     vi.useRealTimers();
   });
 
-  it('renders the projects body as a reference-style roster with a 30 day heatmap', async () => {
+  it('renders the projects body as a reference-style roster with a 30 day bar chart', async () => {
     mocked.state.projects.push(
       {
         id: 'project-2',
@@ -344,8 +344,12 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('last 30 days');
     expect(html).toContain('3 projects');
     expect(html).toContain('New project');
-    expect(html).toContain('data-projects-activity-heatmap="true"');
-    expect(html.match(/data-projects-activity-day=/g)).toHaveLength(30);
+    expect(html).toContain('data-projects-activity-chart="bar"');
+    expect(html.match(/data-projects-activity-bar=/g)).toHaveLength(30);
+    expect(html).toContain('data-projects-activity-bar="2026-03-14"');
+    expect(html).toContain('aria-label="2026-03-14: 3 work logs"');
+    expect(html).toContain('2026-03-14 · 3 work logs');
+    expect(html).not.toContain('data-projects-activity-heatmap="true"');
     expect(html).toContain('<strong>5</strong> logs');
     expect(html).toContain('Find a project');
     expect(html).toContain('All 3');
@@ -544,8 +548,10 @@ describe('app/(workspace)/(main)/projects/page', () => {
 
   it('keeps the roster CSS compact and avoids the old image portfolio treatment', () => {
     expect(projectsPageCss).toMatch(/\.activityPanel\s*\{/);
-    expect(projectsPageCss).toMatch(/\.activityHeatmap\s*\{/);
+    expect(projectsPageCss).toMatch(/\.activityBarChart\s*\{/);
     expect(projectsPageCss).toMatch(/grid-template-columns:\s*repeat\(30,\s*minmax\(0,\s*1fr\)\);/);
+    expect(projectsPageCss).toMatch(/\.activityBarWrap:hover\s+\.activityTooltip/);
+    expect(projectsPageCss).toMatch(/height:\s*var\(--activity-bar-height\);/);
     expect(projectsPageCss).toMatch(/\.rosterGrid\s*\{[\s\S]*min-width:\s*0;/);
     expect(projectsPageCss).toMatch(/\.projectCard\s*\{[\s\S]*min-height:\s*13rem;/);
     expect(projectsPageCss).not.toContain('--card-image');

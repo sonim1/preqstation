@@ -27,6 +27,7 @@ import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 import { ProjectPortfolioCard, type ProjectPortfolioCardSummary } from './project-portfolio-card';
 import { ProjectsOfflineHydrator } from './projects-offline-hydrator';
 import styles from './projects-page.module.css';
+import { WorkspaceActivityChart } from './workspace-activity-chart';
 
 const DAY_MS = 86_400_000;
 type ProjectsSearchParams = {
@@ -119,15 +120,6 @@ function getRepoLabel(repoUrl: string | null | undefined, projectKey: string) {
   }
 
   return projectKey;
-}
-
-function getActivityLevel(count: number, peak: number) {
-  if (count <= 0 || peak <= 0) return 0;
-  const ratio = count / peak;
-  if (ratio >= 0.8) return 4;
-  if (ratio >= 0.5) return 3;
-  if (ratio >= 0.25) return 2;
-  return 1;
 }
 
 export default async function ProjectsPage({ searchParams }: ProjectsPageProps = {}) {
@@ -589,7 +581,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
             </div>
           </div>
 
-          <section className={styles.activityPanel} data-projects-activity-heatmap="true">
+          <section className={styles.activityPanel}>
             <div className={styles.activityHeader}>
               <span className={styles.activityTitle}>
                 <IconActivity size={16} />
@@ -606,21 +598,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
                 <span>{workspacePeakLabel}</span>
               </span>
             </div>
-            <div
-              className={styles.activityHeatmap}
-              role="img"
-              aria-label="Workspace activity across the last 30 days"
-            >
-              {workspaceActivity.map((point) => (
-                <span
-                  key={point.date}
-                  className={styles.activityDay}
-                  data-activity-level={getActivityLevel(point.count, workspaceActivityPeak)}
-                  data-projects-activity-day={point.date}
-                  title={`${point.date}: ${point.count} logs`}
-                />
-              ))}
-            </div>
+            <WorkspaceActivityChart data={workspaceActivity} peak={workspaceActivityPeak} />
             <div className={styles.activityLegend} aria-hidden="true">
               <span>30 days ago</span>
               <span>today</span>

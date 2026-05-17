@@ -10,6 +10,7 @@ import { getSnapshot, putSnapshot } from '@/lib/offline/snapshot-store';
 
 import { ProjectPortfolioCard, type ProjectPortfolioCardSummary } from './project-portfolio-card';
 import styles from './projects-page.module.css';
+import { WorkspaceActivityChart } from './workspace-activity-chart';
 
 export type ProjectsOfflineSnapshotPayload = {
   filterChips: Array<{ active: boolean; label: string; value: number }>;
@@ -22,15 +23,6 @@ export type ProjectsOfflineSnapshotPayload = {
 const PROJECTS_SNAPSHOT_ID = 'projects:index';
 
 const noopAction = async () => undefined;
-
-function getActivityLevel(count: number, peak: number) {
-  if (count <= 0 || peak <= 0) return 0;
-  const ratio = count / peak;
-  if (ratio >= 0.8) return 4;
-  if (ratio >= 0.5) return 3;
-  if (ratio >= 0.25) return 2;
-  return 1;
-}
 
 function hasProjectCards(snapshot: ProjectsOfflineSnapshotPayload) {
   return snapshot.rosterCards.length > 0;
@@ -48,11 +40,7 @@ function OfflineProjectsView({ snapshot }: { snapshot: ProjectsOfflineSnapshotPa
         />
       </div>
 
-      <section
-        className={styles.activityPanel}
-        data-projects-activity-heatmap="true"
-        data-projects-offline-container="true"
-      >
+      <section className={styles.activityPanel} data-projects-offline-container="true">
         <div className={styles.activityHeader}>
           <span className={styles.activityTitle}>
             <IconActivity size={16} />
@@ -70,21 +58,7 @@ function OfflineProjectsView({ snapshot }: { snapshot: ProjectsOfflineSnapshotPa
             <span>{snapshot.workspacePeakLabel}</span>
           </span>
         </div>
-        <div
-          className={styles.activityHeatmap}
-          role="img"
-          aria-label="Workspace activity across the last 30 days"
-        >
-          {snapshot.workspaceActivity.map((point) => (
-            <span
-              key={point.date}
-              className={styles.activityDay}
-              data-activity-level={getActivityLevel(point.count, peak)}
-              data-projects-activity-day={point.date}
-              title={`${point.date}: ${point.count} logs`}
-            />
-          ))}
-        </div>
+        <WorkspaceActivityChart data={snapshot.workspaceActivity} peak={peak} />
       </section>
 
       <div className={styles.toolbar}>

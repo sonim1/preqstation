@@ -51,39 +51,96 @@
   white-space: nowrap;
 }
 
-.activityHeatmap {
+.activityBarChart {
   display: grid;
   grid-template-columns: repeat(30, minmax(0, 1fr));
   gap: 0.25rem;
   min-width: 0;
   align-items: end;
+  min-height: 3.45rem;
+  padding-top: 0.9rem;
 }
 
-.activityDay {
-  display: block;
+.activityBarWrap {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
   min-width: 0;
-  height: 2rem;
-  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 44%);
-  border-radius: 0.25rem;
-  background: color-mix(in srgb, var(--ui-neutral-soft), transparent 28%);
+  height: 3.25rem;
 }
 
-.activityDay[data-activity-level='1'] {
+.activityBar {
+  display: block;
+  width: 100%;
+  max-width: 1.35rem;
+  height: var(--activity-bar-height);
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 44%);
+  border-radius: 0.22rem 0.22rem 0.12rem 0.12rem;
+  background: color-mix(in srgb, var(--ui-neutral-soft), transparent 28%);
+  cursor: default;
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.activityBar[data-activity-level='1'] {
   background: color-mix(in srgb, var(--ui-accent-soft), transparent 16%);
 }
 
-.activityDay[data-activity-level='2'] {
+.activityBar[data-activity-level='2'] {
   background: color-mix(in srgb, var(--ui-accent), transparent 54%);
 }
 
-.activityDay[data-activity-level='3'] {
+.activityBar[data-activity-level='3'] {
   background: color-mix(in srgb, var(--ui-accent), transparent 32%);
 }
 
-.activityDay[data-activity-level='4'] {
+.activityBar[data-activity-level='4'] {
   border-color: color-mix(in srgb, var(--ui-status-running), transparent 30%);
   background: color-mix(in srgb, var(--ui-status-running), transparent 14%);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-status-running-glow), transparent 20%);
+}
+
+.activityBarWrap:hover .activityBar,
+.activityBar:focus-visible {
+  border-color: color-mix(in srgb, var(--ui-status-running), transparent 22%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ui-status-running-glow), transparent 18%),
+    0 0.45rem 1.2rem color-mix(in srgb, var(--ui-status-running-glow), transparent 42%);
+  outline: none;
+  transform: translateY(-0.16rem);
+}
+
+.activityTooltip {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.35rem);
+  z-index: 5;
+  pointer-events: none;
+  padding: 0.34rem 0.48rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 8%);
+  border-radius: 0.35rem;
+  background: color-mix(in srgb, var(--ui-surface-strong), black 6%);
+  box-shadow: var(--ui-elevation-2);
+  color: var(--ui-text);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  line-height: 1.1;
+  opacity: 0;
+  transform: translate(-50%, 0);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+  white-space: nowrap;
+}
+
+.activityBarWrap:hover .activityTooltip,
+.activityBar:focus-visible + .activityTooltip {
+  opacity: 1;
+  transform: translate(-50%, -0.2rem);
 }
 
 .activityLegend {
@@ -445,12 +502,18 @@ button.filterChip {
     gap: 0.35rem;
   }
 
-  .activityHeatmap {
+  .activityBarChart {
     gap: 0.18rem;
+    min-height: 2.8rem;
+    padding-top: 0.7rem;
   }
 
-  .activityDay {
-    height: 1.55rem;
+  .activityBarWrap {
+    height: 2.6rem;
+  }
+
+  .activityBar {
+    max-width: 0.85rem;
   }
 
   .cardInner {
