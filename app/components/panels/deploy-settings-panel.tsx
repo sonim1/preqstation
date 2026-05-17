@@ -16,6 +16,7 @@ import { IconInfoCircle } from '@tabler/icons-react';
 import { type FormEvent, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setting-save-status';
+import controlClasses from '@/app/components/settings-controls.module.css';
 import { SubmitButton } from '@/app/components/submit-button';
 
 type ActionState = { ok: true; message?: string } | { ok: false; message: string } | null;
@@ -301,8 +302,8 @@ export function DeploySettingsPanel({
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Stack gap="md">
+    <form onSubmit={handleSubmit} className={controlClasses.panelForm}>
+      <Stack gap="md" className={controlClasses.panelStack}>
         <SettingSaveStatus mode="manual" state={currentState} errorMessage={errorMessage} />
         {singleProject ? (
           <input type="hidden" name="projectId" value={selectedProject?.id || ''} />
@@ -314,6 +315,7 @@ export function DeploySettingsPanel({
             onChange={(event) => handleProjectChange(event.currentTarget.value)}
             data={projects.map((project) => ({ value: project.id, label: project.name }))}
             required
+            className={controlClasses.touchInput}
           />
         )}
 
@@ -331,12 +333,13 @@ export function DeploySettingsPanel({
             label: STRATEGY_LABELS[value],
           }))}
           required
+          className={controlClasses.touchInput}
         />
 
-        <Paper withBorder radius="md" p="sm">
+        <Paper withBorder radius="md" p="sm" className={controlClasses.panelSummary}>
           <Stack gap={4}>
             <Text fw={600}>{strategyDetails.title}</Text>
-            <Text size="sm" c="dimmed">
+            <Text size="sm" className={controlClasses.panelHelp}>
               {strategyDetails.description}
             </Text>
             <Text size="sm">{strategySummary}</Text>
@@ -354,6 +357,7 @@ export function DeploySettingsPanel({
           }}
           placeholder="main"
           required
+          className={controlClasses.touchInput}
         />
 
         {isFeatureBranch ? (
@@ -378,13 +382,13 @@ export function DeploySettingsPanel({
                 >
                   <IconInfoCircle
                     size={16}
-                    color="var(--mantine-color-dimmed)"
+                    className={controlClasses.panelIcon}
                     title="Requires GitHub access on the coding agent (`gh auth` or GitHub MCP)"
                     aria-label="Requires GitHub access on the coding agent (`gh auth` or GitHub MCP)"
                   />
                 </Tooltip>
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" className={controlClasses.panelHelp}>
                 If review requires a push, missing GitHub auth will block the run until the branch
                 and PR can be created.
               </Text>
@@ -418,10 +422,10 @@ export function DeploySettingsPanel({
                   multiline
                   w={260}
                 >
-                  <IconInfoCircle size={16} color="var(--mantine-color-dimmed)" />
+                  <IconInfoCircle size={16} className={controlClasses.panelIcon} />
                 </Tooltip>
               </Group>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" className={controlClasses.panelHelp}>
                 Squash merge combines worktree commits into one default-branch commit. Disable this
                 only when operators need the full merge history on the default branch.
               </Text>
@@ -445,22 +449,24 @@ export function DeploySettingsPanel({
           }}
           label="Commit required before In Review"
         />
-        <Text size="sm" c="dimmed">
+        <Text size="sm" className={controlClasses.panelHelp}>
           When this is enabled, PREQ cannot move the task into review until the required remote push
           succeeds.
         </Text>
 
-        <SubmitButton disabled={!isDirty || isPending}>Save Settings</SubmitButton>
+        <SubmitButton disabled={!isDirty || isPending} className={controlClasses.touchButton}>
+          Save Settings
+        </SubmitButton>
 
         <Accordion variant="subtle" chevronPosition="left">
           <Accordion.Item value="preview">
             <Accordion.Control>
-              <Text size="sm" c="dimmed">
+              <Text size="sm" className={controlClasses.panelHelp}>
                 Agent prompt preview
               </Text>
             </Accordion.Control>
             <Accordion.Panel>
-              <Code block style={promptPreviewStyle}>
+              <Code block className={controlClasses.panelCode} style={promptPreviewStyle}>
                 {promptPreview}
               </Code>
             </Accordion.Panel>

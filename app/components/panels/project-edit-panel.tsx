@@ -10,6 +10,7 @@ import { DeploySettingsPanel } from '@/app/components/panels/deploy-settings-pan
 import { ProjectLabelsPanel } from '@/app/components/panels/project-labels-panel';
 import { ProjectBackgroundPicker } from '@/app/components/project-background-picker';
 import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setting-save-status';
+import controlClasses from '@/app/components/settings-controls.module.css';
 import { useTerminology } from '@/app/components/terminology-provider';
 import { useAutoSave } from '@/app/hooks/use-auto-save';
 import { normalizeGithubRepoReference } from '@/lib/github-repo';
@@ -167,7 +168,7 @@ export function ProjectEditPanel({
   }, [selectedProjectRevision, syncSnapshot]);
 
   if (!selectedProject) {
-    return <Text c="dimmed">Select a project to edit.</Text>;
+    return <Text className={controlClasses.panelHelp}>Select a project to edit.</Text>;
   }
 
   const canManageLabels =
@@ -176,9 +177,10 @@ export function ProjectEditPanel({
     configurationManagement && updateAgentInstructionsAction && updateDeploySettingsAction;
 
   return (
-    <Stack gap="xl">
+    <Stack gap="xl" className={controlClasses.panelStack}>
       <form
         ref={formRef}
+        className={controlClasses.panelForm}
         onSubmit={(event) => {
           event.preventDefault();
         }}
@@ -192,6 +194,7 @@ export function ProjectEditPanel({
             placeholder="Enter project name"
             defaultValue={selectedProject.name}
             required
+            className={controlClasses.touchInput}
             onChange={markDirty}
             onBlur={() => triggerSave(0)}
           />
@@ -200,6 +203,7 @@ export function ProjectEditPanel({
             defaultValue={selectedProject.projectKey}
             description="Immutable after creation."
             disabled
+            className={controlClasses.touchInput}
           />
           <LiveMarkdownEditor
             name="descriptionMd"
@@ -214,6 +218,7 @@ export function ProjectEditPanel({
             label="Status"
             defaultValue={selectedProject.status}
             data={projectStatusOptionData()}
+            className={controlClasses.touchInput}
             onChange={() => triggerSave(0)}
           />
           <NativeSelect
@@ -227,6 +232,7 @@ export function ProjectEditPanel({
               { value: '4', label: '4 - High' },
               { value: '5', label: '5 - Highest' },
             ]}
+            className={controlClasses.touchInput}
             onChange={() => triggerSave(0)}
           />
           <div>
@@ -250,6 +256,7 @@ export function ProjectEditPanel({
             defaultValue={
               normalizeGithubRepoReference(selectedProject.repoUrl) ?? selectedProject.repoUrl ?? ''
             }
+            className={controlClasses.touchInput}
             onChange={markDirty}
             onBlur={() => triggerSave(0)}
           />
@@ -258,6 +265,7 @@ export function ProjectEditPanel({
             label="Vercel project URL"
             placeholder="https://your-project.vercel.app"
             defaultValue={selectedProject.vercelUrl || ''}
+            className={controlClasses.touchInput}
             onChange={markDirty}
             onBlur={() => triggerSave(0)}
           />
@@ -268,7 +276,7 @@ export function ProjectEditPanel({
         <Stack gap="md" data-project-edit-label-management="true">
           <div>
             <Title order={4}>{projectEditCopy.labelsTitle}</Title>
-            <Text c="dimmed" size="sm">
+            <Text className={controlClasses.panelHelp} size="sm">
               {projectEditCopy.labelsDescription}
             </Text>
           </div>
@@ -288,7 +296,7 @@ export function ProjectEditPanel({
           <Stack gap="md">
             <div>
               <Title order={4}>Agent Instructions</Title>
-              <Text c="dimmed" size="sm">
+              <Text className={controlClasses.panelHelp} size="sm">
                 Save project guidance that dispatched PREQ agents inherit.
               </Text>
             </div>
@@ -302,7 +310,7 @@ export function ProjectEditPanel({
           <Stack gap="md">
             <div>
               <Title order={4}>Deployment Strategy</Title>
-              <Text c="dimmed" size="sm">
+              <Text className={controlClasses.panelHelp} size="sm">
                 Configure how dispatched work gets pushed, reviewed, and merged.
               </Text>
             </div>

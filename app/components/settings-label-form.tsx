@@ -321,7 +321,7 @@ export function TaskLabelColorPicker({
             {formatColorLabel(color)}
           </Button>
         </Popover.Target>
-        <Popover.Dropdown>
+        <Popover.Dropdown className={controlClasses.colorPopover}>
           <Stack gap="xs" style={formState?.isPending ? pendingPopoverStyle : undefined}>
             <ColorPicker
               format="hex"
