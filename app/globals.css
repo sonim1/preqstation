@@ -2320,10 +2320,6 @@ html[data-mantine-color-scheme='dark'] .workspace-user-menu .workspace-signout-b
   color: var(--ui-text);
 }
 
-html[data-mantine-color-scheme='dark'] [data-panel='task-edit-comments'] .mantine-Textarea-input {
-  background: var(--ui-reading-surface-soft);
-}
-
 .mantine-Input-input::placeholder,
 .mantine-Textarea-input::placeholder,
 .mantine-Select-input::placeholder,
@@ -2354,7 +2350,7 @@ html[data-mantine-color-scheme='dark'] [data-panel='task-edit-comments'] .mantin
 }
 
 .mantine-Combobox-option[data-combobox-selected] {
-  background: color-mix(in srgb, var(--ui-accent-soft), var(--ui-surface-strong) 28%);
+  background: color-mix(in srgb, var(--ui-accent) 74%, var(--ui-surface-strong));
   color: var(--ui-text);
 }
 
