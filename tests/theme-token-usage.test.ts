@@ -13,6 +13,10 @@ const projectsCss = fs.readFileSync(
   path.join(process.cwd(), 'app/(workspace)/(main)/projects/projects-page.module.css'),
   'utf8',
 );
+const projectDetailCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/(workspace)/(main)/project/[key]/project-detail-page.module.css'),
+  'utf8',
+);
 const cardsCss = fs.readFileSync(
   path.join(process.cwd(), 'app/components/cards.module.css'),
   'utf8',
@@ -140,6 +144,11 @@ describe('theme token usage audit fixes', () => {
     expect(projectsCss).toContain('var(--ui-surface-muted)');
     expect(projectsCss).toContain('var(--ui-surface-elevated)');
     expect(projectsCss).not.toContain('#112136');
+    expect(projectsCss).not.toMatch(/color-mix\(in srgb,[^;]*(?:\bblack\b|\bwhite\b)/);
+    expect(projectDetailCss).toContain('var(--ui-surface-panel)');
+    expect(projectDetailCss).toContain('var(--ui-surface-elevated)');
+    expect(projectDetailCss).toContain('var(--ui-status-running)');
+    expect(projectDetailCss).not.toMatch(/var\(--mantine-color-blue-[57]\)/);
     expect(cardsCss).toContain('var(--ui-surface-elevated)');
     expect(cardsCss).toContain('var(--ui-surface-elevated-strong)');
     expect(cardsCss).toContain('var(--ui-status-running)');

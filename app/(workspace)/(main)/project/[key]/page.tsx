@@ -67,6 +67,8 @@ type ProjectDetailPageProps = {
   searchParams?: Promise<{ panel?: string }>;
 };
 
+type ProjectDetailStatusTone = 'active' | 'archived' | 'live' | 'paused' | 'queued' | 'stale';
+
 function projectStatusBadge(status: string) {
   if (!isProjectStatus(status)) {
     return { color: 'gray', label: status };
@@ -76,6 +78,25 @@ function projectStatusBadge(status: string) {
     color: PROJECT_STATUS_COLORS[status],
     label: PROJECT_STATUS_LABELS[status],
   };
+}
+
+function getProjectDetailStatusTone({
+  activityStatus,
+  projectStatus,
+  queuedTaskCount,
+  runningTaskCount,
+}: {
+  activityStatus: string;
+  projectStatus: string;
+  queuedTaskCount: number;
+  runningTaskCount: number;
+}): ProjectDetailStatusTone {
+  if (projectStatus === 'done') return 'archived';
+  if (projectStatus === 'paused') return 'paused';
+  if (runningTaskCount > 0) return 'live';
+  if (queuedTaskCount > 0) return 'queued';
+  if (activityStatus === 'critical' || activityStatus === 'warning') return 'stale';
+  return 'active';
 }
 
 function toValidDate(value: Date | string | null | undefined) {
@@ -257,6 +278,12 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const activityStatus = getProjectActivityStatus({
     projectStatus: project.status,
     lastWorkedAt,
+  });
+  const detailStatusTone = getProjectDetailStatusTone({
+    activityStatus: activityStatus.status,
+    projectStatus: project.status,
+    queuedTaskCount,
+    runningTaskCount,
   });
   const hasRecentActivity =
     lastWorkedAt !== null &&
@@ -687,7 +714,11 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                 <Stack gap="lg" className={styles.detailHeroContent}>
                   <Stack gap="sm">
                     <Group gap="xs" className={styles.detailEyebrow}>
-                      <span className={styles.detailStatusDot} aria-hidden="true" />
+                      <span
+                        className={styles.detailStatusDot}
+                        data-project-status-tone={detailStatusTone}
+                        aria-hidden="true"
+                      />
                       <Text size="xs" fw={700} tt="uppercase" className={styles.detailEyebrowText}>
                         {projectKey.toUpperCase()}
                       </Text>
