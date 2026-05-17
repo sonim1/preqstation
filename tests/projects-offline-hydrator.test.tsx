@@ -146,6 +146,7 @@ describe('app/(workspace)/(main)/projects/projects-offline-hydrator', () => {
 
     expect(await screen.findByRole('heading', { name: 'Projects roster · 1 repos' })).toBeTruthy();
     expect(screen.getByText('Workspace activity')).toBeTruthy();
+    expect(screen.getByText('1 project')).toBeTruthy();
     expect(document.querySelector('[data-projects-offline-container="true"]')).toBeTruthy();
     expect(document.querySelector('[data-project-section="roster"]')).toBeTruthy();
   });

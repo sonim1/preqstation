@@ -41,10 +41,12 @@ function OfflineProjectsView({ snapshot }: { snapshot: ProjectsOfflineSnapshotPa
 
   return (
     <Stack gap="md" className="dashboard-stack" data-projects-offline-snapshot="true">
-      <WorkspacePageHeader
-        title={`Projects roster · ${snapshot.rosterCards.length} repos`}
-        description="Workspace activity, live agent state, and repo readiness at a glance."
-      />
+      <div className={styles.rosterHeader}>
+        <WorkspacePageHeader
+          title={`Projects roster · ${snapshot.rosterCards.length} repos`}
+          description="Workspace activity, live agent state, and repo readiness at a glance."
+        />
+      </div>
 
       <section
         className={styles.activityPanel}
@@ -57,6 +59,11 @@ function OfflineProjectsView({ snapshot }: { snapshot: ProjectsOfflineSnapshotPa
             Workspace activity
             <span aria-hidden="true">·</span>
             <span>last 30 days</span>
+            <span aria-hidden="true">·</span>
+            <span>
+              {snapshot.rosterCards.length} project
+              {snapshot.rosterCards.length === 1 ? '' : 's'}
+            </span>
           </span>
           <span className={styles.activityMeta}>
             <strong>{snapshot.workspaceActivityTotal}</strong> logs

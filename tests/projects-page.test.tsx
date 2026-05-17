@@ -342,6 +342,8 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('Projects roster · 3 repos');
     expect(html).toContain('Workspace activity');
     expect(html).toContain('last 30 days');
+    expect(html).toContain('3 projects');
+    expect(html).toContain('New project');
     expect(html).toContain('data-projects-activity-heatmap="true"');
     expect(html.match(/data-projects-activity-day=/g)).toHaveLength(30);
     expect(html).toContain('<strong>5</strong> logs');

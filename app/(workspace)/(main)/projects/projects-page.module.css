@@ -1,3 +1,17 @@
+.rosterHeader {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: end;
+  min-width: 0;
+}
+
+.rosterActions {
+  display: flex;
+  justify-content: flex-end;
+  min-width: max-content;
+}
+
 .activityPanel {
   min-width: 0;
   padding: 1rem;
@@ -392,6 +406,15 @@
 }
 
 @media (max-width: 61.99375em) {
+  .rosterHeader {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .rosterActions {
+    justify-content: flex-start;
+  }
+
   .toolbar {
     grid-template-columns: 1fr;
   }

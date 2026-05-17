@@ -502,10 +502,17 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
     >
       <ProjectsOfflineHydrator snapshot={projectsOfflineSnapshot}>
         <Stack gap="md" className="dashboard-stack">
-          <WorkspacePageHeader
-            title={`Projects roster · ${totalProjectCount} repos`}
-            description="Workspace activity, live agent state, and repo readiness at a glance."
-          />
+          <div className={styles.rosterHeader}>
+            <WorkspacePageHeader
+              title={`Projects roster · ${totalProjectCount} repos`}
+              description="Workspace activity, live agent state, and repo readiness at a glance."
+            />
+            <div className={styles.rosterActions}>
+              <LinkButton href="/dashboard?panel=project" size="compact-sm">
+                New project
+              </LinkButton>
+            </div>
+          </div>
 
           <section className={styles.activityPanel} data-projects-activity-heatmap="true">
             <div className={styles.activityHeader}>
@@ -514,6 +521,10 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
                 Workspace activity
                 <span aria-hidden="true">·</span>
                 <span>last 30 days</span>
+                <span aria-hidden="true">·</span>
+                <span>
+                  {totalProjectCount} project{totalProjectCount === 1 ? '' : 's'}
+                </span>
               </span>
               <span className={styles.activityMeta}>
                 <strong>{workspaceActivityTotal}</strong> logs
