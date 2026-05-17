@@ -320,8 +320,15 @@ describe('auth onboarding and route state token contract', () => {
     const globalPage = getElement(globalErrorDocument, '.route-state-page.route-state-global-page');
     const globalCard = getElement(globalErrorDocument, '.route-state-card.route-state-global-card');
 
-    expect(globalPage.getAttribute('style')).toBeNull();
-    expect(globalCard.getAttribute('style')).toBeNull();
+    expect(globalPage.getAttribute('style')).toContain('var(--ui-surface-strong, #0b1220)');
+    expect(globalPage.getAttribute('style')).toContain('var(--ui-surface, #0f172a)');
+    expect(globalPage.getAttribute('style')).toContain('var(--ui-text, #e8effa)');
+    expect(globalCard.getAttribute('style')).toContain(
+      'var(--ui-state-shell-surface, rgba(17, 27, 44, 0.92))',
+    );
+    expect(globalCard.getAttribute('style')).toContain(
+      'var(--ui-state-shell-border, rgba(142, 166, 203, 0.32))',
+    );
     expect(getElement(globalErrorDocument, '.route-state-primary-action').textContent).toContain(
       'Try reload',
     );
