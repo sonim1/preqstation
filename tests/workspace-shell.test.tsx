@@ -618,6 +618,9 @@ describe('app/components/workspace-shell', () => {
     sectionHeadings.forEach((heading) => {
       expect(Array.from(heading.classList)).toContain('workspace-nav-section-label');
     });
+    expect(globalsCss).toMatch(
+      /\.workspace-nav-section-label\s*\{[^}]*padding:\s*8px 12px 2px;[^}]*color:\s*var\(--ui-muted-text\);[^}]*font-size:\s*11px;[^}]*font-weight:\s*700;/,
+    );
 
     ['Dashboard', 'Projects', 'Boards', 'Settings', 'Connections'].forEach((name) => {
       const link = navbar.getByRole('link', { name });
