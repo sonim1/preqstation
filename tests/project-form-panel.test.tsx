@@ -39,6 +39,7 @@ vi.mock('@/lib/notifications', () => ({
 }));
 
 import { ProjectFormPanel } from '@/app/components/panels/project-form-panel';
+import controlClasses from '@/app/components/settings-controls.module.css';
 
 describe('app/components/panels/project-form-panel', () => {
   beforeEach(() => {
@@ -87,5 +88,17 @@ describe('app/components/panels/project-form-panel', () => {
     expect(form?.textContent?.indexOf('Background Image')).toBeLessThan(
       form?.textContent?.indexOf('Create Project') ?? -1,
     );
+  });
+
+  it('applies the shared settings panel form class to the rendered form', () => {
+    render(
+      <MantineProvider>
+        <ProjectFormPanel createProjectAction={vi.fn()} />
+      </MantineProvider>,
+    );
+
+    const form = screen.getByRole('button', { name: 'Create Project' }).closest('form');
+
+    expect(form?.classList.contains(controlClasses.panelForm)).toBe(true);
   });
 });

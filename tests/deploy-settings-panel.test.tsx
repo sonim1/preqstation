@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { DeploySettingsPanel } from '@/app/components/panels/deploy-settings-panel';
+import controlClasses from '@/app/components/settings-controls.module.css';
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -104,6 +105,14 @@ describe('app/components/panels/deploy-settings-panel', () => {
     expect(html).toContain('max-width:100%');
     expect(html).toContain('white-space:pre-wrap');
     expect(html).toContain('overflow-wrap:anywhere');
+  });
+
+  it('applies the shared settings panel form class to the rendered form', () => {
+    renderPanel();
+
+    const form = screen.getByRole('textbox', { name: /Default Branch/i }).closest('form');
+
+    expect(form?.classList.contains(controlClasses.panelForm)).toBe(true);
   });
 
   it('surfaces dirty and saved states without a route refresh loop', async () => {

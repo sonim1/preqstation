@@ -41,22 +41,6 @@ const taskFormPanelCss = fs.readFileSync(
   path.join(process.cwd(), 'app/components/panels/task-form-panel.module.css'),
   'utf8',
 );
-const agentInstructionsSource = fs.readFileSync(
-  path.join(process.cwd(), 'app/components/panels/agent-instructions-panel.tsx'),
-  'utf8',
-);
-const deploySettingsSource = fs.readFileSync(
-  path.join(process.cwd(), 'app/components/panels/deploy-settings-panel.tsx'),
-  'utf8',
-);
-const projectFormPanelSource = fs.readFileSync(
-  path.join(process.cwd(), 'app/components/panels/project-form-panel.tsx'),
-  'utf8',
-);
-const worklogFormPanelSource = fs.readFileSync(
-  path.join(process.cwd(), 'app/components/panels/worklog-form-panel.tsx'),
-  'utf8',
-);
 const globalErrorSource = fs.readFileSync(path.join(process.cwd(), 'app/global-error.tsx'), 'utf8');
 const designSystemPath = path.join(process.cwd(), 'DESIGN.md');
 const require = createRequire(import.meta.url);
@@ -195,26 +179,112 @@ describe('theme token usage audit fixes', () => {
     }
   });
 
-  it('keeps settings, telegram, labels, and form panels on shared admin tokens', () => {
-    expect(settingsPageCss).toContain('var(--ui-admin-surface)');
-    expect(settingsPageCss).toContain('var(--ui-admin-divider)');
-    expect(settingsPageCss).toContain('var(--ui-admin-control-surface)');
-    expect(settingsPageCss).toContain('var(--ui-admin-label-tile-surface)');
-    expect(telegramSettingsCss).toContain('var(--ui-admin-control-accent-surface)');
-    expect(telegramSettingsCss).toContain('var(--ui-admin-status-success-surface)');
-    expect(telegramSettingsCss).not.toContain('var(--mantine-color-blue');
-    expect(settingsControlsCss).toContain('.panelForm');
-    expect(settingsControlsCss).toContain('var(--ui-admin-control-surface)');
-    expect(taskFormPanelCss).toContain('var(--ui-admin-surface)');
-    expect(taskFormPanelCss).toContain('var(--ui-admin-divider)');
+  it('renders settings, telegram, labels, and form panel fixtures on shared admin tokens', () => {
+    const settingsDom = renderCssFixture(
+      `
+        <section data-testid="settings-section" class="section"></section>
+        <div data-testid="label-row" class="labelRow"></div>
+        <button data-testid="label-color-button" class="labelColorButton"></button>
+        <div data-testid="label-color-picker" class="labelColorPicker"></div>
+      `,
+      'light',
+      [settingsPageCss],
+    );
+    const telegramDom = renderCssFixture(
+      `
+        <button data-testid="channel-tab" class="channelTab"></button>
+        <button data-testid="active-channel-tab" class="channelTab" data-active="true"></button>
+        <span data-testid="neutral-channel-status" class="channelStatus"></span>
+        <span
+          data-testid="positive-channel-status"
+          class="channelStatus"
+          data-tone="positive"
+        ></span>
+        <section data-testid="channel-panel" class="channelPanel"></section>
+        <div data-testid="channel-hint" class="channelHint"></div>
+      `,
+      'light',
+      [telegramSettingsCss],
+    );
+    const controlsDom = renderCssFixture(
+      `
+        <form data-testid="panel-form" class="panelForm"></form>
+        <section data-testid="panel-summary" class="panelSummary"></section>
+        <code data-testid="panel-code" class="panelCode"></code>
+        <button data-testid="color-trigger" class="colorTrigger"></button>
+        <div data-testid="color-popover" class="colorPopover"></div>
+      `,
+      'light',
+      [settingsControlsCss],
+    );
+    const taskFormDom = renderCssFixture(
+      `
+        <section data-testid="setup-section" class="setupSection"></section>
+        <section data-testid="notes-section" class="notesSection"></section>
+        <section data-testid="meta-section" class="metaSection"></section>
+      `,
+      'light',
+      [taskFormPanelCss],
+    );
 
-    for (const source of [
-      agentInstructionsSource,
-      deploySettingsSource,
-      projectFormPanelSource,
-      worklogFormPanelSource,
-    ]) {
-      expect(source).toContain('controlClasses.panelForm');
+    expectComputedProperties(settingsDom, 'settings-section', {
+      background: 'var(--ui-admin-surface)',
+      'box-shadow': 'none',
+    });
+    expectComputedProperties(settingsDom, 'label-row', {
+      background: 'var(--ui-admin-label-tile-surface)',
+    });
+    expectComputedProperties(settingsDom, 'label-color-button', {
+      background: 'var(--ui-admin-control-surface)',
+    });
+    expectComputedProperties(settingsDom, 'label-color-picker', {
+      background: 'var(--ui-admin-surface-strong)',
+    });
+
+    expectComputedProperties(telegramDom, 'channel-tab', {
+      background: 'var(--ui-admin-control-surface)',
+    });
+    expectComputedProperties(telegramDom, 'active-channel-tab', {
+      background: 'var(--ui-admin-control-accent-surface)',
+    });
+    expectComputedProperties(telegramDom, 'neutral-channel-status', {
+      background: 'var(--ui-admin-status-neutral-surface)',
+      color: 'var(--ui-admin-status-neutral-text)',
+    });
+    expectComputedProperties(telegramDom, 'positive-channel-status', {
+      background: 'var(--ui-admin-status-success-surface)',
+      color: 'var(--ui-admin-status-success-text)',
+    });
+    expectComputedProperties(telegramDom, 'channel-panel', {
+      background: 'var(--ui-admin-surface-muted)',
+    });
+    expectComputedProperties(telegramDom, 'channel-hint', {
+      background: 'var(--ui-admin-control-surface)',
+    });
+
+    expectComputedProperties(controlsDom, 'panel-form', {
+      'min-width': '0px',
+    });
+    expectComputedProperties(controlsDom, 'panel-summary', {
+      background: 'var(--ui-admin-control-surface)',
+      'box-shadow': 'var(--ui-elevation-0)',
+    });
+    expectComputedProperties(controlsDom, 'panel-code', {
+      background: 'var(--ui-admin-control-surface)',
+      color: 'var(--ui-text)',
+    });
+    expectComputedProperties(controlsDom, 'color-trigger', {
+      background: 'var(--ui-admin-control-surface)',
+    });
+    expectComputedProperties(controlsDom, 'color-popover', {
+      background: 'var(--ui-admin-surface-strong)',
+    });
+
+    for (const testId of ['setup-section', 'notes-section', 'meta-section']) {
+      expectComputedProperties(taskFormDom, testId, {
+        background: 'var(--ui-admin-surface)',
+        'min-width': '0px',
+      });
     }
   });
 
