@@ -4,7 +4,6 @@ import { MantineProvider } from '@mantine/core';
 import { act, cleanup, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import cardStyles from '@/app/components/cards.module.css';
 import { KanbanBoardMobile } from '@/app/components/kanban-board-mobile';
 import { KanbanCardContent } from '@/app/components/kanban-card';
 import type { KanbanColumns, KanbanTask } from '@/lib/kanban-helpers';
@@ -118,7 +117,7 @@ describe('KanbanCardContent stale queued timer', () => {
     expect(container.querySelector('[data-kanban-queued-warning="true"]')).not.toBeNull();
   });
 
-  it('refreshes the mobile stale queued hold accent when the queued task crosses one hour', async () => {
+  it('refreshes the mobile stale queued warning badge when the queued task crosses one hour', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-05-04T12:59:59.000Z'));
 
@@ -129,12 +128,14 @@ describe('KanbanCardContent stale queued timer', () => {
     });
 
     const card = screen.getByRole('link', { name: /PROJ-211/ });
-    expect(card.className).not.toContain(cardStyles.kanbanCardHold);
+    expect(card.querySelector('[data-run-state-stale="queued"]')).toBeNull();
+    expect(card.querySelector('[data-kanban-queued-warning="true"]')).toBeNull();
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(1_000);
     });
 
-    expect(card.className).toContain(cardStyles.kanbanCardHold);
+    expect(card.querySelector('[data-run-state-stale="queued"]')).not.toBeNull();
+    expect(card.querySelector('[data-kanban-queued-warning="true"]')).not.toBeNull();
   });
 });

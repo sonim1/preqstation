@@ -25,7 +25,7 @@
   border: 1px solid var(--kanban-card-border);
   border-radius: var(--kanban-card-radius);
   background: var(--kanban-card-bg);
-  box-shadow: none;
+  box-shadow: var(--kanban-card-focus-ring);
   transition:
     border-color 140ms ease,
     box-shadow 200ms ease,
@@ -46,38 +46,6 @@
   content: none;
 }
 
-.kanbanCardHold::before {
-  content: none;
-  position: absolute;
-  inset-block: 0;
-  left: 0;
-  z-index: 4;
-  width: 4px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--ui-warning), white 16%),
-    color-mix(in srgb, var(--ui-warning), #8a5d00 18%)
-  );
-  box-shadow: 0 0 16px color-mix(in srgb, var(--ui-warning), transparent 42%);
-  pointer-events: none;
-}
-
-.kanbanCardUpdated::before {
-  content: none;
-  position: absolute;
-  inset-block: 0;
-  left: 0;
-  z-index: 4;
-  width: 4px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--ui-success), white 16%),
-    color-mix(in srgb, var(--ui-success), black 18%)
-  );
-  box-shadow: 0 0 16px color-mix(in srgb, var(--ui-success), transparent 42%);
-  pointer-events: none;
-}
-
 .kanbanCardUnreadStatus {
   position: absolute;
   width: 1px;
@@ -93,16 +61,16 @@
 
 .kanbanCard[data-run-state='queued'] {
   border-color: color-mix(in srgb, var(--ui-status-queued), var(--kanban-card-border) 58%);
-  box-shadow: none;
+  box-shadow: var(--kanban-card-focus-ring);
 }
 
 .kanbanCard[data-run-state='running'] {
   border-color: color-mix(in srgb, var(--ui-status-running), var(--kanban-card-border) 58%);
-  box-shadow: none;
+  box-shadow: var(--kanban-card-focus-ring);
 }
 
 .kanbanCard.isDragging {
-  box-shadow: none;
+  box-shadow: var(--kanban-card-focus-ring);
   border-color: var(--kanban-card-accent);
   cursor: grabbing;
 }
@@ -404,8 +372,8 @@
   border-radius: 20px;
   background: var(--kanban-card-chip-bg);
   color: var(--kanban-card-body);
-  font-size: 12px;
-  font-weight: 750;
+  font-size: 0.75rem;
+  font-weight: 700;
   line-height: 1;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -464,7 +432,7 @@
   align-items: center;
   gap: 4px;
   color: var(--kanban-card-body);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.01em;
@@ -801,17 +769,17 @@
   border: 1px solid var(--kanban-card-border);
   border-radius: var(--kanban-card-radius);
   background: var(--kanban-card-bg);
-  box-shadow: none;
+  box-shadow: var(--kanban-card-focus-ring);
 }
 
 .itemCard.kanbanCard[data-run-state='queued'] {
   border-color: color-mix(in srgb, var(--ui-status-queued), var(--kanban-card-border) 58%);
-  box-shadow: none;
+  box-shadow: var(--kanban-card-focus-ring);
 }
 
 .itemCard.kanbanCard[data-run-state='running'] {
   border-color: color-mix(in srgb, var(--ui-status-running), var(--kanban-card-border) 58%);
-  box-shadow: none;
+  box-shadow: var(--kanban-card-focus-ring);
 }
 
 /* Task item card */
