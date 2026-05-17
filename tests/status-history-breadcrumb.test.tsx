@@ -52,8 +52,10 @@ describe('app/components/status-history-breadcrumb', () => {
 
     expect(newHtml).toContain('Planned');
     expect(newHtml).not.toContain('Todo');
+    expect(newHtml).toContain('background-color:var(--ui-accent-soft)');
     expect(historicHtml).toContain('Planned');
     expect(historicHtml).not.toContain('Todo');
+    expect(historicHtml).toContain('background-color:var(--ui-accent-soft)');
   });
 
   it('renders kitchen labels while still understanding historic default labels', () => {

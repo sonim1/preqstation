@@ -141,10 +141,14 @@ describe('app/components/work-log-timeline ledger variant', () => {
     expect(html).toContain('data-work-log-action-icon="fields"');
     expect(html).toContain('aria-label="Fields updated"');
     expect(html).toContain('title="Fields updated"');
+    expect(html).toContain('color:var(--ui-accent)');
+    expect(html).not.toContain('var(--mantine-color-teal-4)');
     expect(html).toContain('data-work-log-action="result"');
     expect(html).toContain('data-work-log-action-icon="result"');
     expect(html).toContain('aria-label="PREQSTATION result"');
     expect(html).toContain('title="PREQSTATION result"');
+    expect(html).toContain('color:var(--ui-success)');
+    expect(html).not.toContain('var(--mantine-color-lime-4)');
     expect(html).toContain('dateTime="2026-03-26T19:45:00.000Z"');
     expect(html).toContain('2026-03-26 19:45');
     expect(html).not.toContain('View detail');

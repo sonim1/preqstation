@@ -72,8 +72,8 @@ function getWorkLogActionMeta(title: string): WorkLogActionMeta {
       key: 'comment',
       label: 'Comment',
       tooltip: 'Comment',
-      color: 'var(--mantine-color-cyan-4)',
-      background: 'color-mix(in srgb, var(--mantine-color-cyan-9), transparent 64%)',
+      color: 'var(--ui-accent)',
+      background: 'var(--ui-accent-soft)',
       Icon: IconMessageCircle,
     };
   }
@@ -83,8 +83,8 @@ function getWorkLogActionMeta(title: string): WorkLogActionMeta {
       key: 'fields',
       label: 'Fields updated',
       tooltip: 'Fields updated',
-      color: 'var(--mantine-color-teal-4)',
-      background: 'color-mix(in srgb, var(--mantine-color-teal-9), transparent 64%)',
+      color: 'var(--ui-accent)',
+      background: 'var(--ui-accent-soft)',
       Icon: IconAdjustmentsHorizontal,
     };
   }
@@ -94,8 +94,8 @@ function getWorkLogActionMeta(title: string): WorkLogActionMeta {
       key: 'plan',
       label: 'PREQSTATION plan',
       tooltip: 'PREQSTATION plan',
-      color: 'var(--mantine-color-violet-3)',
-      background: 'color-mix(in srgb, var(--mantine-color-violet-9), transparent 66%)',
+      color: 'var(--ui-accent)',
+      background: 'var(--ui-accent-soft)',
       Icon: IconChecklist,
     };
   }
@@ -105,8 +105,8 @@ function getWorkLogActionMeta(title: string): WorkLogActionMeta {
       key: 'result',
       label: 'PREQSTATION result',
       tooltip: 'PREQSTATION result',
-      color: 'var(--mantine-color-lime-4)',
-      background: 'color-mix(in srgb, var(--mantine-color-lime-9), transparent 68%)',
+      color: 'var(--ui-success)',
+      background: 'var(--ui-success-soft)',
       Icon: IconClipboardCheck,
     };
   }
@@ -116,8 +116,8 @@ function getWorkLogActionMeta(title: string): WorkLogActionMeta {
       key: 'note',
       label: 'Note updated',
       tooltip: 'Note updated',
-      color: 'var(--mantine-color-yellow-4)',
-      background: 'color-mix(in srgb, var(--mantine-color-yellow-9), transparent 70%)',
+      color: 'var(--ui-warning)',
+      background: 'var(--ui-warning-soft)',
       Icon: IconPencil,
     };
   }
@@ -127,8 +127,8 @@ function getWorkLogActionMeta(title: string): WorkLogActionMeta {
       key: 'status',
       label: 'Status changed',
       tooltip: 'Status changed',
-      color: 'var(--mantine-color-orange-4)',
-      background: 'color-mix(in srgb, var(--mantine-color-orange-9), transparent 68%)',
+      color: 'var(--ui-warning)',
+      background: 'var(--ui-warning-soft)',
       Icon: IconGitBranch,
     };
   }
@@ -137,8 +137,8 @@ function getWorkLogActionMeta(title: string): WorkLogActionMeta {
     key: 'event',
     label: 'Work log',
     tooltip: 'Work log',
-    color: 'var(--mantine-color-gray-4)',
-    background: 'color-mix(in srgb, var(--mantine-color-gray-9), transparent 68%)',
+    color: 'var(--ui-muted-text)',
+    background: 'var(--ui-neutral-soft)',
     Icon: IconFlag,
   };
 }
@@ -364,8 +364,7 @@ export function WorkLogTimeline({
                       top: 27,
                       bottom: -16,
                       width: 1,
-                      background:
-                        'color-mix(in srgb, var(--ui-border), var(--mantine-color-gray-5) 28%)',
+                      background: 'color-mix(in srgb, var(--ui-border), var(--ui-muted-text) 28%)',
                     }}
                   />
                 ) : null}
@@ -526,13 +525,21 @@ export function WorkLogTimeline({
                 size="10px"
                 fw={800}
                 tt="uppercase"
-                style={{ letterSpacing: '0.12em', color: '#8ea3b8', whiteSpace: 'nowrap' }}
+                style={{
+                  letterSpacing: '0.12em',
+                  color: 'var(--ui-muted-text)',
+                  whiteSpace: 'nowrap',
+                }}
               >
                 {group.label}
               </Text>
               <div
                 aria-hidden="true"
-                style={{ flex: 1, height: 1, background: 'rgba(142, 163, 184, 0.18)' }}
+                style={{
+                  flex: 1,
+                  height: 1,
+                  background: 'color-mix(in srgb, var(--ui-border), transparent 28%)',
+                }}
               />
             </Group>
             <Stack gap="xs">
@@ -548,8 +555,8 @@ export function WorkLogTimeline({
                     radius="md"
                     p="sm"
                     style={{
-                      background: 'rgba(13, 23, 36, 0.72)',
-                      borderColor: 'rgba(142, 163, 184, 0.14)',
+                      background: 'var(--ui-reading-surface)',
+                      borderColor: 'var(--ui-reading-border)',
                     }}
                   >
                     <div
@@ -566,7 +573,7 @@ export function WorkLogTimeline({
                         size="xs"
                         fw={700}
                         style={{
-                          color: '#e7eff9',
+                          color: 'var(--ui-muted-text)',
                           fontVariantNumeric: 'tabular-nums',
                           whiteSpace: 'nowrap',
                         }}
@@ -589,7 +596,7 @@ export function WorkLogTimeline({
                             top: -6,
                             bottom: -6,
                             width: 1,
-                            background: 'rgba(142, 163, 184, 0.18)',
+                            background: 'color-mix(in srgb, var(--ui-border), transparent 28%)',
                           }}
                         />
                         <div
@@ -598,12 +605,10 @@ export function WorkLogTimeline({
                             width: 10,
                             height: 10,
                             borderRadius: 999,
-                            background: engineConfig
-                              ? 'rgba(94, 167, 255, 0.95)'
-                              : 'rgba(166, 183, 200, 0.9)',
+                            background: engineConfig ? 'var(--ui-accent)' : 'var(--ui-muted-text)',
                             boxShadow: engineConfig
-                              ? '0 0 0 4px rgba(94, 167, 255, 0.14)'
-                              : '0 0 0 4px rgba(166, 183, 200, 0.12)',
+                              ? '0 0 0 4px var(--ui-accent-soft)'
+                              : '0 0 0 4px var(--ui-neutral-soft)',
                           }}
                         />
                       </div>
@@ -615,7 +620,7 @@ export function WorkLogTimeline({
                             size="sm"
                             style={{
                               lineHeight: 1.35,
-                              color: '#eef5ff',
+                              color: 'var(--ui-text)',
                               overflowWrap: 'break-word',
                             }}
                           >

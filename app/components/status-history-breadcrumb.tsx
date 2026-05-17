@@ -1,8 +1,9 @@
 'use client';
 
 import { Badge, Group, Text } from '@mantine/core';
+import type { CSSProperties } from 'react';
 
-import { isTaskStatus, TASK_STATUS_COLORS } from '@/lib/task-meta';
+import { isTaskStatus } from '@/lib/task-meta';
 import { parseTaskStatusLabel } from '@/lib/terminology';
 
 import { useTerminology } from './terminology-provider';
@@ -42,6 +43,40 @@ type StatusStep = {
   time: string | null;
 };
 
+const mutedTextStyle: CSSProperties = { color: 'var(--ui-muted-text)' };
+
+function getStatusBadgeStyle(status: string): CSSProperties {
+  if (status === 'hold' || status === 'ready') {
+    return {
+      backgroundColor: 'var(--ui-warning-soft)',
+      borderColor: 'color-mix(in srgb, var(--ui-warning), var(--ui-border) 38%)',
+      color: 'var(--ui-warning)',
+    };
+  }
+
+  if (status === 'done') {
+    return {
+      backgroundColor: 'var(--ui-success-soft)',
+      borderColor: 'color-mix(in srgb, var(--ui-success), var(--ui-border) 38%)',
+      color: 'var(--ui-success)',
+    };
+  }
+
+  if (status === 'archived') {
+    return {
+      backgroundColor: 'var(--ui-neutral-soft)',
+      borderColor: 'var(--ui-border)',
+      color: 'var(--ui-muted-text)',
+    };
+  }
+
+  return {
+    backgroundColor: 'var(--ui-accent-soft)',
+    borderColor: 'color-mix(in srgb, var(--ui-accent), var(--ui-border) 42%)',
+    color: 'var(--ui-accent)',
+  };
+}
+
 function parseStatusFromLabel(labelText: string): string {
   return parseTaskStatusLabel(labelText);
 }
@@ -68,11 +103,7 @@ export function StatusHistoryBreadcrumb({ workLogs, currentStatus }: StatusHisto
   if (statusLogs.length === 0) {
     // No history — just show current status badge
     return (
-      <Badge
-        color={TASK_STATUS_COLORS[currentStatus as keyof typeof TASK_STATUS_COLORS] ?? 'gray'}
-        variant="light"
-        size="sm"
-      >
+      <Badge variant="light" size="sm" style={getStatusBadgeStyle(currentStatus)}>
         {displayStatusLabel(currentStatus, currentStatus, terminology)}
       </Badge>
     );
@@ -113,11 +144,7 @@ export function StatusHistoryBreadcrumb({ workLogs, currentStatus }: StatusHisto
 
   if (steps.length === 0) {
     return (
-      <Badge
-        color={TASK_STATUS_COLORS[currentStatus as keyof typeof TASK_STATUS_COLORS] ?? 'gray'}
-        variant="light"
-        size="sm"
-      >
+      <Badge variant="light" size="sm" style={getStatusBadgeStyle(currentStatus)}>
         {displayStatusLabel(currentStatus, currentStatus, terminology)}
       </Badge>
     );
@@ -128,21 +155,17 @@ export function StatusHistoryBreadcrumb({ workLogs, currentStatus }: StatusHisto
       {steps.map((step, idx) => (
         <Group key={idx} gap={4} align="center" wrap="nowrap">
           <Group gap={2} align="center" wrap="nowrap">
-            <Badge
-              color={TASK_STATUS_COLORS[step.status as keyof typeof TASK_STATUS_COLORS] ?? 'gray'}
-              variant="light"
-              size="sm"
-            >
+            <Badge variant="light" size="sm" style={getStatusBadgeStyle(step.status)}>
               {displayStatusLabel(step.status, step.label, terminology)}
             </Badge>
             {step.time && (
-              <Text size="xs" c="dimmed">
+              <Text size="xs" style={mutedTextStyle}>
                 ({step.time})
               </Text>
             )}
           </Group>
           {idx < steps.length - 1 && (
-            <Text size="xs" c="dimmed">
+            <Text size="xs" style={mutedTextStyle}>
               →
             </Text>
           )}

@@ -122,7 +122,48 @@ describe('task edit reading surface CSS', () => {
     );
   });
 
-  it('keeps mermaid fallback source readable on a light canvas in dark mode', () => {
+  it('keeps task edit scoped styles on defined ui tokens', () => {
+    const definedTokens = new Set(
+      Array.from(getRuleBody(globalsCss, ':root').matchAll(/(--ui-[\w-]+)\s*:/g)).map(
+        ([, token]) => token,
+      ),
+    );
+    const referencedTokens = Array.from(
+      `${globalsCss}\n${taskEditFormCss}`.matchAll(/var\((--ui-[\w-]+)/g),
+    ).map(([, token]) => token);
+
+    expect([...new Set(referencedTokens)].filter((token) => !definedTokens.has(token))).toEqual([]);
+  });
+
+  it('puts the task edit panel sections on the shared tokenized surface', () => {
+    const sectionSurfaceRule = getRuleBody(taskEditFormCss, '.sectionSurface');
+
+    expect(sectionSurfaceRule).toContain('border: 1px solid var(--ui-border);');
+    expect(sectionSurfaceRule).toContain('border-radius: 8px;');
+    expectTokenBackground(sectionSurfaceRule, '--ui-surface');
+  });
+
+  it('uses semantic tokens for editor and markdown text accents', () => {
+    const markdownCodeRule = getRuleBody(globalsCss, '.markdown-output code');
+    const liveEditorCodeRule = getRuleBody(globalsCss, '.live-editor-code');
+    const liveEditorCodeBlockRule = getRuleBody(globalsCss, '.live-editor-code-block');
+    const liveEditorQuoteRule = getRuleBody(globalsCss, '.live-editor-quote');
+    const liveEditorLinkRule = getRuleBody(globalsCss, '.live-editor-link');
+
+    for (const ruleBody of [
+      markdownCodeRule,
+      liveEditorCodeRule,
+      liveEditorCodeBlockRule,
+      liveEditorQuoteRule,
+      liveEditorLinkRule,
+    ]) {
+      expect(ruleBody).toContain('var(--ui-');
+      expect(ruleBody).not.toContain('var(--mantine-color-');
+      expect(ruleBody).not.toMatch(/#[0-9a-fA-F]{3,8}|rgba?\(/);
+    }
+  });
+
+  it('keeps mermaid fallback source readable on the tokenized canvas in dark mode', () => {
     const dom = new JSDOM(`
       <html data-mantine-color-scheme="dark">
         <head><style>${globalsCss}</style></head>
@@ -144,8 +185,8 @@ describe('task edit reading surface CSS', () => {
     for (const node of mermaidNodes) {
       const style = dom.window.getComputedStyle(node);
 
-      expect(style.background).toBe('var(--mantine-color-white)');
-      expect(style.color).toBe('rgb(15, 32, 61)');
+      expect(style.background).toBe('var(--ui-surface-strong)');
+      expect(style.color).toBe('var(--ui-text)');
     }
   });
 
