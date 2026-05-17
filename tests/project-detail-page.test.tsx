@@ -293,7 +293,9 @@ vi.mock('@/lib/owner', () => ({
 
 vi.mock('@/lib/project-meta', () => ({
   ACTIVE_PROJECT_STATUS: 'active',
+  DONE_PROJECT_STATUS: 'done',
   isProjectStatus: (value: string) => value === 'active' || value === 'paused' || value === 'done',
+  PAUSED_PROJECT_STATUS: 'paused',
   PROJECT_STATUS_COLORS: { active: 'blue', paused: 'yellow', done: 'gray' },
   PROJECT_STATUS_LABELS: { active: 'Active', paused: 'Paused', done: 'Done' },
 }));
@@ -435,6 +437,17 @@ describe('project detail page', () => {
     expect(html).toContain('1 AI agent running');
     expect(html).toContain('data-entity-type="agent"');
     expect(html).toContain('data-entity-state="running"');
+  });
+
+  it('uses the paused detail tone when active projects have inactive activity', async () => {
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('data-project-status-tone="paused"');
+    expect(html).not.toContain('data-project-status-tone="active"');
   });
 
   it('keeps detail content focused on activity with configuration in edit details', async () => {

@@ -40,7 +40,13 @@ import { projects, taskLabels, tasks } from '@/lib/db/schema';
 import { githubRepoIdToUrl } from '@/lib/github-repo';
 import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
 import { getProjectActivityStatus } from '@/lib/project-activity';
-import { isProjectStatus, PROJECT_STATUS_COLORS, PROJECT_STATUS_LABELS } from '@/lib/project-meta';
+import {
+  DONE_PROJECT_STATUS,
+  isProjectStatus,
+  PAUSED_PROJECT_STATUS,
+  PROJECT_STATUS_COLORS,
+  PROJECT_STATUS_LABELS,
+} from '@/lib/project-meta';
 import { resolveProjectByKey } from '@/lib/project-resolve';
 import { resolveAgentInstructions, resolveDeployStrategyConfig } from '@/lib/project-settings';
 import { listProjectTaskLabels, listProjectTaskLabelUsageCounts } from '@/lib/task-labels';
@@ -91,8 +97,8 @@ function getProjectDetailStatusTone({
   queuedTaskCount: number;
   runningTaskCount: number;
 }): ProjectDetailStatusTone {
-  if (projectStatus === 'done') return 'archived';
-  if (projectStatus === 'paused') return 'paused';
+  if (projectStatus === DONE_PROJECT_STATUS) return 'archived';
+  if (projectStatus === PAUSED_PROJECT_STATUS || activityStatus === 'inactive') return 'paused';
   if (runningTaskCount > 0) return 'live';
   if (queuedTaskCount > 0) return 'queued';
   if (activityStatus === 'critical' || activityStatus === 'warning') return 'stale';
