@@ -75,9 +75,9 @@
 
 .tableShell {
   overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
+  border: 1px solid var(--ui-table-border);
   border-radius: 6px;
-  background: var(--ui-surface);
+  background: var(--ui-table-surface);
   box-shadow: none;
 }
 
@@ -112,7 +112,8 @@
 
 .dataTable thead th {
   padding: 12px 16px;
-  border-bottom: 1px solid color-mix(in srgb, var(--ui-border), transparent 10%);
+  border-bottom: 1px solid var(--ui-table-row-border);
+  background: var(--ui-table-header-surface);
   color: var(--ui-muted-text);
   font-size: 0.72rem;
   font-weight: 700;
@@ -129,7 +130,15 @@
 
 .dataTable tbody tr + tr th,
 .dataTable tbody tr + tr td {
-  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
+  border-top: 1px solid var(--ui-table-row-border);
+}
+
+.dataRow:hover {
+  background: var(--ui-table-row-hover);
+}
+
+.dataRow:focus-within {
+  background: var(--ui-table-row-selected);
 }
 
 .dataCellPrimary {
@@ -206,7 +215,7 @@
 }
 
 :global(html[data-mantine-color-scheme='dark']) .tableShell {
-  border-color: color-mix(in srgb, var(--ui-border), transparent 0%);
+  border-color: var(--ui-table-border);
   box-shadow: none;
 }
 
@@ -258,6 +267,11 @@
     width: 100%;
   }
 
+  .dataTable tbody {
+    box-sizing: border-box;
+    padding: 10px;
+  }
+
   .dataTable tbody tr + tr th,
   .dataTable tbody tr + tr td {
     border-top: 0;
@@ -267,10 +281,14 @@
     display: grid;
     gap: 12px;
     padding: 14px 16px;
+    border: 1px solid var(--ui-table-card-border);
+    border-radius: 6px;
+    background: var(--ui-table-card-surface);
   }
 
   .dataRow + .dataRow {
-    border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
+    margin-top: 10px;
+    border-top: 1px solid var(--ui-table-card-border);
   }
 
   .dataRowHeader,
