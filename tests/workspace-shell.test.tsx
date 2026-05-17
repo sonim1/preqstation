@@ -71,9 +71,18 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/app/components/command-palette', () => ({
   CommandPalette: () => null,
-  CommandPaletteTrigger: ({ variant = 'full' }: { variant?: 'compact' | 'full' }) => (
-    <div data-command-palette-trigger={variant}>Search trigger</div>
-  ),
+  CommandPaletteTrigger: ({ variant = 'full' }: { variant?: 'compact' | 'full' }) => {
+    const className =
+      variant === 'compact'
+        ? 'command-palette-trigger command-palette-trigger--compact'
+        : 'command-palette-trigger';
+
+    return (
+      <button type="button" className={className} data-command-palette-trigger={variant}>
+        Search trigger
+      </button>
+    );
+  },
 }));
 
 vi.mock('@/app/components/project-picker-menu', () => ({
@@ -217,6 +226,85 @@ function getWorkspaceNavbar(container: HTMLElement) {
 
 function expectBefore(first: Element, second: Element) {
   expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+}
+
+function renderWorkspaceCssFixture(markup: string) {
+  const style = document.createElement('style');
+  const fixture = document.createElement('div');
+
+  style.textContent = globalsCss;
+  fixture.innerHTML = markup;
+  document.head.append(style);
+  document.body.append(fixture);
+
+  return {
+    fixture,
+    cleanup: () => {
+      fixture.remove();
+      style.remove();
+    },
+  };
+}
+
+function getRequiredFixtureElement(fixture: HTMLElement, testId: string) {
+  const element = fixture.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+
+  expect(element).not.toBeNull();
+
+  return element as HTMLElement;
+}
+
+function expectComputedStyleProperties(
+  element: HTMLElement,
+  expectedProperties: Record<string, string>,
+) {
+  const style = window.getComputedStyle(element);
+
+  for (const [property, value] of Object.entries(expectedProperties)) {
+    expect(style.getPropertyValue(property)).toBe(value);
+  }
+}
+
+function getCssRuleProperties(selector: string, properties: string[]) {
+  const style = document.createElement('style');
+
+  style.textContent = globalsCss;
+  document.head.append(style);
+
+  try {
+    const rule = findCssStyleRule(style.sheet?.cssRules, selector);
+
+    if (!rule) {
+      return null;
+    }
+
+    return Object.fromEntries(
+      properties.map((property) => [property, rule.style.getPropertyValue(property)]),
+    );
+  } finally {
+    style.remove();
+  }
+}
+
+function findCssStyleRule(rules: CSSRuleList | undefined, selector: string): CSSStyleRule | null {
+  if (!rules) {
+    return null;
+  }
+
+  for (const rule of Array.from(rules)) {
+    if ('selectorText' in rule && (rule as CSSStyleRule).selectorText === selector) {
+      return rule as CSSStyleRule;
+    }
+
+    const nestedRules = (rule as CSSRule & { cssRules?: CSSRuleList }).cssRules;
+    const nestedMatch = findCssStyleRule(nestedRules, selector);
+
+    if (nestedMatch) {
+      return nestedMatch;
+    }
+  }
+
+  return null;
 }
 
 describe('app/components/workspace-shell', () => {
@@ -597,16 +685,35 @@ describe('app/components/workspace-shell', () => {
 
     expect(nestedBoardFocusRule).toMatch(/outline:\s*none;/);
     expect(nestedBoardFocusRule).toMatch(/color:\s*var\(--ui-text\);/);
-    expect(nestedBoardFocusRule).toMatch(/background:\s*var\(--ui-accent-soft\);/);
-    expect(nestedBoardFocusRule).toMatch(/box-shadow:/);
+    expect(nestedBoardFocusRule).toMatch(/background:\s*var\(--ui-workspace-accent-surface\);/);
+    expect(nestedBoardFocusRule).toMatch(/box-shadow:\s*var\(--ui-workspace-focus-shadow\);/);
     expect(nestedBoardBodyFocusRule).toBe('');
   });
 
   it('defines a custom focus-visible treatment for top-level workspace nav links', () => {
-    expect(globalsCss).toMatch(
-      /\.workspace-nav-link:not\(\.workspace-board-subnav-link\):focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*background:\s*var\(--ui-accent-soft\);[\s\S]*color:\s*var\(--ui-text\);[\s\S]*box-shadow:/,
+    const { container } = renderWorkspaceShellDom({
+      desktopOpened: true,
+      pathname: '/board/ALPHA',
+      rememberedProjectKey: 'ALPHA',
+    });
+    const navbar = within(getWorkspaceNavbar(container));
+    const boardsLink = navbar.getByRole('link', { name: 'Boards' });
+    const currentBoardLink = navbar.getByRole('link', { name: 'Alpha' });
+    const focusRule = getCssRuleProperties(
+      '.workspace-nav-link:not(.workspace-board-subnav-link):focus-visible',
+      ['outline', 'background', 'color', 'box-shadow'],
     );
-    expect(globalsCss).not.toMatch(/\.workspace-nav-link:focus-visible\s*\{/);
+
+    expect(Array.from(boardsLink.classList)).toContain('workspace-nav-link');
+    expect(Array.from(boardsLink.classList)).not.toContain('workspace-board-subnav-link');
+    expect(Array.from(currentBoardLink.classList)).toContain('workspace-board-subnav-link');
+    expect(focusRule).toEqual({
+      outline: 'none',
+      background: 'var(--ui-workspace-accent-surface)',
+      color: 'var(--ui-text)',
+      'box-shadow': 'var(--ui-workspace-focus-shadow)',
+    });
+    expect(getCssRuleProperties('.workspace-nav-link:focus-visible', ['background'])).toBeNull();
   });
 
   it('applies grouped nav label and top-level nav link hooks in the rendered sidebar', () => {
@@ -632,7 +739,7 @@ describe('app/components/workspace-shell', () => {
 
   it('defines a shared focus-visible treatment for header and rail controls', () => {
     expect(globalsCss).toMatch(
-      /\.workspace-brand-link:focus-visible,\s*\.workspace-divider-rail-button:focus-visible,\s*\.workspace-header-sidebar-toggle:focus-visible,\s*\.workspace-avatar-trigger:focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*border-color:\s*var\(--ui-accent\);[\s\S]*box-shadow:/,
+      /\.workspace-brand-link:focus-visible,\s*\.workspace-divider-rail-button:focus-visible,\s*\.workspace-header-sidebar-toggle:focus-visible,\s*\.workspace-notification-trigger:focus-visible,\s*\.workspace-avatar-trigger:focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*border-color:\s*var\(--ui-accent\);[\s\S]*box-shadow:\s*var\(--ui-workspace-outer-focus-shadow\);/,
     );
   });
 
@@ -649,13 +756,13 @@ describe('app/components/workspace-shell', () => {
   it('uses flatter token-based sidebar chrome instead of blur-heavy gradients', () => {
     expect(globalsCss).not.toMatch(/\.workspace-navbar\s*\{[^}]*backdrop-filter:/);
     expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-surface\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--ui-accent-soft\), var\(--ui-surface-strong\) 42%\);/,
+      /\.workspace-board-subnav-surface\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);/,
     );
     expect(globalsCss).toMatch(
-      /\.workspace-nav-link\[data-active='true'\]\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--ui-accent-soft\), var\(--ui-surface-strong\) 34%\);[^}]*color:\s*var\(--ui-text\);/,
+      /\.workspace-nav-link\[data-active='true'\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*color:\s*var\(--ui-text\);/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-nav-link\[data-active='true'\]\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--ui-accent-soft\), var\(--ui-surface-strong\) 26%\);[^}]*color:\s*var\(--ui-text\);/,
+      /html\[data-mantine-color-scheme='dark'\] \.workspace-nav-link\[data-active='true'\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*color:\s*var\(--ui-text\);/,
     );
   });
 
@@ -664,19 +771,71 @@ describe('app/components/workspace-shell', () => {
     expect(globalsCss).not.toMatch(/\.workspace-user-menu\s*\{[^}]*backdrop-filter:/);
     expect(globalsCss).toMatch(/\.workspace-header\s*\{[^}]*background:\s*var\(--ui-surface\);/);
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-user-menu\s*\{[^}]*background:\s*var\(--ui-surface-strong\);/,
+      /\.workspace-user-menu \.workspace-signout-btn\s*\{[^}]*background:\s*transparent;/,
+    );
+    expect(globalsCss).toMatch(
+      /html\[data-mantine-color-scheme='dark'\] \.workspace-user-menu\s*\{[^}]*background:\s*var\(--ui-workspace-popover-surface\);/,
+    );
+  });
+
+  it('keeps repeated workspace chrome surfaces and shadows on ui tokens', () => {
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <header class="workspace-header" data-testid="header"></header>
+      <nav class="workspace-navbar" data-testid="navbar"></nav>
+      <button class="command-palette-trigger" data-testid="command-palette-trigger"></button>
+      <a class="workspace-mobile-project-picker" data-testid="mobile-project-picker"></a>
+      <div class="workspace-user-menu" data-testid="user-menu"></div>
+    `);
+
+    try {
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'header'), {
+        background: 'var(--ui-surface)',
+      });
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'navbar'), {
+        background: 'var(--ui-surface)',
+        'box-shadow': 'var(--ui-elevation-1)',
+      });
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'command-palette-trigger'), {
+        background: 'var(--ui-workspace-control-surface)',
+        'box-shadow': 'var(--ui-workspace-control-inset), var(--ui-workspace-control-shadow)',
+      });
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'mobile-project-picker'), {
+        background: 'var(--ui-workspace-control-surface)',
+        'box-shadow': 'var(--ui-workspace-control-inset), var(--ui-workspace-control-shadow)',
+      });
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'user-menu'), {
+        background: 'var(--ui-workspace-popover-surface)',
+        'box-shadow': 'var(--ui-workspace-popover-shadow)',
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it('shares accent state tokens between project picker items and board subnav', () => {
+    expect(globalsCss).toMatch(/--ui-workspace-accent-surface:/);
+    expect(globalsCss).toMatch(/--ui-workspace-accent-border:/);
+    expect(globalsCss).toMatch(/--ui-workspace-focus-shadow:/);
+    expect(globalsCss).toMatch(
+      /\.workspace-project-picker-item\.is-selected,\s*\.workspace-board-picker-item\[data-current-board='true'\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--ui-workspace-accent-border\);/,
+    );
+    expect(globalsCss).toMatch(
+      /\.workspace-board-subnav-surface\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--ui-workspace-accent-border\);/,
+    );
+    expect(globalsCss).toMatch(
+      /\.workspace-board-subnav-link:focus-visible\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*var\(--ui-workspace-focus-shadow\);/,
     );
   });
 
   it('keeps the left header chrome on token-driven dark surfaces', () => {
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-brand-link,\s*html\[data-mantine-color-scheme='dark'\] \.workspace-avatar-trigger\s*\{[^}]*background:\s*var\(--ui-surface-soft\);/,
+      /html\[data-mantine-color-scheme='dark'\] \.workspace-brand-link,\s*html\[data-mantine-color-scheme='dark'\] \.workspace-avatar-trigger\s*\{[^}]*background:\s*var\(--ui-workspace-control-surface\);/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker\s*\{[^}]*border-color:\s*color-mix\(in srgb,\s*var\(--ui-border\),\s*var\(--ui-accent\)\s*24%\);[^}]*background:\s*var\(--ui-surface-soft\);/,
+      /html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker\s*\{[^}]*border-color:\s*var\(--ui-workspace-control-border\);[^}]*background:\s*var\(--ui-workspace-control-surface\);/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker:hover,\s*html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker:focus-visible\s*\{[^}]*border-color:\s*color-mix\(in srgb,\s*var\(--ui-accent\),\s*var\(--ui-border\)\s*40%\);[^}]*background:\s*color-mix\(in srgb,\s*var\(--ui-accent-soft\),\s*var\(--ui-surface-soft\)\s*70%\);/,
+      /html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker:hover,\s*html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker:focus-visible\s*\{[^}]*border-color:\s*var\(--ui-workspace-accent-border-soft\);[^}]*background:\s*var\(--ui-workspace-control-hover-surface\);/,
     );
   });
 
@@ -742,13 +901,13 @@ describe('app/components/workspace-shell', () => {
       /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-header,\s*[\s\S]*\.workspace-navbar\s*\{[\s\S]*background:\s*var\(--ui-surface-strong\);/,
     );
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-navbar\s*\{[\s\S]*box-shadow:\s*18px 0 32px -24px rgba\(20,\s*44,\s*84,\s*0\.45\);/,
+      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-navbar\s*\{[\s\S]*box-shadow:\s*var\(--ui-elevation-3\);/,
     );
     expect(globalsCss).toMatch(
       /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*html\[data-mantine-color-scheme='dark'\] \.workspace-header,\s*[\s\S]*html\[data-mantine-color-scheme='dark'\] \.workspace-navbar\s*\{[\s\S]*background:\s*var\(--ui-surface-strong\);/,
     );
     expect(globalsCss).toMatch(
-      /\.workspace-mobile-account\s*\{[^}]*background:\s*var\(--ui-surface-soft\);[^}]*padding:\s*10px;/,
+      /\.workspace-mobile-account\s*\{[^}]*background:\s*var\(--ui-workspace-popover-surface\);[^}]*padding:\s*10px;/,
     );
     expect(globalsCss).toMatch(
       /\.workspace-mobile-account-email\s*\{[^}]*overflow-wrap:\s*anywhere;/,
@@ -782,7 +941,16 @@ describe('app/components/workspace-shell', () => {
     );
   });
 
-  it('gives the mobile project picker more room for long project names', () => {
+  it('lets the mobile picker shrink between fixed header controls', () => {
+    expect(globalsCss).toMatch(
+      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-header-inner\s*\{[\s\S]*grid-template-columns:\s*auto minmax\(0,\s*1fr\) auto;/,
+    );
+    expect(globalsCss).toMatch(
+      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-header-middle\s*\{[\s\S]*width:\s*100%;/,
+    );
+  });
+
+  it('gives the mobile project picker responsive room for long project names', () => {
     expect(globalsCss).toMatch(
       /\.workspace-mobile-project-picker\s*\{[^}]*max-width:\s*min\(60vw, 260px\);/,
     );
@@ -790,7 +958,7 @@ describe('app/components/workspace-shell', () => {
       /\.workspace-mobile-project-picker-label\s*\{[^}]*max-width:\s*min\(38vw, 168px\);/,
     );
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*max-width:\s*min\(64vw, 260px\);/,
+      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*width:\s*min\(100%,\s*260px\);[\s\S]*max-width:\s*100%;/,
     );
   });
 });
