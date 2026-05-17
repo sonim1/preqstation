@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge, Group, Paper, Stack, Text, useMantineTheme } from '@mantine/core';
+import { Badge, Group, Paper, Stack, Text } from '@mantine/core';
 import { IconChartLine } from '@tabler/icons-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
@@ -20,6 +20,10 @@ import panelStyles from './panels.module.css';
 const emptySubscribe = () => () => {};
 
 type DailyActivity = { date: string; count: number };
+
+const ACTIVITY_CHART_STROKE = 'var(--ui-dashboard-chart-primary)';
+const ACTIVITY_CHART_FILL = 'var(--ui-dashboard-chart-primary-soft)';
+const ACTIVITY_CHART_GRID = 'var(--ui-dashboard-chart-grid)';
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -47,7 +51,7 @@ function ActivityTooltip({ active, payload, label }: CustomTooltipProps) {
       radius="md"
       p="xs"
       style={{
-        background: 'var(--mantine-color-body)',
+        background: 'var(--ui-dashboard-chart-tooltip)',
         border: '1px solid var(--ui-border)',
         minWidth: 140,
       }}
@@ -74,9 +78,6 @@ export function ActivityChart({
     date: d.date.slice(5),
     count: d.count,
   }));
-
-  const theme = useMantineTheme();
-  const brandColor = theme.colors.brand[5];
 
   const containerRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(400);
@@ -129,11 +130,11 @@ export function ActivityChart({
           <RechartsAreaChart width={chartWidth} height={200} data={chartData}>
             <defs>
               <linearGradient id="activityGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={brandColor} stopOpacity={0.3} />
-                <stop offset="95%" stopColor={brandColor} stopOpacity={0.05} />
+                <stop offset="5%" stopColor={ACTIVITY_CHART_FILL} stopOpacity={1} />
+                <stop offset="95%" stopColor={ACTIVITY_CHART_FILL} stopOpacity={0.18} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="4 4" vertical={false} />
+            <CartesianGrid stroke={ACTIVITY_CHART_GRID} strokeDasharray="4 4" vertical={false} />
             <XAxis
               dataKey="date"
               tick={{ fontSize: 10, fill: 'var(--ui-muted-text)' }}
@@ -152,7 +153,7 @@ export function ActivityChart({
             <Area
               type="monotone"
               dataKey="count"
-              stroke={brandColor}
+              stroke={ACTIVITY_CHART_STROKE}
               strokeWidth={2}
               fill="url(#activityGradient)"
               dot={false}

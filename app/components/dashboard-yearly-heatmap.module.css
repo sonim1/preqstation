@@ -12,14 +12,18 @@
   max-width: 100%;
   min-height: 13rem;
   justify-self: start;
-  border-color: color-mix(in srgb, var(--mantine-color-blue-5), var(--ui-border) 54%);
-  background: color-mix(in srgb, var(--ui-surface-panel), var(--mantine-color-blue-9) 10%);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--mantine-color-blue-5), transparent 82%);
+  border-color: color-mix(in srgb, var(--ui-dashboard-chart-primary), var(--ui-border) 54%);
+  background: color-mix(
+    in srgb,
+    var(--ui-surface-panel),
+    var(--ui-dashboard-chart-primary-soft) 16%
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-dashboard-chart-primary), transparent 82%);
 }
 
 .titleIcon {
   flex: 0 0 auto;
-  color: var(--mantine-color-blue-5);
+  color: var(--ui-dashboard-chart-primary);
 }
 
 .streakLabel,
@@ -97,45 +101,45 @@
 }
 
 .cell {
-  border: 1px solid rgba(132, 151, 176, 0.18);
-  background: rgba(162, 180, 204, 0.16);
+  border: 1px solid var(--ui-workload-border);
+  background: var(--ui-workload-level-0);
 }
 
 .projectPanel .cell {
-  border-color: color-mix(in srgb, var(--mantine-color-blue-7), transparent 84%);
-  background: color-mix(in srgb, var(--ui-surface-strong), var(--mantine-color-blue-9) 18%);
+  border-color: color-mix(in srgb, var(--ui-dashboard-chart-primary), transparent 84%);
+  background: var(--ui-workload-level-0);
 }
 
 .cell[data-level='1'] {
-  background: rgba(53, 160, 111, 0.32);
+  background: var(--ui-workload-level-1);
 }
 
 .cell[data-level='2'] {
-  background: rgba(53, 160, 111, 0.48);
+  background: var(--ui-workload-level-2);
 }
 
 .cell[data-level='3'] {
-  background: rgba(32, 132, 90, 0.68);
+  background: var(--ui-workload-level-3);
 }
 
 .cell[data-level='4'] {
-  background: rgba(18, 104, 70, 0.88);
+  background: var(--ui-workload-level-4);
 }
 
 .projectPanel .cell[data-level='1'] {
-  background: color-mix(in srgb, var(--mantine-color-blue-8), var(--mantine-color-blue-4) 24%);
+  background: var(--ui-workload-level-1);
 }
 
 .projectPanel .cell[data-level='2'] {
-  background: color-mix(in srgb, var(--mantine-color-blue-7), var(--mantine-color-blue-4) 36%);
+  background: var(--ui-workload-level-2);
 }
 
 .projectPanel .cell[data-level='3'] {
-  background: color-mix(in srgb, var(--mantine-color-indigo-6), var(--mantine-color-blue-4) 44%);
+  background: var(--ui-workload-level-3);
 }
 
 .projectPanel .cell[data-level='4'] {
-  background: var(--mantine-color-blue-5);
+  background: var(--ui-workload-level-4);
 }
 
 .placeholder {
@@ -150,23 +154,23 @@
   width: 0.72rem;
   height: 0.72rem;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--ui-surface-strong), var(--mantine-color-blue-9) 18%);
+  background: var(--ui-workload-level-0);
 }
 
 .legendCell[data-level='1'] {
-  background: color-mix(in srgb, var(--mantine-color-blue-8), var(--mantine-color-blue-4) 24%);
+  background: var(--ui-workload-level-1);
 }
 
 .legendCell[data-level='2'] {
-  background: color-mix(in srgb, var(--mantine-color-blue-7), var(--mantine-color-blue-4) 36%);
+  background: var(--ui-workload-level-2);
 }
 
 .legendCell[data-level='3'] {
-  background: color-mix(in srgb, var(--mantine-color-indigo-6), var(--mantine-color-blue-4) 44%);
+  background: var(--ui-workload-level-3);
 }
 
 .legendCell[data-level='4'] {
-  background: var(--mantine-color-blue-5);
+  background: var(--ui-workload-level-4);
 }
 
 @media (max-width: 48rem) {
