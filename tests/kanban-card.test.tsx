@@ -355,44 +355,6 @@ describe('app/components/kanban-card', () => {
     );
   });
 
-  it('keeps card state shadows on semantic local variables instead of raw shadow colors', () => {
-    const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
-      '<article class="kanbanCard" data-testid="card"></article>',
-    );
-
-    try {
-      const cardStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'card'));
-      const shadowProperties = [
-        '--kanban-card-shadow-outline',
-        '--kanban-card-shadow-ambient',
-        '--kanban-card-shadow-queued-glow',
-        '--kanban-card-shadow-running-ambient',
-      ];
-
-      for (const property of shadowProperties) {
-        const value = cardStyle.getPropertyValue(property);
-
-        expect(value).toContain('color-mix(');
-        expect(value).not.toMatch(/rgba\((?:255, 255, 255|24, 44, 84|33, 56, 97|8, 23, 40)/);
-      }
-
-      expect(cardStyle.boxShadow).toBe(
-        'var(--kanban-card-focus-ring), var(--kanban-card-shadow-rest)',
-      );
-      expect(cardStyle.getPropertyValue('--kanban-card-shadow-rest')).toContain(
-        '0 0 0 1px var(--kanban-card-shadow-outline)',
-      );
-      expect(cardStyle.getPropertyValue('--kanban-card-shadow-queued')).toContain(
-        'var(--kanban-card-shadow-queued-glow)',
-      );
-      expect(cardStyle.getPropertyValue('--kanban-card-shadow-running')).toContain(
-        'var(--kanban-card-shadow-running-ambient)',
-      );
-    } finally {
-      cleanupFixture();
-    }
-  });
-
   it('derives run-state wave chrome from execution tokens and local mechanics variables', () => {
     const frameRule = getCssRuleBody(cardsCss, '.kanbanCardFrame');
     const queuedRule = getCssRuleBody(cardsCss, ".kanbanCardFrame[data-run-state='queued']");
@@ -432,6 +394,44 @@ describe('app/components/kanban-card', () => {
       /\.itemCard\.kanbanCard\s*\{[\s\S]*border:\s*0;[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*box-shadow:\s*var\(--kanban-card-focus-ring\),\s*var\(--kanban-card-shadow-rest\);/,
     );
     expect(cardsCss).toMatch(/\.kanbanCard::after\s*\{[\s\S]*content:\s*none;/);
+  });
+
+  it('keeps card state shadows on semantic local variables instead of raw shadow colors', () => {
+    const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
+      '<article class="kanbanCard" data-testid="card"></article>',
+    );
+
+    try {
+      const cardStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'card'));
+      const shadowProperties = [
+        '--kanban-card-shadow-outline',
+        '--kanban-card-shadow-ambient',
+        '--kanban-card-shadow-queued-glow',
+        '--kanban-card-shadow-running-ambient',
+      ];
+
+      for (const property of shadowProperties) {
+        const value = cardStyle.getPropertyValue(property);
+
+        expect(value).toContain('color-mix(');
+        expect(value).not.toMatch(/rgba\((?:255, 255, 255|24, 44, 84|33, 56, 97|8, 23, 40)/);
+      }
+
+      expect(cardStyle.boxShadow).toBe(
+        'var(--kanban-card-focus-ring), var(--kanban-card-shadow-rest)',
+      );
+      expect(cardStyle.getPropertyValue('--kanban-card-shadow-rest')).toContain(
+        '0 0 0 1px var(--kanban-card-shadow-outline)',
+      );
+      expect(cardStyle.getPropertyValue('--kanban-card-shadow-queued')).toContain(
+        'var(--kanban-card-shadow-queued-glow)',
+      );
+      expect(cardStyle.getPropertyValue('--kanban-card-shadow-running')).toContain(
+        'var(--kanban-card-shadow-running-ambient)',
+      );
+    } finally {
+      cleanupFixture();
+    }
   });
 
   it('keeps label, metadata, and tooltip surfaces on the card surface hierarchy', () => {
