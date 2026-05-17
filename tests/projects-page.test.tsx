@@ -460,13 +460,13 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).not.toContain('No matching projects');
   });
 
-  it('keeps active projects in recent-change order before paused and archived projects', async () => {
+  it('keeps active projects in last-activity order before paused and archived projects', async () => {
     mocked.state.projects = [
       {
         id: 'project-1',
-        name: 'Older Active',
+        name: 'Latest Activity Active',
         projectKey: 'OLD',
-        description: 'Older active repo.',
+        description: 'Older updated repo with newer actual activity.',
         status: 'active',
         updatedAt: new Date('2026-03-10T10:00:00Z'),
         repoUrl: 'https://github.com/sonim1/older-active',
@@ -478,9 +478,9 @@ describe('app/(workspace)/(main)/projects/page', () => {
       },
       {
         id: 'project-2',
-        name: 'Newest Active',
+        name: 'Newest Updated Active',
         projectKey: 'NEW',
-        description: 'Newest active repo.',
+        description: 'Newer updated repo with older actual activity.',
         status: 'active',
         updatedAt: new Date('2026-03-14T10:00:00Z'),
         repoUrl: 'https://github.com/sonim1/newest-active',
@@ -522,7 +522,10 @@ describe('app/(workspace)/(main)/projects/page', () => {
     mocked.state.runStateCounts = [
       { projectId: 'project-1', runState: 'running', _count: { id: 1 } },
     ];
-    mocked.state.latestWorkLogs = [];
+    mocked.state.latestWorkLogs = [
+      { projectId: 'project-1', lastWorkedAt: new Date('2026-03-14T13:00:00Z') },
+      { projectId: 'project-2', lastWorkedAt: new Date('2026-03-11T13:00:00Z') },
+    ];
 
     const page = await ProjectsPage();
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
@@ -531,8 +534,10 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('Active 2');
     expect(html).toContain('Paused 1');
     expect(html).toContain('Archived 1');
-    expect(html.indexOf('Newest Active')).toBeLessThan(html.indexOf('Older Active'));
-    expect(html.indexOf('Older Active')).toBeLessThan(html.indexOf('Paused Recent'));
+    expect(html.indexOf('Latest Activity Active')).toBeLessThan(
+      html.indexOf('Newest Updated Active'),
+    );
+    expect(html.indexOf('Newest Updated Active')).toBeLessThan(html.indexOf('Paused Recent'));
     expect(html.indexOf('Paused Recent')).toBeLessThan(html.indexOf('Archived Recent'));
     expect(html).toContain('data-project-card-tone="paused"');
     expect(html).toContain('data-project-card-tone="archived"');
@@ -723,6 +728,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectsPageCss).not.toContain('max-width: 0.85rem;');
     expect(projectsPageCss).toMatch(/\.rosterGrid\s*\{[\s\S]*min-width:\s*0;/);
     expect(projectsPageCss).toMatch(/\.projectCard\s*\{[\s\S]*min-height:\s*13rem;/);
+    expect(projectsPageCss).toMatch(/\.cardInner\s*\{[\s\S]*pointer-events:\s*none;/);
     expect(projectsPageCss).toMatch(/\.projectCard\[data-project-card-tone=['"]archived['"]\]/);
     expect(projectsPageCss).toMatch(/\.projectCard\[data-project-card-tone=['"]paused['"]\]/);
     expect(projectsPageCss).not.toContain('--card-image');

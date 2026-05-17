@@ -272,7 +272,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
         queuedCount,
         doneCount,
         lastActivityAt,
-        sortActivityAt: updatedAt,
+        sortActivityAt: lastActivityAt,
         tone,
       };
     })

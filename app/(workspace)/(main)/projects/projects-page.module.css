@@ -313,6 +313,7 @@ button.filterChip {
   gap: 0.8rem;
   min-height: 100%;
   padding: 0.9rem;
+  pointer-events: none;
 }
 
 .cardTop {
