@@ -58,7 +58,7 @@ function ProjectsActivitySkeleton() {
       <div
         className={styles.activityBarChart}
         data-projects-activity-chart="bar"
-        data-projects-activity-range="desktop-30-mobile-7"
+        data-projects-activity-range={`desktop-${ACTIVITY_BAR_COUNT}-mobile-${MOBILE_ACTIVITY_DAYS}`}
         role="presentation"
       >
         {activityBars.map((bar, index) => {
@@ -104,6 +104,10 @@ function ProjectsToolbarSkeleton() {
 }
 
 function ProjectCardSkeleton({ index }: { index: number }) {
+  const titleWidth = cardTitleWidths[index % cardTitleWidths.length];
+  const descriptionWidth = cardDescriptionWidths[index % cardDescriptionWidths.length];
+  const footerWidth = footerWidths[index % footerWidths.length];
+
   return (
     <article className={styles.projectCard} data-project-roster-card-skeleton="true">
       <div className={styles.cardInner}>
@@ -112,7 +116,7 @@ function ProjectCardSkeleton({ index }: { index: number }) {
             <Skeleton className={styles.projectDot} radius="xl" />
             <div className={styles.cardHeading}>
               <Skeleton h={12} w={56} radius="sm" />
-              <Skeleton h={20} w={cardTitleWidths[index]} maw="100%" radius="sm" />
+              <Skeleton h={20} w={titleWidth} maw="100%" radius="sm" />
             </div>
           </div>
           <div className={styles.cardMeta}>
@@ -122,7 +126,7 @@ function ProjectCardSkeleton({ index }: { index: number }) {
         </div>
 
         <div className={styles.cardDescription}>
-          <Skeleton h={13} w={`${cardDescriptionWidths[index]}%`} radius="sm" />
+          <Skeleton h={13} w={`${descriptionWidth}%`} radius="sm" />
           <Skeleton h={13} w="58%" radius="sm" mt={6} />
         </div>
 
@@ -137,7 +141,7 @@ function ProjectCardSkeleton({ index }: { index: number }) {
 
         <div className={styles.cardFooter}>
           <div className={styles.repoLabel}>
-            <Skeleton h={12} w={footerWidths[index]} maw="100%" radius="sm" />
+            <Skeleton h={12} w={footerWidth} maw="100%" radius="sm" />
           </div>
           <div className={styles.activityLabel}>
             <Skeleton h={12} w={104} radius="sm" />

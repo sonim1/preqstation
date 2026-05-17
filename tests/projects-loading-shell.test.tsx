@@ -1,6 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
 import { MantineProvider } from '@mantine/core';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -41,17 +38,12 @@ vi.mock('@mantine/core', async (importOriginal) => {
 import ProjectsLoading from '@/app/(workspace)/(main)/projects/loading';
 import { ProjectsLoadingShell } from '@/app/(workspace)/(main)/projects/projects-loading-shell';
 
-const loadingRouteSource = fs.readFileSync(
-  path.join(process.cwd(), 'app/(workspace)/(main)/projects/loading.tsx'),
-  'utf8',
-);
-const projectsLoadingShellSource = fs.readFileSync(
-  path.join(process.cwd(), 'app/(workspace)/(main)/projects/projects-loading-shell.tsx'),
-  'utf8',
-);
-
 function render(element: React.ReactElement) {
   return renderToStaticMarkup(<MantineProvider>{element}</MantineProvider>);
+}
+
+function cssModuleClassPattern(className: string) {
+  return new RegExp(`class="[^"]*_${className}_[^"]*"`);
 }
 
 describe('app/(workspace)/(main)/projects loading shell', () => {
@@ -59,8 +51,7 @@ describe('app/(workspace)/(main)/projects loading shell', () => {
     const html = render(<ProjectsLoading />);
 
     expect(html).toContain('data-projects-loading-shell="true"');
-    expect(loadingRouteSource).toContain('ProjectsLoadingShell');
-    expect(loadingRouteSource).not.toContain('WorkspaceLoadingShell');
+    expect(html).not.toContain('data-workspace-loading-shell="true"');
   });
 
   it('matches the real projects page frame and roster grid shape', () => {
@@ -89,11 +80,13 @@ describe('app/(workspace)/(main)/projects loading shell', () => {
   });
 
   it('reuses the real projects layout classes instead of a separate generic panel layout', () => {
-    expect(projectsLoadingShellSource).toContain('styles.rosterHeader');
-    expect(projectsLoadingShellSource).toContain('styles.activityPanel');
-    expect(projectsLoadingShellSource).toContain('styles.toolbar');
-    expect(projectsLoadingShellSource).toContain('styles.rosterGrid');
-    expect(projectsLoadingShellSource).toContain('styles.projectCard');
-    expect(projectsLoadingShellSource).toContain('styles.metricStrip');
+    const html = render(<ProjectsLoadingShell />);
+
+    expect(html).toMatch(cssModuleClassPattern('rosterHeader'));
+    expect(html).toMatch(cssModuleClassPattern('activityPanel'));
+    expect(html).toMatch(cssModuleClassPattern('toolbar'));
+    expect(html).toMatch(cssModuleClassPattern('rosterGrid'));
+    expect(html.match(/class="[^"]*_projectCard_[^"]*"/g)).toHaveLength(6);
+    expect(html.match(/class="[^"]*_metricStrip_[^"]*"/g)).toHaveLength(6);
   });
 });
