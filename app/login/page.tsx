@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const ownerExists = await hasOwnerAccount();
 
   return (
-    <Container size="xs" className="login-container">
+    <Container size="xs" className="login-container auth-shell">
       <Group justify="flex-end" mb="sm" gap="xs">
         {!needsAuth && ownerExists ? (
           <LinkButton href="/dashboard" variant="default" size="xs">
@@ -28,11 +28,16 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         ) : null}
       </Group>
       {needsAuth ? (
-        <Alert color="yellow" variant="light" icon={<IconInfoCircle size={16} />} mb="sm">
+        <Alert
+          variant="light"
+          className="auth-alert auth-alert--warning"
+          icon={<IconInfoCircle size={16} />}
+          mb="sm"
+        >
           Authentication is required. Please sign in below.
         </Alert>
       ) : null}
-      <Paper withBorder shadow="sm" radius="lg" className="login-card">
+      <Paper withBorder radius="lg" className="login-card auth-card">
         <Stack gap="sm">
           <Group gap="sm" wrap="nowrap">
             <Image
@@ -43,25 +48,33 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               className="login-brand-mark"
               priority
             />
-            <div>
-              <Text className={`brand-wordmark ${outfit.className}`} fw={800} size="xl">
+            <div className="auth-brand-lockup">
+              <Text
+                className={`brand-wordmark auth-card-title ${outfit.className}`}
+                fw={800}
+                size="xl"
+              >
                 PREQSTATION
               </Text>
-              <Text c="dimmed" size="sm" mt={4}>
+              <Text className="auth-card-subtitle" size="sm" mt={4}>
                 AI Command Center
               </Text>
             </div>
           </Group>
-          <Text size="sm">Your personal command center where AI agents execute tasks</Text>
-          <Text c="dimmed" size="sm">
+          <Text className="auth-card-title" size="sm">
+            Your personal command center where AI agents execute tasks
+          </Text>
+          <Text className="auth-card-subtitle" size="sm">
             Your private AI-powered command center
           </Text>
           {ownerExists ? (
             <LoginForm />
           ) : (
             <>
-              <Text fw={600}>Create your owner account</Text>
-              <Text c="dimmed" size="sm">
+              <Text className="auth-card-title" fw={600}>
+                Create your owner account
+              </Text>
+              <Text className="auth-card-subtitle" size="sm">
                 Set up the first owner account for this Preq Station instance. After that, the setup
                 form is hidden and the normal login flow takes over.
               </Text>

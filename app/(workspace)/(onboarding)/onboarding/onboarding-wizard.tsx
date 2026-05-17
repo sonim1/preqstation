@@ -44,6 +44,12 @@ type OnboardingWizardProps = {
   createTaskAction: (prevState: unknown, formData: FormData) => Promise<OnboardingTaskResult>;
 };
 
+type OnboardingTone = 'neutral' | 'success' | 'warning';
+
+function toneClassName(baseClassName: string, tone: OnboardingTone) {
+  return `${baseClassName} ${baseClassName}--${tone}`;
+}
+
 export function OnboardingWizard({
   initialProject,
   initialTask,
@@ -75,12 +81,18 @@ export function OnboardingWizard({
   const projectDone = Boolean(createdProject);
   const taskDone = Boolean(createdTask);
   const active = taskDone ? 3 : projectDone ? 2 : 1;
+  const workerTone = workerReadiness.status === 'ready' ? 'success' : 'warning';
   const dashboardActions = (
-    <Group justify="flex-end">
-      <Button component="a" href="/dashboard" variant="subtle">
+    <Group justify="flex-end" className="onboarding-action-row">
+      <Button
+        component="a"
+        href="/dashboard"
+        variant="subtle"
+        className="onboarding-secondary-action"
+      >
         Skip
       </Button>
-      <Button component="a" href="/dashboard">
+      <Button component="a" href="/dashboard" className="onboarding-primary-action">
         Go to Dashboard
       </Button>
     </Group>
@@ -101,7 +113,7 @@ export function OnboardingWizard({
 
   return (
     <Stack gap="xl">
-      <Stepper active={active} size="sm">
+      <Stepper active={active} size="sm" className="onboarding-stepper">
         <Stepper.Step label="Model" />
         <Stepper.Step label="Project" />
         <Stepper.Step label={terminology.task.singular} />
@@ -110,7 +122,7 @@ export function OnboardingWizard({
 
       {taskDone ? dashboardActions : null}
 
-      <Paper withBorder radius="lg" p="lg">
+      <Paper withBorder radius="lg" p="lg" className="onboarding-card">
         <Stack gap="md">
           <Title order={3}>Start with a worker-first system.</Title>
           <Text c="dimmed" size="sm">
@@ -126,15 +138,17 @@ export function OnboardingWizard({
         </Stack>
       </Paper>
 
-      <Paper withBorder radius="lg" p="lg">
+      <Paper withBorder radius="lg" p="lg" className="onboarding-card">
         {projectDone ? (
           <Stack gap="xs">
             <Group gap="sm">
-              <ThemeIcon variant="light" color="green" radius="xl">
+              <ThemeIcon radius="xl" className={toneClassName('onboarding-status-icon', 'success')}>
                 <IconCircleCheck size={16} />
               </ThemeIcon>
               <Title order={3}>Project confirmed</Title>
-              <Badge variant="light">{createdProject?.projectKey}</Badge>
+              <Badge variant="light" className="onboarding-badge">
+                {createdProject?.projectKey}
+              </Badge>
             </Group>
             <Text c="dimmed" size="sm">
               {createdProject?.name} is ready to hold the first worker task.
@@ -156,19 +170,24 @@ export function OnboardingWizard({
                 maxLength={4}
                 style={{ textTransform: 'uppercase' }}
               />
-              <Group justify="flex-end">
-                <SubmitButton>Create Project</SubmitButton>
+              <Group justify="flex-end" className="onboarding-action-row">
+                <SubmitButton className="onboarding-primary-action">Create Project</SubmitButton>
               </Group>
             </Stack>
           </form>
         )}
       </Paper>
 
-      <Paper withBorder radius="lg" p="lg">
+      <Paper
+        withBorder
+        radius="lg"
+        p="lg"
+        className={projectDone ? 'onboarding-card' : 'onboarding-card onboarding-card--locked'}
+      >
         {!projectDone ? (
           <Stack gap="xs">
             <Group gap="sm">
-              <ThemeIcon variant="light" color="gray" radius="xl">
+              <ThemeIcon radius="xl" className={toneClassName('onboarding-status-icon', 'neutral')}>
                 <IconCircleDashed size={16} />
               </ThemeIcon>
               <Title order={3}>{`${terminology.task.singular} setup locked`}</Title>
@@ -180,11 +199,13 @@ export function OnboardingWizard({
         ) : taskDone ? (
           <Stack gap="xs">
             <Group gap="sm">
-              <ThemeIcon variant="light" color="green" radius="xl">
+              <ThemeIcon radius="xl" className={toneClassName('onboarding-status-icon', 'success')}>
                 <IconCircleCheck size={16} />
               </ThemeIcon>
               <Title order={3}>Task confirmed</Title>
-              <Badge variant="light">{createdTask?.taskKey}</Badge>
+              <Badge variant="light" className="onboarding-badge">
+                {createdTask?.taskKey}
+              </Badge>
             </Group>
             <Text c="dimmed" size="sm">
               {createdTask?.title} is the first concrete unit a worker can execute.
@@ -206,22 +227,20 @@ export function OnboardingWizard({
                 placeholder="e.g. Set up CI/CD pipeline"
                 required
               />
-              <Group justify="flex-end">
-                <SubmitButton>{`Create ${terminology.task.singular}`}</SubmitButton>
+              <Group justify="flex-end" className="onboarding-action-row">
+                <SubmitButton className="onboarding-primary-action">
+                  {`Create ${terminology.task.singular}`}
+                </SubmitButton>
               </Group>
             </Stack>
           </form>
         )}
       </Paper>
 
-      <Paper withBorder radius="lg" p="lg">
+      <Paper withBorder radius="lg" p="lg" className="onboarding-card">
         <Stack gap="lg">
           <Group gap="sm">
-            <ThemeIcon
-              variant="light"
-              color={workerReadiness.status === 'ready' ? 'green' : 'yellow'}
-              radius="xl"
-            >
+            <ThemeIcon radius="xl" className={toneClassName('onboarding-status-icon', workerTone)}>
               {workerReadiness.status === 'ready' ? (
                 <IconPlugConnected size={16} />
               ) : (
@@ -229,17 +248,17 @@ export function OnboardingWizard({
               )}
             </ThemeIcon>
             <Title order={3}>Worker readiness</Title>
-            <Badge color={workerReadiness.status === 'ready' ? 'green' : 'yellow'} variant="light">
+            <Badge variant="light" className={toneClassName('onboarding-badge', workerTone)}>
               {workerReadiness.label}
             </Badge>
           </Group>
 
-          <Alert color={workerReadiness.status === 'ready' ? 'green' : 'yellow'} variant="light">
+          <Alert variant="light" className={toneClassName('onboarding-alert', workerTone)}>
             {workerReadiness.detail}
           </Alert>
 
           {workerReadiness.status !== 'ready' ? (
-            <Paper withBorder radius="md" p="md">
+            <Paper withBorder radius="md" p="md" className="onboarding-nested-panel">
               <Stack gap="xs">
                 <Text fw={600} size="sm">
                   Connect a worker
@@ -248,8 +267,8 @@ export function OnboardingWizard({
                   Install the Preqstation skill in your worker runtime, then connect through MCP or
                   create an API token from Connections.
                 </Text>
-                <Group gap="xs">
-                  <Code block style={{ flex: 1 }}>
+                <Group gap="xs" className="onboarding-action-row">
+                  <Code block className="onboarding-code" style={{ flex: 1 }}>
                     npx skills add sonim1/preqstation-skill -g -a claude-code
                   </Code>
                   <CopyButton value="npx skills add sonim1/preqstation-skill -g -a claude-code">
@@ -257,6 +276,7 @@ export function OnboardingWizard({
                       <Button
                         variant="subtle"
                         size="compact-sm"
+                        className="onboarding-secondary-action"
                         onClick={copy}
                         leftSection={copied ? <IconCheck size={14} /> : <IconClipboard size={14} />}
                       >

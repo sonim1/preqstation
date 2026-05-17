@@ -13,7 +13,11 @@ export function OwnerSetupForm() {
     <form action={formAction} id="owner-setup-form" name="owner-setup">
       <Stack gap="md">
         {state.error ? (
-          <Alert color="red" variant="light" icon={<IconAlertCircle size={16} />}>
+          <Alert
+            variant="light"
+            className="auth-alert auth-alert--danger"
+            icon={<IconAlertCircle size={16} />}
+          >
             {state.error}
           </Alert>
         ) : null}
@@ -44,7 +48,7 @@ export function OwnerSetupForm() {
           required
         />
 
-        <Button type="submit" loading={isPending}>
+        <Button type="submit" loading={isPending} className="auth-primary-action">
           Create Owner Account
         </Button>
       </Stack>
