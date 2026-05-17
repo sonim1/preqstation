@@ -421,9 +421,9 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const statusActionAriaLabel = isStaleQueued
     ? `${STALE_QUEUED_WARNING_LABEL}. ${doneActionLabel}`
     : doneActionLabel;
-  const labelTooltipBackground = 'rgba(11, 20, 38, 0.96)';
-  const labelTooltipBorder = '1px solid rgba(255, 255, 255, 0.08)';
-  const labelTooltipText = '#f5f8ff';
+  const labelTooltipBackground = 'var(--ui-surface-elevated-strong)';
+  const labelTooltipBorder = '1px solid color-mix(in srgb, var(--ui-border), transparent 16%)';
+  const labelTooltipText = 'var(--ui-text)';
   const hasPriorityIcon = taskPriority !== 'none';
   const canEditLabels = Boolean(onUpdateTaskLabels) && labelOptions.length > 0;
   const hasUnreadNotification = Boolean(task.hasUnreadNotification);

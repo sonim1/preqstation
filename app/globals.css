@@ -55,6 +55,12 @@
   --ui-status-running-border: rgba(56, 189, 248, 0.26);
   --ui-status-running-border-strong: rgba(56, 189, 248, 0.42);
   --ui-status-running-glow: rgba(56, 189, 248, 0.22);
+  --ui-workflow-status-inbox: color-mix(in srgb, var(--ui-accent), var(--ui-muted-text) 42%);
+  --ui-workflow-status-todo: var(--ui-neutral-strong);
+  --ui-workflow-status-hold: var(--ui-warning);
+  --ui-workflow-status-ready: color-mix(in srgb, var(--ui-warning), var(--ui-accent) 18%);
+  --ui-workflow-status-done: var(--ui-success);
+  --ui-workflow-status-archived: var(--ui-muted-text);
   --ui-hit-min: 24px;
   --ui-hit-touch-min: 44px;
   --ui-control-sm: 28px;
@@ -1633,30 +1639,36 @@ button.task-notification-item:disabled {
 }
 
 .kanban-status-button {
+  --kanban-workflow-status-color: var(--ui-workflow-status-todo);
+
   margin-top: 0;
   flex: 0 0 auto;
   align-self: center;
-  color: #6f7c91;
+  color: var(--kanban-workflow-status-color);
 }
 
 .kanban-status-button.is-inbox {
-  color: #4d7496;
+  --kanban-workflow-status-color: var(--ui-workflow-status-inbox);
+}
+
+.kanban-status-button.is-todo {
+  --kanban-workflow-status-color: var(--ui-workflow-status-todo);
 }
 
 .kanban-status-button.is-hold {
-  color: #b48909;
+  --kanban-workflow-status-color: var(--ui-workflow-status-hold);
 }
 
 .kanban-status-button.is-ready {
-  color: #c27318;
+  --kanban-workflow-status-color: var(--ui-workflow-status-ready);
 }
 
 .kanban-status-button.is-done {
-  color: #1f8a3a;
+  --kanban-workflow-status-color: var(--ui-workflow-status-done);
 }
 
 .kanban-status-button.is-archived {
-  color: #7b8596;
+  --kanban-workflow-status-color: var(--ui-workflow-status-archived);
 }
 
 .kanban-status-indicator {
@@ -1698,23 +1710,18 @@ button.task-notification-item:disabled {
 }
 
 .kanban-status-indicator.is-done {
-  background: #15803d;
-  border-color: #15803d;
+  background: var(--ui-workflow-status-done);
+  border-color: var(--ui-workflow-status-done);
 }
 
 .kanban-status-indicator.is-done .kanban-status-indicator-fill {
   display: none;
 }
 
-html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
-  background: #16a34a;
-  border-color: #16a34a;
-}
-
 .kanban-status-indicator-check {
   position: relative;
   z-index: 1;
-  color: #fff;
+  color: var(--ui-on-accent);
 }
 
 .kanban-status-button {
@@ -2476,30 +2483,6 @@ html[data-mantine-color-scheme='dark'] .kanban-mobile-panel {
 
 html[data-mantine-color-scheme='dark'] .workspace-navbar {
   box-shadow: var(--ui-elevation-1);
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-status-button {
-  color: #9cb1d4;
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-status-button.is-inbox {
-  color: #9fd1ff;
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-status-button.is-hold {
-  color: #f4d35e;
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-status-button.is-ready {
-  color: #f0a850;
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-status-button.is-done {
-  color: #8fe7a9;
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-status-button.is-archived {
-  color: #b0bfd8;
 }
 
 html[data-mantine-color-scheme='dark'] .kanban-archive-trigger {

@@ -329,6 +329,41 @@ describe('app/components/kanban-card', () => {
     );
   });
 
+  it('keeps card state shadows on semantic local variables instead of raw shadow colors', () => {
+    const cardRule = getCssRuleBody(cardsCss, '.kanbanCard');
+
+    expect(cardRule).toContain('--kanban-card-shadow-outline: color-mix(');
+    expect(cardRule).toContain('--kanban-card-shadow-ambient: color-mix(');
+    expect(cardRule).toContain('--kanban-card-shadow-queued-glow: color-mix(');
+    expect(cardRule).toContain('--kanban-card-shadow-running-ambient: color-mix(');
+    expect(cardRule).toContain('0 0 0 1px var(--kanban-card-shadow-outline)');
+    expect(cardRule).toContain('var(--kanban-card-shadow-queued-glow)');
+    expect(cardRule).toContain('var(--kanban-card-shadow-running-ambient)');
+    expect(cardRule).not.toMatch(/rgba\((?:255, 255, 255|24, 44, 84|33, 56, 97|8, 23, 40)/);
+  });
+
+  it('derives run-state wave chrome from execution tokens and local mechanics variables', () => {
+    const frameRule = getCssRuleBody(cardsCss, '.kanbanCardFrame');
+    const queuedRule = getCssRuleBody(cardsCss, ".kanbanCardFrame[data-run-state='queued']");
+    const runningRule = getCssRuleBody(cardsCss, ".kanbanCardFrame[data-run-state='running']");
+
+    expect(frameRule).toContain('--kanban-run-state-color: var(--ui-status-queued);');
+    expect(frameRule).toContain('--kanban-run-state-surface: var(--ui-accent-soft);');
+    expect(frameRule).toContain('--wave-layer-1: color-mix(in srgb, var(--kanban-run-state-color)');
+    expect(frameRule).toContain('--wave-tint-bg: linear-gradient(');
+
+    expect(queuedRule).toContain('--kanban-run-state-color: var(--ui-status-queued);');
+    expect(queuedRule).toContain('--kanban-run-state-surface: var(--ui-accent-soft);');
+    expect(runningRule).toContain('--kanban-run-state-color: var(--ui-status-running);');
+    expect(runningRule).toContain('--kanban-run-state-surface: var(--ui-status-running-soft);');
+    expect(runningRule).toContain('--wave-filter: drop-shadow(0 0 8px');
+    expect(runningRule).toContain('var(--ui-status-running-glow)');
+
+    expect(`${frameRule}\n${queuedRule}\n${runningRule}`).not.toMatch(
+      /rgba\((?:62, 106, 225|94, 133, 242|118, 150, 248|123, 151, 255|56, 189, 248|74, 204, 249|115, 244, 224|18, 184, 134|40, 196, 208)/,
+    );
+  });
+
   it('renders boundary-free lanes with subtly rounded note cards carried by shadows', () => {
     expect(globalsCss).toMatch(
       /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*box-shadow:\s*none;/,
@@ -348,6 +383,28 @@ describe('app/components/kanban-card', () => {
     expect(cardsCss).toMatch(/\.kanbanCard::after\s*\{[\s\S]*content:\s*none;/);
   });
 
+  it('keeps label, metadata, and tooltip surfaces on the card surface hierarchy', () => {
+    const cardRule = getCssRuleBody(cardsCss, '.kanbanCard');
+    const metaChipRule = getCssRuleBody(cardsCss, '.kanbanMetaChip');
+    const runChipRule = getCssRuleBody(cardsCss, '.kanbanRunStateChip');
+    const menuTooltipRule = getCssRuleBody(cardsCss, '.kanbanCardMenuDispatchTooltip');
+    const labelTooltipRule = getCssRuleBody(cardsCss, '.kanbanLabelTooltipSurface');
+
+    expect(cardRule).toContain('--kanban-card-tooltip-surface: var(--ui-surface-elevated-strong);');
+    expect(cardRule).toContain('--kanban-card-tooltip-text: var(--ui-text);');
+    expect(metaChipRule).toContain('background: var(--ui-surface-elevated);');
+    expect(metaChipRule).toContain('box-shadow: var(--kanban-card-chip-inset);');
+    expect(runChipRule).toContain('background: var(--ui-surface-elevated-strong);');
+
+    for (const tooltipRule of [menuTooltipRule, labelTooltipRule]) {
+      expect(tooltipRule).toContain('background: var(--kanban-card-tooltip-surface);');
+      expect(tooltipRule).toContain('color: var(--kanban-card-tooltip-text);');
+      expect(tooltipRule).toContain('border: var(--kanban-card-tooltip-border);');
+    }
+
+    expect(`${menuTooltipRule}\n${labelTooltipRule}`).not.toMatch(/#[0-9a-fA-F]{3,8}|rgba\(/);
+  });
+
   it('marks hold cards with a left warning accent instead of coloring the whole lane', () => {
     expect(cardsCss).toMatch(
       /\.kanbanCardHold::before\s*\{[\s\S]*position:\s*absolute;[\s\S]*left:\s*0;[\s\S]*width:\s*4px;[\s\S]*background:\s*linear-gradient\(/,
@@ -363,7 +420,7 @@ describe('app/components/kanban-card', () => {
       /\.kanbanCardUpdated::before\s*\{[\s\S]*position:\s*absolute;[\s\S]*left:\s*0;[\s\S]*width:\s*4px;[\s\S]*background:\s*linear-gradient\([\s\S]*var\(--ui-success\)/,
     );
     expect(cardsCss).toMatch(
-      /\.kanbanCardUpdated::before\s*\{[\s\S]*color-mix\(in srgb,\s*var\(--ui-success\),\s*black 18%\)/,
+      /\.kanbanCardUpdated::before\s*\{[\s\S]*color-mix\(in srgb,\s*var\(--ui-success\),\s*var\(--ui-neutral-strong\) 18%\)/,
     );
     expect(cardsCss).not.toContain('#0f6b45');
     expect(cardsCss).toMatch(
