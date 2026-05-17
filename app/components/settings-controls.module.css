@@ -70,10 +70,6 @@
   color: var(--ui-text);
 }
 
-.panelActions {
-  padding-top: 0.2rem;
-}
-
 .panelIcon {
   color: var(--ui-muted-text);
 }
