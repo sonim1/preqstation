@@ -109,9 +109,7 @@ describe('app/(workspace)/(main)/projects loading shell', () => {
     const html = render(<ProjectsLoadingShell />);
 
     expect(
-      html.match(
-        /<article[^>]*data-project-roster-card-skeleton="true"[^>]*aria-hidden="true"/g,
-      ),
+      html.match(/<article[^>]*data-project-roster-card-skeleton="true"[^>]*aria-hidden="true"/g),
     ).toHaveLength(6);
   });
 

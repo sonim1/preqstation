@@ -171,6 +171,44 @@ describe('app/components/panels/project-edit-panel', () => {
     expect(html).toContain('Unsaved changes.');
   });
 
+  it('labels the GitHub field as a repo ID input', () => {
+    const html = renderProjectEditPanel({
+      id: 'project-1',
+      name: 'Project One',
+      projectKey: 'PROJ',
+      description: 'Updated description',
+      status: 'paused',
+      priority: 4,
+      bgImage: null,
+      bgImageCredit: null,
+      repoUrl: 'sonim1/preqstation',
+      vercelUrl: null,
+    });
+
+    expect(html).toContain('GitHub repo');
+    expect(html).toContain('placeholder="sonim1/preqstation-landingpage"');
+    expect(html).not.toContain('GitHub repo URL');
+    expect(html).not.toContain('placeholder="https://github.com/you/repo"');
+  });
+
+  it('normalizes legacy GitHub repo URLs before rendering the autosave input', () => {
+    const html = renderProjectEditPanel({
+      id: 'project-1',
+      name: 'Project One',
+      projectKey: 'PROJ',
+      description: 'Updated description',
+      status: 'paused',
+      priority: 4,
+      bgImage: null,
+      bgImageCredit: null,
+      repoUrl: 'https://github.com/sonim1/preqstation/',
+      vercelUrl: null,
+    });
+
+    expect(html).toContain('value="sonim1/preqstation"');
+    expect(html).not.toContain('value="https://github.com/sonim1/preqstation/"');
+  });
+
   it('renders project label management outside the autosave project form when provided', () => {
     const noopLabelAction = vi.fn(async () => ({ ok: true as const }));
     const html = renderProjectEditPanel(

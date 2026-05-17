@@ -1,10 +1,11 @@
 import anyAscii from 'any-ascii';
-import { and, asc, eq, ilike, isNull } from 'drizzle-orm';
+import { and, asc, eq, ilike, isNull, or } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { projects, taskLabels } from '@/lib/db/schema';
 import type { DbClientOrTx } from '@/lib/db/types';
 import { getEngineConfig } from '@/lib/engine-icons';
+import { githubRepoReferenceVariants } from '@/lib/github-repo';
 import {
   type ProjectSettingEntry,
   resolveAgentInstructions,
@@ -101,14 +102,14 @@ export async function resolveProjectByRepo(
   repo: string | null | undefined,
   client: DbClientOrTx = db,
 ) {
-  const normalizedRepo = (repo || '').trim();
-  if (!normalizedRepo) return null;
+  const repoReferences = githubRepoReferenceVariants(repo);
+  if (repoReferences.length === 0) return null;
 
   const project = await client.query.projects.findFirst({
     where: and(
       eq(projects.ownerId, ownerId),
       isNull(projects.deletedAt),
-      eq(projects.repoUrl, normalizedRepo),
+      or(...repoReferences.map((repoReference) => eq(projects.repoUrl, repoReference))),
     ),
     columns: { id: true, name: true, projectKey: true },
   });

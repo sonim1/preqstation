@@ -11,6 +11,7 @@ import {
 } from '@/lib/content-limits';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects } from '@/lib/db/schema';
+import { optionalGithubRepoIdSchema } from '@/lib/github-repo-schema';
 import { requireOwnerUser } from '@/lib/owner';
 import {
   assertValidProjectKeyInput,
@@ -27,7 +28,7 @@ const createProjectSchema = z.object({
   name: z.string().trim().min(1).max(PROJECT_NAME_MAX_LENGTH),
   projectKey: z.string().trim().max(16).optional().or(z.literal('')),
   description: z.string().trim().max(PROJECT_DESCRIPTION_MAX_LENGTH).optional().or(z.literal('')),
-  repoUrl: z.string().url().optional().or(z.literal('')),
+  repoUrl: optionalGithubRepoIdSchema.optional(),
   vercelUrl: z.string().url().optional().or(z.literal('')),
   priority: z.coerce.number().int().min(1).max(PROJECT_PRIORITY_MAX).optional(),
 });

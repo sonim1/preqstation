@@ -362,7 +362,7 @@ describe('project detail page', () => {
       priority: 2,
       bgImage: null,
       bgImageCredit: null,
-      repoUrl: 'https://github.com/example/repo',
+      repoUrl: 'example/repo',
       vercelUrl: 'https://example.vercel.app/',
       updatedAt: new Date('2026-04-24T12:00:00.000Z'),
       projectSettings: [],
@@ -758,7 +758,7 @@ describe('project detail page', () => {
     expect(html).toContain('Needs attention');
     expect(html).toContain('1 of 4 setup checks are ready.');
     expect(html).toContain(
-      'Add the repository URL in Edit Details before dispatching coding work.',
+      'Add the GitHub repo ID in Edit Details before dispatching coding work.',
     );
     expect(html).toContain('Direct Commit');
     expect(html).toContain('Direct Commit to main. Push before review.');
@@ -790,7 +790,7 @@ describe('project detail page', () => {
     formData.set('descriptionMd', 'Updated detail');
     formData.set('bgImage', 'mountains');
     formData.set('bgImageCredit', '');
-    formData.set('repoUrl', 'https://github.com/example/project-one');
+    formData.set('repoUrl', 'example/project-one');
     formData.set('vercelUrl', 'https://project-one.vercel.app');
 
     const result = await projectEditPanelProps.updateProjectAction(null, formData);
@@ -804,7 +804,7 @@ describe('project detail page', () => {
       descriptionMd: 'Updated detail',
       bgImage: 'mountains',
       bgImageCredit: '',
-      repoUrl: 'https://github.com/example/project-one',
+      repoUrl: 'example/project-one',
       vercelUrl: 'https://project-one.vercel.app',
     });
     expect(mocked.writeAuditLog).toHaveBeenCalledWith(

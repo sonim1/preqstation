@@ -8,6 +8,7 @@ import { TODO_NOTE_MAX_LENGTH, TODO_TITLE_MAX_LENGTH } from '@/lib/content-limit
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, taskLabelAssignments, tasks } from '@/lib/db/schema';
 import { ENGINE_KEYS, normalizeEngineKey } from '@/lib/engine-icons';
+import { githubRepoIdSchema } from '@/lib/github-repo-schema';
 import { ENTITY_TASK, TASK_CREATED, writeOutboxEvent } from '@/lib/outbox';
 import {
   buildTaskNote,
@@ -42,7 +43,7 @@ const createTaskSchema = z.object({
   status: z.enum(PREQ_TASK_STATUSES).optional(),
   priority: z.string().optional(),
   assignee: z.string().optional(),
-  repo: z.string().trim().min(1),
+  repo: githubRepoIdSchema,
   branch: z.string().trim().optional().or(z.literal('')),
   labels: z.array(z.string().trim().min(1).max(40)).optional(),
   acceptance_criteria: z.array(z.string().trim().min(1).max(200)).optional(),

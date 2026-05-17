@@ -266,7 +266,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
         description: 'Task control plane, Kanban workflow, REST API, and HTTP MCP server.',
         status: 'active',
         updatedAt: new Date('2026-03-13T10:00:00Z'),
-        repoUrl: 'https://github.com/sonim1/preqstation',
+        repoUrl: 'sonim1/preqstation',
         vercelUrl: 'https://preqstation.vercel.app',
         bgImage: 'mountains',
         bgImageCredit: null,
@@ -544,6 +544,17 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('Archived</span>');
   });
 
+  it('sorts roster cards directly by last activity', () => {
+    expect(projectsPageSource).toContain(
+      'const activityDelta = b.lastActivityAt.getTime() - a.lastActivityAt.getTime();',
+    );
+    expect(projectsPageSource).not.toContain('sortActivityAt');
+  });
+
+  it('does not keep redundant active status label branches', () => {
+    expect(projectsPageSource).not.toContain("summary.runningCount > 0\n              ? 'Active'");
+  });
+
   it('filters paused and archived projects from the project filter chips', async () => {
     mocked.state.projects.push(
       {
@@ -673,7 +684,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
     formData.set('descriptionMd', 'Updated');
     formData.set('bgImage', 'mountains');
     formData.set('bgImageCredit', '');
-    formData.set('repoUrl', 'https://github.com/sonim1/preqstation');
+    formData.set('repoUrl', 'sonim1/preqstation');
     formData.set('vercelUrl', 'https://preqstation.vercel.app');
 
     const result = await projectEditPanelProps.updateProjectAction(null, formData);
@@ -687,7 +698,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
       descriptionMd: 'Updated',
       bgImage: 'mountains',
       bgImageCredit: '',
-      repoUrl: 'https://github.com/sonim1/preqstation',
+      repoUrl: 'sonim1/preqstation',
       vercelUrl: 'https://preqstation.vercel.app',
     });
     expect(mocked.writeAuditLog).toHaveBeenCalledWith(

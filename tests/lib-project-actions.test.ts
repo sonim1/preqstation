@@ -348,7 +348,7 @@ describe('lib/actions/project-actions', () => {
     expect(mocked.db.transaction).not.toHaveBeenCalled();
   });
 
-  it('updateProject persists normalized integration URLs', async () => {
+  it('updateProject persists normalized integration values', async () => {
     mocked.db.query.projects.findFirst.mockResolvedValue({
       id: PROJECT_ID,
       projectKey: 'PROJ',
@@ -370,7 +370,7 @@ describe('lib/actions/project-actions', () => {
       priority: 3,
       descriptionMd: 'same description',
       bgImage: 'mountains',
-      repoUrl: 'https://github.com/example/repo',
+      repoUrl: 'example/repo',
       vercelUrl: 'https://example.vercel.app',
     });
 
@@ -384,13 +384,13 @@ describe('lib/actions/project-actions', () => {
     });
     expect(mocked.updateSetFn).toHaveBeenCalledWith(
       expect.objectContaining({
-        repoUrl: 'https://github.com/example/repo',
+        repoUrl: 'example/repo',
         vercelUrl: 'https://example.vercel.app/',
       }),
     );
   });
 
-  it('updateProject skips the database update when normalized integration URLs are unchanged', async () => {
+  it('updateProject normalizes legacy GitHub URLs for repo writes', async () => {
     mocked.db.query.projects.findFirst.mockResolvedValue({
       id: PROJECT_ID,
       projectKey: 'PROJ',
@@ -400,7 +400,42 @@ describe('lib/actions/project-actions', () => {
       description: 'same description',
       bgImage: 'mountains',
       bgImageCredit: null,
-      repoUrl: 'https://github.com/example/repo',
+      repoUrl: null,
+      vercelUrl: null,
+    });
+
+    const result = await updateProject({
+      ownerId: OWNER_ID,
+      projectId: PROJECT_ID,
+      repoUrl: 'https://github.com/example/repo/',
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        id: PROJECT_ID,
+        projectKey: 'PROJ',
+        changed: true,
+      },
+    });
+    expect(mocked.updateSetFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        repoUrl: 'example/repo',
+      }),
+    );
+  });
+
+  it('updateProject skips the database update when normalized integration values are unchanged', async () => {
+    mocked.db.query.projects.findFirst.mockResolvedValue({
+      id: PROJECT_ID,
+      projectKey: 'PROJ',
+      name: 'Preq Station',
+      status: 'active',
+      priority: 3,
+      description: 'same description',
+      bgImage: 'mountains',
+      bgImageCredit: null,
+      repoUrl: 'example/repo',
       vercelUrl: 'https://example.vercel.app/',
     });
 
@@ -412,7 +447,7 @@ describe('lib/actions/project-actions', () => {
       priority: 3,
       descriptionMd: 'same description',
       bgImage: 'mountains',
-      repoUrl: 'https://github.com/example/repo',
+      repoUrl: 'example/repo',
       vercelUrl: 'https://example.vercel.app',
     });
 

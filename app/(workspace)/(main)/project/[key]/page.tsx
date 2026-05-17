@@ -37,6 +37,7 @@ import { writeAuditLog } from '@/lib/audit';
 import { TODO_LABEL_NAME_MAX_LENGTH } from '@/lib/content-limits';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, taskLabels, tasks } from '@/lib/db/schema';
+import { githubRepoIdToUrl } from '@/lib/github-repo';
 import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
 import { getProjectActivityStatus } from '@/lib/project-activity';
 import { isProjectStatus, PROJECT_STATUS_COLORS, PROJECT_STATUS_LABELS } from '@/lib/project-meta';
@@ -248,7 +249,8 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   };
   const trimmedAgentInstructions = agentInstructions?.trim() ?? '';
   const hasAgentInstructions = trimmedAgentInstructions.length > 0;
-  const hasRepo = Boolean(project.repoUrl);
+  const repoHref = githubRepoIdToUrl(project.repoUrl);
+  const hasRepo = Boolean(repoHref);
   const latestWorkLog = projectWorkLogPage.workLogs[0] ?? null;
   const lastWorkedAt = toValidDate(latestWorkLog?.workedAt);
   const lastProjectUpdate = toValidDate(project.updatedAt);
@@ -725,7 +727,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                     {hasRepo ? (
                       <Button
                         component="a"
-                        href={project.repoUrl ?? undefined}
+                        href={repoHref ?? undefined}
                         target="_blank"
                         rel="noopener noreferrer"
                         variant="subtle"
@@ -851,7 +853,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                       {hasRepo ? (
                         <Button
                           component="a"
-                          href={project.repoUrl ?? undefined}
+                          href={repoHref ?? undefined}
                           target="_blank"
                           rel="noopener noreferrer"
                           variant="subtle"

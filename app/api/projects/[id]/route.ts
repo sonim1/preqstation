@@ -12,6 +12,7 @@ import {
 } from '@/lib/content-limits';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects } from '@/lib/db/schema';
+import { optionalGithubRepoIdSchema } from '@/lib/github-repo-schema';
 import { ENTITY_PROJECT, PROJECT_UPDATED, writeOutboxEvent } from '@/lib/outbox';
 import { requireOwnerUser } from '@/lib/owner';
 import { isValidBgValue } from '@/lib/project-backgrounds';
@@ -22,7 +23,7 @@ import { assertSameOrigin } from '@/lib/request-security';
 const updateProjectSchema = z.object({
   name: z.string().trim().min(1).max(PROJECT_NAME_MAX_LENGTH).optional(),
   description: z.string().trim().max(PROJECT_DESCRIPTION_MAX_LENGTH).optional().or(z.literal('')),
-  repoUrl: z.string().url().optional().or(z.literal('')),
+  repoUrl: optionalGithubRepoIdSchema.optional(),
   vercelUrl: z.string().url().optional().or(z.literal('')),
   priority: z.coerce.number().int().min(1).max(PROJECT_PRIORITY_MAX).optional(),
   status: z.enum(PROJECT_STATUSES).optional(),

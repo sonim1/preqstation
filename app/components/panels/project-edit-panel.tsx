@@ -12,6 +12,7 @@ import { ProjectBackgroundPicker } from '@/app/components/project-background-pic
 import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setting-save-status';
 import { useTerminology } from '@/app/components/terminology-provider';
 import { useAutoSave } from '@/app/hooks/use-auto-save';
+import { normalizeGithubRepoReference } from '@/lib/github-repo';
 import { showErrorNotification } from '@/lib/notifications';
 import type { ProjectBackgroundCredit } from '@/lib/project-backgrounds';
 import { projectStatusOptionData } from '@/lib/project-meta';
@@ -244,9 +245,11 @@ export function ProjectEditPanel({
           </div>
           <TextInput
             name="repoUrl"
-            label="GitHub repo URL"
-            placeholder="https://github.com/you/repo"
-            defaultValue={selectedProject.repoUrl || ''}
+            label="GitHub repo"
+            placeholder="sonim1/preqstation-landingpage"
+            defaultValue={
+              normalizeGithubRepoReference(selectedProject.repoUrl) ?? selectedProject.repoUrl ?? ''
+            }
             onChange={markDirty}
             onBlur={() => triggerSave(0)}
           />

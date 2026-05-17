@@ -131,7 +131,7 @@ const DEFAULT_PROJECT_DETAIL_TERMINOLOGY: ProjectDetailTerminology = {
         missingStatus: 'Repository missing',
         connectedDescription: 'Repository linked for branch and PR work.',
         missingDescription:
-          'Add the repository URL in Edit Details before dispatching coding work.',
+          'Add the GitHub repo ID in Edit Details before dispatching coding work.',
       },
       deployment: {
         label: 'Deployment',
