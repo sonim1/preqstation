@@ -103,9 +103,13 @@ function buildMonthLabels(weeks: Array<Array<YearlyActivityDatum | null>>) {
 export function DashboardYearlyHeatmap({
   data,
   panelClassName,
+  title = 'Current Year Activity',
+  description,
 }: {
   data: YearlyActivityDatum[];
   panelClassName?: string;
+  title?: string;
+  description?: string;
 }) {
   const rootClassName = [panelStyles.sectionPanel, panelClassName, classes.panel]
     .filter(Boolean)
@@ -121,11 +125,12 @@ export function DashboardYearlyHeatmap({
       <Stack gap="md" data-yearly-heatmap="true">
         <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
           <Stack gap={4}>
-            <Title order={4}>Current Year Activity</Title>
+            <Title order={4}>{title}</Title>
             <Text size="sm" c="dimmed">
-              {totalLogs > 0
-                ? `${totalLogs} work log${totalLogs === 1 ? '' : 's'} across ${sortedData.length} days so far.`
-                : 'No work logs yet this year.'}
+              {description ??
+                (totalLogs > 0
+                  ? `${totalLogs} work log${totalLogs === 1 ? '' : 's'} across ${sortedData.length} days so far.`
+                  : 'No work logs yet this year.')}
             </Text>
           </Stack>
           <Badge variant="light" color="gray" size="sm" radius="sm">

@@ -1,0 +1,36 @@
+.strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+  min-width: 0;
+  min-height: 2.35rem;
+  align-items: end;
+}
+
+.cell {
+  display: block;
+  min-width: 0;
+  height: 100%;
+  min-height: 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 42%);
+  border-radius: 0.25rem;
+  background: color-mix(in srgb, var(--ui-neutral-soft), transparent 22%);
+}
+
+.cell[data-activity-level='1'] {
+  background: color-mix(in srgb, var(--ui-accent-soft), transparent 16%);
+}
+
+.cell[data-activity-level='2'] {
+  background: color-mix(in srgb, var(--ui-accent), transparent 54%);
+}
+
+.cell[data-activity-level='3'] {
+  background: color-mix(in srgb, var(--ui-accent), transparent 34%);
+}
+
+.cell[data-activity-level='4'] {
+  border-color: color-mix(in srgb, var(--ui-status-running), transparent 30%);
+  background: color-mix(in srgb, var(--ui-status-running), transparent 16%);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ui-status-running-glow), transparent 22%);
+}

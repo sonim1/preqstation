@@ -110,6 +110,29 @@ vi.mock('@/app/components/empty-state', () => ({
   EmptyState: ({ title }: { title: string }) => <div data-testid="empty-state">{title}</div>,
 }));
 
+vi.mock('@/app/components/dashboard-yearly-heatmap', () => ({
+  DashboardYearlyHeatmap: ({
+    data,
+    panelClassName,
+    title,
+    description,
+  }: {
+    data: Array<{ date: string; count: number }>;
+    panelClassName?: string;
+    title?: string;
+    description?: string;
+  }) => (
+    <div
+      data-testid="dashboard-yearly-heatmap"
+      data-panel-class-name={panelClassName ?? ''}
+      data-values={data.map((point) => `${point.date}:${point.count}`).join(',')}
+    >
+      {title}
+      {description}
+    </div>
+  ),
+}));
+
 vi.mock('@/app/components/link-button', () => ({
   LinkButton: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
@@ -465,6 +488,54 @@ describe('project detail page', () => {
     expect(html).toContain(
       'href="https://github.com/example/repo" rel="noopener noreferrer" target="_blank"',
     );
+  });
+
+  it('adds activity evidence to detail using visible work log history and task pipeline data', async () => {
+    mocked.tasksFindMany.mockResolvedValueOnce([
+      { status: 'todo' },
+      { status: 'ready' },
+      { status: 'hold' },
+      { status: 'done' },
+    ]);
+    mocked.listWorkLogsPage.mockResolvedValueOnce({
+      workLogs: [
+        {
+          id: 'log-1',
+          title: 'Shipped detail page improvements',
+          detail: null,
+          engine: 'codex',
+          workedAt: new Date('2026-04-26T10:00:00.000Z'),
+        },
+        {
+          id: 'log-2',
+          title: 'Reviewed project health scan',
+          detail: null,
+          engine: 'claude',
+          workedAt: new Date('2026-04-26T08:00:00.000Z'),
+        },
+        {
+          id: 'log-3',
+          title: 'Started list redesign',
+          detail: null,
+          engine: 'codex',
+          workedAt: new Date('2026-04-25T12:00:00.000Z'),
+        },
+      ],
+      nextOffset: null,
+    });
+
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('Activity evidence');
+    expect(html).toContain('Task pipeline evidence');
+    expect(html).toContain('data-testid="dashboard-yearly-heatmap"');
+    expect(html).toContain('data-values="2026-04-25:1,2026-04-26:2"');
+    expect(html).toContain('4 total tasks');
+    expect(html).toContain('3 recent work logs');
   });
 
   it('uses the neutral recent-activity color for inactive projects with work logs', async () => {

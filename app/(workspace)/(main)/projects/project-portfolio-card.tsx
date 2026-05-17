@@ -2,6 +2,7 @@ import { Tooltip } from '@mantine/core';
 import {
   IconAlertTriangle,
   IconCircleCheck,
+  IconClock,
   IconEye,
   IconPlayerPause,
   IconSubtask,
@@ -42,6 +43,8 @@ export type ProjectPortfolioCardSummary = {
   backgroundMode: ProjectCardBackgroundMode;
   weeklyActivity: WeeklyActivity[];
   weeklyActivityTotal: number;
+  lastActivityLabel: string;
+  activitySummary: string;
   slot: ProjectCardSlot;
 };
 
@@ -181,9 +184,12 @@ export function ProjectPortfolioCard({
         </form>
 
         <div className={styles.activityRail}>
-          <div className={styles.activityMeta}>
-            <span className={styles.activityLabel}>7d logs</span>
-            <strong className={styles.activityValue}>{card.weeklyActivityTotal}</strong>
+          <div className={styles.activityMeta} data-health-evidence="true">
+            <span className={styles.activityLabel}>
+              <IconClock size={12} />
+              {card.lastActivityLabel}
+            </span>
+            <strong className={styles.activityValue}>{card.activitySummary}</strong>
           </div>
           <ProjectCardWorklogSparkline
             data={card.weeklyActivity}

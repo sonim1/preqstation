@@ -49,6 +49,8 @@ function card(projectKey: string, name: string): ProjectPortfolioCardSummary {
     backgroundMode: 'fallback',
     weeklyActivity: [],
     weeklyActivityTotal: 0,
+    lastActivityLabel: 'Last activity 1h ago',
+    activitySummary: '0 logs in 7d',
     slot: 'lead',
   };
 }

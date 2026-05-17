@@ -17,6 +17,7 @@ import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { notFound, redirect } from 'next/navigation';
 
+import { DashboardYearlyHeatmap } from '@/app/components/dashboard-yearly-heatmap';
 import { EmptyState } from '@/app/components/empty-state';
 import { LinkButton } from '@/app/components/link-button';
 import { MarkdownViewer } from '@/app/components/markdown-viewer';
@@ -82,6 +83,26 @@ function toValidDate(value: Date | string | null | undefined) {
 function formatUtcDate(value: Date | string | null | undefined) {
   const parsed = toValidDate(value);
   return parsed ? parsed.toISOString().slice(0, 10) : null;
+}
+
+function buildVisibleWorkLogActivity(
+  workLogsList: Array<{ workedAt: Date | string | null | undefined }>,
+) {
+  const activityByDate = new Map<string, number>();
+
+  for (const log of workLogsList) {
+    const dateKey = formatUtcDate(log.workedAt);
+    if (!dateKey) continue;
+    activityByDate.set(dateKey, (activityByDate.get(dateKey) ?? 0) + 1);
+  }
+
+  return Array.from(activityByDate.entries())
+    .map(([date, count]) => ({ date, count }))
+    .sort((left, right) => left.date.localeCompare(right.date));
+}
+
+function formatCountLabel(count: number, singular: string, plural: string) {
+  return `${count} ${count === 1 ? singular : plural}`;
 }
 
 function joinWithAnd(values: string[]) {
@@ -187,6 +208,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   const hasAgentInstructions = trimmedAgentInstructions.length > 0;
   const hasRepo = Boolean(project.repoUrl);
   const latestWorkLog = projectWorkLogPage.workLogs[0] ?? null;
+  const visibleWorkLogActivity = buildVisibleWorkLogActivity(projectWorkLogPage.workLogs);
+  const recentWorkLogCount = projectWorkLogPage.workLogs.length;
   const lastWorkedAt = toValidDate(latestWorkLog?.workedAt);
   const lastProjectUpdate = toValidDate(project.updatedAt);
   const activityStatus = getProjectActivityStatus({
@@ -937,6 +960,12 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               </div>
             </Group>
 
+            <DashboardYearlyHeatmap
+              data={visibleWorkLogActivity}
+              title="Activity evidence"
+              description={`${formatCountLabel(todos.length, 'total task', 'total tasks')} · ${formatCountLabel(recentWorkLogCount, 'recent work log', 'recent work logs')}`}
+            />
+
             <Paper
               withBorder
               radius="lg"
@@ -944,7 +973,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               className={panelStyles.sectionPanel}
             >
               <Title order={4} mb="sm">
-                {`${terminology.task.singular} Pipeline`}
+                {`${terminology.task.singular} pipeline evidence`}
               </Title>
               <TaskStatusBar tasks={todos} boardHref={boardHref} newTaskHref={newTaskHref} />
             </Paper>

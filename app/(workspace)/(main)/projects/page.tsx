@@ -50,6 +50,25 @@ function formatUtcDate(value: Date) {
   return value.toISOString().slice(0, 10);
 }
 
+function formatRelativeActivity(value: Date, now: Date) {
+  const diffMs = Math.max(0, now.getTime() - value.getTime());
+  const minutes = Math.max(1, Math.floor(diffMs / 60_000));
+
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(diffMs / 3_600_000);
+  if (hours < 24) return `${hours}h ago`;
+
+  const days = Math.floor(diffMs / DAY_MS);
+  if (days < 7) return `${days}d ago`;
+
+  return `${Math.floor(days / 7)}w ago`;
+}
+
+function formatWorkLogSummary(count: number) {
+  return `${count} log${count === 1 ? '' : 's'} in 7d`;
+}
+
 function getRecentUtcDates(now: Date) {
   return Array.from({ length: 7 }, (_, index) => {
     const date = new Date(now);
@@ -289,6 +308,8 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
       backgroundMode: backgroundUrl ? 'image' : 'fallback',
       weeklyActivity: summary.weeklyActivity,
       weeklyActivityTotal: summary.weeklyActivityTotal,
+      lastActivityLabel: `Last activity ${formatRelativeActivity(summary.lastActivityAt, now)}`,
+      activitySummary: formatWorkLogSummary(summary.weeklyActivityTotal),
       slot,
     };
   }

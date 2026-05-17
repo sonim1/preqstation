@@ -414,17 +414,20 @@
 }
 
 .activityLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   color: var(--ui-muted-text);
   font-size: 0.68rem;
   font-weight: 700;
   line-height: 1.2;
-  text-transform: uppercase;
 }
 
 .activityValue {
   color: var(--ui-text);
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   line-height: 1;
+  white-space: nowrap;
 }
 
 @media (max-width: 74.99375em) {

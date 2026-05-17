@@ -1,8 +1,8 @@
 'use client';
 
-import { Text } from '@mantine/core';
+import { Tooltip } from '@mantine/core';
 
-import { WeeklySparkline } from './weekly-sparkline';
+import classes from './project-card-worklog-sparkline.module.css';
 
 type WeeklyActivity = { date: string; count: number };
 
@@ -22,6 +22,18 @@ function formatSparklineDate(date: string) {
   return tooltipDateFormatter.format(parsed);
 }
 
+function formatLogCount(count: number) {
+  return `${count} work log${count === 1 ? '' : 's'}`;
+}
+
+function getActivityLevel(count: number) {
+  if (count <= 0) return 0;
+  if (count === 1) return 1;
+  if (count <= 3) return 2;
+  if (count <= 5) return 3;
+  return 4;
+}
+
 export function ProjectCardWorklogSparkline({
   data,
   total,
@@ -29,24 +41,29 @@ export function ProjectCardWorklogSparkline({
   data: WeeklyActivity[];
   total: number;
 }) {
+  const label = `${formatLogCount(total)} across the last ${data.length} days`;
+
   return (
-    <WeeklySparkline
-      data={data}
-      h={48}
-      color="var(--ui-accent)"
-      curveType="linear"
-      strokeWidth={2}
-      fillOpacity={0.2}
-      tooltipLabelFormatter={(point) => (
-        <Text size="xs" mb={2} style={{ color: 'var(--ui-muted-text)' }}>
-          {formatSparklineDate(point.date)}
-        </Text>
-      )}
-      tooltipValueFormatter={(point) => (
-        <Text size="sm" fw={700}>
-          {point.count} of {total}
-        </Text>
-      )}
-    />
+    <div
+      aria-label={label}
+      className={classes.strip}
+      data-project-card-activity-strip="true"
+      role="img"
+    >
+      {data.map((point) => {
+        const pointLabel = `${formatSparklineDate(point.date)}: ${formatLogCount(point.count)}`;
+
+        return (
+          <Tooltip key={point.date} label={pointLabel} withArrow>
+            <span
+              aria-label={pointLabel}
+              className={classes.cell}
+              data-activity-date={point.date}
+              data-activity-level={getActivityLevel(point.count)}
+            />
+          </Tooltip>
+        );
+      })}
+    </div>
   );
 }

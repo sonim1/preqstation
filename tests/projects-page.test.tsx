@@ -537,6 +537,61 @@ describe('app/(workspace)/(main)/projects/page', () => {
     );
   });
 
+  it('surfaces compact recency and activity evidence on project cards', async () => {
+    mocked.state.projects = [
+      {
+        id: 'project-1',
+        name: 'Fresh Project',
+        projectKey: 'FRSH',
+        description: null,
+        status: 'active',
+        updatedAt: new Date('2026-03-14T10:00:00Z'),
+        repoUrl: null,
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+      {
+        id: 'project-2',
+        name: 'Drift Project',
+        projectKey: 'DRFT',
+        description: null,
+        status: 'active',
+        updatedAt: new Date('2026-03-09T10:00:00Z'),
+        repoUrl: null,
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+    ];
+    mocked.state.statusCounts = [
+      { projectId: 'project-1', status: 'todo', _count: { id: 2 } },
+      { projectId: 'project-1', status: 'ready', _count: { id: 1 } },
+      { projectId: 'project-2', status: 'hold', _count: { id: 2 } },
+    ];
+    mocked.state.latestWorkLogs = [
+      { projectId: 'project-1', lastWorkedAt: new Date('2026-03-14T12:00:00Z') },
+      { projectId: 'project-2', lastWorkedAt: new Date('2026-03-09T09:00:00Z') },
+    ];
+    mocked.state.projectActivityRows = [
+      { project_id: 'project-1', worked_day: '2026-03-13', count: 2 },
+      { project_id: 'project-1', worked_day: '2026-03-14', count: 3 },
+    ];
+
+    const page = await ProjectsPage();
+    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
+
+    expect(html).toContain('data-health-evidence="true"');
+    expect(html).toContain('Last activity 2h ago');
+    expect(html).toContain('5 logs in 7d');
+    expect(html).toContain('Last activity 5d ago');
+    expect(html).toContain('0 logs in 7d');
+  });
+
   it('stacks the summary panel full-width and trims oversized project card min-heights', () => {
     expect(projectsPageCss).toMatch(/\.topGrid\s*\{[\s\S]*grid-template-columns:\s*1fr;/);
     expect(projectsPageCss).not.toMatch(
