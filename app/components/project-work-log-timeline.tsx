@@ -99,20 +99,23 @@ export function ProjectWorkLogTimeline({
           {error}
         </Text>
       ) : null}
-      {isLoadingMore ? (
-        <Group
-          gap="xs"
-          align="center"
-          role="status"
-          aria-live="polite"
-          data-work-log-loading-more="true"
-        >
-          <Loader size="xs" />
-          <Text size="sm" c="dimmed">
-            {workLogCopy.loadingMoreLabel}
-          </Text>
-        </Group>
-      ) : null}
+      <Group
+        gap="xs"
+        align="center"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-work-log-loading-more={isLoadingMore ? 'true' : undefined}
+      >
+        {isLoadingMore ? (
+          <>
+            <Loader size="xs" />
+            <Text size="sm" c="dimmed">
+              {workLogCopy.loadingMoreLabel}
+            </Text>
+          </>
+        ) : null}
+      </Group>
       <InfiniteScrollTrigger
         active={true}
         hasMore={nextOffset !== null}

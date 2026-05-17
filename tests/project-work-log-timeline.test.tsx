@@ -136,10 +136,13 @@ describe('app/components/project-work-log-timeline', () => {
       </MantineProvider>,
     );
 
+    const status = screen.getByRole('status');
+    expect(status.textContent).toBe('');
+
     fireEvent.click(screen.getByRole('button', { name: 'Load trigger' }));
 
     expect(await screen.findByText('Loading additional history...')).toBeTruthy();
-    expect(screen.getByRole('status')).toBeTruthy();
+    expect(status.textContent).toContain('Loading additional history...');
     expect(screen.getByRole('button', { name: 'Load trigger' }).dataset.loading).toBe('true');
 
     resolveFetch?.(
