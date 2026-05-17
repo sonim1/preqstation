@@ -42,12 +42,17 @@ function getReferencedUiTokens(source: string) {
   return new Set(Array.from(source.matchAll(/var\((--ui-[\w-]+)/g), ([, token]) => token));
 }
 
-function renderCssFixture(body: string, colorScheme: 'light' | 'dark' = 'light') {
+function renderCssFixture(
+  body: string,
+  colorScheme: 'light' | 'dark' = 'light',
+  cssSources: string[] = [],
+) {
   const schemeAttribute = colorScheme === 'dark' ? ' data-mantine-color-scheme="dark"' : '';
+  const styleTags = [globalsCss, ...cssSources].map((css) => `<style>${css}</style>`).join('');
 
   return new JSDOM(`
     <html${schemeAttribute}>
-      <head><style>${globalsCss}</style></head>
+      <head>${styleTags}</head>
       <body>${body}</body>
     </html>
   `);
@@ -142,13 +147,42 @@ describe('theme token usage audit fixes', () => {
     expect(cardsCss).toMatch(/\.projectBoardCard\s*\{[\s\S]*background:\s*var\(--ui-card-bg\);/);
   });
 
-  it('keeps task panel and QA modals on the shared modal shell tokens', () => {
-    for (const modalCss of [taskPanelModalCss, readyQaActionsCss]) {
-      expect(modalCss).toContain('border: 1px solid color-mix(in srgb, var(--ui-border)');
-      expect(modalCss).toContain('background: var(--ui-surface-modal);');
-      expect(modalCss).toContain('box-shadow: var(--ui-elevation-3);');
-      expect(modalCss).toContain('background: var(--ui-surface-modal-header);');
-      expect(modalCss).toContain('background: var(--ui-surface-modal-body);');
+  it('renders task panel and QA modals on the shared modal shell tokens', () => {
+    const taskPanelDom = renderCssFixture(
+      `
+        <section data-testid="task-panel-content" class="content">
+          <header data-testid="task-panel-header" class="header"></header>
+          <div data-testid="task-panel-body" class="body"></div>
+        </section>
+      `,
+      'light',
+      [taskPanelModalCss],
+    );
+    const readyQaDom = renderCssFixture(
+      `
+        <section data-testid="ready-qa-content" class="qaModalContent">
+          <header data-testid="ready-qa-header" class="qaModalHeader"></header>
+          <div data-testid="ready-qa-body" class="qaModalBody"></div>
+        </section>
+      `,
+      'light',
+      [readyQaActionsCss],
+    );
+
+    for (const [dom, prefix] of [
+      [taskPanelDom, 'task-panel'],
+      [readyQaDom, 'ready-qa'],
+    ] as const) {
+      expectComputedProperties(dom, `${prefix}-content`, {
+        background: 'var(--ui-surface-modal)',
+        'box-shadow': 'var(--ui-elevation-3)',
+      });
+      expectComputedProperties(dom, `${prefix}-header`, {
+        background: 'var(--ui-surface-modal-header)',
+      });
+      expectComputedProperties(dom, `${prefix}-body`, {
+        background: 'var(--ui-surface-modal-body)',
+      });
     }
   });
 

@@ -83,7 +83,3 @@
 :global(html[data-mantine-color-scheme='dark']) .heroPanel::after {
   background: var(--ui-panel-orb);
 }
-
-:global(html[data-mantine-color-scheme='dark']) .sectionPanel {
-  background: var(--ui-surface-panel);
-}
