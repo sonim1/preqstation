@@ -237,6 +237,13 @@ const projectsPageSource = fs.readFileSync(
   path.join(process.cwd(), 'app/(workspace)/(main)/projects/page.tsx'),
   'utf8',
 );
+const projectsRosterClientPath = path.join(
+  process.cwd(),
+  'app/(workspace)/(main)/projects/projects-roster-client.tsx',
+);
+const projectsRosterClientSource = fs.existsSync(projectsRosterClientPath)
+  ? fs.readFileSync(projectsRosterClientPath, 'utf8')
+  : '';
 const projectPortfolioCardSource = fs.readFileSync(
   path.join(process.cwd(), 'app/(workspace)/(main)/projects/project-portfolio-card.tsx'),
   'utf8',
@@ -426,17 +433,20 @@ describe('app/(workspace)/(main)/projects/page', () => {
     });
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
 
-    expect(html).toContain('<form');
-    expect(html).toContain('method="GET"');
-    expect(html).toContain('name="q"');
+    expect(html).toContain('data-project-filter-mode="client"');
+    expect(html).not.toContain('method="GET"');
     expect(html).toContain('value="gthb wrkr"');
-    expect(html).toContain('name="status"');
     expect(html).toContain('value="active"');
+    expect(html).toContain('type="button"');
     expect(html).toContain('aria-pressed="true"');
     expect(html).not.toContain('value="live"');
     expect(html).not.toContain('PreqStation Core');
     expect(html).toContain('PreqStation Skill');
     expect(html).not.toContain('PreqStation Dispatcher');
+    expect(fs.existsSync(projectsRosterClientPath)).toBe(true);
+    expect(projectsPageSource).not.toContain('method="GET"');
+    expect(projectsRosterClientSource).toContain('window.history.replaceState');
+    expect(projectsRosterClientSource).toContain('type="button"');
   });
 
   it('searches project vercel URLs as part of the unified project index', async () => {
@@ -708,6 +718,9 @@ describe('app/(workspace)/(main)/projects/page', () => {
     );
     expect(projectsPageCss).toMatch(/\.activityBarWrap:hover\s+\.activityTooltip/);
     expect(projectsPageCss).toMatch(/height:\s*var\(--activity-bar-height\);/);
+    expect(projectsPageCss).toMatch(/\.activityBar\s*\{[\s\S]*max-width:\s*none;/);
+    expect(projectsPageCss).not.toContain('max-width: 1.35rem;');
+    expect(projectsPageCss).not.toContain('max-width: 0.85rem;');
     expect(projectsPageCss).toMatch(/\.rosterGrid\s*\{[\s\S]*min-width:\s*0;/);
     expect(projectsPageCss).toMatch(/\.projectCard\s*\{[\s\S]*min-height:\s*13rem;/);
     expect(projectsPageCss).toMatch(/\.projectCard\[data-project-card-tone=['"]archived['"]\]/);

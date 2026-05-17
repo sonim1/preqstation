@@ -59,7 +59,7 @@
 .activityBarChart {
   display: grid;
   grid-template-columns: repeat(30, minmax(0, 1fr));
-  gap: 0.25rem;
+  gap: 0.16rem;
   min-width: 0;
   align-items: end;
   min-height: 3.45rem;
@@ -78,7 +78,7 @@
 .activityBar {
   display: block;
   width: 100%;
-  max-width: 1.35rem;
+  max-width: none;
   height: var(--activity-bar-height);
   border: 1px solid color-mix(in srgb, var(--ui-border), transparent 44%);
   border-radius: 0.22rem 0.22rem 0.12rem 0.12rem;
@@ -527,7 +527,7 @@ button.filterChip {
 
   .activityBarChart {
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 0.18rem;
+    gap: 0.22rem;
     min-height: 2.8rem;
     padding-top: 0.7rem;
   }
@@ -538,10 +538,6 @@ button.filterChip {
 
   .activityBarWrap {
     height: 2.6rem;
-  }
-
-  .activityBar {
-    max-width: 0.85rem;
   }
 
   .cardInner {
