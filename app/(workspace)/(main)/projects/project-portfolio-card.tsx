@@ -6,13 +6,14 @@ import { ProjectCardMenu } from '@/app/components/project-card-menu';
 
 import styles from './projects-page.module.css';
 
-type ProjectCardTone = 'active' | 'live' | 'paused' | 'queued' | 'stale';
+type ProjectCardTone = 'active' | 'archived' | 'live' | 'paused' | 'queued' | 'stale';
 
 export type ProjectPortfolioCardSummary = {
   id: string;
   name: string;
   projectKey: string;
   isPaused: boolean;
+  isArchived: boolean;
   description: string;
   tone: ProjectCardTone;
   statusLabel: string;
@@ -40,7 +41,14 @@ export function ProjectPortfolioCard({
   deleteAction,
   pauseAction,
 }: ProjectPortfolioCardProps) {
-  const statusTone = card.isPaused ? 'paused' : card.runningCount > 0 ? 'live' : 'active';
+  const isInactive = card.isPaused || card.isArchived;
+  const statusTone = card.isArchived
+    ? 'archived'
+    : card.isPaused
+      ? 'paused'
+      : card.runningCount > 0
+        ? 'live'
+        : 'active';
 
   return (
     <article
@@ -69,16 +77,16 @@ export function ProjectPortfolioCard({
           <div className={styles.cardMeta}>
             <Badge
               className={styles.statusBadge}
-              color={card.isPaused ? 'yellow' : card.runningCount > 0 ? 'cyan' : 'green'}
+              color={isInactive ? 'gray' : card.runningCount > 0 ? 'cyan' : 'green'}
               size="xs"
               variant="light"
             >
               {card.statusLabel}
             </Badge>
             <ProjectCardMenu
-              canPause={!card.isPaused}
+              canPause={!isInactive}
               editHref={card.editHref}
-              pauseFormId={card.isPaused ? null : `pause-project-${card.id}`}
+              pauseFormId={isInactive ? null : `pause-project-${card.id}`}
               projectId={card.id}
               projectName={card.name}
             />
@@ -106,7 +114,7 @@ export function ProjectPortfolioCard({
           </div>
         </div>
 
-        {!card.isPaused ? (
+        {!isInactive ? (
           <form action={pauseAction} id={`pause-project-${card.id}`} style={{ display: 'none' }}>
             <input type="hidden" name="projectId" value={card.id} />
           </form>

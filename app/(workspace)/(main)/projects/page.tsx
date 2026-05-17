@@ -20,7 +20,11 @@ import { projects, taskLabels, tasks, workLogs } from '@/lib/db/schema';
 import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
 import { getProjectActivityStatus } from '@/lib/project-activity';
 import { normalizeProjectKey } from '@/lib/project-key';
-import { ACTIVE_PROJECT_STATUS, PAUSED_PROJECT_STATUS } from '@/lib/project-meta';
+import {
+  ACTIVE_PROJECT_STATUS,
+  DONE_PROJECT_STATUS,
+  PAUSED_PROJECT_STATUS,
+} from '@/lib/project-meta';
 import { resolveTerminology } from '@/lib/terminology';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 
@@ -42,7 +46,7 @@ type ProjectsPageProps = {
 };
 
 type WorkspaceActivity = { date: string; count: number };
-type ProjectFilterStatus = 'all' | 'live' | 'active' | 'paused' | 'archived';
+type ProjectFilterStatus = 'all' | 'active' | 'paused' | 'archived';
 
 function getLastQueryValue(value: string | string[] | undefined) {
   if (Array.isArray(value)) return value.at(-1) ?? '';
@@ -51,7 +55,6 @@ function getLastQueryValue(value: string | string[] | undefined) {
 
 function getProjectFilterStatus(value: string): ProjectFilterStatus {
   switch (value.toLowerCase()) {
-    case 'live':
     case 'active':
     case 'paused':
     case 'archived':
@@ -59,6 +62,72 @@ function getProjectFilterStatus(value: string): ProjectFilterStatus {
     default:
       return 'all';
   }
+}
+
+function normalizeSearchValue(value: string) {
+  return value
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function compactSearchValue(value: string) {
+  return normalizeSearchValue(value).replace(/[^a-z0-9]+/g, '');
+}
+
+function getSearchTokens(value: string) {
+  return normalizeSearchValue(value)
+    .split(/[^a-z0-9]+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
+function isSubsequence(needle: string, haystack: string) {
+  if (!needle) return true;
+  if (needle.length < 3) return false;
+
+  for (let start = 0; start < haystack.length; start += 1) {
+    if (haystack[start] !== needle[0]) continue;
+
+    let haystackIndex = start;
+    let matched = true;
+    for (let needleIndex = 1; needleIndex < needle.length; needleIndex += 1) {
+      let nextIndex = -1;
+      const searchEnd = Math.min(haystack.length - 1, haystackIndex + 4);
+      for (let candidate = haystackIndex + 1; candidate <= searchEnd; candidate += 1) {
+        if (haystack[candidate] === needle[needleIndex]) {
+          nextIndex = candidate;
+          break;
+        }
+      }
+
+      if (nextIndex === -1) {
+        matched = false;
+        break;
+      }
+
+      haystackIndex = nextIndex;
+    }
+
+    if (matched) return true;
+  }
+
+  return false;
+}
+
+function matchesSearchToken(searchText: string, token: string) {
+  const normalizedText = normalizeSearchValue(searchText);
+  if (normalizedText.includes(token)) return true;
+
+  const compactText = compactSearchValue(searchText);
+  const compactToken = compactSearchValue(token);
+  return compactText.includes(compactToken) || isSubsequence(compactToken, compactText);
+}
+
+function getProjectSortRank(status: string) {
+  if (status === PAUSED_PROJECT_STATUS) return 1;
+  if (status === DONE_PROJECT_STATUS) return 2;
+  return 0;
 }
 
 function toValidDate(value: Date | string | null | undefined) {
@@ -196,7 +265,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
   const panelParam = getLastQueryValue(queryParams.panel);
   const projectKeyParam = getLastQueryValue(queryParams.projectKey);
   const searchQuery = getLastQueryValue(queryParams.q).trim();
-  const normalizedSearchQuery = searchQuery.toLowerCase();
+  const searchTokens = getSearchTokens(searchQuery);
   const selectedProjectFilter = getProjectFilterStatus(getLastQueryValue(queryParams.status));
   const activePanel = panelParam === 'project-edit' ? 'project-edit' : null;
   const editingProjectKey = normalizeProjectKey(projectKeyParam);
@@ -247,7 +316,8 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
       const queuedCount = runStates.queued ?? 0;
       const openTaskCount = inboxCount + todoCount + holdCount + readyCount;
       const lastWorkedAt = lastWorkedAtByProjectId.get(project.id) ?? null;
-      const lastActivityAt = lastWorkedAt ?? toValidDate(project.updatedAt) ?? now;
+      const updatedAt = toValidDate(project.updatedAt) ?? now;
+      const lastActivityAt = lastWorkedAt ?? updatedAt;
       const health = getProjectActivityStatus({
         projectStatus: project.status,
         lastWorkedAt,
@@ -255,15 +325,17 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
       });
       const ageMs = Math.max(0, now.getTime() - lastActivityAt.getTime());
       const tone =
-        project.status === PAUSED_PROJECT_STATUS
-          ? ('paused' as const)
-          : runningCount > 0
-            ? ('live' as const)
-            : queuedCount > 0
-              ? ('queued' as const)
-              : health.status === 'critical' || health.status === 'warning' || ageMs > 3 * DAY_MS
-                ? ('stale' as const)
-                : ('active' as const);
+        project.status === DONE_PROJECT_STATUS
+          ? ('archived' as const)
+          : project.status === PAUSED_PROJECT_STATUS
+            ? ('paused' as const)
+            : runningCount > 0
+              ? ('live' as const)
+              : queuedCount > 0
+                ? ('queued' as const)
+                : health.status === 'critical' || health.status === 'warning' || ageMs > 3 * DAY_MS
+                  ? ('stale' as const)
+                  : ('active' as const);
 
       return {
         project,
@@ -272,23 +344,14 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
         queuedCount,
         doneCount,
         lastActivityAt,
+        sortActivityAt: updatedAt,
         tone,
       };
     })
     .sort((a, b) => {
-      const rank = (summary: {
-        project: { status: string };
-        runningCount: number;
-        queuedCount: number;
-      }) => {
-        if (summary.runningCount > 0) return 0;
-        if (summary.queuedCount > 0) return 1;
-        if (summary.project.status !== PAUSED_PROJECT_STATUS) return 2;
-        return 3;
-      };
-      const rankDelta = rank(a) - rank(b);
+      const rankDelta = getProjectSortRank(a.project.status) - getProjectSortRank(b.project.status);
       if (rankDelta !== 0) return rankDelta;
-      const activityDelta = b.lastActivityAt.getTime() - a.lastActivityAt.getTime();
+      const activityDelta = b.sortActivityAt.getTime() - a.sortActivityAt.getTime();
       if (activityDelta !== 0) return activityDelta;
       return a.project.name.localeCompare(b.project.name);
     });
@@ -300,7 +363,9 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
   const pausedProjectCount = projectSummaries.filter(
     (summary) => summary.project.status === PAUSED_PROJECT_STATUS,
   ).length;
-  const liveProjectCount = projectSummaries.filter((summary) => summary.runningCount > 0).length;
+  const archivedProjectCount = projectSummaries.filter(
+    (summary) => summary.project.status === DONE_PROJECT_STATUS,
+  ).length;
   const queuedAgentCount = projectSummaries.reduce((sum, summary) => sum + summary.queuedCount, 0);
   const runningAgentCount = projectSummaries.reduce(
     (sum, summary) => sum + summary.runningCount,
@@ -310,20 +375,26 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
   const filteredProjectSummaries = projectSummaries.filter((summary) => {
     const matchesStatus =
       selectedProjectFilter === 'all' ||
-      (selectedProjectFilter === 'live' && summary.runningCount > 0) ||
       (selectedProjectFilter === 'active' && summary.project.status === ACTIVE_PROJECT_STATUS) ||
-      (selectedProjectFilter === 'paused' && summary.project.status === PAUSED_PROJECT_STATUS);
+      (selectedProjectFilter === 'paused' && summary.project.status === PAUSED_PROJECT_STATUS) ||
+      (selectedProjectFilter === 'archived' && summary.project.status === DONE_PROJECT_STATUS);
 
     if (!matchesStatus) return false;
-    if (!normalizedSearchQuery) return true;
+    if (searchTokens.length === 0) return true;
 
     const repoLabel = getRepoLabel(summary.project.repoUrl, summary.project.projectKey);
-    return [
+    const searchableValues = [
       summary.project.name,
       summary.project.projectKey,
       summary.project.description ?? '',
       repoLabel,
-    ].some((value) => value.toLowerCase().includes(normalizedSearchQuery));
+      summary.project.repoUrl ?? '',
+      summary.project.vercelUrl ?? '',
+    ];
+
+    return searchTokens.every((token) =>
+      searchableValues.some((value) => matchesSearchToken(value, token)),
+    );
   });
   const workspaceActivity: WorkspaceActivity[] = activityDays.map((date) => ({
     date,
@@ -348,14 +419,17 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
       name: summary.project.name,
       projectKey: summary.project.projectKey,
       isPaused: summary.project.status === PAUSED_PROJECT_STATUS,
+      isArchived: summary.project.status === DONE_PROJECT_STATUS,
       description: summary.project.description?.trim() || 'No description yet.',
       tone: summary.tone,
       statusLabel:
-        summary.project.status === PAUSED_PROJECT_STATUS
-          ? 'Paused'
-          : summary.runningCount > 0
-            ? 'Active'
-            : 'Active',
+        summary.project.status === DONE_PROJECT_STATUS
+          ? 'Archived'
+          : summary.project.status === PAUSED_PROJECT_STATUS
+            ? 'Paused'
+            : summary.runningCount > 0
+              ? 'Active'
+              : 'Active',
       openTaskCount: summary.openTaskCount,
       runningCount: summary.runningCount,
       queuedCount: summary.queuedCount,
@@ -379,12 +453,6 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
       active: selectedProjectFilter === 'all',
     },
     {
-      label: 'Live',
-      value: liveProjectCount,
-      filter: 'live' as const,
-      active: selectedProjectFilter === 'live',
-    },
-    {
       label: 'Active',
       value: activeProjectCount,
       filter: 'active' as const,
@@ -398,7 +466,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
     },
     {
       label: 'Archived',
-      value: 0,
+      value: archivedProjectCount,
       filter: 'archived' as const,
       active: selectedProjectFilter === 'archived',
     },

@@ -355,9 +355,10 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('<strong>5</strong> logs');
     expect(html).toContain('Find a project');
     expect(html).toContain('All 3');
-    expect(html).toContain('Live 2');
     expect(html).toContain('Active 2');
     expect(html).toContain('Paused 1');
+    expect(html).toContain('Archived 0');
+    expect(html).not.toContain('value="live"');
     expect(html).toContain('data-project-roster-card="true"');
     expect(html).toContain('data-project-card-tone="live"');
     expect(html).toContain('data-project-card-tone="paused"');
@@ -375,7 +376,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).not.toContain('data-project-card-background="image"');
   });
 
-  it('filters the roster by search query and status query params', async () => {
+  it('filters the roster by fuzzy search across project fields and status query params', async () => {
     mocked.state.projects.push(
       {
         id: 'project-2',
@@ -420,20 +421,163 @@ describe('app/(workspace)/(main)/projects/page', () => {
     );
 
     const page = await ProjectsPage({
-      searchParams: Promise.resolve({ q: 'preqstation', status: 'live' }),
+      searchParams: Promise.resolve({ q: 'gthb wrkr', status: 'active' }),
     });
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
 
     expect(html).toContain('<form');
     expect(html).toContain('method="GET"');
     expect(html).toContain('name="q"');
-    expect(html).toContain('value="preqstation"');
+    expect(html).toContain('value="gthb wrkr"');
     expect(html).toContain('name="status"');
-    expect(html).toContain('value="live"');
+    expect(html).toContain('value="active"');
     expect(html).toContain('aria-pressed="true"');
-    expect(html).toContain('PreqStation Core');
-    expect(html).not.toContain('PreqStation Skill');
+    expect(html).not.toContain('value="live"');
+    expect(html).not.toContain('PreqStation Core');
+    expect(html).toContain('PreqStation Skill');
     expect(html).not.toContain('PreqStation Dispatcher');
+  });
+
+  it('searches project vercel URLs as part of the unified project index', async () => {
+    const page = await ProjectsPage({
+      searchParams: Promise.resolve({ q: 'vercel app' }),
+    });
+    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
+
+    expect(html).toContain('value="vercel app"');
+    expect(html).toContain('PreqStation Core');
+    expect(html).not.toContain('No matching projects');
+  });
+
+  it('keeps active projects in recent-change order before paused and archived projects', async () => {
+    mocked.state.projects = [
+      {
+        id: 'project-1',
+        name: 'Older Active',
+        projectKey: 'OLD',
+        description: 'Older active repo.',
+        status: 'active',
+        updatedAt: new Date('2026-03-10T10:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/older-active',
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+      {
+        id: 'project-2',
+        name: 'Newest Active',
+        projectKey: 'NEW',
+        description: 'Newest active repo.',
+        status: 'active',
+        updatedAt: new Date('2026-03-14T10:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/newest-active',
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+      {
+        id: 'project-3',
+        name: 'Paused Recent',
+        projectKey: 'PAUS',
+        description: 'Paused should be muted and after active projects.',
+        status: 'paused',
+        updatedAt: new Date('2026-03-15T10:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/paused-recent',
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+      {
+        id: 'project-4',
+        name: 'Archived Recent',
+        projectKey: 'ARCH',
+        description: 'Archived should be muted and last.',
+        status: 'done',
+        updatedAt: new Date('2026-03-16T10:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/archived-recent',
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+    ];
+    mocked.state.runStateCounts = [
+      { projectId: 'project-1', runState: 'running', _count: { id: 1 } },
+    ];
+    mocked.state.latestWorkLogs = [];
+
+    const page = await ProjectsPage();
+    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
+
+    expect(html).toContain('All 4');
+    expect(html).toContain('Active 2');
+    expect(html).toContain('Paused 1');
+    expect(html).toContain('Archived 1');
+    expect(html.indexOf('Newest Active')).toBeLessThan(html.indexOf('Older Active'));
+    expect(html.indexOf('Older Active')).toBeLessThan(html.indexOf('Paused Recent'));
+    expect(html.indexOf('Paused Recent')).toBeLessThan(html.indexOf('Archived Recent'));
+    expect(html).toContain('data-project-card-tone="paused"');
+    expect(html).toContain('data-project-card-tone="archived"');
+    expect(html).toContain('Archived</span>');
+  });
+
+  it('filters paused and archived projects from the project filter chips', async () => {
+    mocked.state.projects.push(
+      {
+        id: 'project-2',
+        name: 'Paused Project',
+        projectKey: 'PAUS',
+        description: 'Paused repo.',
+        status: 'paused',
+        updatedAt: new Date('2026-03-13T12:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/paused-project',
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+      {
+        id: 'project-3',
+        name: 'Archived Project',
+        projectKey: 'ARCH',
+        description: 'Archived repo.',
+        status: 'done',
+        updatedAt: new Date('2026-03-12T12:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/archived-project',
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+    );
+
+    const pausedPage = await ProjectsPage({
+      searchParams: Promise.resolve({ status: 'paused' }),
+    });
+    const pausedHtml = renderToStaticMarkup(<MantineProvider>{pausedPage}</MantineProvider>);
+    expect(pausedHtml).toContain('value="paused"');
+    expect(pausedHtml).toContain('Paused Project');
+    expect(pausedHtml).not.toContain('PreqStation Core');
+    expect(pausedHtml).not.toContain('Archived Project');
+
+    mocked.state.groupedQueryIndex = 0;
+    const archivedPage = await ProjectsPage({
+      searchParams: Promise.resolve({ status: 'archived' }),
+    });
+    const archivedHtml = renderToStaticMarkup(<MantineProvider>{archivedPage}</MantineProvider>);
+    expect(archivedHtml).toContain('value="archived"');
+    expect(archivedHtml).toContain('Archived Project');
+    expect(archivedHtml).not.toContain('PreqStation Core');
+    expect(archivedHtml).not.toContain('Paused Project');
   });
 
   it('marks the agent status indicator inactive when no agents are running or queued', async () => {
@@ -565,9 +709,12 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectsPageCss).toMatch(/height:\s*var\(--activity-bar-height\);/);
     expect(projectsPageCss).toMatch(/\.rosterGrid\s*\{[\s\S]*min-width:\s*0;/);
     expect(projectsPageCss).toMatch(/\.projectCard\s*\{[\s\S]*min-height:\s*13rem;/);
+    expect(projectsPageCss).toMatch(/\.projectCard\[data-project-card-tone=['"]archived['"]\]/);
+    expect(projectsPageCss).toMatch(/\.projectCard\[data-project-card-tone=['"]paused['"]\]/);
     expect(projectsPageCss).not.toContain('--card-image');
     expect(projectsPageCss).not.toMatch(/\.projectCard::before\s*\{/);
     expect(projectPortfolioCardSource).toContain('data-project-roster-card="true"');
+    expect(projectPortfolioCardSource).toContain('card.isArchived');
     expect(projectPortfolioCardSource).toContain('card.runningCount');
     expect(projectPortfolioCardSource).toContain('card.queuedCount');
     expect(projectPortfolioCardSource).toContain('card.doneCount');

@@ -33,6 +33,7 @@ function card(projectKey: string, name: string): ProjectPortfolioCardSummary {
     name,
     projectKey,
     isPaused: false,
+    isArchived: false,
     description: 'Cached project',
     tone: 'active',
     statusLabel: 'Active',

@@ -265,12 +265,20 @@ button.filterChip {
   border-color: color-mix(in srgb, var(--ui-status-queued), transparent 50%);
 }
 
-.projectCard[data-project-card-tone='paused'] {
-  border-color: color-mix(in srgb, var(--ui-warning), transparent 56%);
+.projectCard[data-project-card-tone='paused'],
+.projectCard[data-project-card-tone='archived'] {
+  border-color: color-mix(in srgb, var(--ui-border), transparent 28%);
+  background: color-mix(in srgb, var(--ui-surface-muted), var(--ui-surface-strong) 28%);
+  box-shadow: none;
 }
 
 .projectCard[data-project-card-tone='stale'] {
   border-color: color-mix(in srgb, var(--ui-danger), transparent 58%);
+}
+
+.projectCard[data-project-card-tone='paused'] .cardInner,
+.projectCard[data-project-card-tone='archived'] .cardInner {
+  opacity: 0.72;
 }
 
 .cardLink {
@@ -338,8 +346,10 @@ button.filterChip {
   background: var(--ui-success);
 }
 
-.projectDot[data-project-dot-tone='paused'] {
-  background: var(--ui-warning);
+.projectDot[data-project-dot-tone='paused'],
+.projectDot[data-project-dot-tone='archived'] {
+  background: color-mix(in srgb, var(--ui-muted-text), transparent 18%);
+  box-shadow: none;
 }
 
 .cardHeading {
