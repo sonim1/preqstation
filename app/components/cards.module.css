@@ -58,7 +58,7 @@
   background: linear-gradient(
     180deg,
     color-mix(in srgb, var(--ui-warning), white 16%),
-    color-mix(in srgb, var(--ui-warning), #8a5d00 18%)
+    color-mix(in srgb, var(--ui-warning), black 18%)
   );
   box-shadow: 0 0 16px color-mix(in srgb, var(--ui-warning), transparent 42%);
   pointer-events: none;
@@ -390,9 +390,16 @@
 
 .kanbanCardMenuDispatchTooltip {
   max-width: 16rem;
-  background: rgba(11, 20, 38, 0.96);
-  color: #f5f8ff;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.kanbanCardMenuDispatchTooltip,
+.kanbanLabelTooltipSurface {
+  --kanban-tooltip-surface: var(--ui-overlay-surface);
+  --kanban-tooltip-fg: var(--ui-overlay-text);
+  --kanban-tooltip-border: var(--ui-overlay-border);
+  background: var(--kanban-tooltip-surface);
+  color: var(--kanban-tooltip-fg);
+  border: 1px solid var(--kanban-tooltip-border);
   box-shadow: var(--ui-elevation-2);
 }
 
@@ -569,13 +576,6 @@
   flex-direction: column;
   gap: 4px;
   color: inherit;
-}
-
-.kanbanLabelTooltipSurface {
-  background: rgba(11, 20, 38, 0.96);
-  color: #f5f8ff;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: var(--ui-elevation-2);
 }
 
 .kanbanLabelTooltipItem {
@@ -866,7 +866,6 @@
 :global(html[data-mantine-color-scheme='dark']) .kanbanCard,
 :global(html[data-mantine-color-scheme='dark']) .itemCard.kanbanCard {
   --kanban-note-surface: linear-gradient(180deg, rgba(28, 42, 66, 0.98), rgba(18, 29, 47, 0.96));
-  background: var(--kanban-note-surface);
 }
 
 :global(html[data-mantine-color-scheme='dark']) .kanbanCard {
@@ -880,17 +879,10 @@
   --kanban-card-shadow-running:
     0 0 0 1px rgba(120, 148, 190, 0.08), 0 24px 44px -26px rgba(0, 0, 0, 0.82),
     0 12px 20px -14px var(--ui-status-running-glow), 0 2px 6px rgba(0, 0, 0, 0.4);
-  box-shadow: var(--kanban-card-focus-ring), var(--kanban-card-shadow-rest);
-}
-
-:global(html[data-mantine-color-scheme='dark']) .kanbanCardFrame {
-  background: var(--kanban-note-surface);
 }
 
 :global(html[data-mantine-color-scheme='dark']) .kanbanMetaChip {
   border-color: rgba(132, 161, 202, 0.16);
-  background: var(--ui-surface-elevated);
-  color: var(--ui-muted-text);
 }
 
 :global(html[data-mantine-color-scheme='dark'])
@@ -903,10 +895,6 @@
 :global(html[data-mantine-color-scheme='dark']) .kanbanMetaChip[data-kanban-chip='checklist'],
 :global(html[data-mantine-color-scheme='dark']) .kanbanMetaChip[data-kanban-chip='due'] {
   color: color-mix(in srgb, var(--ui-text), transparent 24%);
-}
-
-:global(html[data-mantine-color-scheme='dark']) .kanbanRunStateChip {
-  background: var(--ui-surface-elevated-strong);
 }
 
 :global(html[data-mantine-color-scheme='dark']) .projectBoardCard {
