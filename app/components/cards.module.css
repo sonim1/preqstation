@@ -844,21 +844,21 @@
 
 .interactiveCard:hover {
   transform: translateY(-2px);
-  border-color: rgba(56, 189, 248, 0.42);
+  border-color: color-mix(in srgb, var(--ui-accent), var(--ui-border) 45%);
   box-shadow: var(--ui-elevation-2);
 }
 
 /* Project board card */
 .projectBoardCard {
   min-height: 184px;
-  background: linear-gradient(166deg, rgba(255, 255, 255, 0.94), rgba(241, 248, 255, 0.86));
+  background: var(--ui-card-bg);
   box-shadow: var(--ui-elevation-1);
 }
 
 /* Cross-component hover: project-card-shell wraps interactive-card */
 :global(.project-card-shell):hover .interactiveCard {
   transform: translateY(-2px);
-  border-color: rgba(56, 189, 248, 0.42);
+  border-color: color-mix(in srgb, var(--ui-accent), var(--ui-border) 45%);
   box-shadow: var(--ui-elevation-2);
 }
 
