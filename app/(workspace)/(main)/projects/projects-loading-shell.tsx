@@ -18,9 +18,15 @@ const activityBars = Array.from({ length: ACTIVITY_BAR_COUNT }, (_, index) => ({
   hiddenOnMobile: index < ACTIVITY_BAR_COUNT - MOBILE_ACTIVITY_DAYS,
 }));
 
-const cardTitleWidths = [148, 172, 132, 188, 156, 140];
-const cardDescriptionWidths = [86, 72, 80, 68, 78, 74];
-const footerWidths = [132, 116, 146, 122, 138, 128];
+const cardTitleWidths: readonly [number, ...number[]] & { length: typeof CARD_SKELETON_COUNT } = [
+  148, 172, 132, 188, 156, 140,
+];
+const cardDescriptionWidths: readonly [number, ...number[]] & {
+  length: typeof CARD_SKELETON_COUNT;
+} = [86, 72, 80, 68, 78, 74];
+const footerWidths: readonly [number, ...number[]] & { length: typeof CARD_SKELETON_COUNT } = [
+  132, 116, 146, 122, 138, 128,
+];
 
 function ProjectsLoadingHeader() {
   return (
@@ -96,7 +102,7 @@ function ProjectsToolbarSkeleton() {
           <Skeleton key={width} className={styles.filterChip} h={28} w={width} radius="xl" />
         ))}
       </div>
-      <div className={styles.agentStatus} data-active="true">
+      <div className={styles.agentStatus} data-active="false">
         <Skeleton h={13} w={112} radius="sm" />
       </div>
     </div>
@@ -109,7 +115,11 @@ function ProjectCardSkeleton({ index }: { index: number }) {
   const footerWidth = footerWidths[index % footerWidths.length];
 
   return (
-    <article className={styles.projectCard} data-project-roster-card-skeleton="true">
+    <article
+      className={styles.projectCard}
+      data-project-roster-card-skeleton="true"
+      aria-hidden="true"
+    >
       <div className={styles.cardInner}>
         <div className={styles.cardTop}>
           <div className={styles.cardHeader}>

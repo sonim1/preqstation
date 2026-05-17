@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { MantineProvider } from '@mantine/core';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -37,6 +40,11 @@ vi.mock('@mantine/core', async (importOriginal) => {
 
 import ProjectsLoading from '@/app/(workspace)/(main)/projects/loading';
 import { ProjectsLoadingShell } from '@/app/(workspace)/(main)/projects/projects-loading-shell';
+
+const loadingShellSource = readFileSync(
+  resolve(process.cwd(), 'app/(workspace)/(main)/projects/projects-loading-shell.tsx'),
+  'utf8',
+);
 
 function render(element: React.ReactElement) {
   return renderToStaticMarkup(<MantineProvider>{element}</MantineProvider>);
@@ -88,5 +96,34 @@ describe('app/(workspace)/(main)/projects loading shell', () => {
     expect(html).toMatch(cssModuleClassPattern('rosterGrid'));
     expect(html.match(/class="[^"]*_projectCard_[^"]*"/g)).toHaveLength(6);
     expect(html.match(/class="[^"]*_metricStrip_[^"]*"/g)).toHaveLength(6);
+  });
+
+  it('keeps the loading agent status neutral until real data arrives', () => {
+    const html = render(<ProjectsLoadingShell />);
+
+    expect(html).toContain('data-active="false"');
+    expect(html).not.toContain('data-active="true"');
+  });
+
+  it('hides skeleton project cards from assistive technology', () => {
+    const html = render(<ProjectsLoadingShell />);
+
+    expect(
+      html.match(
+        /<article[^>]*data-project-roster-card-skeleton="true"[^>]*aria-hidden="true"/g,
+      ),
+    ).toHaveLength(6);
+  });
+
+  it('ties skeleton card width lists to the configured card count', () => {
+    expect(loadingShellSource).toMatch(
+      /const cardTitleWidths:\s*readonly \[number,\s*\.\.\.number\[\]\]\s*&\s*\{\s*length:\s*typeof CARD_SKELETON_COUNT\s*;?\s*\}/,
+    );
+    expect(loadingShellSource).toMatch(
+      /const cardDescriptionWidths:\s*readonly \[number,\s*\.\.\.number\[\]\]\s*&\s*\{\s*length:\s*typeof CARD_SKELETON_COUNT\s*;?\s*\}/,
+    );
+    expect(loadingShellSource).toMatch(
+      /const footerWidths:\s*readonly \[number,\s*\.\.\.number\[\]\]\s*&\s*\{\s*length:\s*typeof CARD_SKELETON_COUNT\s*;?\s*\}/,
+    );
   });
 });
