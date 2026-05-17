@@ -33,11 +33,12 @@ describe('app/components/task-status-bar', () => {
 
     expect(html).not.toContain('5 tasks total: 1 Todo, 1 Ready, 2 Done, 1 Archived.');
     expect(html).toContain('3 complete (60%).');
-    expect(html).toContain('aria-label="Todo: 1 of 4 charted tasks (25%)"');
-    expect(html).toContain('aria-valuetext="1 of 4 charted tasks (25%)"');
-    expect(html).toContain('aria-label="Ready: 1 of 4 charted tasks (25%)"');
-    expect(html).toContain('aria-label="Done: 2 of 4 charted tasks (50%)"');
-    expect(html).not.toContain('aria-label="Archived: 1 of 4 charted tasks');
+    expect(html).toContain('aria-label="Task progress: 3 of 5 complete (60%)"');
+    expect(html).toContain('aria-label="Todo: 1 of 5 tasks (20%)"');
+    expect(html).toContain('aria-valuetext="Todo: 1 of 5 tasks (20%)"');
+    expect(html).toContain('aria-label="Ready: 1 of 5 tasks (20%)"');
+    expect(html).toContain('aria-label="Done: 2 of 5 tasks (40%)"');
+    expect(html).toContain('aria-label="Archived: 1 of 5 tasks (20%)"');
     expect(html).toContain('Archived: 1');
     expect(html).toContain('aria-label="Archived: 1 of 5 tasks"');
   });

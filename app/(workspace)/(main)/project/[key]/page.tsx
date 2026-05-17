@@ -44,7 +44,13 @@ import { resolveProjectByKey } from '@/lib/project-resolve';
 import { resolveAgentInstructions, resolveDeployStrategyConfig } from '@/lib/project-settings';
 import { listProjectTaskLabels, listProjectTaskLabelUsageCounts } from '@/lib/task-labels';
 import { normalizeTaskLabelColor, parseTaskLabelColor } from '@/lib/task-meta';
-import { resolveTerminology } from '@/lib/terminology';
+import {
+  formatAgentRunStateCount,
+  getAgentEntityType,
+  getAgentRunStateAttribute,
+  getProjectDetailTerminology,
+  resolveTerminology,
+} from '@/lib/terminology';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 import { listProjectWorkLogYearActivity, listWorkLogsPage } from '@/lib/work-log-list';
 import { PROJECT_WORK_LOG_PAGE_SIZE } from '@/lib/work-log-pagination';
@@ -59,11 +65,6 @@ type ProjectDetailPageProps = {
   params: Promise<{ key: string }>;
   searchParams?: Promise<{ panel?: string }>;
 };
-
-const DEPLOY_STRATEGY_LABELS = {
-  direct_commit: 'Direct Commit',
-  feature_branch: 'Feature Branch',
-} as const;
 
 function projectStatusBadge(status: string) {
   if (!isProjectStatus(status)) {
@@ -108,28 +109,30 @@ function joinWithAnd(values: string[]) {
   return `${values.slice(0, -1).join(', ')}, and ${values.at(-1)}`;
 }
 
-function describeDeployStrategy(config: ReturnType<typeof resolveDeployStrategyConfig>) {
-  const strategyLabel = DEPLOY_STRATEGY_LABELS[config.strategy];
+function describeDeployStrategy(
+  config: ReturnType<typeof resolveDeployStrategyConfig>,
+  copy: ReturnType<typeof getProjectDetailTerminology>,
+) {
+  const strategyLabel = copy.deployStrategies[config.strategy];
   if (config.strategy === 'feature_branch') {
     const reviewNote = config.commit_on_review
-      ? 'Push before review.'
-      : 'Review can happen before push.';
+      ? copy.deployCopy.pushBeforeReview
+      : copy.deployCopy.reviewBeforePush;
     return config.auto_pr
-      ? `${strategyLabel} to ${config.default_branch}. Auto-create a PR and ${reviewNote.toLowerCase()}`
-      : `${strategyLabel} to ${config.default_branch}. ${reviewNote}`;
+      ? `${strategyLabel} ${copy.deployCopy.toBranch} ${config.default_branch}. ${copy.deployCopy.autoCreatePr} ${reviewNote.toLowerCase()}`
+      : `${strategyLabel} ${copy.deployCopy.toBranch} ${config.default_branch}. ${reviewNote}`;
   }
 
   return config.commit_on_review
-    ? `${strategyLabel} to ${config.default_branch}. Push before review.`
-    : `${strategyLabel} to ${config.default_branch}. Review can happen before push.`;
+    ? `${strategyLabel} ${copy.deployCopy.toBranch} ${config.default_branch}. ${copy.deployCopy.pushBeforeReview}`
+    : `${strategyLabel} ${copy.deployCopy.toBranch} ${config.default_branch}. ${copy.deployCopy.reviewBeforePush}`;
 }
 
-export default async function ProjectDetailPage({ params, searchParams }: ProjectDetailPageProps) {
+export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
   const owner = await getOwnerUserOrNull();
   if (!owner) redirect('/login?reason=auth');
 
   const { key } = await params;
-  const panelParams = searchParams ? await searchParams : {};
   const resolved = await withOwnerDb(owner.id, async (client) =>
     resolveProjectByKey(owner.id, key, client),
   );
@@ -199,15 +202,14 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   if (!project) notFound();
   const projectId = project.id;
   const projectKey = project.projectKey;
-  const activePanel = panelParams.panel === 'project-edit' ? 'project-edit' : null;
   const closeHref = `/project/${projectKey}`;
   const projectStatus = projectStatusBadge(project.status);
   const dashboardClassName = 'dashboard-root';
   const terminology = resolveTerminology(kitchenMode === 'true');
+  const projectDetailCopy = getProjectDetailTerminology(terminology);
   const boardHref = `/board/${projectKey}`;
   const newTaskHref = `/dashboard?panel=task&projectId=${projectId}`;
   const newWorkLogHref = `/dashboard?panel=worklog&projectId=${projectId}`;
-  const editProjectHref = `/project/${projectKey}?panel=project-edit`;
 
   const openTaskCount = todos.filter(
     (t) =>
@@ -216,7 +218,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   const runningTaskCount = todos.filter((t) => t.runState === 'running').length;
   const queuedTaskCount = todos.filter((t) => t.runState === 'queued').length;
   const doneTaskCount = todos.filter((t) => t.status === 'done').length;
-  const runningAgentLabel = `${runningTaskCount} ${runningTaskCount === 1 ? 'agent' : 'agents'} running`;
+  const runningAgentLabel = formatAgentRunStateCount(runningTaskCount, 'running', terminology);
   const projectHeroDescription = formatHeroDescription(project.description);
 
   const agentInstructions = resolveAgentInstructions(project.projectSettings);
@@ -260,18 +262,18 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   const setupReadyCount =
     [hasRepo, hasAgentInstructions, hasRecentActivity].filter(Boolean).length + 1;
   const missingSetupItems = [
-    hasRepo ? null : 'repository',
-    hasAgentInstructions ? null : 'agent instructions',
-    hasRecentActivity ? null : 'recent activity',
+    hasRepo ? null : projectDetailCopy.setupItems.repository,
+    hasAgentInstructions ? null : projectDetailCopy.setupItems.agentInstructions,
+    hasRecentActivity ? null : projectDetailCopy.setupItems.recentActivity,
   ].filter((value): value is string => Boolean(value));
   const setupBadgeColor =
     setupReadyCount === 4 ? 'green' : setupReadyCount === 0 ? 'red' : 'yellow';
   const setupBadgeLabel =
     setupReadyCount === 4
-      ? 'Dispatch-ready'
+      ? projectDetailCopy.readiness.badges.dispatchReady
       : setupReadyCount === 0
-        ? 'Setup missing'
-        : 'Needs attention';
+        ? projectDetailCopy.readiness.badges.setupMissing
+        : projectDetailCopy.readiness.badges.needsAttention;
   const recentActivityBadgeColor =
     !lastWorkedAt || activityStatus.status === 'inactive'
       ? 'gray'
@@ -282,43 +284,49 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           : 'red';
   const setupSummary =
     setupReadyCount === 4
-      ? '4 of 4 setup checks are ready. Repo, deploy rules, agent instructions, and recent activity are all visible.'
-      : `${setupReadyCount} of 4 setup checks are ready. Next: ${joinWithAnd(missingSetupItems)}.`;
+      ? projectDetailCopy.readiness.readySummary
+      : `${setupReadyCount} of 4 ${projectDetailCopy.readiness.summaryPrefix} ${projectDetailCopy.readiness.summaryNextPrefix} ${joinWithAnd(missingSetupItems)}.`;
   const recentActivityDescription = !lastWorkedAt
-    ? `No work logs yet. Last project update ${formatUtcDate(lastProjectUpdate) ?? 'unknown'}.`
+    ? `${projectDetailCopy.recentActivity.noWorkLogsYet} ${projectDetailCopy.recentActivity.lastProjectUpdate} ${formatUtcDate(lastProjectUpdate) ?? projectDetailCopy.recentActivity.unknownDate}.`
     : activityStatus.status === 'critical'
-      ? `No work log update in over 7 days. Last recorded work on ${formatUtcDate(lastWorkedAt)}.`
-      : `Last recorded work on ${formatUtcDate(lastWorkedAt)}.`;
+      ? `${projectDetailCopy.recentActivity.staleWorkLog} ${projectDetailCopy.recentActivity.lastRecordedWork} ${formatUtcDate(lastWorkedAt)}.`
+      : `${projectDetailCopy.recentActivity.lastRecordedWork} ${formatUtcDate(lastWorkedAt)}.`;
   const readinessRows = [
     {
       id: 'repository',
-      label: 'Repository',
-      status: hasRepo ? 'Repository connected' : 'Repository missing',
+      label: projectDetailCopy.readiness.rows.repository.label,
+      status: hasRepo
+        ? projectDetailCopy.readiness.rows.repository.connectedStatus
+        : projectDetailCopy.readiness.rows.repository.missingStatus,
       color: hasRepo ? 'blue' : 'gray',
       description: hasRepo
-        ? 'Repository linked for branch and PR work.'
-        : 'Add the repository URL in Edit Details before dispatching coding work.',
+        ? projectDetailCopy.readiness.rows.repository.connectedDescription
+        : projectDetailCopy.readiness.rows.repository.missingDescription,
     },
     {
       id: 'deployment',
-      label: 'Deployment',
-      status: DEPLOY_STRATEGY_LABELS[deployStrategy.strategy],
+      label: projectDetailCopy.readiness.rows.deployment.label,
+      status: projectDetailCopy.deployStrategies[deployStrategy.strategy],
       color: 'blue',
-      description: describeDeployStrategy(deployStrategy),
+      description: describeDeployStrategy(deployStrategy, projectDetailCopy),
     },
     {
       id: 'instructions',
-      label: 'Instructions',
-      status: hasAgentInstructions ? 'Agent instructions configured' : 'Agent instructions missing',
+      label: projectDetailCopy.readiness.rows.instructions.label,
+      status: hasAgentInstructions
+        ? projectDetailCopy.readiness.rows.instructions.configuredStatus
+        : projectDetailCopy.readiness.rows.instructions.missingStatus,
       color: hasAgentInstructions ? 'blue' : 'gray',
       description: hasAgentInstructions
-        ? 'Instructions saved for dispatched agents.'
-        : 'Add agent instructions so workers inherit project-specific rules.',
+        ? projectDetailCopy.readiness.rows.instructions.configuredDescription
+        : projectDetailCopy.readiness.rows.instructions.missingDescription,
     },
     {
       id: 'activity',
-      label: 'Activity',
-      status: lastWorkedAt ? activityStatus.label : 'No work logs',
+      label: projectDetailCopy.readiness.rows.activity.label,
+      status: lastWorkedAt
+        ? activityStatus.label
+        : projectDetailCopy.readiness.rows.activity.noWorkLogsStatus,
       color: recentActivityBadgeColor,
       description: recentActivityDescription,
     },
@@ -636,8 +644,6 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
 
   return (
     <ProjectDetailEditPanelProvider
-      initialOpened={activePanel === 'project-edit'}
-      editHref={editProjectHref}
       closeHref={closeHref}
       selectedProject={selectedProjectForEdit}
       updateProjectAction={updateProject}
@@ -683,7 +689,12 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                       <Text size="xs" fw={700} tt="uppercase" className={styles.detailEyebrowText}>
                         {projectKey.toUpperCase()}
                       </Text>
-                      <Badge color={runningTaskCount > 0 ? 'blue' : 'gray'} variant="light">
+                      <Badge
+                        color={runningTaskCount > 0 ? 'blue' : 'gray'}
+                        variant="light"
+                        data-entity-type={getAgentEntityType(terminology)}
+                        data-entity-state={getAgentRunStateAttribute('running', terminology)}
+                      >
                         {runningAgentLabel}
                       </Badge>
                       <Badge color={projectStatus.color} variant="outline">
@@ -785,7 +796,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 >
                   <Group justify="space-between" align="flex-start" gap="xs" mb="sm">
                     <SectionTitleWithIcon icon={IconRocket}>
-                      Dispatch readiness
+                      {projectDetailCopy.readiness.sectionTitle}
                     </SectionTitleWithIcon>
                     <Badge color={setupBadgeColor} variant="light">
                       {setupBadgeLabel}
@@ -799,7 +810,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                     <div
                       className={styles.readinessTable}
                       role="table"
-                      aria-label="Dispatch readiness checks"
+                      aria-label={projectDetailCopy.readiness.tableLabel}
                       data-readiness-table="true"
                     >
                       {readinessRows.map((row) => (

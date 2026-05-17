@@ -63,7 +63,13 @@ vi.mock('@/app/components/offline-status-provider', () => ({
 vi.mock('@/lib/notifications', () => notifications);
 
 import { ProjectEditPanel } from '@/app/components/panels/project-edit-panel';
+import { TerminologyProvider } from '@/app/components/terminology-provider';
 import type { ProjectBackgroundCredit } from '@/lib/project-backgrounds';
+import {
+  DEFAULT_TERMINOLOGY,
+  getProjectEditTerminology,
+  type Terminology,
+} from '@/lib/terminology';
 
 type RenderProjectEditPanelOptions = {
   labelManagement?: React.ComponentProps<typeof ProjectEditPanel>['labelManagement'];
@@ -79,6 +85,7 @@ type RenderProjectEditPanelOptions = {
   updateDeploySettingsAction?: React.ComponentProps<
     typeof ProjectEditPanel
   >['updateDeploySettingsAction'];
+  terminology?: Terminology;
 };
 
 function renderProjectEditPanel(
@@ -98,17 +105,19 @@ function renderProjectEditPanel(
 ) {
   return renderToStaticMarkup(
     <MantineProvider>
-      <ProjectEditPanel
-        selectedProject={selectedProject}
-        updateProjectAction={vi.fn(async () => ({ ok: true as const }))}
-        labelManagement={options.labelManagement}
-        createLabelAction={options.createLabelAction}
-        updateLabelAction={options.updateLabelAction}
-        deleteLabelAction={options.deleteLabelAction}
-        configurationManagement={options.configurationManagement}
-        updateAgentInstructionsAction={options.updateAgentInstructionsAction}
-        updateDeploySettingsAction={options.updateDeploySettingsAction}
-      />
+      <TerminologyProvider terminology={options.terminology ?? DEFAULT_TERMINOLOGY}>
+        <ProjectEditPanel
+          selectedProject={selectedProject}
+          updateProjectAction={vi.fn(async () => ({ ok: true as const }))}
+          labelManagement={options.labelManagement}
+          createLabelAction={options.createLabelAction}
+          updateLabelAction={options.updateLabelAction}
+          deleteLabelAction={options.deleteLabelAction}
+          configurationManagement={options.configurationManagement}
+          updateAgentInstructionsAction={options.updateAgentInstructionsAction}
+          updateDeploySettingsAction={options.updateDeploySettingsAction}
+        />
+      </TerminologyProvider>
     </MantineProvider>,
   );
 }
@@ -186,10 +195,19 @@ describe('app/components/panels/project-edit-panel', () => {
         createLabelAction: noopLabelAction,
         updateLabelAction: noopLabelAction,
         deleteLabelAction: noopLabelAction,
+        terminology: {
+          ...DEFAULT_TERMINOLOGY,
+          projectEdit: {
+            ...getProjectEditTerminology(DEFAULT_TERMINOLOGY),
+            labelsTitle: 'Tags',
+          },
+        },
       },
     );
 
     expect(html).toContain('data-project-edit-label-management="true"');
+    expect(html).toContain('Tags');
+    expect(html).not.toContain('<h4 class="">Labels</h4>');
     expect(html).toContain('data-testid="project-labels-panel"');
     expect(html).toContain('data-label-names="Bug"');
     expect(html.indexOf('</form>')).toBeLessThan(

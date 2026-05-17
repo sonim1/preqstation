@@ -41,6 +41,8 @@ vi.mock('@/app/components/infinite-scroll-trigger', () => ({
 }));
 
 import { ProjectWorkLogTimeline } from '@/app/components/project-work-log-timeline';
+import { TerminologyProvider } from '@/app/components/terminology-provider';
+import { DEFAULT_TERMINOLOGY } from '@/lib/terminology';
 
 const sampleLog = {
   id: 'log-1',
@@ -118,18 +120,25 @@ describe('app/components/project-work-log-timeline', () => {
 
     render(
       <MantineProvider>
-        <ProjectWorkLogTimeline
-          projectId="project-1"
-          initialLogs={[sampleLog]}
-          initialNextOffset={10}
-          emptyText="No work logs."
-        />
+        <TerminologyProvider
+          terminology={{
+            ...DEFAULT_TERMINOLOGY,
+            workLogs: { loadingMoreLabel: 'Loading additional history...' },
+          }}
+        >
+          <ProjectWorkLogTimeline
+            projectId="project-1"
+            initialLogs={[sampleLog]}
+            initialNextOffset={10}
+            emptyText="No work logs."
+          />
+        </TerminologyProvider>
       </MantineProvider>,
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'Load trigger' }));
 
-    expect(await screen.findByText('Loading more work logs...')).toBeTruthy();
+    expect(await screen.findByText('Loading additional history...')).toBeTruthy();
     expect(screen.getByRole('status')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Load trigger' }).dataset.loading).toBe('true');
 
@@ -141,7 +150,7 @@ describe('app/components/project-work-log-timeline', () => {
     );
 
     await waitFor(() => {
-      expect(screen.queryByText('Loading more work logs...')).toBeNull();
+      expect(screen.queryByText('Loading additional history...')).toBeNull();
     });
     expect(fetchMock).toHaveBeenCalledWith('/api/work-logs?projectId=project-1&offset=10&limit=10');
   });

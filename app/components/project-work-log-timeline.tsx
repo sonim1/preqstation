@@ -5,9 +5,11 @@ import type { ReactNode } from 'react';
 import { useRef, useState } from 'react';
 
 import { WorkLogTimeline, type WorkLogTimelineItem } from '@/app/components/work-log-timeline';
+import { getWorkLogTerminology } from '@/lib/terminology';
 import { PROJECT_WORK_LOG_PAGE_SIZE } from '@/lib/work-log-pagination';
 
 import { InfiniteScrollTrigger } from './infinite-scroll-trigger';
+import { useTerminology } from './terminology-provider';
 
 type ProjectWorkLogTimelineProps = {
   projectId: string;
@@ -35,6 +37,8 @@ export function ProjectWorkLogTimeline({
   emptyText,
   emptyState,
 }: ProjectWorkLogTimelineProps) {
+  const terminology = useTerminology();
+  const workLogCopy = getWorkLogTerminology(terminology);
   const [logs, setLogs] = useState(() => initialLogs.map(normalizeWorkLog));
   const [nextOffset, setNextOffset] = useState(initialNextOffset);
   const [error, setError] = useState<string | null>(null);
@@ -105,7 +109,7 @@ export function ProjectWorkLogTimeline({
         >
           <Loader size="xs" />
           <Text size="sm" c="dimmed">
-            Loading more work logs...
+            {workLogCopy.loadingMoreLabel}
           </Text>
         </Group>
       ) : null}

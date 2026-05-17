@@ -10,10 +10,12 @@ import { DeploySettingsPanel } from '@/app/components/panels/deploy-settings-pan
 import { ProjectLabelsPanel } from '@/app/components/panels/project-labels-panel';
 import { ProjectBackgroundPicker } from '@/app/components/project-background-picker';
 import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setting-save-status';
+import { useTerminology } from '@/app/components/terminology-provider';
 import { useAutoSave } from '@/app/hooks/use-auto-save';
 import { showErrorNotification } from '@/lib/notifications';
 import type { ProjectBackgroundCredit } from '@/lib/project-backgrounds';
 import { projectStatusOptionData } from '@/lib/project-meta';
+import { getProjectEditTerminology } from '@/lib/terminology';
 
 type ActionState = { ok: true } | { ok: false; message: string };
 type LabelActionState =
@@ -83,6 +85,8 @@ export function ProjectEditPanel({
   updateAgentInstructionsAction,
   updateDeploySettingsAction,
 }: ProjectEditPanelProps) {
+  const terminology = useTerminology();
+  const projectEditCopy = getProjectEditTerminology(terminology);
   const { online } = useOfflineStatus();
   const formRef = useRef<HTMLFormElement>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -260,9 +264,9 @@ export function ProjectEditPanel({
       {canManageLabels ? (
         <Stack gap="md" data-project-edit-label-management="true">
           <div>
-            <Title order={4}>Labels</Title>
+            <Title order={4}>{projectEditCopy.labelsTitle}</Title>
             <Text c="dimmed" size="sm">
-              Create, rename, recolor, or remove labels for this project.
+              {projectEditCopy.labelsDescription}
             </Text>
           </div>
           <ProjectLabelsPanel

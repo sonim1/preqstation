@@ -32,8 +32,9 @@ export function TaskStatusBar({ tasks, boardHref, newTaskHref }: TaskStatusBarPr
   const doneCount = counts.done + counts.archived;
   const completionPct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
   const visibleStatuses = allStatuses.filter((status) => counts[status] > 0);
-  const chartStatuses = visibleStatuses.filter((status) => status !== 'archived');
+  const chartStatuses = visibleStatuses;
   const chartTotal = chartStatuses.reduce((sum, status) => sum + counts[status], 0);
+  const progressLabel = `${terminology.task.singular} progress: ${doneCount} of ${total} complete (${completionPct}%)`;
 
   if (total === 0) {
     return (
@@ -75,7 +76,7 @@ export function TaskStatusBar({ tasks, boardHref, newTaskHref }: TaskStatusBarPr
         </Group>
       </Group>
 
-      <Anchor href={boardHref} underline="never">
+      <Anchor href={boardHref} underline="never" aria-label={progressLabel}>
         <Progress.Root size={28} radius="md">
           {sections.map((section) => {
             const percentage = Math.round(section.value);
@@ -94,8 +95,8 @@ export function TaskStatusBar({ tasks, boardHref, newTaskHref }: TaskStatusBarPr
                   aria-valuemax={100}
                   aria-valuemin={0}
                   aria-valuenow={percentage}
-                  aria-label={`${section.label}: ${section.count} of ${chartTotal} charted ${terminology.task.pluralLower} (${percentage}%)`}
-                  aria-valuetext={`${section.count} of ${chartTotal} charted ${terminology.task.pluralLower} (${percentage}%)`}
+                  aria-label={`${section.label}: ${section.count} of ${chartTotal} ${terminology.task.pluralLower} (${percentage}%)`}
+                  aria-valuetext={`${section.label}: ${section.count} of ${chartTotal} ${terminology.task.pluralLower} (${percentage}%)`}
                 >
                   {section.value > 8 && (
                     <Progress.Label fz={11}>

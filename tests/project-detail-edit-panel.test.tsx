@@ -5,6 +5,16 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const navigation = vi.hoisted(() => ({
+  currentHref: '/project/PQST',
+  push: vi.fn((href: string) => {
+    navigation.currentHref = href;
+  }),
+  replace: vi.fn((href: string) => {
+    navigation.currentHref = href;
+  }),
+}));
+
 vi.mock('@/app/components/project-edit-modal', () => ({
   ProjectEditModal: ({ opened, onClose }: { opened?: boolean; onClose?: () => void }) =>
     opened ? (
@@ -14,6 +24,15 @@ vi.mock('@/app/components/project-edit-modal', () => ({
         </button>
       </div>
     ) : null,
+}));
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => navigation.currentHref.split('?')[0],
+  useRouter: () => ({
+    push: navigation.push,
+    replace: navigation.replace,
+  }),
+  useSearchParams: () => new URLSearchParams(navigation.currentHref.split('?')[1] ?? ''),
 }));
 
 import {
@@ -35,17 +54,11 @@ const selectedProject = {
 };
 
 function renderEditPanel(initialOpened = false) {
-  window.history.replaceState(
-    null,
-    '',
-    initialOpened ? '/project/PQST?panel=project-edit' : '/project/PQST',
-  );
+  navigation.currentHref = initialOpened ? '/project/PQST?panel=project-edit' : '/project/PQST';
 
-  render(
+  return render(
     <MantineProvider>
       <ProjectDetailEditPanelProvider
-        initialOpened={initialOpened}
-        editHref="/project/PQST?panel=project-edit"
         closeHref="/project/PQST"
         selectedProject={selectedProject}
         updateProjectAction={async () => ({ ok: true })}
@@ -58,6 +71,9 @@ function renderEditPanel(initialOpened = false) {
 
 describe('project detail edit panel', () => {
   beforeEach(() => {
+    navigation.currentHref = '/project/PQST';
+    navigation.push.mockClear();
+    navigation.replace.mockClear();
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
       matches: false,
       media: query,
@@ -74,26 +90,52 @@ describe('project detail edit panel', () => {
     cleanup();
   });
 
-  it('opens edit details in place and updates history without a route navigation', () => {
-    renderEditPanel();
+  it('opens edit details through the Next router query state', () => {
+    const view = renderEditPanel();
 
     fireEvent.click(screen.getByRole('button', { name: 'Edit Details' }));
 
+    expect(navigation.push).toHaveBeenCalledWith('/project/PQST?panel=project-edit', {
+      scroll: false,
+    });
+
+    view.rerender(
+      <MantineProvider>
+        <ProjectDetailEditPanelProvider
+          closeHref="/project/PQST"
+          selectedProject={selectedProject}
+          updateProjectAction={async () => ({ ok: true })}
+        >
+          <ProjectDetailEditPanelButton>Edit Details</ProjectDetailEditPanelButton>
+        </ProjectDetailEditPanelProvider>
+      </MantineProvider>,
+    );
+
     expect(screen.getByTestId('project-edit-modal')).toBeTruthy();
-    expect(window.location.pathname).toBe('/project/PQST');
-    expect(window.location.search).toBe('?panel=project-edit');
 
     fireEvent.click(screen.getByRole('button', { name: 'Close panel' }));
 
+    expect(navigation.replace).toHaveBeenCalledWith('/project/PQST', { scroll: false });
+
+    view.rerender(
+      <MantineProvider>
+        <ProjectDetailEditPanelProvider
+          closeHref="/project/PQST"
+          selectedProject={selectedProject}
+          updateProjectAction={async () => ({ ok: true })}
+        >
+          <ProjectDetailEditPanelButton>Edit Details</ProjectDetailEditPanelButton>
+        </ProjectDetailEditPanelProvider>
+      </MantineProvider>,
+    );
+
     expect(screen.queryByTestId('project-edit-modal')).toBeNull();
-    expect(window.location.pathname).toBe('/project/PQST');
-    expect(window.location.search).toBe('');
   });
 
   it('still opens from the direct project-edit URL', () => {
     renderEditPanel(true);
 
     expect(screen.getByTestId('project-edit-modal')).toBeTruthy();
-    expect(window.location.search).toBe('?panel=project-edit');
+    expect(navigation.currentHref).toBe('/project/PQST?panel=project-edit');
   });
 });

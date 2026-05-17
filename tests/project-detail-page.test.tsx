@@ -11,13 +11,17 @@ const mocked = vi.hoisted(() => ({
   listWorkLogsPage: vi.fn(),
   notFound: vi.fn(),
   projectEditPanelProps: vi.fn(),
+  navigationSearch: '',
   projectsFindFirst: vi.fn(),
   redirect: vi.fn(),
   requireOwnerUser: vi.fn(),
   resolveAgentInstructions: vi.fn(),
   resolveDeployStrategyConfig: vi.fn(),
   resolveProjectByKey: vi.fn(),
+  resolveTerminology: vi.fn(),
   revalidatePath: vi.fn(),
+  routerPush: vi.fn(),
+  routerReplace: vi.fn(),
   tasksFindMany: vi.fn(),
   updateProject: vi.fn(),
   writeAuditLog: vi.fn(),
@@ -41,12 +45,13 @@ vi.mock('@mantine/core', () => ({
     children,
     color,
     variant,
+    ...props
   }: {
     children: React.ReactNode;
     color?: string;
     variant?: string;
-  }) => (
-    <div data-color={color ?? ''} data-variant={variant ?? ''}>
+  } & React.HTMLAttributes<HTMLDivElement>) => (
+    <div data-color={color ?? ''} data-variant={variant ?? ''} {...props}>
       {children}
     </div>
   ),
@@ -126,6 +131,12 @@ vi.mock('next/cache', () => ({
 vi.mock('next/navigation', () => ({
   notFound: mocked.notFound,
   redirect: mocked.redirect,
+  usePathname: () => '/project/PROJ',
+  useRouter: () => ({
+    push: mocked.routerPush,
+    replace: mocked.routerReplace,
+  }),
+  useSearchParams: () => new URLSearchParams(mocked.navigationSearch),
 }));
 
 vi.mock('@/app/components/empty-state', () => ({
@@ -301,11 +312,14 @@ vi.mock('@/lib/task-labels', () => ({
   listProjectTaskLabelUsageCounts: mocked.listProjectTaskLabelUsageCounts,
 }));
 
-vi.mock('@/lib/terminology', () => ({
-  resolveTerminology: vi.fn(() => ({
-    task: { singular: 'Task', singularLower: 'task', plural: 'Tasks', pluralLower: 'tasks' },
-  })),
-}));
+vi.mock('@/lib/terminology', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/terminology')>();
+
+  return {
+    ...actual,
+    resolveTerminology: mocked.resolveTerminology,
+  };
+});
 
 vi.mock('@/lib/user-settings', () => ({
   SETTING_KEYS: { KITCHEN_MODE: 'kitchenMode', TIMEZONE: 'timezone' },
@@ -322,12 +336,14 @@ vi.mock('@/lib/work-log-pagination', () => ({
 }));
 
 import ProjectDetailPage from '@/app/(workspace)/(main)/project/[key]/page';
+import { DEFAULT_TERMINOLOGY, getProjectDetailTerminology } from '@/lib/terminology';
 
 describe('project detail page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocked.db.query.projects.findFirst = mocked.projectsFindFirst;
     mocked.db.query.tasks.findMany = mocked.tasksFindMany;
+    mocked.navigationSearch = '';
     mocked.getOwnerUserOrNull.mockResolvedValue({ id: 'owner-1' });
     mocked.requireOwnerUser.mockResolvedValue({ id: 'owner-1' });
     mocked.resolveProjectByKey.mockResolvedValue({
@@ -355,6 +371,7 @@ describe('project detail page', () => {
     mocked.getUserSetting.mockImplementation((_ownerId: string, key: string) =>
       Promise.resolve(key === 'timezone' ? 'UTC' : 'false'),
     );
+    mocked.resolveTerminology.mockReturnValue(DEFAULT_TERMINOLOGY);
     mocked.listProjectWorkLogYearActivity.mockResolvedValue([]);
     mocked.listWorkLogsPage.mockResolvedValue({
       workLogs: [],
@@ -406,6 +423,20 @@ describe('project detail page', () => {
     expect(html).not.toContain('data-testid="project-hero-menu"');
   });
 
+  it('uses terminology metadata for the active agent badge', async () => {
+    mocked.tasksFindMany.mockResolvedValueOnce([{ status: 'todo', runState: 'running' }]);
+
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('1 AI agent running');
+    expect(html).toContain('data-entity-type="agent"');
+    expect(html).toContain('data-entity-state="running"');
+  });
+
   it('keeps detail content focused on activity with configuration in edit details', async () => {
     const html = renderToStaticMarkup(
       await ProjectDetailPage({
@@ -437,6 +468,8 @@ describe('project detail page', () => {
   });
 
   it('renders project editing, labels, and configuration inside the shared modal shell on the detail route', async () => {
+    mocked.navigationSearch = 'panel=project-edit';
+
     const html = renderToStaticMarkup(
       await ProjectDetailPage({
         params: Promise.resolve({ key: 'PROJ' }),
@@ -549,6 +582,44 @@ describe('project detail page', () => {
     expect(html).toContain(
       'href="https://github.com/example/repo" rel="noopener noreferrer" target="_blank"',
     );
+  });
+
+  it('renders dispatch readiness rows from terminology copy', async () => {
+    const defaultProjectDetail = getProjectDetailTerminology(DEFAULT_TERMINOLOGY);
+
+    mocked.resolveTerminology.mockReturnValueOnce({
+      ...DEFAULT_TERMINOLOGY,
+      projectDetail: {
+        ...defaultProjectDetail,
+        readiness: {
+          ...defaultProjectDetail.readiness,
+          sectionTitle: 'Launch readiness',
+          tableLabel: 'Launch checks',
+          rows: {
+            ...defaultProjectDetail.readiness.rows,
+            repository: {
+              ...defaultProjectDetail.readiness.rows.repository,
+              label: 'Source',
+              connectedStatus: 'Source connected',
+              connectedDescription: 'Source is ready for branch work.',
+            },
+          },
+        },
+      },
+    });
+
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('Launch readiness');
+    expect(html).toContain('aria-label="Launch checks"');
+    expect(html).toContain('>Source<');
+    expect(html).toContain('Source connected');
+    expect(html).toContain('Source is ready for branch work.');
+    expect(html).not.toContain('Dispatch readiness checks');
   });
 
   it('aligns detail activity sections with tasks, heatmap, readiness, and recent work', async () => {
@@ -699,6 +770,8 @@ describe('project detail page', () => {
   });
 
   it('updates the project detail modal in place without redirecting to the dashboard', async () => {
+    mocked.navigationSearch = 'panel=project-edit';
+
     renderToStaticMarkup(
       await ProjectDetailPage({
         params: Promise.resolve({ key: 'PROJ' }),

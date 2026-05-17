@@ -75,25 +75,6 @@ function getIntensityLevel(count: number, maxCount?: number) {
   return 4;
 }
 
-function buildTrailingYearData(data: YearlyActivityDatum[]) {
-  if (data.length === 0) {
-    return data;
-  }
-
-  const dateMap = new Map(data.map((entry) => [entry.date, entry.count] as const));
-  const end = new Date(`${data[data.length - 1].date}T00:00:00.000Z`);
-  const start = addUtcDays(end, -364);
-  const range: YearlyActivityDatum[] = [];
-
-  for (const cursor = new Date(start); cursor.getTime() <= end.getTime(); ) {
-    const date = toDateKey(cursor);
-    range.push({ date, count: dateMap.get(date) ?? 0 });
-    cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
-
-  return range;
-}
-
 function getCurrentStreak(data: YearlyActivityDatum[]) {
   let streak = 0;
   let previousDate: Date | null = null;
@@ -194,7 +175,7 @@ export function DashboardYearlyHeatmap({
     .filter(Boolean)
     .join(' ');
   const sortedData = [...data].sort((left, right) => left.date.localeCompare(right.date));
-  const displayData = projectDetail ? buildTrailingYearData(sortedData) : sortedData;
+  const displayData = sortedData;
   const year = displayData[0]?.date.slice(0, 4) ?? String(new Date().getFullYear());
   const totalLogs = sortedData.reduce((sum, day) => sum + day.count, 0);
   const weeks = buildWeeks(displayData);

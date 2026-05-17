@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, type ButtonProps } from '@mantine/core';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   type ComponentProps,
   createContext,
@@ -8,9 +9,7 @@ import {
   type ReactNode,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
 } from 'react';
 
 import { ProjectEditModal } from '@/app/components/project-edit-modal';
@@ -24,8 +23,6 @@ type ProjectDetailEditPanelProviderProps = Omit<
   'opened' | 'onClose'
 > & {
   children: ReactNode;
-  editHref: string;
-  initialOpened: boolean;
 };
 
 type ProjectDetailEditPanelButtonProps = ButtonProps & {
@@ -37,59 +34,46 @@ const ProjectDetailEditPanelContext = createContext<ProjectDetailEditPanelContex
   null,
 );
 
-function normalizeHref(href: string) {
-  if (typeof window === 'undefined') return href;
-  const url = new URL(href, window.location.origin);
-  return `${url.pathname}${url.search}${url.hash}`;
-}
-
-function currentHref() {
-  if (typeof window === 'undefined') return '';
-  return `${window.location.pathname}${window.location.search}${window.location.hash}`;
-}
-
-function panelIsOpenFromLocation() {
-  if (typeof window === 'undefined') return false;
-  return new URL(window.location.href).searchParams.get('panel') === 'project-edit';
-}
-
-function updateHistory(href: string, mode: 'push' | 'replace') {
-  if (typeof window === 'undefined') return;
-  const nextHref = normalizeHref(href);
-  if (currentHref() === nextHref) return;
-
-  if (mode === 'push') {
-    window.history.pushState(null, '', nextHref);
+function buildPanelHref(
+  pathname: string,
+  searchParams: { toString: () => string },
+  panel: string | null,
+) {
+  const nextParams = new URLSearchParams(searchParams.toString());
+  if (panel) {
+    nextParams.set('panel', panel);
   } else {
-    window.history.replaceState(null, '', nextHref);
+    nextParams.delete('panel');
   }
+  const query = nextParams.toString();
+  return query ? `${pathname}?${query}` : pathname;
 }
 
 export function ProjectDetailEditPanelProvider({
   children,
-  editHref,
-  initialOpened,
   closeHref,
   ...modalProps
 }: ProjectDetailEditPanelProviderProps) {
-  const [opened, setOpened] = useState(initialOpened);
-
-  useEffect(() => {
-    const syncFromHistory = () => setOpened(panelIsOpenFromLocation());
-
-    window.addEventListener('popstate', syncFromHistory);
-    return () => window.removeEventListener('popstate', syncFromHistory);
-  }, []);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const opened = searchParams.get('panel') === 'project-edit';
+  const openHref = useMemo(
+    () => buildPanelHref(pathname, searchParams, 'project-edit'),
+    [pathname, searchParams],
+  );
+  const closePanelHref = useMemo(() => {
+    const nextHref = buildPanelHref(pathname, searchParams, null);
+    return nextHref || closeHref;
+  }, [closeHref, pathname, searchParams]);
 
   const openPanel = useCallback(() => {
-    setOpened(true);
-    updateHistory(editHref, 'push');
-  }, [editHref]);
+    router.push(openHref, { scroll: false });
+  }, [openHref, router]);
 
   const closePanel = useCallback(() => {
-    setOpened(false);
-    updateHistory(closeHref, 'replace');
-  }, [closeHref]);
+    router.replace(closePanelHref, { scroll: false });
+  }, [closePanelHref, router]);
 
   const contextValue = useMemo(() => ({ openPanel }), [openPanel]);
 

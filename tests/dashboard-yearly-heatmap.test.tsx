@@ -105,7 +105,7 @@ describe('app/components/dashboard-yearly-heatmap', () => {
     expect(html).not.toContain('data-date="2026-02-01"');
   });
 
-  it('renders the project detail heatmap with trailing-year styling, streak, and legend', () => {
+  it('renders the project detail heatmap with provided yearly data, streak, and legend', () => {
     const html = renderToStaticMarkup(
       <MantineProvider>
         <DashboardYearlyHeatmap
@@ -128,7 +128,7 @@ describe('app/components/dashboard-yearly-heatmap', () => {
     expect(html).toContain('Less');
     expect(html).toContain('More');
     expect(html).toContain('17 logs · last 365d');
-    expect(html).toContain('data-date="2025-05-17"');
+    expect(html).not.toContain('data-date="2025-05-17"');
     expect(html).toMatch(/data-count="2" data-date="2026-05-14" data-level="1"/);
     expect(html).toMatch(/data-count="5" data-date="2026-05-15" data-level="2"/);
     expect(html).toMatch(/data-count="10" data-date="2026-05-16" data-level="4"/);
