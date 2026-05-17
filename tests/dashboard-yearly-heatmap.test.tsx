@@ -86,4 +86,21 @@ describe('app/components/dashboard-yearly-heatmap', () => {
 
     expect(march8Matches).toHaveLength(1);
   });
+
+  it('labels a new month even when there is no activity entry on the first day', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <DashboardYearlyHeatmap
+          data={[
+            { date: '2026-01-28', count: 1 },
+            { date: '2026-02-03', count: 2 },
+          ]}
+        />
+      </MantineProvider>,
+    );
+
+    expect(html).toContain('>Jan</');
+    expect(html).toContain('>Feb</');
+    expect(html).not.toContain('data-date="2026-02-01"');
+  });
 });

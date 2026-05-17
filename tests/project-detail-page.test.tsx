@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocked = vi.hoisted(() => ({
   getOwnerUserOrNull: vi.fn(),
   getUserSetting: vi.fn(),
+  listProjectWorkLogYearActivity: vi.fn(),
   listProjectTaskLabels: vi.fn(),
   listProjectTaskLabelUsageCounts: vi.fn(),
   listWorkLogsPage: vi.fn(),
@@ -72,7 +73,17 @@ vi.mock('@mantine/core', () => ({
     ),
   Container: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Group: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Paper: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Paper: ({
+    children,
+    p: _p,
+    radius: _radius,
+    withBorder: _withBorder,
+    ...props
+  }: React.HTMLAttributes<HTMLDivElement> & {
+    p?: unknown;
+    radius?: unknown;
+    withBorder?: boolean;
+  }) => <div {...props}>{children}</div>,
   SimpleGrid: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Text: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -108,6 +119,29 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/app/components/empty-state', () => ({
   EmptyState: ({ title }: { title: string }) => <div data-testid="empty-state">{title}</div>,
+}));
+
+vi.mock('@/app/components/dashboard-yearly-heatmap', () => ({
+  DashboardYearlyHeatmap: ({
+    data,
+    panelClassName,
+    title,
+    description,
+  }: {
+    data: Array<{ date: string; count: number }>;
+    panelClassName?: string;
+    title?: string;
+    description?: string;
+  }) => (
+    <div
+      data-testid="dashboard-yearly-heatmap"
+      data-panel-class-name={panelClassName ?? ''}
+      data-values={data.map((point) => `${point.date}:${point.count}`).join(',')}
+    >
+      {title}
+      {description}
+    </div>
+  ),
 }));
 
 vi.mock('@/app/components/link-button', () => ({
@@ -274,11 +308,12 @@ vi.mock('@/lib/terminology', () => ({
 }));
 
 vi.mock('@/lib/user-settings', () => ({
-  SETTING_KEYS: { KITCHEN_MODE: 'kitchenMode' },
+  SETTING_KEYS: { KITCHEN_MODE: 'kitchenMode', TIMEZONE: 'timezone' },
   getUserSetting: mocked.getUserSetting,
 }));
 
 vi.mock('@/lib/work-log-list', () => ({
+  listProjectWorkLogYearActivity: mocked.listProjectWorkLogYearActivity,
   listWorkLogsPage: mocked.listWorkLogsPage,
 }));
 
@@ -317,7 +352,10 @@ describe('project detail page', () => {
       projectSettings: [],
     });
     mocked.tasksFindMany.mockResolvedValue([]);
-    mocked.getUserSetting.mockResolvedValue('false');
+    mocked.getUserSetting.mockImplementation((_ownerId: string, key: string) =>
+      Promise.resolve(key === 'timezone' ? 'UTC' : 'false'),
+    );
+    mocked.listProjectWorkLogYearActivity.mockResolvedValue([]);
     mocked.listWorkLogsPage.mockResolvedValue({
       workLogs: [],
       nextOffset: null,
@@ -351,6 +389,13 @@ describe('project detail page', () => {
       }),
     );
 
+    expect(html).toContain('data-project-detail-roster="true"');
+    expect(html).toContain('Project roster · PROJ');
+    expect(html).toContain('data-project-detail-metrics="true"');
+    expect(html).toContain('OPEN');
+    expect(html).toContain('RUNNING');
+    expect(html).toContain('QUEUED');
+    expect(html).toContain('DONE · 7D');
     expect(html).toContain('data-testid="project-hero-menu"');
     expect(html).toContain('data-edit-project-href="/project/PROJ?panel=project-edit"');
     expect(html).toContain('data-work-log-href="/dashboard?panel=worklog&amp;projectId=project-1"');
@@ -465,6 +510,66 @@ describe('project detail page', () => {
     expect(html).toContain(
       'href="https://github.com/example/repo" rel="noopener noreferrer" target="_blank"',
     );
+  });
+
+  it('adds activity evidence to detail using visible work log history and task pipeline data', async () => {
+    mocked.tasksFindMany.mockResolvedValueOnce([
+      { status: 'todo' },
+      { status: 'ready' },
+      { status: 'hold' },
+      { status: 'done' },
+    ]);
+    mocked.listWorkLogsPage.mockResolvedValueOnce({
+      workLogs: [
+        {
+          id: 'log-1',
+          title: 'Shipped detail page improvements',
+          detail: null,
+          engine: 'codex',
+          workedAt: new Date('2026-04-26T10:00:00.000Z'),
+        },
+        {
+          id: 'log-2',
+          title: 'Reviewed project health scan',
+          detail: null,
+          engine: 'claude',
+          workedAt: new Date('2026-04-26T08:00:00.000Z'),
+        },
+        {
+          id: 'log-3',
+          title: 'Started list redesign',
+          detail: null,
+          engine: 'codex',
+          workedAt: new Date('2026-04-25T12:00:00.000Z'),
+        },
+      ],
+      nextOffset: null,
+    });
+    mocked.listProjectWorkLogYearActivity.mockResolvedValueOnce([
+      { date: '2026-01-01', count: 0 },
+      { date: '2026-04-25', count: 7 },
+      { date: '2026-04-26', count: 4 },
+    ]);
+
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('Activity evidence');
+    expect(html).toContain('data-project-detail-activity-panel="true"');
+    expect(html).toContain('Task pipeline evidence');
+    expect(html).toContain('data-testid="dashboard-yearly-heatmap"');
+    expect(html).toContain('data-values="2026-01-01:0,2026-04-25:7,2026-04-26:4"');
+    expect(html).toContain('4 total tasks');
+    expect(html).toContain('11 work logs this year');
+    expect(mocked.listProjectWorkLogYearActivity).toHaveBeenCalledWith({
+      ownerId: 'owner-1',
+      projectId: 'project-1',
+      timeZone: 'UTC',
+      client: mocked.db,
+    });
   });
 
   it('uses the neutral recent-activity color for inactive projects with work logs', async () => {

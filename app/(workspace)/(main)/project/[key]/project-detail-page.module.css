@@ -1,0 +1,68 @@
+.detailHero {
+  border-color: color-mix(in srgb, var(--ui-border), var(--ui-accent) 16%);
+  background: color-mix(in srgb, var(--ui-surface-panel), var(--ui-surface-strong) 18%);
+}
+
+.detailMetrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+  border-radius: 0.5rem;
+  background: color-mix(in srgb, var(--ui-surface-strong), transparent 10%);
+}
+
+.detailMetric {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  padding: 0.7rem 0.55rem;
+  text-align: center;
+}
+
+.detailMetric + .detailMetric {
+  border-left: 1px solid color-mix(in srgb, var(--ui-border), transparent 26%);
+}
+
+.detailMetric strong {
+  color: var(--ui-text);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.detailMetric span {
+  min-width: 0;
+  color: var(--ui-muted-text);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.activityEvidence {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.pipelinePanel {
+  min-width: 0;
+}
+
+@media (max-width: 47.99375em) {
+  .detailMetrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detailMetric:nth-child(3) {
+    border-left: 0;
+    border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 26%);
+  }
+
+  .detailMetric:nth-child(4) {
+    border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 26%);
+  }
+}

@@ -1,13 +1,10 @@
-import { Container, Group, Paper, SimpleGrid, Stack, Text, Title } from '@mantine/core';
-import { IconFolderPlus } from '@tabler/icons-react';
+import { Container, Stack, Title } from '@mantine/core';
+import { IconActivity } from '@tabler/icons-react';
 import { and, desc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { EmptyState } from '@/app/components/empty-state';
 import { LinkButton } from '@/app/components/link-button';
-import { OpenClawGuide } from '@/app/components/openclaw-guide';
-import panelStyles from '@/app/components/panels.module.css';
 import { ProjectEditPanel } from '@/app/components/panels/project-edit-panel';
 import {
   PROJECT_EDIT_PANEL_FULLSCREEN_STORAGE_KEY,
@@ -21,24 +18,46 @@ import { withOwnerDb } from '@/lib/db/rls';
 import { projects, taskLabels, tasks, workLogs } from '@/lib/db/schema';
 import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
 import { getProjectActivityStatus } from '@/lib/project-activity';
-import { getProjectPortfolioBgUrl } from '@/lib/project-backgrounds';
 import { normalizeProjectKey } from '@/lib/project-key';
-import { ACTIVE_PROJECT_STATUS, PAUSED_PROJECT_STATUS } from '@/lib/project-meta';
+import {
+  ACTIVE_PROJECT_STATUS,
+  DONE_PROJECT_STATUS,
+  PAUSED_PROJECT_STATUS,
+} from '@/lib/project-meta';
 import { resolveTerminology } from '@/lib/terminology';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 
-import { ProjectPortfolioCard, type ProjectPortfolioCardSummary } from './project-portfolio-card';
+import type { ProjectPortfolioCardSummary } from './project-portfolio-card';
+import { getProjectFilterStatus } from './project-roster-filter';
 import { ProjectsOfflineHydrator } from './projects-offline-hydrator';
 import styles from './projects-page.module.css';
+import { ProjectsRosterClient } from './projects-roster-client';
+import { WorkspaceActivityChart } from './workspace-activity-chart';
 
 const DAY_MS = 86_400_000;
-const WEEK_MS = DAY_MS * 7;
-
-type ProjectsPageProps = {
-  searchParams?: Promise<{ panel?: string; projectKey?: string }>;
+type ProjectsSearchParams = {
+  panel?: string | string[];
+  projectKey?: string | string[];
+  q?: string | string[];
+  status?: string | string[];
 };
 
-type WeeklyActivity = { date: string; count: number };
+type ProjectsPageProps = {
+  searchParams?: Promise<ProjectsSearchParams>;
+};
+
+type WorkspaceActivity = { date: string; count: number };
+
+function getLastQueryValue(value: string | string[] | undefined) {
+  if (Array.isArray(value)) return value.at(-1) ?? '';
+  return value ?? '';
+}
+
+function getProjectSortRank(status: string) {
+  if (status === PAUSED_PROJECT_STATUS) return 1;
+  if (status === DONE_PROJECT_STATUS) return 2;
+  return 0;
+}
 
 function toValidDate(value: Date | string | null | undefined) {
   if (!value) return null;
@@ -50,11 +69,26 @@ function formatUtcDate(value: Date) {
   return value.toISOString().slice(0, 10);
 }
 
-function getRecentUtcDates(now: Date) {
-  return Array.from({ length: 7 }, (_, index) => {
+function formatRelativeActivity(value: Date, now: Date) {
+  const diffMs = Math.max(0, now.getTime() - value.getTime());
+  const minutes = Math.max(1, Math.floor(diffMs / 60_000));
+
+  if (minutes < 60) return `${minutes}m ago`;
+
+  const hours = Math.floor(diffMs / 3_600_000);
+  if (hours < 24) return `${hours}h ago`;
+
+  const days = Math.floor(diffMs / DAY_MS);
+  if (days < 7) return `${days}d ago`;
+
+  return `${Math.floor(days / 7)}w ago`;
+}
+
+function getRecentUtcDates(now: Date, length: number) {
+  return Array.from({ length }, (_, index) => {
     const date = new Date(now);
     date.setUTCHours(0, 0, 0, 0);
-    date.setUTCDate(date.getUTCDate() - (6 - index));
+    date.setUTCDate(date.getUTCDate() - (length - 1 - index));
     return formatUtcDate(date);
   });
 }
@@ -72,47 +106,22 @@ function toDateKey(value: Date | string | null | undefined) {
   return formatUtcDate(parsed);
 }
 
-function getProjectPosture(params: {
-  projectStatus: string;
-  lastActivityAt: Date;
-  now: Date;
-  openTaskCount: number;
-  readyCount: number;
-  holdCount: number;
-  health: string;
-}) {
-  if (params.projectStatus === PAUSED_PROJECT_STATUS) {
-    return {
-      tone: 'quiet' as const,
-      bucket: 'quiet' as const,
-    };
+function getRepoLabel(repoUrl: string | null | undefined, projectKey: string) {
+  if (!repoUrl) return projectKey;
+
+  try {
+    const parsed = new URL(repoUrl);
+    const [owner, repo] = parsed.pathname.replace(/^\/|\/$/g, '').split('/');
+    if (owner && repo) return `${owner}/${repo}`;
+  } catch {
+    return projectKey;
   }
 
-  const ageMs = Math.max(0, params.now.getTime() - params.lastActivityAt.getTime());
-
-  if (params.health === 'critical' || params.health === 'warning' || ageMs > 3 * DAY_MS) {
-    return {
-      tone: 'drifting' as const,
-      bucket: 'drifting' as const,
-    };
-  }
-
-  if (params.openTaskCount >= 6 || params.holdCount >= 2) {
-    return {
-      tone: 'heavy' as const,
-      bucket: 'heavy' as const,
-    };
-  }
-
-  return {
-    tone: 'steady' as const,
-    bucket: 'recent' as const,
-  };
+  return projectKey;
 }
 
 export default async function ProjectsPage({ searchParams }: ProjectsPageProps = {}) {
-  const queryParams = await (searchParams ??
-    Promise.resolve<{ panel?: string; projectKey?: string }>({}));
+  const queryParams = await (searchParams ?? Promise.resolve<ProjectsSearchParams>({}));
   const owner = await getOwnerUserOrNull();
   if (!owner) redirect('/login?reason=auth');
 
@@ -122,34 +131,49 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
   );
 
   const now = new Date();
-  const activityWindowStart = formatUtcDate(new Date(now.getTime() - 6 * DAY_MS));
-  const [allProjects, statusCounts, latestWorkLogs, weeklyProjectActivityRows, kitchenMode] =
-    await withOwnerDb(owner.id, async (client) =>
-      Promise.all([
-        client.query.projects.findMany({
-          where: and(eq(projects.ownerId, owner.id), isNull(projects.deletedAt)),
-          orderBy: [desc(projects.updatedAt)],
-          limit: 50,
-        }),
-        client
-          .select({
-            projectId: tasks.projectId,
-            status: tasks.status,
-            _count: { id: sql<number>`count(*)::int` },
-          })
-          .from(tasks)
-          .where(and(eq(tasks.ownerId, owner.id), nonDeletedProjectFilter))
-          .groupBy(tasks.projectId, tasks.status),
-        client
-          .select({
-            projectId: workLogs.projectId,
-            lastWorkedAt: sql<Date>`max(${workLogs.workedAt})`,
-          })
-          .from(workLogs)
-          .where(and(eq(workLogs.ownerId, owner.id), isNotNull(workLogs.projectId)))
-          .groupBy(workLogs.projectId),
-        client.execute<{ project_id: string; worked_day: string | Date; count: number | bigint }>(
-          sql`
+  const activityWindowStart = formatUtcDate(new Date(now.getTime() - 29 * DAY_MS));
+  const [
+    allProjects,
+    statusCounts,
+    runStateCounts,
+    latestWorkLogs,
+    projectActivityRows,
+    kitchenMode,
+  ] = await withOwnerDb(owner.id, async (client) =>
+    Promise.all([
+      client.query.projects.findMany({
+        where: and(eq(projects.ownerId, owner.id), isNull(projects.deletedAt)),
+        orderBy: [desc(projects.updatedAt)],
+        limit: 50,
+      }),
+      client
+        .select({
+          projectId: tasks.projectId,
+          status: tasks.status,
+          _count: { id: sql<number>`count(*)::int` },
+        })
+        .from(tasks)
+        .where(and(eq(tasks.ownerId, owner.id), nonDeletedProjectFilter))
+        .groupBy(tasks.projectId, tasks.status),
+      client
+        .select({
+          projectId: tasks.projectId,
+          runState: tasks.runState,
+          _count: { id: sql<number>`count(*)::int` },
+        })
+        .from(tasks)
+        .where(and(eq(tasks.ownerId, owner.id), isNotNull(tasks.runState), nonDeletedProjectFilter))
+        .groupBy(tasks.projectId, tasks.runState),
+      client
+        .select({
+          projectId: workLogs.projectId,
+          lastWorkedAt: sql<Date>`max(${workLogs.workedAt})`,
+        })
+        .from(workLogs)
+        .where(and(eq(workLogs.ownerId, owner.id), isNotNull(workLogs.projectId)))
+        .groupBy(workLogs.projectId),
+      client.execute<{ project_id: string; worked_day: string | Date; count: number | bigint }>(
+        sql`
             select
               ${workLogs.projectId} as project_id,
               (${workLogs.workedAt} at time zone 'UTC')::date as worked_day,
@@ -161,14 +185,18 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
             group by ${workLogs.projectId}, worked_day
             order by ${workLogs.projectId} asc, worked_day asc
           `,
-        ),
-        getUserSetting(owner.id, SETTING_KEYS.KITCHEN_MODE, client),
-      ]),
-    );
+      ),
+      getUserSetting(owner.id, SETTING_KEYS.KITCHEN_MODE, client),
+    ]),
+  );
 
   const terminology = resolveTerminology(kitchenMode === 'true');
-  const activePanel = queryParams.panel === 'project-edit' ? 'project-edit' : null;
-  const editingProjectKey = normalizeProjectKey(queryParams.projectKey || '');
+  const panelParam = getLastQueryValue(queryParams.panel);
+  const projectKeyParam = getLastQueryValue(queryParams.projectKey);
+  const searchQuery = getLastQueryValue(queryParams.q).trim();
+  const selectedProjectFilter = getProjectFilterStatus(getLastQueryValue(queryParams.status));
+  const activePanel = panelParam === 'project-edit' ? 'project-edit' : null;
+  const editingProjectKey = normalizeProjectKey(projectKeyParam);
   const editingProject =
     activePanel === 'project-edit' && editingProjectKey
       ? (allProjects.find((project) => project.projectKey === editingProjectKey) ?? null)
@@ -182,18 +210,25 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
     countsByProjectId.set(row.projectId, current);
   }
 
+  const runStatesByProjectId = new Map<string, Record<string, number>>();
+  for (const row of runStateCounts) {
+    if (!row.projectId || !row.runState) continue;
+    const current = runStatesByProjectId.get(row.projectId) ?? {};
+    current[row.runState] = row._count.id;
+    runStatesByProjectId.set(row.projectId, current);
+  }
+
   const lastWorkedAtByProjectId = new Map(
     latestWorkLogs.map((row) => [row.projectId, toValidDate(row.lastWorkedAt)] as const),
   );
-  const activityDays = getRecentUtcDates(now);
-  const weeklyActivityByProjectId = new Map<string, Map<string, number>>();
-  for (const row of weeklyProjectActivityRows) {
+  const activityDays = getRecentUtcDates(now, 30);
+  const workspaceActivityByDate = new Map<string, number>();
+  for (const row of projectActivityRows) {
     const dateKey = toDateKey(row.worked_day);
     if (!row.project_id || !dateKey) continue;
 
-    const current = weeklyActivityByProjectId.get(row.project_id) ?? new Map<string, number>();
-    current.set(dateKey, Number(row.count));
-    weeklyActivityByProjectId.set(row.project_id, current);
+    const count = Number(row.count);
+    workspaceActivityByDate.set(dateKey, (workspaceActivityByDate.get(dateKey) ?? 0) + count);
   }
 
   const projectSummaries = allProjects
@@ -203,41 +238,48 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
       const todoCount = counts.todo ?? 0;
       const holdCount = counts.hold ?? 0;
       const readyCount = counts.ready ?? 0;
+      const doneCount = counts.done ?? 0;
+      const runStates = runStatesByProjectId.get(project.id) ?? {};
+      const runningCount = runStates.running ?? 0;
+      const queuedCount = runStates.queued ?? 0;
       const openTaskCount = inboxCount + todoCount + holdCount + readyCount;
       const lastWorkedAt = lastWorkedAtByProjectId.get(project.id) ?? null;
-      const lastActivityAt = lastWorkedAt ?? toValidDate(project.updatedAt) ?? now;
+      const updatedAt = toValidDate(project.updatedAt) ?? now;
+      const lastActivityAt = lastWorkedAt ?? updatedAt;
       const health = getProjectActivityStatus({
         projectStatus: project.status,
         lastWorkedAt,
         now,
       });
-      const posture = getProjectPosture({
-        projectStatus: project.status,
-        lastActivityAt,
-        now,
-        openTaskCount,
-        readyCount,
-        holdCount,
-        health: health.status,
-      });
-      const weeklyActivity: WeeklyActivity[] = activityDays.map((date) => ({
-        date,
-        count: weeklyActivityByProjectId.get(project.id)?.get(date) ?? 0,
-      }));
+      const ageMs = Math.max(0, now.getTime() - lastActivityAt.getTime());
+      const tone =
+        project.status === DONE_PROJECT_STATUS
+          ? ('archived' as const)
+          : project.status === PAUSED_PROJECT_STATUS
+            ? ('paused' as const)
+            : runningCount > 0
+              ? ('live' as const)
+              : queuedCount > 0
+                ? ('queued' as const)
+                : health.status === 'critical' || health.status === 'warning' || ageMs > 3 * DAY_MS
+                  ? ('stale' as const)
+                  : ('active' as const);
 
       return {
         project,
-        holdCount,
-        readyCount,
         openTaskCount,
+        runningCount,
+        queuedCount,
+        doneCount,
         lastActivityAt,
-        posture,
-        weeklyActivity,
-        weeklyActivityTotal: weeklyActivity.reduce((sum, point) => sum + point.count, 0),
+        sortActivityAt: lastActivityAt,
+        tone,
       };
     })
     .sort((a, b) => {
-      const activityDelta = b.lastActivityAt.getTime() - a.lastActivityAt.getTime();
+      const rankDelta = getProjectSortRank(a.project.status) - getProjectSortRank(b.project.status);
+      if (rankDelta !== 0) return rankDelta;
+      const activityDelta = b.sortActivityAt.getTime() - a.sortActivityAt.getTime();
       if (activityDelta !== 0) return activityDelta;
       return a.project.name.localeCompare(b.project.name);
     });
@@ -246,65 +288,92 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
   const activeProjectCount = projectSummaries.filter(
     (summary) => summary.project.status === ACTIVE_PROJECT_STATUS,
   ).length;
-  const touchedThisWeekCount = projectSummaries.filter(
-    (summary) => now.getTime() - summary.lastActivityAt.getTime() <= WEEK_MS,
-  ).length;
-  const resumeProjects = projectSummaries.filter(
-    (summary) => summary.project.status !== PAUSED_PROJECT_STATUS,
-  );
-  const quietProjects = projectSummaries.filter(
+  const pausedProjectCount = projectSummaries.filter(
     (summary) => summary.project.status === PAUSED_PROJECT_STATUS,
-  );
-  const featuredSummary = resumeProjects[0] ?? quietProjects[0] ?? null;
-  const featuredProjectId = featuredSummary?.project.id ?? null;
-  const readyNextProjectCount = resumeProjects.filter((summary) => summary.readyCount > 0).length;
-  const driftingProjectCount = resumeProjects.filter(
-    (summary) => summary.posture.tone === 'drifting',
   ).length;
+  const archivedProjectCount = projectSummaries.filter(
+    (summary) => summary.project.status === DONE_PROJECT_STATUS,
+  ).length;
+  const queuedAgentCount = projectSummaries.reduce((sum, summary) => sum + summary.queuedCount, 0);
+  const runningAgentCount = projectSummaries.reduce(
+    (sum, summary) => sum + summary.runningCount,
+    0,
+  );
+  const activeAgentCount = runningAgentCount + queuedAgentCount;
+  const workspaceActivity: WorkspaceActivity[] = activityDays.map((date) => ({
+    date,
+    count: workspaceActivityByDate.get(date) ?? 0,
+  }));
+  const workspaceActivityTotal = workspaceActivity.reduce((sum, point) => sum + point.count, 0);
+  const workspaceActivityPeak = workspaceActivity.reduce(
+    (peak, point) => Math.max(peak, point.count),
+    0,
+  );
+  const peakIndex = workspaceActivity.findIndex((point) => point.count === workspaceActivityPeak);
+  const workspacePeakLabel =
+    workspaceActivityPeak > 0 && peakIndex >= 0
+      ? `peak d-${activityDays.length - 1 - peakIndex}`
+      : 'peak d-0';
 
   function toProjectCardSummary(
     summary: (typeof projectSummaries)[number],
-    slot: ProjectPortfolioCardSummary['slot'],
   ): ProjectPortfolioCardSummary {
-    const backgroundUrl = getProjectPortfolioBgUrl(summary.project.bgImage);
-
     return {
       id: summary.project.id,
       name: summary.project.name,
       projectKey: summary.project.projectKey,
       isPaused: summary.project.status === PAUSED_PROJECT_STATUS,
+      isArchived: summary.project.status === DONE_PROJECT_STATUS,
       description: summary.project.description?.trim() || 'No description yet.',
-      posture: summary.posture,
+      tone: summary.tone,
+      statusLabel:
+        summary.project.status === DONE_PROJECT_STATUS
+          ? 'Archived'
+          : summary.project.status === PAUSED_PROJECT_STATUS
+            ? 'Paused'
+            : summary.runningCount > 0
+              ? 'Active'
+              : 'Active',
       openTaskCount: summary.openTaskCount,
-      readyCount: summary.readyCount,
-      holdCount: summary.holdCount,
-      openLabel: `Open ${terminology.task.plural}`,
-      readyLabel: terminology.statuses.ready,
-      holdLabel: terminology.statuses.hold,
+      runningCount: summary.runningCount,
+      queuedCount: summary.queuedCount,
+      doneCount: summary.doneCount,
+      openLabel: 'OPEN',
+      repoLabel: getRepoLabel(summary.project.repoUrl, summary.project.projectKey),
       repoUrl: summary.project.repoUrl,
       vercelUrl: summary.project.vercelUrl,
       detailsHref: `/project/${summary.project.projectKey}`,
       editHref: `/projects?panel=project-edit&projectKey=${summary.project.projectKey}`,
-      backgroundUrl,
-      backgroundMode: backgroundUrl ? 'image' : 'fallback',
-      weeklyActivity: summary.weeklyActivity,
-      weeklyActivityTotal: summary.weeklyActivityTotal,
-      slot,
+      lastActivityLabel: `Last activity ${formatRelativeActivity(summary.lastActivityAt, now)}`,
     };
   }
 
-  const featuredCard = featuredSummary ? toProjectCardSummary(featuredSummary, 'lead') : null;
-  const resumeCards = resumeProjects
-    .filter((summary) => summary.project.id !== featuredProjectId)
-    .map((summary, index) => toProjectCardSummary(summary, index === 0 ? 'support' : 'lane'));
-  const quietCards = quietProjects
-    .filter((summary) => summary.project.id !== featuredProjectId)
-    .map((summary) => toProjectCardSummary(summary, 'quiet'));
-  const summaryStrip = [
-    { label: 'Live projects', value: activeProjectCount },
-    { label: 'Ready next', value: readyNextProjectCount },
-    { label: 'Drifting', value: driftingProjectCount },
-    { label: 'Touched in 7d', value: touchedThisWeekCount },
+  const rosterCards = projectSummaries.map((summary) => toProjectCardSummary(summary));
+  const filterChips = [
+    {
+      label: 'All',
+      value: totalProjectCount,
+      filter: 'all' as const,
+      active: selectedProjectFilter === 'all',
+    },
+    {
+      label: 'Active',
+      value: activeProjectCount,
+      filter: 'active' as const,
+      active: selectedProjectFilter === 'active',
+    },
+    {
+      label: 'Paused',
+      value: pausedProjectCount,
+      filter: 'paused' as const,
+      active: selectedProjectFilter === 'paused',
+    },
+    {
+      label: 'Archived',
+      value: archivedProjectCount,
+      filter: 'archived' as const,
+      active: selectedProjectFilter === 'archived',
+    },
   ];
 
   async function deleteProject(formData: FormData) {
@@ -454,10 +523,11 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
   }
 
   const projectsOfflineSnapshot = {
-    featuredCard,
-    resumeCards,
-    quietCards,
-    summaryStrip,
+    filterChips,
+    rosterCards,
+    workspaceActivity,
+    workspaceActivityTotal,
+    workspacePeakLabel,
   };
 
   return (
@@ -469,120 +539,58 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
     >
       <ProjectsOfflineHydrator snapshot={projectsOfflineSnapshot}>
         <Stack gap="md" className="dashboard-stack">
-          <WorkspacePageHeader
-            title="Projects"
-            description="Resume where work last moved. Keep the whole portfolio visible."
-          />
-
-          <div className={styles.topGrid}>
-            <Paper
-              withBorder
-              radius="md"
-              p={{ base: 'sm', sm: 'lg' }}
-              className={`${panelStyles.sectionPanel} ${styles.topSection}`}
-            >
-              <Stack gap="lg">
-                <div className={styles.topBar}>
-                  <Group
-                    justify="flex-end"
-                    align="center"
-                    wrap="wrap"
-                    className={styles.topActions}
-                  >
-                    <LinkButton href="/dashboard?panel=project">New Project</LinkButton>
-                  </Group>
-                </div>
-
-                <div className={styles.summaryStrip}>
-                  {summaryStrip.map((item) => (
-                    <div key={item.label} className={styles.summaryPill}>
-                      <strong>{item.value}</strong>
-                      <span>{item.label}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className={styles.guideWrap}>
-                  <OpenClawGuide
-                    projects={projectSummaries.map((summary) => ({
-                      projectKey: summary.project.projectKey,
-                      name: summary.project.name,
-                      repoUrl: summary.project.repoUrl,
-                    }))}
-                  />
-                </div>
-              </Stack>
-            </Paper>
-
-            {featuredCard ? (
-              <div className={styles.topFeature} data-portfolio-featured="true">
-                <ProjectPortfolioCard
-                  card={featuredCard}
-                  deleteAction={deleteProject}
-                  pauseAction={pauseProject}
-                />
-              </div>
-            ) : null}
+          <div className={styles.rosterHeader}>
+            <WorkspacePageHeader
+              title={`Projects roster · ${totalProjectCount} repos`}
+              description="Workspace activity, live agent state, and repo readiness at a glance."
+            />
+            <div className={styles.rosterActions}>
+              <LinkButton href="/dashboard?panel=project" size="compact-sm">
+                New project
+              </LinkButton>
+            </div>
           </div>
 
-          {totalProjectCount === 0 ? (
-            <EmptyState
-              icon={<IconFolderPlus size={24} />}
-              title="No projects yet"
-              description={`Create your first project to start tracking ${terminology.task.pluralLower} and progress.`}
-              action={<LinkButton href="/dashboard?panel=project">Create Project</LinkButton>}
-            />
-          ) : (
-            <>
-              {resumeCards.length > 0 ? (
-                <section className={styles.portfolioSection} data-project-section="resume">
-                  <SimpleGrid
-                    cols={{ base: 1, sm: 2, lg: 3, xl: 4 }}
-                    spacing="md"
-                    className={styles.resumeGrid}
-                  >
-                    {resumeCards.map((card) => (
-                      <ProjectPortfolioCard
-                        key={card.id}
-                        card={card}
-                        deleteAction={deleteProject}
-                        pauseAction={pauseProject}
-                      />
-                    ))}
-                  </SimpleGrid>
-                </section>
-              ) : null}
+          <section className={styles.activityPanel}>
+            <div className={styles.activityHeader}>
+              <Title component="h2" order={3} className={styles.activityTitle}>
+                <IconActivity size={16} />
+                Workspace activity
+                <span aria-hidden="true">·</span>
+                <span className={styles.activityRangeDesktop}>last 30 days</span>
+                <span className={styles.activityRangeMobile}>last 7 days</span>
+                <span aria-hidden="true">·</span>
+                <span>
+                  {totalProjectCount} project{totalProjectCount === 1 ? '' : 's'}
+                </span>
+              </Title>
+              <span className={styles.activityMeta}>
+                <strong>{workspaceActivityTotal}</strong> logs
+                <span>{workspacePeakLabel}</span>
+              </span>
+            </div>
+            <WorkspaceActivityChart data={workspaceActivity} peak={workspaceActivityPeak} />
+            <div className={styles.activityLegend} aria-hidden="true">
+              <span>
+                <span className={styles.activityRangeDesktop}>30 days ago</span>
+                <span className={styles.activityRangeMobile}>7 days ago</span>
+              </span>
+              <span>today</span>
+            </div>
+          </section>
 
-              <section className={styles.portfolioSection} data-project-section="quiet">
-                <div className={styles.sectionHead}>
-                  <div>
-                    <Title component="h2" order={2} size="h4">
-                      Quiet edge
-                    </Title>
-                    <Text c="dimmed" size="sm">
-                      Paused projects stay within reach without competing with the active lane.
-                    </Text>
-                  </div>
-                  <span className={styles.sectionCount}>{quietCards.length}</span>
-                </div>
-
-                {quietCards.length > 0 ? (
-                  <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md" className={styles.quietGrid}>
-                    {quietCards.map((card) => (
-                      <ProjectPortfolioCard
-                        key={card.id}
-                        card={card}
-                        deleteAction={deleteProject}
-                        pauseAction={pauseProject}
-                      />
-                    ))}
-                  </SimpleGrid>
-                ) : (
-                  <p className={styles.sectionEmpty}>No paused projects right now.</p>
-                )}
-              </section>
-            </>
-          )}
+          <ProjectsRosterClient
+            allCards={rosterCards}
+            deleteProjectAction={deleteProject}
+            filterChips={filterChips}
+            initialState={{
+              activeAgentCount,
+              searchQuery,
+              selectedProjectFilter,
+              terminologyTaskPluralLower: terminology.task.pluralLower,
+            }}
+            pauseProjectAction={pauseProject}
+          />
         </Stack>
       </ProjectsOfflineHydrator>
 

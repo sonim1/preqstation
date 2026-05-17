@@ -57,6 +57,11 @@ const mocked = vi.hoisted(() => {
       projectSettings: Array<{ key: string; value: string }>;
     }>,
     statusCounts: [] as Array<{ projectId: string | null; status: string; _count: { id: number } }>,
+    runStateCounts: [] as Array<{
+      projectId: string | null;
+      runState: string | null;
+      _count: { id: number };
+    }>,
     latestWorkLogs: [] as Array<{ projectId: string | null; lastWorkedAt: Date | string | null }>,
     projectActivityRows: [] as Array<{
       project_id: string;
@@ -68,9 +73,9 @@ const mocked = vi.hoisted(() => {
 
   const groupByMock = vi.fn(() => {
     state.groupedQueryIndex += 1;
-    return Promise.resolve(
-      state.groupedQueryIndex === 1 ? state.statusCounts : state.latestWorkLogs,
-    );
+    if (state.groupedQueryIndex === 1) return Promise.resolve(state.statusCounts);
+    if (state.groupedQueryIndex === 2) return Promise.resolve(state.runStateCounts);
+    return Promise.resolve(state.latestWorkLogs);
   });
   const whereMock = vi.fn(() => ({ groupBy: groupByMock }));
   const fromMock = vi.fn(() => ({ where: whereMock }));
@@ -86,7 +91,6 @@ const mocked = vi.hoisted(() => {
     updateProject: vi.fn(),
     writeAuditLog: vi.fn(),
     projectCardMenuProps: vi.fn(),
-    projectCardWorklogSparklineProps: vi.fn(),
     projectEditPanelProps: vi.fn(),
     getProjectActivityStatus: vi.fn(() => ({ status: 'healthy' })),
     db: {
@@ -131,10 +135,6 @@ vi.mock('@/app/components/link-button', () => ({
   ),
 }));
 
-vi.mock('@/app/components/openclaw-guide', () => ({
-  OpenClawGuide: () => <div>guide</div>,
-}));
-
 vi.mock('@/app/components/project-card-menu', () => ({
   ProjectCardMenu: (props: {
     editHref: string;
@@ -157,26 +157,6 @@ vi.mock('@/app/components/project-card-menu', () => ({
       </button>
     );
   },
-}));
-
-vi.mock('@/app/components/project-card-worklog-sparkline', () => ({
-  ProjectCardWorklogSparkline: (props: {
-    data: Array<{ date: string; count: number }>;
-    total: number;
-  }) => {
-    mocked.projectCardWorklogSparklineProps(props);
-    return (
-      <div
-        data-testid="project-card-worklog-sparkline"
-        data-total={String(props.total)}
-        data-values={props.data.map((point) => point.count).join(',')}
-      />
-    );
-  },
-}));
-
-vi.mock('@/app/components/project-health-dot', () => ({
-  ProjectHealthDot: () => <div>health</div>,
 }));
 
 vi.mock('@/app/components/task-panel-modal', () => ({
@@ -225,10 +205,6 @@ vi.mock('@/lib/audit', () => ({
   writeAuditLog: mocked.writeAuditLog,
 }));
 
-vi.mock('@/lib/db', () => ({
-  db: mocked.db,
-}));
-
 vi.mock('@/lib/db/rls', () => ({
   withOwnerDb: async (_ownerId: string, callback: (client: Record<string, unknown>) => unknown) =>
     callback(mocked.db),
@@ -261,6 +237,13 @@ const projectsPageSource = fs.readFileSync(
   path.join(process.cwd(), 'app/(workspace)/(main)/projects/page.tsx'),
   'utf8',
 );
+const projectsRosterClientPath = path.join(
+  process.cwd(),
+  'app/(workspace)/(main)/projects/projects-roster-client.tsx',
+);
+const projectsRosterClientSource = fs.existsSync(projectsRosterClientPath)
+  ? fs.readFileSync(projectsRosterClientPath, 'utf8')
+  : '';
 const projectPortfolioCardSource = fs.readFileSync(
   path.join(process.cwd(), 'app/(workspace)/(main)/projects/project-portfolio-card.tsx'),
   'utf8',
@@ -278,13 +261,13 @@ describe('app/(workspace)/(main)/projects/page', () => {
     mocked.state.projects = [
       {
         id: 'project-1',
-        name: 'Project One',
-        projectKey: 'PROJ',
-        description: 'A project with a preset background.',
+        name: 'PreqStation Core',
+        projectKey: 'PREQ',
+        description: 'Task control plane, Kanban workflow, REST API, and HTTP MCP server.',
         status: 'active',
         updatedAt: new Date('2026-03-13T10:00:00Z'),
-        repoUrl: null,
-        vercelUrl: null,
+        repoUrl: 'https://github.com/sonim1/preqstation',
+        vercelUrl: 'https://preqstation.vercel.app',
         bgImage: 'mountains',
         bgImageCredit: null,
         deletedAt: null,
@@ -292,52 +275,37 @@ describe('app/(workspace)/(main)/projects/page', () => {
       },
     ];
     mocked.state.statusCounts = [
-      { projectId: 'project-1', status: 'todo', _count: { id: 3 } },
-      { projectId: 'project-1', status: 'done', _count: { id: 1 } },
+      { projectId: 'project-1', status: 'todo', _count: { id: 6 } },
+      { projectId: 'project-1', status: 'ready', _count: { id: 1 } },
+      { projectId: 'project-1', status: 'done', _count: { id: 2 } },
+    ];
+    mocked.state.runStateCounts = [
+      { projectId: 'project-1', runState: 'running', _count: { id: 1 } },
+      { projectId: 'project-1', runState: 'queued', _count: { id: 1 } },
     ];
     mocked.state.latestWorkLogs = [
-      { projectId: 'project-1', lastWorkedAt: new Date('2026-03-12T10:00:00Z') },
+      { projectId: 'project-1', lastWorkedAt: new Date('2026-03-14T12:00:00Z') },
     ];
-    mocked.state.projectActivityRows = [];
+    mocked.state.projectActivityRows = [
+      { project_id: 'project-1', worked_day: '2026-03-12', count: 2 },
+      { project_id: 'project-1', worked_day: '2026-03-14', count: 3 },
+    ];
   });
 
   afterEach(() => {
     vi.useRealTimers();
   });
 
-  it('does not render photo credit text on project cards when background credit metadata exists', async () => {
-    const page = await ProjectsPage();
-    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
-
-    expect(html).toContain('Project One');
-    expect(html).not.toContain('Photo credit');
-    expect(html).not.toContain('Unsplash');
-  });
-
-  it('renders resume and quiet portfolio sections with stable card slots', async () => {
-    mocked.state.projects = [
-      {
-        id: 'project-1',
-        name: 'Recent Project',
-        projectKey: 'RCNT',
-        description: 'Image-led project for immediate re-entry.',
-        status: 'active',
-        updatedAt: new Date('2026-03-14T10:00:00Z'),
-        repoUrl: 'https://github.com/example/recent',
-        vercelUrl: 'https://recent.vercel.app',
-        bgImage: 'mountains',
-        bgImageCredit: null,
-        deletedAt: null,
-        projectSettings: [],
-      },
+  it('renders the projects body as a reference-style roster with a 30 day bar chart', async () => {
+    mocked.state.projects.push(
       {
         id: 'project-2',
-        name: 'Support Project',
-        projectKey: 'SUPP',
-        description: 'Second project in the resume lane.',
+        name: 'PreqStation Skill',
+        projectKey: 'PSKL',
+        description: 'Worker runtime setup for Claude Code, Codex, and Gemini.',
         status: 'active',
-        updatedAt: new Date('2026-03-13T10:00:00Z'),
-        repoUrl: null,
+        updatedAt: new Date('2026-03-13T12:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/preqstation-skill',
         vercelUrl: null,
         bgImage: null,
         bgImageCredit: null,
@@ -346,12 +314,190 @@ describe('app/(workspace)/(main)/projects/page', () => {
       },
       {
         id: 'project-3',
-        name: 'Hold Project',
-        projectKey: 'HOLD',
-        description: 'Active project with blocked edges.',
+        name: 'PreqStation Dispatcher',
+        projectKey: 'DISP',
+        description: 'Operator-host setup and dispatch.',
+        status: 'paused',
+        updatedAt: new Date('2026-03-08T10:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/preqstation-dispatcher',
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+    );
+    mocked.state.statusCounts.push(
+      { projectId: 'project-2', status: 'todo', _count: { id: 2 } },
+      { projectId: 'project-2', status: 'done', _count: { id: 1 } },
+      { projectId: 'project-3', status: 'todo', _count: { id: 2 } },
+      { projectId: 'project-3', status: 'done', _count: { id: 1 } },
+    );
+    mocked.state.runStateCounts.push({
+      projectId: 'project-2',
+      runState: 'running',
+      _count: { id: 1 },
+    });
+    mocked.state.latestWorkLogs.push(
+      { projectId: 'project-2', lastWorkedAt: new Date('2026-03-14T11:46:00Z') },
+      { projectId: 'project-3', lastWorkedAt: new Date('2026-03-12T12:00:00Z') },
+    );
+
+    const page = await ProjectsPage();
+    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
+
+    expect(html).toContain('Projects roster · 3 repos');
+    expect(html).toContain('Workspace activity');
+    expect(html).toContain('last 30 days');
+    expect(html).toContain('3 projects');
+    expect(html).toContain('New project');
+    expect(html).toContain('data-projects-activity-chart="bar"');
+    expect(html).toContain('data-projects-activity-range="desktop-30-mobile-7"');
+    expect(html.match(/data-projects-activity-bar=/g)).toHaveLength(30);
+    expect(html.match(/data-projects-activity-mobile-hidden="true"/g)).toHaveLength(23);
+    expect(html).toContain('data-projects-activity-bar="2026-03-14"');
+    expect(html).toContain('aria-label="2026-03-14: 3 work logs"');
+    expect(html).toContain('2026-03-14 · 3 work logs');
+    expect(html).not.toContain('data-projects-activity-heatmap="true"');
+    expect(html).toContain('<strong>5</strong> logs');
+    expect(html).toContain('Find a project');
+    expect(html).toContain('All 3');
+    expect(html).toContain('Active 2');
+    expect(html).toContain('Paused 1');
+    expect(html).toContain('Archived 0');
+    expect(html).not.toContain('value="live"');
+    expect(html).toContain('data-project-roster-card="true"');
+    expect(html).toContain('data-project-card-tone="live"');
+    expect(html).toContain('data-project-card-tone="paused"');
+    expect(html).toContain('PREQ');
+    expect(html).toContain('PreqStation Core');
+    expect(html).toContain('sonim1/preqstation');
+    expect(html).toContain('Last activity 2h ago');
+    expect(html).toContain('OPEN');
+    expect(html).toContain('RUNNING');
+    expect(html).toContain('QUEUED');
+    expect(html).toContain('DONE');
+    expect(html).not.toContain('DONE · 7D');
+    expect(html).toContain('data-project-section="roster"');
+    expect(html).not.toContain('data-portfolio-featured="true"');
+    expect(html).not.toContain('Quiet edge');
+    expect(html).not.toContain('data-project-card-background="image"');
+  });
+
+  it('filters the roster by fuzzy search across project fields and status query params', async () => {
+    mocked.state.projects.push(
+      {
+        id: 'project-2',
+        name: 'PreqStation Skill',
+        projectKey: 'PSKL',
+        description: 'Worker runtime setup for Claude Code, Codex, and Gemini.',
         status: 'active',
-        updatedAt: new Date('2026-03-12T08:00:00Z'),
-        repoUrl: null,
+        updatedAt: new Date('2026-03-13T12:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/preqstation-skill',
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+      {
+        id: 'project-3',
+        name: 'PreqStation Dispatcher',
+        projectKey: 'DISP',
+        description: 'Operator-host setup and dispatch.',
+        status: 'paused',
+        updatedAt: new Date('2026-03-08T10:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/preqstation-dispatcher',
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+    );
+    mocked.state.statusCounts.push(
+      { projectId: 'project-2', status: 'todo', _count: { id: 2 } },
+      { projectId: 'project-3', status: 'todo', _count: { id: 2 } },
+    );
+    mocked.state.runStateCounts = [
+      { projectId: 'project-1', runState: 'running', _count: { id: 1 } },
+      { projectId: 'project-2', runState: 'queued', _count: { id: 1 } },
+    ];
+    mocked.state.latestWorkLogs.push(
+      { projectId: 'project-2', lastWorkedAt: new Date('2026-03-14T11:46:00Z') },
+      { projectId: 'project-3', lastWorkedAt: new Date('2026-03-12T12:00:00Z') },
+    );
+
+    const page = await ProjectsPage({
+      searchParams: Promise.resolve({ q: 'gthb wrkr', status: 'active' }),
+    });
+    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
+
+    expect(html).toContain('data-project-filter-mode="client"');
+    expect(html).not.toContain('method="GET"');
+    expect(html).toContain('value="gthb wrkr"');
+    expect(html).toContain('value="active"');
+    expect(html).toContain('type="button"');
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).not.toContain('value="live"');
+    expect(html).not.toContain('PreqStation Core');
+    expect(html).toContain('PreqStation Skill');
+    expect(html).not.toContain('PreqStation Dispatcher');
+    expect(fs.existsSync(projectsRosterClientPath)).toBe(true);
+    expect(projectsPageSource).not.toContain('method="GET"');
+    expect(projectsRosterClientSource).toContain('window.history.replaceState');
+    expect(projectsRosterClientSource).toContain('type="button"');
+  });
+
+  it('searches project vercel URLs as part of the unified project index', async () => {
+    const page = await ProjectsPage({
+      searchParams: Promise.resolve({ q: 'vercel app' }),
+    });
+    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
+
+    expect(html).toContain('value="vercel app"');
+    expect(html).toContain('PreqStation Core');
+    expect(html).not.toContain('No matching projects');
+  });
+
+  it('keeps active projects in last-activity order before paused and archived projects', async () => {
+    mocked.state.projects = [
+      {
+        id: 'project-1',
+        name: 'Latest Activity Active',
+        projectKey: 'OLD',
+        description: 'Older updated repo with newer actual activity.',
+        status: 'active',
+        updatedAt: new Date('2026-03-10T10:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/older-active',
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+      {
+        id: 'project-2',
+        name: 'Newest Updated Active',
+        projectKey: 'NEW',
+        description: 'Newer updated repo with older actual activity.',
+        status: 'active',
+        updatedAt: new Date('2026-03-14T10:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/newest-active',
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+      {
+        id: 'project-3',
+        name: 'Paused Recent',
+        projectKey: 'PAUS',
+        description: 'Paused should be muted and after active projects.',
+        status: 'paused',
+        updatedAt: new Date('2026-03-15T10:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/paused-recent',
         vercelUrl: null,
         bgImage: null,
         bgImageCredit: null,
@@ -360,26 +506,12 @@ describe('app/(workspace)/(main)/projects/page', () => {
       },
       {
         id: 'project-4',
-        name: 'Drift Project',
-        projectKey: 'DRFT',
-        description: null,
-        status: 'active',
-        updatedAt: new Date('2026-03-09T10:00:00Z'),
-        repoUrl: null,
-        vercelUrl: null,
-        bgImage: null,
-        bgImageCredit: null,
-        deletedAt: null,
-        projectSettings: [],
-      },
-      {
-        id: 'project-5',
-        name: 'Paused Project',
-        projectKey: 'PAUS',
-        description: 'Deliberately quiet work.',
-        status: 'paused',
-        updatedAt: new Date('2026-03-09T10:00:00Z'),
-        repoUrl: null,
+        name: 'Archived Recent',
+        projectKey: 'ARCH',
+        description: 'Archived should be muted and last.',
+        status: 'done',
+        updatedAt: new Date('2026-03-16T10:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/archived-recent',
         vercelUrl: null,
         bgImage: null,
         bgImageCredit: null,
@@ -387,239 +519,41 @@ describe('app/(workspace)/(main)/projects/page', () => {
         projectSettings: [],
       },
     ];
-    mocked.state.statusCounts = [
-      { projectId: 'project-1', status: 'todo', _count: { id: 5 } },
-      { projectId: 'project-1', status: 'ready', _count: { id: 2 } },
-      { projectId: 'project-2', status: 'todo', _count: { id: 2 } },
-      { projectId: 'project-2', status: 'ready', _count: { id: 1 } },
-      { projectId: 'project-3', status: 'todo', _count: { id: 3 } },
-      { projectId: 'project-3', status: 'hold', _count: { id: 2 } },
-      { projectId: 'project-4', status: 'todo', _count: { id: 1 } },
-      { projectId: 'project-5', status: 'hold', _count: { id: 1 } },
+    mocked.state.runStateCounts = [
+      { projectId: 'project-1', runState: 'running', _count: { id: 1 } },
     ];
     mocked.state.latestWorkLogs = [
-      { projectId: 'project-1', lastWorkedAt: new Date('2026-03-14T12:00:00Z') },
-      { projectId: 'project-2', lastWorkedAt: new Date('2026-03-14T08:00:00Z') },
-      { projectId: 'project-3', lastWorkedAt: new Date('2026-03-13T10:00:00Z') },
-      { projectId: 'project-4', lastWorkedAt: new Date('2026-03-09T09:00:00Z') },
-      { projectId: 'project-5', lastWorkedAt: new Date('2026-03-08T10:00:00Z') },
-    ];
-    mocked.state.projectActivityRows = [
-      { project_id: 'project-1', worked_day: '2026-03-11', count: 1 },
-      { project_id: 'project-1', worked_day: '2026-03-13', count: 2 },
-      { project_id: 'project-1', worked_day: '2026-03-14', count: 3 },
-      { project_id: 'project-3', worked_day: '2026-03-12', count: 1 },
+      { projectId: 'project-1', lastWorkedAt: new Date('2026-03-14T13:00:00Z') },
+      { projectId: 'project-2', lastWorkedAt: new Date('2026-03-11T13:00:00Z') },
     ];
 
     const page = await ProjectsPage();
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
-    const resumeIndex = html.indexOf('data-project-section="resume"');
-    const quietIndex = html.indexOf('data-project-section="quiet"');
-    const resumeSectionHtml = quietIndex > resumeIndex ? html.slice(resumeIndex, quietIndex) : html;
 
-    expect(html).toContain('Projects');
-    expect(html).not.toContain('Prototype D / Momentum Compact');
-    expect(html).not.toContain('Portfolio view');
-    expect(html).not.toContain('Resume now');
-    expect(html).not.toContain(
-      'Active work stays up front. Quiet projects stay reachable without crowding the path back into motion.',
+    expect(html).toContain('All 4');
+    expect(html).toContain('Active 2');
+    expect(html).toContain('Paused 1');
+    expect(html).toContain('Archived 1');
+    expect(html.indexOf('Latest Activity Active')).toBeLessThan(
+      html.indexOf('Newest Updated Active'),
     );
-    expect(html).not.toContain(
-      'Active work stays in recent-worked order with room to scan posture and next moves.',
-    );
-    expect(html).toContain('Quiet edge');
-    expect(html).not.toContain('Resume the right project by image, not by row.');
-    expect(html).not.toContain('Momentum Roster');
-    expect(html).not.toContain('Radar Matrix');
-    expect(html).not.toContain('Open All Boards');
-    expect(html).not.toContain('Details');
-    expect(html).toContain('<span>Live projects</span>');
-    expect(html).toContain('<span>Ready next</span>');
-    expect(html).toContain('<span>Drifting</span>');
-    expect(html).toContain('<span>Touched in 7d</span>');
-    expect(html).not.toContain('<span>Paused</span>');
-    expect(html).toContain('New Project');
-    expect(html).toContain('guide');
-    expect(html).toContain('data-portfolio-featured="true"');
-    expect(html).toContain('data-project-section="resume"');
-    expect(html).toContain('data-project-section="quiet"');
-    expect(html).toContain('data-project-card-slot="lead"');
-    expect(html).toContain('data-project-card-slot="support"');
-    expect(html).toContain('data-project-card-slot="lane"');
-    expect(html).toContain('data-project-card-slot="quiet"');
-    expect(html).toContain('data-project-card-background="image"');
-    expect(html).toContain('data-project-card-background="fallback"');
-    expect(/data-project-card-slot="lead"[\s\S]*?Recent Project/.test(html)).toBe(true);
-    expect(/data-project-card-slot="support"[\s\S]*?Support Project/.test(html)).toBe(true);
-    expect(/data-project-card-slot="lane"[\s\S]*?Hold Project/.test(html)).toBe(true);
-    expect(/data-project-card-slot="lane"[\s\S]*?Drift Project/.test(html)).toBe(true);
-    expect(/data-project-card-slot="quiet"[\s\S]*?Paused Project/.test(html)).toBe(true);
-    expect(html).not.toMatch(/<span>Paused<\/span>/);
-    expect(
-      /data-project-card-slot="lead"[\s\S]*?data-project-card-background="image"[\s\S]*?Recent Project/.test(
-        html,
-      ),
-    ).toBe(true);
-    expect(html.indexOf('Recent Project')).toBeLessThan(html.indexOf('Support Project'));
-    expect(html.indexOf('Support Project')).toBeLessThan(html.indexOf('Hold Project'));
-    expect(html.indexOf('Hold Project')).toBeLessThan(html.indexOf('Drift Project'));
-    expect(html.indexOf('Drift Project')).toBeLessThan(html.indexOf('Paused Project'));
-    expect(resumeSectionHtml).not.toContain('Paused Project');
-    expect(html).not.toContain('Image-led project for immediate re-entry.');
-    expect(html).not.toContain('Second project in the resume lane.');
-    expect(html).not.toContain('Deliberately quiet work.');
-    expect(html).not.toContain('Repo linked');
-    expect(html).not.toContain('Deploy linked');
-    expect(html).toContain('data-connectivity-status="complete"');
-    expect(html).toContain('aria-label="Repository connected. Deploy connected."');
-    expect(html).toContain('data-connectivity-status="warning"');
-    expect(html).toContain('aria-label="Repository missing. Deploy missing."');
-    expect(
-      /data-project-card-slot="lead"[\s\S]*?data-connectivity-status="complete"[\s\S]*?>RCNT<\/span>[\s\S]*?aria-hidden="true">-<\/span>[\s\S]*?>Recent Project<\/h3>/.test(
-        html,
-      ),
-    ).toBe(true);
-    expect(
-      /data-project-card-slot="support"[\s\S]*?data-connectivity-status="warning"[\s\S]*?>SUPP<\/span>[\s\S]*?aria-hidden="true">-<\/span>[\s\S]*?>Support Project<\/h3>/.test(
-        html,
-      ),
-    ).toBe(true);
-    expect(html).not.toMatch(/>(steady|heavy|drifting|quiet)</);
-    expect(html).not.toContain('ready to revive');
-    expect(html).not.toContain('needs nudge');
-    expect(html).not.toContain('blocked edges');
-    expect(html).not.toContain('queue full');
-    expect(html).not.toContain('quick re-entry');
-    expect(html).not.toContain('low drag');
-    expect(html).not.toContain('on hold');
-    expect(html).not.toContain('/board/RCNT');
-    expect(html).not.toContain('revisit');
-    expect(html).toContain('data-testid="project-card-worklog-sparkline"');
-    expect(html).toContain('data-total="6"');
-    expect(html).toContain('data-values="0,0,0,1,0,2,3"');
-    expect(html).toContain('id="pause-project-project-1"');
-    expect(html).toContain('id="delete-project-project-1"');
-    expect(html).toContain('id="delete-project-project-5"');
-    expect(html).not.toContain('id="pause-project-project-5"');
-    expect(html).toContain('/project/RCNT');
-    expect(html).toContain('/projects?panel=project-edit&amp;projectKey=RCNT');
-    expect(mocked.projectCardMenuProps).toHaveBeenCalledWith(
-      expect.objectContaining({
-        canPause: true,
-        editHref: '/projects?panel=project-edit&projectKey=RCNT',
-        pauseFormId: 'pause-project-project-1',
-        projectId: 'project-1',
-        projectName: 'Recent Project',
-      }),
-    );
-    expect(mocked.projectCardMenuProps).toHaveBeenCalledWith(
-      expect.objectContaining({
-        canPause: false,
-        editHref: '/projects?panel=project-edit&projectKey=PAUS',
-        pauseFormId: null,
-        projectId: 'project-5',
-        projectName: 'Paused Project',
-      }),
-    );
-    expect(mocked.projectCardWorklogSparklineProps).toHaveBeenCalledWith(
-      expect.objectContaining({
-        total: 6,
-        data: [
-          { date: '2026-03-08', count: 0 },
-          { date: '2026-03-09', count: 0 },
-          { date: '2026-03-10', count: 0 },
-          { date: '2026-03-11', count: 1 },
-          { date: '2026-03-12', count: 0 },
-          { date: '2026-03-13', count: 2 },
-          { date: '2026-03-14', count: 3 },
-        ],
-      }),
-    );
+    expect(html.indexOf('Newest Updated Active')).toBeLessThan(html.indexOf('Paused Recent'));
+    expect(html.indexOf('Paused Recent')).toBeLessThan(html.indexOf('Archived Recent'));
+    expect(html).toContain('data-project-card-tone="paused"');
+    expect(html).toContain('data-project-card-tone="archived"');
+    expect(html).toContain('Archived</span>');
   });
 
-  it('stacks the summary panel full-width and trims oversized project card min-heights', () => {
-    expect(projectsPageCss).toMatch(/\.topGrid\s*\{[\s\S]*grid-template-columns:\s*1fr;/);
-    expect(projectsPageCss).not.toMatch(
-      /\.topGrid\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\);/,
-    );
-    expect(projectsPageCss).toMatch(/\.projectCard\s*\{[\s\S]*min-height:\s*16rem;/);
-    expect(projectsPageCss).toMatch(
-      /\.projectCard\[data-project-card-slot='lead'\]\s*\{[\s\S]*min-height:\s*18rem;/,
-    );
-    expect(projectsPageCss).toMatch(
-      /\.projectCard\[data-project-card-slot='support'\]\s*\{[\s\S]*min-height:\s*18rem;/,
-    );
-    expect(projectsPageCss).toMatch(
-      /\.projectCard\[data-project-card-slot='quiet'\]\s*\{[\s\S]*min-height:\s*14rem;/,
-    );
-    expect(projectsPageCss).toMatch(
-      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.projectCard,[\s\S]*min-height:\s*16rem;/,
-    );
-  });
-
-  it('uses section and slot attributes instead of the old roster and radar helpers', () => {
-    expect(projectsPageSource).toContain('data-project-section="resume"');
-    expect(projectsPageSource).toContain('data-project-section="quiet"');
-    expect(projectsPageSource).toContain('data-portfolio-featured="true"');
-    expect(projectsPageSource).toContain('const featuredCard');
-    expect(projectsPageSource).not.toContain('Portfolio view');
-    expect(projectsPageSource).not.toContain(
-      'Active work stays up front. Quiet projects stay reachable without crowding the path back into motion.',
-    );
-    expect(projectPortfolioCardSource).toContain('data-project-card-slot={card.slot}');
-    expect(projectPortfolioCardSource).toContain(
-      'data-project-card-background={card.backgroundMode}',
-    );
-    expect(projectPortfolioCardSource).toContain('<div className={styles.cardHeader}>');
-    expect(projectPortfolioCardSource).toContain('<div className={styles.cardMeta}>');
-    expect(projectPortfolioCardSource).toContain('<ProjectCardWorklogSparkline');
-    expect(projectPortfolioCardSource).toContain('className={styles.cardLink}');
-    expect(projectPortfolioCardSource).toMatch(
-      /data-connectivity-status=\{connectionStatus\}[\s\S]*styles\.metaLabel[\s\S]*styles\.metaDivider[\s\S]*styles\.cardTitle/,
-    );
-    expect(projectPortfolioCardSource).toContain('canPause={!card.isPaused}');
-    expect(projectPortfolioCardSource).not.toContain('card.posture.reason');
-    expect(projectPortfolioCardSource).not.toContain('card.posture.label');
-    expect(projectPortfolioCardSource).not.toContain('styles.cardChip');
-    expect(projectPortfolioCardSource).not.toContain('styles.cardCopy');
-    expect(projectPortfolioCardSource).not.toContain('className={styles.cardDescription}');
-    expect(projectPortfolioCardSource).not.toContain('styles.actionRow');
-    expect(projectPortfolioCardSource).not.toContain('styles.boardLink');
-    expect(projectPortfolioCardSource).not.toContain('freshnessLabel');
-    expect(projectPortfolioCardSource).not.toContain('boardHref');
-    expect(projectPortfolioCardSource).not.toContain('statusLabel:');
-    expect(projectPortfolioCardSource).not.toContain('{card.statusLabel}');
-    expect(projectPortfolioCardSource).not.toContain('Details');
-    expect(projectsPageSource).not.toContain('Momentum Roster');
-    expect(projectsPageSource).not.toContain('Radar Matrix');
-    expect(projectsPageSource).not.toContain('RADAR_SECTIONS');
-    expect(projectsPageSource).not.toContain('getTrendHeights');
-  });
-
-  it('renders resume and quiet sections through Mantine SimpleGrid wrappers', async () => {
-    mocked.state.projects = [
-      {
-        id: 'project-1',
-        name: 'Active Project',
-        projectKey: 'ACTV',
-        description: null,
-        status: 'active',
-        updatedAt: new Date('2026-03-14T10:00:00Z'),
-        repoUrl: null,
-        vercelUrl: null,
-        bgImage: null,
-        bgImageCredit: null,
-        deletedAt: null,
-        projectSettings: [],
-      },
+  it('filters paused and archived projects from the project filter chips', async () => {
+    mocked.state.projects.push(
       {
         id: 'project-2',
-        name: 'Second Active Project',
-        projectKey: 'SCND',
-        description: null,
-        status: 'active',
+        name: 'Paused Project',
+        projectKey: 'PAUS',
+        description: 'Paused repo.',
+        status: 'paused',
         updatedAt: new Date('2026-03-13T12:00:00Z'),
-        repoUrl: null,
+        repoUrl: 'https://github.com/sonim1/paused-project',
         vercelUrl: null,
         bgImage: null,
         bgImageCredit: null,
@@ -628,70 +562,56 @@ describe('app/(workspace)/(main)/projects/page', () => {
       },
       {
         id: 'project-3',
-        name: 'Paused Project',
-        projectKey: 'PAUS',
-        description: null,
-        status: 'paused',
-        updatedAt: new Date('2026-03-13T10:00:00Z'),
-        repoUrl: null,
+        name: 'Archived Project',
+        projectKey: 'ARCH',
+        description: 'Archived repo.',
+        status: 'done',
+        updatedAt: new Date('2026-03-12T12:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/archived-project',
         vercelUrl: null,
         bgImage: null,
         bgImageCredit: null,
         deletedAt: null,
         projectSettings: [],
       },
-    ];
-    mocked.state.statusCounts = [];
-    mocked.state.latestWorkLogs = [];
-    mocked.state.projectActivityRows = [];
+    );
+
+    const pausedPage = await ProjectsPage({
+      searchParams: Promise.resolve({ status: 'paused' }),
+    });
+    const pausedHtml = renderToStaticMarkup(<MantineProvider>{pausedPage}</MantineProvider>);
+    expect(pausedHtml).toContain('value="paused"');
+    expect(pausedHtml).toContain('Paused Project');
+    expect(pausedHtml).not.toContain('PreqStation Core');
+    expect(pausedHtml).not.toContain('Archived Project');
+
+    mocked.state.groupedQueryIndex = 0;
+    const archivedPage = await ProjectsPage({
+      searchParams: Promise.resolve({ status: 'archived' }),
+    });
+    const archivedHtml = renderToStaticMarkup(<MantineProvider>{archivedPage}</MantineProvider>);
+    expect(archivedHtml).toContain('value="archived"');
+    expect(archivedHtml).toContain('Archived Project');
+    expect(archivedHtml).not.toContain('PreqStation Core');
+    expect(archivedHtml).not.toContain('Paused Project');
+  });
+
+  it('marks the agent status indicator inactive when no agents are running or queued', async () => {
+    mocked.state.runStateCounts = [];
 
     const page = await ProjectsPage();
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
-    const resumeIndex = html.indexOf('data-project-section="resume"');
-    const quietIndex = html.indexOf('data-project-section="quiet"');
-    const resumeSectionHtml = html.slice(resumeIndex, quietIndex);
-    const quietSectionHtml = html.slice(quietIndex);
 
-    expect(resumeSectionHtml).toContain('data-simple-grid="true"');
-    expect(resumeSectionHtml).toContain('data-cols-base="1"');
-    expect(resumeSectionHtml).toContain('data-cols-sm="2"');
-    expect(resumeSectionHtml).toContain('data-cols-lg="3"');
-    expect(resumeSectionHtml).toContain('data-cols-xl="4"');
-    expect(resumeSectionHtml).not.toContain('data-cols-md=');
-    expect(quietSectionHtml).toContain('data-simple-grid="true"');
-    expect(quietSectionHtml).toContain('data-cols-base="1"');
-    expect(quietSectionHtml).toContain('data-cols-sm="2"');
-    expect(quietSectionHtml).not.toContain('data-cols-md=');
-    expect(projectsPageSource).not.toContain('className={styles.mosaic}');
-    expect(projectsPageSource).not.toContain('className={styles.quietLane}');
-  });
-
-  it('keeps project metrics as a single mobile ribbon instead of stacking status cards', () => {
-    expect(projectPortfolioCardSource).toContain('<div className={styles.metricStrip}>');
-    expect(projectPortfolioCardSource).toMatch(
-      /card\.openLabel[\s\S]*card\.openTaskCount[\s\S]*card\.readyLabel[\s\S]*card\.readyCount[\s\S]*card\.holdLabel[\s\S]*card\.holdCount/,
-    );
+    expect(html).toContain('data-active="false">0 agents running');
     expect(projectsPageCss).toMatch(
-      /\.metricStrip\s*\{[\s\S]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\);/,
-    );
-    expect(projectsPageCss).toMatch(
-      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metricStrip\s*\{[\s\S]*gap:\s*0\.4rem;/,
-    );
-    expect(projectsPageCss).toMatch(
-      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metric\s*\{[\s\S]*padding:\s*0\.5rem 0\.55rem;/,
-    );
-    expect(projectsPageCss).toMatch(
-      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metricValue\s*\{[\s\S]*font-size:\s*0\.95rem;/,
-    );
-    expect(projectsPageCss).not.toMatch(
-      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.metricStrip\s*\{[\s\S]*grid-template-columns:/,
+      /\.agentStatus\[data-active=['"]false['"]\]::before\s*\{[\s\S]*display:\s*none;/,
     );
   });
 
   it('pauses a project in place from the projects route', async () => {
     mocked.updateProject.mockResolvedValue({
       ok: true,
-      data: { id: 'project-1', projectKey: 'PROJ', changed: true },
+      data: { id: 'project-1', projectKey: 'PREQ', changed: true },
     });
 
     const page = await ProjectsPage();
@@ -708,99 +628,37 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectsPageSource).toContain("action: 'project.updated'");
   });
 
-  it('keeps /projects wrappers shrink-safe after the SimpleGrid swap', () => {
-    expect(projectsPageCss).toMatch(/\.topGrid\s*\{[^}]*min-width:\s*0;/);
-    expect(projectsPageCss).toMatch(/\.topSection\s*\{[^}]*min-width:\s*0;/);
-    expect(projectsPageCss).toMatch(/\.portfolioSection\s*\{[^}]*min-width:\s*0;/);
-    expect(projectsPageCss).toMatch(/\.resumeGrid\s*\{[^}]*min-width:\s*0;/);
-    expect(projectsPageCss).toMatch(/\.quietGrid\s*\{[^}]*min-width:\s*0;/);
-    expect(projectsPageCss).toContain('--card-image');
-    expect(projectsPageCss).toMatch(/\.projectCard::before\s*\{[\s\S]*linear-gradient\(/);
-    expect(projectsPageCss).not.toMatch(/\.mosaic\s*\{/);
-    expect(projectsPageCss).not.toMatch(/\.quietLane\s*\{/);
-    expect(projectsPageCss).not.toMatch(/grid-column:\s*span\s+(7|5|4);/);
-  });
-
   it('deletes project-owned labels alongside tasks and work logs', () => {
     expect(projectsPageSource).toContain('.delete(taskLabels)');
     expect(projectsPageSource).toContain('deletedLabels');
   });
 
-  it('renders when grouped work logs return timestamp strings', async () => {
-    mocked.state.projects = [
-      {
-        id: 'project-1',
-        name: 'String Timestamp Project',
-        projectKey: 'STRG',
-        description: null,
-        status: 'active',
-        updatedAt: new Date('2026-02-01T10:00:00Z'),
-        repoUrl: null,
-        vercelUrl: null,
-        bgImage: null,
-        bgImageCredit: null,
-        deletedAt: null,
-        projectSettings: [],
-      },
-    ];
-    mocked.state.statusCounts = [{ projectId: 'project-1', status: 'todo', _count: { id: 1 } }];
-    mocked.state.latestWorkLogs = [
-      { projectId: 'project-1', lastWorkedAt: '2026-03-14T12:00:00.000Z' },
-    ];
-
-    const page = await ProjectsPage();
-    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
-
-    expect(html).toContain('String Timestamp Project');
-    expect(html).toContain('data-tone="steady"');
-    expect(html).not.toMatch(/>steady</);
-    expect(html).not.toContain('low drag');
-    expect(html).not.toContain('needs nudge');
-    expect(html).toContain('data-project-card-slot="lead"');
-    expect(html).toContain('data-total="0"');
-  });
-
-  it('uses kitchen terminology for open task copy when kitchen mode is enabled', async () => {
-    mocked.getUserSetting.mockResolvedValue('true');
-
-    const page = await ProjectsPage();
-    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
-
-    expect(html).toContain('Open Tickets');
-    expect(html).not.toContain('Open Tasks');
-  });
-
-  it('keeps project edit on the roster page and opens the modal from the projects route', async () => {
+  it('keeps project edit on the projects route', async () => {
     const page = await ProjectsPage({
-      searchParams: Promise.resolve({ panel: 'project-edit', projectKey: 'proj' }),
+      searchParams: Promise.resolve({ panel: 'project-edit', projectKey: 'PREQ' }),
     });
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
 
     expect(mocked.projectCardMenuProps).toHaveBeenCalledWith(
       expect.objectContaining({
-        editHref: '/projects?panel=project-edit&projectKey=PROJ',
+        editHref: '/projects?panel=project-edit&projectKey=PREQ',
       }),
     );
     expect(html).toContain('data-testid="task-panel-modal"');
     expect(html).toContain('data-title="Edit Project"');
     expect(html).toContain('data-close-href="/projects"');
-    expect(html).toContain(
-      'data-fullscreen-storage-key="preqstation:project-edit-panel:fullscreen:v1"',
-    );
-    expect(html).toContain('data-resizable-storage-key="preqstation:project-edit-panel:size:v1"');
     expect(html).toContain('data-testid="project-edit-panel"');
-    expect(html).toContain('data-project-name="Project One"');
-    expect(html).not.toContain('/dashboard?panel=project-edit');
+    expect(html).toContain('data-project-name="PreqStation Core"');
   });
 
-  it('updates the selected roster project in place without redirecting to the dashboard', async () => {
+  it('updates the selected project in place without redirecting to the dashboard', async () => {
     mocked.updateProject.mockResolvedValue({
       ok: true,
-      data: { id: 'project-1', projectKey: 'PROJ', changed: true },
+      data: { id: 'project-1', projectKey: 'PREQ', changed: true },
     });
 
     const page = await ProjectsPage({
-      searchParams: Promise.resolve({ panel: 'project-edit', projectKey: 'proj' }),
+      searchParams: Promise.resolve({ panel: 'project-edit', projectKey: 'PREQ' }),
     });
     renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
 
@@ -809,28 +667,28 @@ describe('app/(workspace)/(main)/projects/page', () => {
     };
     const formData = new FormData();
     formData.set('projectId', 'project-1');
-    formData.set('name', 'Project One Updated');
+    formData.set('name', 'PreqStation Updated');
     formData.set('status', 'active');
     formData.set('priority', '3');
     formData.set('descriptionMd', 'Updated');
     formData.set('bgImage', 'mountains');
     formData.set('bgImageCredit', '');
-    formData.set('repoUrl', 'https://github.com/example/project-one');
-    formData.set('vercelUrl', 'https://project-one.vercel.app');
+    formData.set('repoUrl', 'https://github.com/sonim1/preqstation');
+    formData.set('vercelUrl', 'https://preqstation.vercel.app');
 
     const result = await projectEditPanelProps.updateProjectAction(null, formData);
 
     expect(mocked.updateProject).toHaveBeenCalledWith({
       ownerId: 'owner-1',
       projectId: 'project-1',
-      name: 'Project One Updated',
+      name: 'PreqStation Updated',
       status: 'active',
       priority: 3,
       descriptionMd: 'Updated',
       bgImage: 'mountains',
       bgImageCredit: '',
-      repoUrl: 'https://github.com/example/project-one',
-      vercelUrl: 'https://project-one.vercel.app',
+      repoUrl: 'https://github.com/sonim1/preqstation',
+      vercelUrl: 'https://preqstation.vercel.app',
     });
     expect(mocked.writeAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -838,15 +696,48 @@ describe('app/(workspace)/(main)/projects/page', () => {
         action: 'project.updated',
         targetType: 'project',
         targetId: 'project-1',
-        meta: { projectKey: 'PROJ' },
+        meta: { projectKey: 'PREQ' },
       }),
       mocked.db,
     );
-    expect(mocked.revalidatePath).toHaveBeenCalledWith('/project/PROJ');
+    expect(mocked.revalidatePath).toHaveBeenCalledWith('/project/PREQ');
     expect(mocked.revalidatePath).toHaveBeenCalledWith('/projects');
     expect(mocked.revalidatePath).toHaveBeenCalledWith('/dashboard');
-    expect(mocked.revalidatePath).toHaveBeenCalledWith('/board/PROJ');
+    expect(mocked.revalidatePath).toHaveBeenCalledWith('/board/PREQ');
     expect(mocked.redirect).not.toHaveBeenCalled();
     expect(result).toEqual({ ok: true });
+  });
+
+  it('keeps the roster CSS compact and avoids the old image portfolio treatment', () => {
+    expect(projectsPageCss).toMatch(/\.activityPanel\s*\{/);
+    expect(projectsPageCss).toMatch(/\.activityBarChart\s*\{/);
+    expect(projectsPageCss).toMatch(/grid-template-columns:\s*repeat\(30,\s*minmax\(0,\s*1fr\)\);/);
+    expect(projectsPageCss).toMatch(
+      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.activityBarChart\s*\{[\s\S]*grid-template-columns:\s*repeat\(7,\s*minmax\(0,\s*1fr\)\);/,
+    );
+    expect(projectsPageCss).toMatch(
+      /\.activityBarWrap\[data-projects-activity-mobile-hidden=['"]true['"]\]\s*\{[\s\S]*display:\s*none;/,
+    );
+    expect(projectsPageCss).toMatch(
+      /\.activityRangeMobile\s*\{[\s\S]*display:\s*none;[\s\S]*@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.activityRangeDesktop\s*\{[\s\S]*display:\s*none;/,
+    );
+    expect(projectsPageCss).toMatch(/\.activityBarWrap:hover\s+\.activityTooltip/);
+    expect(projectsPageCss).toMatch(/height:\s*var\(--activity-bar-height\);/);
+    expect(projectsPageCss).toMatch(/\.activityBar\s*\{[\s\S]*max-width:\s*none;/);
+    expect(projectsPageCss).not.toContain('max-width: 1.35rem;');
+    expect(projectsPageCss).not.toContain('max-width: 0.85rem;');
+    expect(projectsPageCss).toMatch(/\.rosterGrid\s*\{[\s\S]*min-width:\s*0;/);
+    expect(projectsPageCss).toMatch(/\.projectCard\s*\{[\s\S]*min-height:\s*13rem;/);
+    expect(projectsPageCss).toMatch(/\.cardInner\s*\{[\s\S]*pointer-events:\s*none;/);
+    expect(projectsPageCss).toMatch(/\.projectCard\[data-project-card-tone=['"]archived['"]\]/);
+    expect(projectsPageCss).toMatch(/\.projectCard\[data-project-card-tone=['"]paused['"]\]/);
+    expect(projectsPageCss).not.toContain('--card-image');
+    expect(projectsPageCss).not.toMatch(/\.projectCard::before\s*\{/);
+    expect(projectPortfolioCardSource).toContain('data-project-roster-card="true"');
+    expect(projectPortfolioCardSource).toContain('card.isArchived');
+    expect(projectPortfolioCardSource).toContain('card.runningCount');
+    expect(projectPortfolioCardSource).toContain('card.queuedCount');
+    expect(projectPortfolioCardSource).toContain('card.doneCount');
+    expect(projectPortfolioCardSource).not.toContain('ProjectCardWorklogSparkline');
   });
 });

@@ -88,24 +88,43 @@ function buildWeeks(data: YearlyActivityDatum[]) {
   return weeks;
 }
 
-function buildMonthLabels(weeks: Array<Array<YearlyActivityDatum | null>>) {
-  return weeks.map((week, index) => {
+function buildMonthLabels(weeks: Array<Array<YearlyActivityDatum | null>>, firstDateKey?: string) {
+  if (!firstDateKey || weeks.length === 0) {
+    return weeks.map(() => '');
+  }
+
+  const firstDate = new Date(`${firstDateKey}T00:00:00.000Z`);
+  const firstWeekStart = getStartOfWeek(firstDate);
+
+  return weeks.map((_, index) => {
     if (index === 0) {
-      const firstDay = week.find((entry) => entry !== null);
-      return firstDay ? getMonthLabel(firstDay.date) : '';
+      return getMonthLabel(firstDateKey);
     }
 
-    const monthStart = week.find((entry) => entry && entry.date.endsWith('-01'));
-    return monthStart ? getMonthLabel(monthStart.date) : '';
+    const weekStart = new Date(firstWeekStart);
+    weekStart.setUTCDate(firstWeekStart.getUTCDate() + index * 7);
+
+    for (const cursor = new Date(weekStart); cursor <= getEndOfWeek(weekStart); ) {
+      if (cursor.getUTCDate() === 1) {
+        return getMonthLabel(toDateKey(cursor));
+      }
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    return '';
   });
 }
 
 export function DashboardYearlyHeatmap({
   data,
   panelClassName,
+  title = 'Current Year Activity',
+  description,
 }: {
   data: YearlyActivityDatum[];
   panelClassName?: string;
+  title?: string;
+  description?: string;
 }) {
   const rootClassName = [panelStyles.sectionPanel, panelClassName, classes.panel]
     .filter(Boolean)
@@ -114,18 +133,19 @@ export function DashboardYearlyHeatmap({
   const year = sortedData[0]?.date.slice(0, 4) ?? String(new Date().getFullYear());
   const totalLogs = sortedData.reduce((sum, day) => sum + day.count, 0);
   const weeks = buildWeeks(sortedData);
-  const monthLabels = buildMonthLabels(weeks);
+  const monthLabels = buildMonthLabels(weeks, sortedData[0]?.date);
 
   return (
     <Paper withBorder radius="lg" p={{ base: 'md', sm: 'lg' }} className={rootClassName}>
       <Stack gap="md" data-yearly-heatmap="true">
         <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
           <Stack gap={4}>
-            <Title order={4}>Current Year Activity</Title>
+            <Title order={4}>{title}</Title>
             <Text size="sm" c="dimmed">
-              {totalLogs > 0
-                ? `${totalLogs} work log${totalLogs === 1 ? '' : 's'} across ${sortedData.length} days so far.`
-                : 'No work logs yet this year.'}
+              {description ??
+                (totalLogs > 0
+                  ? `${totalLogs} work log${totalLogs === 1 ? '' : 's'} across ${sortedData.length} days so far.`
+                  : 'No work logs yet this year.')}
             </Text>
           </Stack>
           <Badge variant="light" color="gray" size="sm" radius="sm">

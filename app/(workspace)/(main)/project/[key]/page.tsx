@@ -17,6 +17,7 @@ import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { notFound, redirect } from 'next/navigation';
 
+import { DashboardYearlyHeatmap } from '@/app/components/dashboard-yearly-heatmap';
 import { EmptyState } from '@/app/components/empty-state';
 import { LinkButton } from '@/app/components/link-button';
 import { MarkdownViewer } from '@/app/components/markdown-viewer';
@@ -47,9 +48,10 @@ import { listProjectTaskLabels, listProjectTaskLabelUsageCounts } from '@/lib/ta
 import { normalizeTaskLabelColor, parseTaskLabelColor } from '@/lib/task-meta';
 import { resolveTerminology } from '@/lib/terminology';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
-import { listWorkLogsPage } from '@/lib/work-log-list';
+import { listProjectWorkLogYearActivity, listWorkLogsPage } from '@/lib/work-log-list';
 import { PROJECT_WORK_LOG_PAGE_SIZE } from '@/lib/work-log-pagination';
 
+import styles from './project-detail-page.module.css';
 import { ProjectSectionAnchorOffset } from './project-section-anchor-offset';
 
 type ProjectDetailPageProps = {
@@ -82,6 +84,10 @@ function toValidDate(value: Date | string | null | undefined) {
 function formatUtcDate(value: Date | string | null | undefined) {
   const parsed = toValidDate(value);
   return parsed ? parsed.toISOString().slice(0, 10) : null;
+}
+
+function formatCountLabel(count: number, singular: string, plural: string) {
+  return `${count} ${count === 1 ? singular : plural}`;
 }
 
 function joinWithAnd(values: string[]) {
@@ -118,41 +124,58 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   );
   if (!resolved) notFound();
 
-  const [project, kitchenMode, todos, rawLabels, labelUsageCounts, projectWorkLogPage] =
-    await withOwnerDb(owner.id, async (client) =>
-      Promise.all([
-        client.query.projects.findFirst({
-          where: and(
-            eq(projects.id, resolved.id),
-            eq(projects.ownerId, owner.id),
-            isNull(projects.deletedAt),
-          ),
-          with: {
-            projectSettings: {
-              columns: { key: true, value: true },
-            },
+  const [
+    project,
+    kitchenMode,
+    todos,
+    rawLabels,
+    labelUsageCounts,
+    projectWorkLogPage,
+    projectWorkLogYearActivity,
+  ] = await withOwnerDb(owner.id, async (client) => {
+    const timeZonePromise = getUserSetting(owner.id, SETTING_KEYS.TIMEZONE, client);
+
+    return Promise.all([
+      client.query.projects.findFirst({
+        where: and(
+          eq(projects.id, resolved.id),
+          eq(projects.ownerId, owner.id),
+          isNull(projects.deletedAt),
+        ),
+        with: {
+          projectSettings: {
+            columns: { key: true, value: true },
           },
-        }),
-        getUserSetting(owner.id, SETTING_KEYS.KITCHEN_MODE, client),
-        client.query.tasks.findMany({
-          where: and(eq(tasks.ownerId, owner.id), eq(tasks.projectId, resolved.id)),
-          orderBy: [asc(tasks.status), asc(tasks.sortOrder), desc(tasks.createdAt)],
-          with: {
-            label: {
-              columns: { id: true, name: true, color: true },
-            },
+        },
+      }),
+      getUserSetting(owner.id, SETTING_KEYS.KITCHEN_MODE, client),
+      client.query.tasks.findMany({
+        where: and(eq(tasks.ownerId, owner.id), eq(tasks.projectId, resolved.id)),
+        orderBy: [asc(tasks.status), asc(tasks.sortOrder), desc(tasks.createdAt)],
+        with: {
+          label: {
+            columns: { id: true, name: true, color: true },
           },
-        }),
-        listProjectTaskLabels(owner.id, resolved.id, client),
-        listProjectTaskLabelUsageCounts(owner.id, resolved.id, client),
-        listWorkLogsPage({
+        },
+      }),
+      listProjectTaskLabels(owner.id, resolved.id, client),
+      listProjectTaskLabelUsageCounts(owner.id, resolved.id, client),
+      listWorkLogsPage({
+        ownerId: owner.id,
+        projectId: resolved.id,
+        limit: PROJECT_WORK_LOG_PAGE_SIZE,
+        client,
+      }),
+      timeZonePromise.then((timeZone) =>
+        listProjectWorkLogYearActivity({
           ownerId: owner.id,
           projectId: resolved.id,
-          limit: PROJECT_WORK_LOG_PAGE_SIZE,
+          timeZone,
           client,
         }),
-      ]),
-    );
+      ),
+    ]);
+  });
 
   const labelUsageCountById = new Map(
     labelUsageCounts.map((row) => [row.labelId, row.usageCount] as const),
@@ -179,6 +202,9 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
     (t) =>
       t.status === 'inbox' || t.status === 'todo' || t.status === 'hold' || t.status === 'ready',
   ).length;
+  const runningTaskCount = todos.filter((t) => t.runState === 'running').length;
+  const queuedTaskCount = todos.filter((t) => t.runState === 'queued').length;
+  const doneTaskCount = todos.filter((t) => t.status === 'done').length;
   const openTaskLabel = openTaskCount === 1 ? terminology.task.singular : terminology.task.plural;
 
   const agentInstructions = resolveAgentInstructions(project.projectSettings);
@@ -187,6 +213,10 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   const hasAgentInstructions = trimmedAgentInstructions.length > 0;
   const hasRepo = Boolean(project.repoUrl);
   const latestWorkLog = projectWorkLogPage.workLogs[0] ?? null;
+  const currentYearWorkLogCount = projectWorkLogYearActivity.reduce(
+    (sum, day) => sum + day.count,
+    0,
+  );
   const lastWorkedAt = toValidDate(latestWorkLog?.workedAt);
   const lastProjectUpdate = toValidDate(project.updatedAt);
   const activityStatus = getProjectActivityStatus({
@@ -562,16 +592,17 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           withBorder
           radius="lg"
           p={{ base: 'md', sm: 'xl' }}
-          className={panelStyles.heroPanel}
+          className={`${panelStyles.heroPanel} ${styles.detailHero}`}
+          data-project-detail-roster="true"
         >
           <Stack gap="lg">
             <Group justify="space-between" align="flex-start" wrap="wrap">
               <div>
                 <Title order={2} size="h3">
-                  {project.name}
+                  {`Project roster · ${projectKey.toUpperCase()}`}
                 </Title>
                 <Badge mt={6} variant="outline" color="indigo" w="fit-content">
-                  Key {projectKey.toUpperCase()}
+                  {project.name}
                 </Badge>
                 <Text c="dimmed" size="sm">
                   Project detail and delivery status
@@ -588,6 +619,25 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 <ProjectHeroMenu workLogHref={newWorkLogHref} editProjectHref={editProjectHref} />
               </Group>
             </Group>
+
+            <div className={styles.detailMetrics} data-project-detail-metrics="true">
+              <div className={styles.detailMetric}>
+                <strong>{openTaskCount}</strong>
+                <span>OPEN</span>
+              </div>
+              <div className={styles.detailMetric}>
+                <strong>{runningTaskCount}</strong>
+                <span>RUNNING</span>
+              </div>
+              <div className={styles.detailMetric}>
+                <strong>{queuedTaskCount}</strong>
+                <span>QUEUED</span>
+              </div>
+              <div className={styles.detailMetric}>
+                <strong>{doneTaskCount}</strong>
+                <span>DONE · 7D</span>
+              </div>
+            </div>
 
             <Paper
               withBorder
@@ -937,17 +987,25 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               </div>
             </Group>
 
-            <Paper
-              withBorder
-              radius="lg"
-              p={{ base: 'md', sm: 'lg' }}
-              className={panelStyles.sectionPanel}
-            >
-              <Title order={4} mb="sm">
-                {`${terminology.task.singular} Pipeline`}
-              </Title>
-              <TaskStatusBar tasks={todos} boardHref={boardHref} newTaskHref={newTaskHref} />
-            </Paper>
+            <div className={styles.activityEvidence} data-project-detail-activity-panel="true">
+              <DashboardYearlyHeatmap
+                data={projectWorkLogYearActivity}
+                title="Activity evidence"
+                description={`${formatCountLabel(todos.length, 'total task', 'total tasks')} · ${formatCountLabel(currentYearWorkLogCount, 'work log this year', 'work logs this year')}`}
+              />
+
+              <Paper
+                withBorder
+                radius="lg"
+                p={{ base: 'md', sm: 'lg' }}
+                className={`${panelStyles.sectionPanel} ${styles.pipelinePanel}`}
+              >
+                <Title order={4} mb="sm">
+                  {`${terminology.task.singular} pipeline evidence`}
+                </Title>
+                <TaskStatusBar tasks={todos} boardHref={boardHref} newTaskHref={newTaskHref} />
+              </Paper>
+            </div>
 
             <Paper
               withBorder
