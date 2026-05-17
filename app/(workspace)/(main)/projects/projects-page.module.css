@@ -33,6 +33,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
+  margin: 0;
   min-width: 0;
   color: var(--ui-text);
   font-size: 0.88rem;
@@ -250,7 +251,7 @@ button.filterChip {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--ui-border), transparent 12%);
   border-radius: 0.55rem;
-  background: color-mix(in srgb, var(--ui-surface-panel), var(--ui-surface-strong) 18%);
+  background: var(--ui-surface-elevated);
   box-shadow: var(--ui-elevation-1);
 }
 

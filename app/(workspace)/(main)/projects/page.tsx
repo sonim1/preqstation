@@ -1,4 +1,4 @@
-import { Container, SimpleGrid, Stack, TextInput } from '@mantine/core';
+import { Container, SimpleGrid, Stack, TextInput, Title } from '@mantine/core';
 import { IconActivity, IconFolderPlus, IconSearch } from '@tabler/icons-react';
 import { and, desc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
@@ -649,7 +649,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
 
           <section className={styles.activityPanel}>
             <div className={styles.activityHeader}>
-              <span className={styles.activityTitle}>
+              <Title component="h2" order={3} className={styles.activityTitle}>
                 <IconActivity size={16} />
                 Workspace activity
                 <span aria-hidden="true">·</span>
@@ -659,7 +659,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
                 <span>
                   {totalProjectCount} project{totalProjectCount === 1 ? '' : 's'}
                 </span>
-              </span>
+              </Title>
               <span className={styles.activityMeta}>
                 <strong>{workspaceActivityTotal}</strong> logs
                 <span>{workspacePeakLabel}</span>
