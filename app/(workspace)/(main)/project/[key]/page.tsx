@@ -73,7 +73,14 @@ type ProjectDetailPageProps = {
   searchParams?: Promise<{ panel?: string }>;
 };
 
-type ProjectDetailStatusTone = 'active' | 'archived' | 'live' | 'paused' | 'queued' | 'stale';
+type ProjectDetailStatusTone =
+  | 'active'
+  | 'archived'
+  | 'at-risk'
+  | 'live'
+  | 'paused'
+  | 'queued'
+  | 'stale';
 
 function projectStatusBadge(status: string) {
   if (!isProjectStatus(status)) {
@@ -101,7 +108,8 @@ function getProjectDetailStatusTone({
   if (projectStatus === PAUSED_PROJECT_STATUS || activityStatus === 'inactive') return 'paused';
   if (runningTaskCount > 0) return 'live';
   if (queuedTaskCount > 0) return 'queued';
-  if (activityStatus === 'critical' || activityStatus === 'warning') return 'stale';
+  if (activityStatus === 'critical') return 'stale';
+  if (activityStatus === 'warning') return 'at-risk';
   return 'active';
 }
 

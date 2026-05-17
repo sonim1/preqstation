@@ -450,6 +450,38 @@ describe('project detail page', () => {
     expect(html).not.toContain('data-project-status-tone="active"');
   });
 
+  it('uses the at-risk detail tone when active projects have warning activity', async () => {
+    mocked.listWorkLogsPage.mockResolvedValueOnce({
+      workLogs: [
+        {
+          id: 'log-1',
+          title: 'Recent project activity',
+          detail: null,
+          engine: 'codex',
+          workedAt: new Date('2026-04-22T12:00:00.000Z'),
+        },
+      ],
+      nextOffset: null,
+    });
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-27T12:00:00.000Z'));
+
+    let html = '';
+    try {
+      html = renderToStaticMarkup(
+        await ProjectDetailPage({
+          params: Promise.resolve({ key: 'PROJ' }),
+        }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(html).toContain('data-project-status-tone="at-risk"');
+    expect(html).not.toContain('data-project-status-tone="stale"');
+  });
+
   it('keeps detail content focused on activity with configuration in edit details', async () => {
     const html = renderToStaticMarkup(
       await ProjectDetailPage({

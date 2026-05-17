@@ -43,6 +43,11 @@
   --project-detail-status-glow: var(--ui-status-queued-border);
 }
 
+.detailStatusDot[data-project-status-tone='at-risk'] {
+  --project-detail-status-color: var(--ui-warning);
+  --project-detail-status-glow: var(--ui-warning-soft);
+}
+
 .detailStatusDot[data-project-status-tone='stale'] {
   --project-detail-status-color: var(--ui-danger);
   --project-detail-status-glow: var(--ui-danger-soft);

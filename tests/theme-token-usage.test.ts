@@ -167,6 +167,11 @@ describe('theme token usage audit fixes', () => {
             class="detailStatusDot"
             data-project-status-tone="queued"
           ></span>
+          <span
+            data-testid="detail-status-at-risk"
+            class="detailStatusDot"
+            data-project-status-tone="at-risk"
+          ></span>
           <article data-testid="detail-metric" class="detailMetric"></article>
         </section>
       `,
@@ -185,6 +190,10 @@ describe('theme token usage audit fixes', () => {
     expectComputedProperties(dom, 'detail-status-queued', {
       '--project-detail-status-color': 'var(--ui-status-queued)',
       '--project-detail-status-glow': 'var(--ui-status-queued-border)',
+    });
+    expectComputedProperties(dom, 'detail-status-at-risk', {
+      '--project-detail-status-color': 'var(--ui-warning)',
+      '--project-detail-status-glow': 'var(--ui-warning-soft)',
     });
     expectComputedProperties(dom, 'detail-metric', {
       background: 'var(--ui-surface-elevated)',
