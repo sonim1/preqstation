@@ -211,10 +211,6 @@ describe('command palette task helpers', () => {
   it('uses connections wording in the navigation group', () => {
     expect(commandPalette.resolveCommandPaletteActionGroups).toBeTypeOf('function');
 
-    if (!commandPalette.resolveCommandPaletteActionGroups) {
-      return;
-    }
-
     const groups = commandPalette.resolveCommandPaletteActionGroups({
       ...baseArgs,
       navigate: () => undefined,
@@ -232,6 +228,28 @@ describe('command palette task helpers', () => {
     );
     expect(navigationGroup?.actions).not.toEqual(
       expect.arrayContaining([expect.objectContaining({ label: 'API Keys' })]),
+    );
+  });
+
+  it('keeps board navigation wording aligned with the sidebar', () => {
+    expect(commandPalette.resolveCommandPaletteActionGroups).toBeTypeOf('function');
+
+    const groups = commandPalette.resolveCommandPaletteActionGroups({
+      ...baseArgs,
+      navigate: () => undefined,
+    });
+    const navigationGroup = groups.find((group) => group.group === 'Navigation');
+
+    expect(navigationGroup?.actions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'nav-board',
+          label: 'Boards',
+        }),
+      ]),
+    );
+    expect(navigationGroup?.actions).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: 'nav-board', label: 'Board' })]),
     );
   });
 });

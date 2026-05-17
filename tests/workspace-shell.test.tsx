@@ -1,7 +1,10 @@
+// @vitest-environment jsdom
+
 import fs from 'node:fs';
 import path from 'node:path';
 
 import { MantineProvider } from '@mantine/core';
+import { render, within } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -100,6 +103,21 @@ type RenderWorkspaceShellArgs =
     };
 
 function renderWorkspaceShell(args: RenderWorkspaceShellArgs) {
+  const options = prepareWorkspaceShellRender(args);
+
+  return renderToStaticMarkup(workspaceShellElement(options.projectOptions));
+}
+
+function renderWorkspaceShellDom(args: RenderWorkspaceShellArgs) {
+  const options = prepareWorkspaceShellRender(args);
+
+  ensureBrowserObservers();
+  ensureMatchMedia();
+
+  return render(workspaceShellElement(options.projectOptions));
+}
+
+function prepareWorkspaceShellRender(args: RenderWorkspaceShellArgs) {
   const defaultProjectOptions: WorkspaceProjectOption[] = [
     { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
   ];
@@ -124,11 +142,15 @@ function renderWorkspaceShell(args: RenderWorkspaceShellArgs) {
   usePathnameMock.mockReturnValue(options.pathname);
   useSyncExternalStoreMock.mockReturnValue(options.rememberedProjectKey);
 
-  return renderToStaticMarkup(
+  return options;
+}
+
+function workspaceShellElement(projectOptions: WorkspaceProjectOption[]) {
+  return (
     <MantineProvider>
       <WorkspaceShell
         email="owner@example.com"
-        projectOptions={options.projectOptions}
+        projectOptions={projectOptions}
         dashboardHref="/dashboard"
         projectsHref="/projects"
         kanbanHref="/board"
@@ -138,8 +160,63 @@ function renderWorkspaceShell(args: RenderWorkspaceShellArgs) {
       >
         <div>content</div>
       </WorkspaceShell>
-    </MantineProvider>,
+    </MantineProvider>
   );
+}
+
+function ensureMatchMedia() {
+  const testWindow = window as Window & { matchMedia?: Window['matchMedia'] };
+
+  if (typeof testWindow.matchMedia === 'function') {
+    return;
+  }
+
+  Object.defineProperty(testWindow, 'matchMedia', {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}
+
+function ensureBrowserObservers() {
+  const testGlobal = globalThis as typeof globalThis & {
+    ResizeObserver?: typeof ResizeObserver;
+  };
+
+  if (testGlobal.ResizeObserver) {
+    return;
+  }
+
+  class ResizeObserverStub {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  }
+
+  Object.defineProperty(testGlobal, 'ResizeObserver', {
+    writable: true,
+    value: ResizeObserverStub,
+  });
+}
+
+function getWorkspaceNavbar(container: HTMLElement) {
+  const navbar = container.querySelector<HTMLElement>('.workspace-navbar');
+
+  expect(navbar).not.toBeNull();
+
+  return navbar as HTMLElement;
+}
+
+function expectBefore(first: Element, second: Element) {
+  expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 }
 
 describe('app/components/workspace-shell', () => {
@@ -310,17 +387,33 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('renders boards beneath the boards nav entry on desktop', () => {
-    const html = renderWorkspaceShell({ desktopOpened: true });
-    const navHtml = html.slice(html.indexOf('workspace-navbar'));
-    const dashboardIndex = navHtml.indexOf('Dashboard');
-    const projectsIndex = navHtml.indexOf('Projects');
-    const boardIndex = navHtml.indexOf('Boards');
-    const alphaIndex = navHtml.indexOf('Alpha');
+    const { container } = renderWorkspaceShellDom({ desktopOpened: true });
+    const navbar = within(getWorkspaceNavbar(container));
+    const dashboardLink = navbar.getByRole('link', { name: 'Dashboard' });
+    const projectsLink = navbar.getByRole('link', { name: 'Projects' });
+    const boardsLink = navbar.getByRole('link', { name: 'Boards' });
+    const alphaBoardLink = navbar.getByRole('link', { name: 'Alpha' });
 
-    expect(dashboardIndex).toBeGreaterThan(-1);
-    expect(projectsIndex).toBeGreaterThan(dashboardIndex);
-    expect(boardIndex).toBeGreaterThan(projectsIndex);
-    expect(alphaIndex).toBeGreaterThan(boardIndex);
+    expectBefore(dashboardLink, projectsLink);
+    expectBefore(projectsLink, boardsLink);
+    expectBefore(boardsLink, alphaBoardLink);
+  });
+
+  it('groups primary workspace links separately from management links', () => {
+    const { container } = renderWorkspaceShellDom({ desktopOpened: true });
+    const navbar = within(getWorkspaceNavbar(container));
+    const workspaceHeading = navbar.getByRole('heading', { level: 2, name: 'Workspace' });
+    const dashboardLink = navbar.getByRole('link', { name: 'Dashboard' });
+    const boardsLink = navbar.getByRole('link', { name: 'Boards' });
+    const manageHeading = navbar.getByRole('heading', { level: 2, name: 'Manage' });
+    const settingsLink = navbar.getByRole('link', { name: 'Settings' });
+    const connectionsLink = navbar.getByRole('link', { name: 'Connections' });
+
+    expectBefore(workspaceHeading, dashboardLink);
+    expectBefore(dashboardLink, boardsLink);
+    expectBefore(boardsLink, manageHeading);
+    expectBefore(manageHeading, settingsLink);
+    expectBefore(settingsLink, connectionsLink);
   });
 
   it('renders only active boards in the desktop board list', () => {
@@ -514,6 +607,27 @@ describe('app/components/workspace-shell', () => {
       /\.workspace-nav-link:not\(\.workspace-board-subnav-link\):focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*background:\s*var\(--ui-accent-soft\);[\s\S]*color:\s*var\(--ui-text\);[\s\S]*box-shadow:/,
     );
     expect(globalsCss).not.toMatch(/\.workspace-nav-link:focus-visible\s*\{/);
+  });
+
+  it('applies grouped nav label and top-level nav link hooks in the rendered sidebar', () => {
+    const { container } = renderWorkspaceShellDom({ desktopOpened: true });
+    const navbar = within(getWorkspaceNavbar(container));
+    const sectionHeadings = navbar.getAllByRole('heading', { level: 2 });
+
+    expect(sectionHeadings.map((heading) => heading.textContent)).toEqual(['Workspace', 'Manage']);
+    sectionHeadings.forEach((heading) => {
+      expect(Array.from(heading.classList)).toContain('workspace-nav-section-label');
+    });
+    expect(globalsCss).toMatch(
+      /\.workspace-nav-section-label\s*\{[^}]*padding:\s*8px 12px 2px;[^}]*color:\s*var\(--ui-muted-text\);[^}]*font-size:\s*11px;[^}]*font-weight:\s*700;/,
+    );
+
+    ['Dashboard', 'Projects', 'Boards', 'Settings', 'Connections'].forEach((name) => {
+      const link = navbar.getByRole('link', { name });
+
+      expect(Array.from(link.classList)).toContain('workspace-nav-link');
+      expect(Array.from(link.classList)).not.toContain('workspace-board-subnav-link');
+    });
   });
 
   it('defines a shared focus-visible treatment for header and rail controls', () => {

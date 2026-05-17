@@ -279,8 +279,8 @@ export function resolveCommandPaletteActionGroups({
       },
       {
         id: 'nav-board',
-        label: 'Board',
-        description: 'Kanban board',
+        label: 'Boards',
+        description: 'Open boards',
         leftSection: <IconLayoutKanban size={18} />,
         onClick: () => navigate(kanbanHref),
       },
