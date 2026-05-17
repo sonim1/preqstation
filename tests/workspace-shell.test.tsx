@@ -323,6 +323,24 @@ describe('app/components/workspace-shell', () => {
     expect(alphaIndex).toBeGreaterThan(boardIndex);
   });
 
+  it('groups primary workspace links separately from management links', () => {
+    const html = renderWorkspaceShell({ desktopOpened: true });
+    const navHtml = html.slice(html.indexOf('workspace-navbar'));
+    const workspaceLabelIndex = navHtml.indexOf('Workspace');
+    const dashboardIndex = navHtml.indexOf('Dashboard');
+    const boardsIndex = navHtml.indexOf('Boards');
+    const manageLabelIndex = navHtml.indexOf('Manage');
+    const settingsIndex = navHtml.indexOf('Settings');
+    const connectionsIndex = navHtml.indexOf('Connections');
+
+    expect(workspaceLabelIndex).toBeGreaterThan(-1);
+    expect(dashboardIndex).toBeGreaterThan(workspaceLabelIndex);
+    expect(boardsIndex).toBeGreaterThan(dashboardIndex);
+    expect(manageLabelIndex).toBeGreaterThan(boardsIndex);
+    expect(settingsIndex).toBeGreaterThan(manageLabelIndex);
+    expect(connectionsIndex).toBeGreaterThan(settingsIndex);
+  });
+
   it('renders only active boards in the desktop board list', () => {
     const html = renderWorkspaceShell({
       desktopOpened: true,
@@ -514,6 +532,15 @@ describe('app/components/workspace-shell', () => {
       /\.workspace-nav-link:not\(\.workspace-board-subnav-link\):focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*background:\s*var\(--ui-accent-soft\);[\s\S]*color:\s*var\(--ui-text\);[\s\S]*box-shadow:/,
     );
     expect(globalsCss).not.toMatch(/\.workspace-nav-link:focus-visible\s*\{/);
+  });
+
+  it('styles grouped nav labels and keeps top-level nav targets at touch size', () => {
+    expect(globalsCss).toMatch(
+      /\.workspace-nav-section-label\s*\{[\s\S]*padding:\s*8px 12px 2px;[\s\S]*font-size:\s*11px;[\s\S]*font-weight:\s*700;[\s\S]*color:\s*var\(--ui-muted-text\);/,
+    );
+    expect(globalsCss).toMatch(
+      /\.workspace-nav-link:not\(\.workspace-board-subnav-link\)\s*\{[\s\S]*min-height:\s*var\(--ui-hit-touch-min\);/,
+    );
   });
 
   it('defines a shared focus-visible treatment for header and rail controls', () => {
