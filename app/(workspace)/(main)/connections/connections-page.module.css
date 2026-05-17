@@ -288,7 +288,6 @@
 
   .dataRow + .dataRow {
     margin-top: 10px;
-    border-top: 1px solid var(--ui-table-card-border);
   }
 
   .dataRowHeader,

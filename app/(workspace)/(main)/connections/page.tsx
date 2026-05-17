@@ -69,7 +69,7 @@ const STATUS_BADGE_STYLES: Record<StatusBadgeTone, CSSProperties> = {
   } as CSSProperties,
 };
 
-function getStatusBadgeStyle(status: string): CSSProperties {
+function getStatusBadgeStyle(status: DisplayStatus): CSSProperties {
   if (status === 'Revoked' || status === 'Expired') return STATUS_BADGE_STYLES.danger;
   if (status === 'Expiring Soon') return STATUS_BADGE_STYLES.warning;
   if (status === 'Active') return STATUS_BADGE_STYLES.success;
