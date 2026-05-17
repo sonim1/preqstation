@@ -395,7 +395,8 @@ describe('project detail page', () => {
     expect(html).toContain('OPEN');
     expect(html).toContain('RUNNING');
     expect(html).toContain('QUEUED');
-    expect(html).toContain('DONE · 7D');
+    expect(html).toContain('DONE');
+    expect(html).not.toContain('DONE · 7D');
     expect(html).toContain('data-testid="project-hero-menu"');
     expect(html).toContain('data-edit-project-href="/project/PROJ?panel=project-edit"');
     expect(html).toContain('data-work-log-href="/dashboard?panel=worklog&amp;projectId=project-1"');

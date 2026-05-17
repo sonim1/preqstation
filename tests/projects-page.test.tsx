@@ -369,7 +369,8 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('OPEN');
     expect(html).toContain('RUNNING');
     expect(html).toContain('QUEUED');
-    expect(html).toContain('DONE · 7D');
+    expect(html).toContain('DONE');
+    expect(html).not.toContain('DONE · 7D');
     expect(html).toContain('data-project-section="roster"');
     expect(html).not.toContain('data-portfolio-featured="true"');
     expect(html).not.toContain('Quiet edge');
@@ -449,7 +450,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).not.toContain('No matching projects');
   });
 
-  it('keeps active projects in recent-change order before paused and archived projects', async () => {
+  it('keeps active projects in recent-activity order before paused and archived projects', async () => {
     mocked.state.projects = [
       {
         id: 'project-1',
@@ -511,7 +512,9 @@ describe('app/(workspace)/(main)/projects/page', () => {
     mocked.state.runStateCounts = [
       { projectId: 'project-1', runState: 'running', _count: { id: 1 } },
     ];
-    mocked.state.latestWorkLogs = [];
+    mocked.state.latestWorkLogs = [
+      { projectId: 'project-1', lastWorkedAt: new Date('2026-03-15T12:00:00Z') },
+    ];
 
     const page = await ProjectsPage();
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
@@ -520,7 +523,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('Active 2');
     expect(html).toContain('Paused 1');
     expect(html).toContain('Archived 1');
-    expect(html.indexOf('Newest Active')).toBeLessThan(html.indexOf('Older Active'));
+    expect(html.indexOf('Older Active')).toBeLessThan(html.indexOf('Newest Active'));
     expect(html.indexOf('Older Active')).toBeLessThan(html.indexOf('Paused Recent'));
     expect(html.indexOf('Paused Recent')).toBeLessThan(html.indexOf('Archived Recent'));
     expect(html).toContain('data-project-card-tone="paused"');

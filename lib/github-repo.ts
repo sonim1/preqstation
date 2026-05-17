@@ -26,10 +26,34 @@ export function normalizeGithubRepoReference(value: string | null | undefined) {
   const httpsMatch = input.match(/^https:\/\/github\.com\/([^/]+)\/([^/#?]+)(?:[/?#].*)?$/iu);
   if (httpsMatch) return normalizeParts(httpsMatch[1] || '', httpsMatch[2] || '');
 
-  const sshMatch = input.match(/^(?:ssh:\/\/)?git@github\.com[:/]([^/]+)\/([^/#?]+)$/iu);
+  const sshMatch = input.match(/^(?:ssh:\/\/)?git@github\.com[:/]([^/]+)\/([^/#?]+?)(?:\/)?$/iu);
   if (sshMatch) return normalizeParts(sshMatch[1] || '', sshMatch[2] || '');
 
   return null;
+}
+
+export function githubRepoReferenceVariants(value: string | null | undefined) {
+  const repoId = normalizeGithubRepoReference(value);
+  if (!repoId) return [];
+
+  const githubUrl = `https://github.com/${repoId}`;
+  return Array.from(
+    new Set([
+      repoId,
+      githubUrl,
+      `${githubUrl}/`,
+      `${githubUrl}.git`,
+      `${githubUrl}.git/`,
+      `git@github.com:${repoId}`,
+      `git@github.com:${repoId}/`,
+      `git@github.com:${repoId}.git`,
+      `git@github.com:${repoId}.git/`,
+      `ssh://git@github.com/${repoId}`,
+      `ssh://git@github.com/${repoId}/`,
+      `ssh://git@github.com/${repoId}.git`,
+      `ssh://git@github.com/${repoId}.git/`,
+    ]),
+  );
 }
 
 export function githubRepoIdToUrl(value: string | null | undefined) {

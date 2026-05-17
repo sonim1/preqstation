@@ -390,7 +390,7 @@ describe('lib/actions/project-actions', () => {
     );
   });
 
-  it('updateProject rejects GitHub URLs for repo writes', async () => {
+  it('updateProject normalizes legacy GitHub URLs for repo writes', async () => {
     mocked.db.query.projects.findFirst.mockResolvedValue({
       id: PROJECT_ID,
       projectKey: 'PROJ',
@@ -407,15 +407,22 @@ describe('lib/actions/project-actions', () => {
     const result = await updateProject({
       ownerId: OWNER_ID,
       projectId: PROJECT_ID,
-      repoUrl: 'https://github.com/example/repo',
+      repoUrl: 'https://github.com/example/repo/',
     });
 
     expect(result).toEqual({
-      ok: false,
-      code: 'INVALID_INPUT',
-      message: 'GitHub repo must use owner/repo format.',
+      ok: true,
+      data: {
+        id: PROJECT_ID,
+        projectKey: 'PROJ',
+        changed: true,
+      },
     });
-    expect(mocked.db.update).not.toHaveBeenCalled();
+    expect(mocked.updateSetFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        repoUrl: 'example/repo',
+      }),
+    );
   });
 
   it('updateProject skips the database update when normalized integration values are unchanged', async () => {

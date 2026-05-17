@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import { projects, taskLabels } from '@/lib/db/schema';
 import type { DbClientOrTx } from '@/lib/db/types';
 import { getEngineConfig } from '@/lib/engine-icons';
-import { githubRepoIdToUrl, normalizeGithubRepoIdInput } from '@/lib/github-repo';
+import { githubRepoReferenceVariants } from '@/lib/github-repo';
 import {
   type ProjectSettingEntry,
   resolveAgentInstructions,
@@ -102,16 +102,8 @@ export async function resolveProjectByRepo(
   repo: string | null | undefined,
   client: DbClientOrTx = db,
 ) {
-  const normalizedRepo = normalizeGithubRepoIdInput(repo || '');
-  if (!normalizedRepo) return null;
-  const githubUrl = githubRepoIdToUrl(normalizedRepo);
-  const repoReferences = [
-    normalizedRepo,
-    githubUrl,
-    githubUrl ? `${githubUrl}.git` : null,
-    `git@github.com:${normalizedRepo}.git`,
-    `ssh://git@github.com/${normalizedRepo}.git`,
-  ].filter((value): value is string => Boolean(value));
+  const repoReferences = githubRepoReferenceVariants(repo);
+  if (repoReferences.length === 0) return null;
 
   const project = await client.query.projects.findFirst({
     where: and(

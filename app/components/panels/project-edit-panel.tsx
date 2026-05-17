@@ -8,6 +8,7 @@ import { useOfflineStatus } from '@/app/components/offline-status-provider';
 import { ProjectBackgroundPicker } from '@/app/components/project-background-picker';
 import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setting-save-status';
 import { useAutoSave } from '@/app/hooks/use-auto-save';
+import { normalizeGithubRepoReference } from '@/lib/github-repo';
 import { showErrorNotification } from '@/lib/notifications';
 import type { ProjectBackgroundCredit } from '@/lib/project-backgrounds';
 import { projectStatusOptionData } from '@/lib/project-meta';
@@ -186,7 +187,9 @@ export function ProjectEditPanel({ selectedProject, updateProjectAction }: Proje
           name="repoUrl"
           label="GitHub repo"
           placeholder="sonim1/preqstation-landingpage"
-          defaultValue={selectedProject.repoUrl || ''}
+          defaultValue={
+            normalizeGithubRepoReference(selectedProject.repoUrl) ?? selectedProject.repoUrl ?? ''
+          }
           onChange={markDirty}
           onBlur={() => triggerSave(0)}
         />

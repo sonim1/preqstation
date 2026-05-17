@@ -167,19 +167,27 @@ describe('serializePreqTask', () => {
 });
 
 describe('resolveProjectByRepo', () => {
-  it('rejects URL repo input before querying projects', async () => {
+  it('resolves a project from legacy URL repo input', async () => {
     const client = {
       query: {
         projects: {
-          findFirst: vi.fn(),
+          findFirst: vi.fn().mockResolvedValue({
+            id: 'project-1',
+            name: 'Example',
+            projectKey: 'EX',
+          }),
         },
       },
     };
 
     await expect(
-      resolveProjectByRepo('owner-1', 'https://github.com/example/repo', client as never),
-    ).resolves.toBeNull();
-    expect(client.query.projects.findFirst).not.toHaveBeenCalled();
+      resolveProjectByRepo('owner-1', 'https://github.com/example/repo/', client as never),
+    ).resolves.toEqual({
+      id: 'project-1',
+      name: 'Example',
+      projectKey: 'EX',
+    });
+    expect(client.query.projects.findFirst).toHaveBeenCalledTimes(1);
   });
 
   it('resolves a project from canonical owner/repo input', async () => {

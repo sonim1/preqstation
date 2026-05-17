@@ -637,7 +637,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               </div>
               <div className={styles.detailMetric}>
                 <strong>{doneTaskCount}</strong>
-                <span>DONE · 7D</span>
+                <span>DONE</span>
               </div>
             </div>
 

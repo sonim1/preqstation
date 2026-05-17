@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   githubRepoIdToUrl,
+  githubRepoReferenceVariants,
   normalizeGithubRepoIdInput,
   normalizeGithubRepoReference,
 } from '@/lib/github-repo';
@@ -22,8 +23,22 @@ describe('github repo helpers', () => {
     expect(normalizeGithubRepoReference('https://github.com/sonim1/preqstation.git')).toBe(
       'sonim1/preqstation',
     );
+    expect(normalizeGithubRepoReference('git@github.com:sonim1/preqstation.git/')).toBe(
+      'sonim1/preqstation',
+    );
     expect(normalizeGithubRepoReference('ssh://git@github.com/sonim1/preqstation.git')).toBe(
       'sonim1/preqstation',
+    );
+  });
+
+  it('builds legacy repo reference variants for lookup compatibility', () => {
+    expect(githubRepoReferenceVariants('sonim1/preqstation')).toEqual(
+      expect.arrayContaining([
+        'sonim1/preqstation',
+        'https://github.com/sonim1/preqstation/',
+        'git@github.com:sonim1/preqstation.git/',
+        'ssh://git@github.com/sonim1/preqstation.git/',
+      ]),
     );
   });
 

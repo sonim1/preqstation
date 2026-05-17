@@ -4,7 +4,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, workLogs } from '@/lib/db/schema';
-import { normalizeGithubRepoIdInput } from '@/lib/github-repo';
+import { normalizeGithubRepoReference } from '@/lib/github-repo';
 import { stripPreqChoiceBlocks } from '@/lib/markdown';
 import { ENTITY_PROJECT, PROJECT_CREATED, PROJECT_UPDATED, writeOutboxEvent } from '@/lib/outbox';
 import {
@@ -65,7 +65,7 @@ function normalizeOptionalUrl(value: string) {
 function normalizeOptionalGithubRepoId(value: string) {
   const input = value.trim();
   if (!input) return null;
-  return normalizeGithubRepoIdInput(input);
+  return normalizeGithubRepoReference(input);
 }
 
 // ---------- createProject ----------

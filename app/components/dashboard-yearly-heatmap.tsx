@@ -104,7 +104,8 @@ function buildMonthLabels(weeks: Array<Array<YearlyActivityDatum | null>>, first
     const weekStart = new Date(firstWeekStart);
     weekStart.setUTCDate(firstWeekStart.getUTCDate() + index * 7);
 
-    for (const cursor = new Date(weekStart); cursor <= getEndOfWeek(weekStart); ) {
+    const endOfWeek = getEndOfWeek(weekStart);
+    for (const cursor = new Date(weekStart); cursor <= endOfWeek; ) {
       if (cursor.getUTCDate() === 1) {
         return getMonthLabel(toDateKey(cursor));
       }

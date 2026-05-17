@@ -8,7 +8,7 @@ import { TODO_NOTE_MAX_LENGTH, TODO_TITLE_MAX_LENGTH } from '@/lib/content-limit
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, taskLabelAssignments, tasks } from '@/lib/db/schema';
 import { ENGINE_KEYS, normalizeEngineKey } from '@/lib/engine-icons';
-import { normalizeGithubRepoIdInput } from '@/lib/github-repo';
+import { githubRepoIdSchema } from '@/lib/github-repo-schema';
 import { ENTITY_TASK, TASK_CREATED, writeOutboxEvent } from '@/lib/outbox';
 import {
   buildTaskNote,
@@ -36,14 +36,6 @@ import { extractTaskLabels } from '@/lib/task-labels';
 import { coerceTaskRunState, isTaskStatus, parseTaskPriority } from '@/lib/task-meta';
 import { buildTaskRunStateUpdate } from '@/lib/task-run-state';
 import { resolveAppendSortOrder, TASK_BOARD_ORDER } from '@/lib/task-sort-order';
-
-const githubRepoIdSchema = z
-  .string()
-  .trim()
-  .refine((value) => normalizeGithubRepoIdInput(value) !== null, {
-    message: 'GitHub repo must use owner/repo format.',
-  })
-  .transform((value) => normalizeGithubRepoIdInput(value) || value);
 
 const createTaskSchema = z.object({
   title: z.string().trim().min(1).max(TODO_TITLE_MAX_LENGTH),
