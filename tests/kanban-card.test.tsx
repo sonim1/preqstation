@@ -299,76 +299,59 @@ describe('app/components/kanban-card', () => {
     );
   });
 
-  it('defines an in-bounds focus ring for kanban cards without dropping run-state shadows', () => {
+  it('defines an in-bounds focus ring while keeping kanban cards on paper chrome', () => {
     expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-focus-ring:\s*inset 0 0 0 0 transparent;[\s\S]*box-shadow:\s*var\(--kanban-card-focus-ring\),/,
+      /\.kanbanCard\s*\{[\s\S]*--kanban-card-focus-ring:\s*inset 0 0 0 0 transparent;[\s\S]*border:\s*1px solid var\(--kanban-card-border\);[\s\S]*background:\s*var\(--kanban-card-bg\);[\s\S]*box-shadow:\s*none;/,
     );
     expect(cardsCss).toMatch(
       /\.kanbanCard:focus-visible,\s*\.kanbanCard:focus-within\s*\{[\s\S]*outline:\s*none;[\s\S]*--kanban-card-focus-ring:\s*inset 0 0 0 2px/,
     );
     expect(cardsCss).toMatch(
-      /\.kanbanMetaChip\s*\{[\s\S]*background:\s*var\(--ui-surface-elevated\);/,
+      /\.kanbanMetaChip\s*\{[\s\S]*background:\s*var\(--kanban-card-chip-bg\);/,
     );
     expect(cardsCss).toMatch(
-      /\.kanbanRunStateChip\s*\{[\s\S]*background:\s*var\(--ui-surface-elevated-strong\);/,
+      /\.kanbanRunStateChip\s*\{[\s\S]*background:\s*var\(--kanban-card-chip-bg\);/,
     );
   });
 
-  it('defines stronger four-sided card shadows and a board-scoped stage surface', () => {
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-rest:\s*0 0 0 1px [^;]+,\s*0 18px 34px -22px [^;]+,\s*0 6px 14px -10px [^;]+,\s*0 1px 3px [^;]+;/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-queued:\s*0 0 0 1px [^;]+,\s*0 20px 38px -24px [^;]+,\s*0 8px 18px -12px [^;]+,\s*0 1px 3px [^;]+;/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-running:\s*0 0 0 1px [^;]+,\s*0 22px 42px -24px [^;]+,\s*0 10px 20px -14px [^;]+,\s*0 2px 6px [^;]+;/,
-    );
-    expect(globalsCss).toMatch(
-      /\.kanban-stage\s*\{[\s\S]*background:\s*var\(--kanban-stage-surface\);/,
-    );
+  it('defines paper card shadow tokens and a board-scoped handoff stage surface', () => {
+    expect(cardsCss).toMatch(/\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-rest:\s*none;/);
+    expect(cardsCss).toMatch(/\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-queued:\s*none;/);
+    expect(cardsCss).toMatch(/\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-running:\s*none;/);
+    expect(globalsCss).toMatch(/\.kanban-stage\s*\{[\s\S]*background:\s*var\(--kanban-board-bg\);/);
   });
 
-  it('renders boundary-free lanes with subtly rounded note cards carried by shadows', () => {
+  it('renders bordered paper lanes with compact bordered note cards', () => {
     expect(globalsCss).toMatch(
-      /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*box-shadow:\s*none;/,
+      /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*var\(--kanban-board-surface\);[\s\S]*border:\s*1px solid var\(--kanban-board-border\);[\s\S]*border-radius:\s*8px;[\s\S]*background:\s*var\(--kanban-board-surface\);[\s\S]*box-shadow:\s*none;/,
     );
     expect(globalsCss).toMatch(
-      /\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*border-radius:\s*0;/,
+      /\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*var\(--kanban-board-surface\);[\s\S]*background:\s*var\(--kanban-board-surface\);[\s\S]*border:\s*1px solid var\(--kanban-board-border\);[\s\S]*border-radius:\s*8px;/,
     );
     expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-radius:\s*6px;[\s\S]*border:\s*0;[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*background:\s*var\(--kanban-note-surface\);/,
+      /\.kanbanCard\s*\{[\s\S]*--kanban-card-radius:\s*6px;[\s\S]*border:\s*1px solid var\(--kanban-card-border\);[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*background:\s*var\(--kanban-card-bg\);/,
     );
     expect(cardsCss).toMatch(
       /\.kanbanCardFrame\s*\{[\s\S]*border-radius:\s*var\(--kanban-card-radius\);/,
     );
     expect(cardsCss).toMatch(
-      /\.itemCard\.kanbanCard\s*\{[\s\S]*border:\s*0;[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*box-shadow:\s*var\(--kanban-card-focus-ring\),\s*var\(--kanban-card-shadow-rest\);/,
+      /\.itemCard\.kanbanCard\s*\{[\s\S]*border:\s*1px solid var\(--kanban-card-border\);[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*box-shadow:\s*none;/,
     );
     expect(cardsCss).toMatch(/\.kanbanCard::after\s*\{[\s\S]*content:\s*none;/);
   });
 
-  it('marks hold cards with a left warning accent instead of coloring the whole lane', () => {
-    expect(cardsCss).toMatch(
-      /\.kanbanCardHold::before\s*\{[\s\S]*position:\s*absolute;[\s\S]*left:\s*0;[\s\S]*width:\s*4px;[\s\S]*background:\s*linear-gradient\(/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCardHold::before\s*\{[\s\S]*box-shadow:\s*0 0 16px color-mix\(in srgb,\s*var\(--ui-warning\),\s*transparent 42%\);/,
-    );
+  it('keeps hold cards badge-driven without a colored side rail', () => {
+    const holdRailRule = getCssRuleBody(cardsCss, '.kanbanCardHold::before');
+
+    expect(holdRailRule).toContain('content: none;');
     expect(cardsCss).toMatch(/\.kanbanQueuedWarningIcon\s*\{/);
   });
 
-  it('marks unread update cards with a left success accent', () => {
-    expect(cardsCss).toMatch(
-      /\.kanbanCardUpdated::before\s*\{[\s\S]*position:\s*absolute;[\s\S]*left:\s*0;[\s\S]*width:\s*4px;[\s\S]*background:\s*linear-gradient\([\s\S]*var\(--ui-success\)/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCardUpdated::before\s*\{[\s\S]*color-mix\(in srgb,\s*var\(--ui-success\),\s*black 18%\)/,
-    );
+  it('keeps unread update cards badge-driven without a colored side rail', () => {
+    const unreadRailRule = getCssRuleBody(cardsCss, '.kanbanCardUpdated::before');
+
+    expect(unreadRailRule).toContain('content: none;');
     expect(cardsCss).not.toContain('#0f6b45');
-    expect(cardsCss).toMatch(
-      /\.kanbanCardUpdated::before\s*\{[\s\S]*box-shadow:\s*0 0 16px color-mix\(in srgb,\s*var\(--ui-success\),\s*transparent 42%\);/,
-    );
   });
 
   it('renders unread update cards with the success rail class, debug attribute, and hidden status text', () => {
@@ -463,26 +446,19 @@ describe('app/components/kanban-card', () => {
     expect(getCardForTitle('Focused card')).not.toHaveClass(cardStyles.isFocusDimmed);
   });
 
-  it('renders empty columns with a top-only aurora seam instead of a bordered panel', () => {
+  it('renders empty columns as quiet bordered paper panels', () => {
     const emptyStateRule = getCssRuleBody(globalsCss, '.kanban-empty-state--compact');
     const emptyStateAuroraRule = getCssRuleBody(globalsCss, '.kanban-empty-state--compact::before');
     const emptyStateSeamRule = getCssRuleBody(globalsCss, '.kanban-empty-state--compact::after');
 
-    expect(emptyStateRule).toContain('background: transparent;');
+    expect(emptyStateRule).toContain('background: var(--kanban-board-bg);');
     expect(emptyStateRule).toContain('flex-direction: column;');
     expect(emptyStateRule).toContain('justify-content: flex-start;');
-    expect(emptyStateRule).not.toContain('border:');
-    expect(emptyStateRule).not.toContain('border-radius:');
+    expect(emptyStateRule).toContain('border: 1px dashed var(--kanban-board-border);');
+    expect(emptyStateRule).toContain('border-radius: 6px;');
 
-    expect(emptyStateAuroraRule).toContain('position: absolute;');
-    expect(emptyStateAuroraRule).toContain('top: 0;');
-    expect(emptyStateAuroraRule).toContain('filter: blur(');
-    expect(emptyStateAuroraRule).toContain('linear-gradient(');
-
-    expect(emptyStateSeamRule).toContain('position: absolute;');
-    expect(emptyStateSeamRule).toContain('height: 1px;');
-    expect(emptyStateSeamRule).toContain('linear-gradient(');
-    expect(emptyStateSeamRule).toContain('90deg');
+    expect(emptyStateAuroraRule).toContain('content: none;');
+    expect(emptyStateSeamRule).toContain('content: none;');
   });
 
   it('keeps footer metadata as a natural continuation instead of a separated band', () => {
@@ -519,7 +495,7 @@ describe('app/components/kanban-card', () => {
     );
     expect(cardsCss).toMatch(/\.kanbanCardKey\s*\{[\s\S]*font-size:\s*0\.78rem;/);
     expect(cardsCss).toMatch(
-      /\.kanbanMetaChip\s*\{[\s\S]*gap:\s*5px;[\s\S]*min-height:\s*26px;[\s\S]*padding:\s*0 8px;[\s\S]*font-size:\s*0\.66rem;/,
+      /\.kanbanMetaChip\s*\{[\s\S]*gap:\s*5px;[\s\S]*min-height:\s*24px;[\s\S]*padding:\s*0 8px;[\s\S]*font-size:\s*12px;/,
     );
     expect(cardsCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanbanCardBody\s*\{[\s\S]*--kanban-card-inline-padding:\s*12px;[\s\S]*--kanban-card-bottom-padding:\s*11px;[\s\S]*padding:\s*11px 12px 11px 12px;/,
