@@ -450,7 +450,7 @@ export function WorkspaceShell({
       <AppShell.Navbar className="workspace-navbar">
         <AppShell.Section grow component={ScrollArea} px="xs">
           <Stack gap={6} py="xs">
-            <Text component="div" className="workspace-nav-section-label">
+            <Text component="h2" className="workspace-nav-section-label">
               Workspace
             </Text>
             <NavLink
@@ -518,7 +518,7 @@ export function WorkspaceShell({
         </AppShell.Section>
         <AppShell.Section px="xs" pb="xs">
           <Stack gap={6}>
-            <Text component="div" className="workspace-nav-section-label">
+            <Text component="h2" className="workspace-nav-section-label">
               Manage
             </Text>
             <NavLink
