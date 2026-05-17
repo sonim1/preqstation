@@ -1,41 +1,97 @@
 .detailHero {
   border-color: color-mix(in srgb, var(--ui-border), var(--ui-accent) 16%);
-  background: color-mix(in srgb, var(--ui-surface-panel), var(--ui-surface-strong) 18%);
+  background: linear-gradient(
+    110deg,
+    color-mix(in srgb, var(--ui-surface-panel), var(--ui-accent) 10%),
+    color-mix(in srgb, var(--ui-surface-strong), var(--ui-accent) 7%)
+  );
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-accent), transparent 78%);
+}
+
+.detailHeroLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.34fr);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: start;
+}
+
+.detailHeroContent {
+  max-width: 52rem;
+}
+
+.detailEyebrow {
+  min-width: 0;
+}
+
+.detailStatusDot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 999px;
+  background: var(--mantine-color-blue-5);
+  box-shadow: 0 0 0 0.22rem color-mix(in srgb, var(--mantine-color-blue-5), transparent 76%);
+}
+
+.detailEyebrowText {
+  color: color-mix(in srgb, var(--ui-text), var(--ui-muted-text) 28%);
+  letter-spacing: 0;
+}
+
+.detailHeroTitle {
+  color: var(--ui-text);
+  font-size: 2.75rem;
+  line-height: 0.98;
+  letter-spacing: 0;
+}
+
+.detailHeroDescription {
+  max-width: 58rem;
+  color: color-mix(in srgb, var(--ui-muted-text), var(--ui-text) 18%);
+  font-size: 1.05rem;
+  line-height: 1.55;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.detailHeroActions {
+  padding-top: 0.25rem;
+}
+
+.detailPrimaryAction {
+  box-shadow: 0 0.45rem 1.2rem color-mix(in srgb, var(--mantine-color-blue-7), transparent 76%);
 }
 
 .detailMetrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
-  border-radius: 0.5rem;
-  background: color-mix(in srgb, var(--ui-surface-strong), transparent 10%);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  min-width: 0;
 }
 
 .detailMetric {
   display: grid;
-  gap: 0.3rem;
+  gap: 0.45rem;
   min-width: 0;
-  padding: 0.7rem 0.55rem;
-  text-align: center;
-}
-
-.detailMetric + .detailMetric {
-  border-left: 1px solid color-mix(in srgb, var(--ui-border), transparent 26%);
+  min-height: 5.15rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), var(--ui-accent) 12%);
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--ui-surface-panel), transparent 12%);
 }
 
 .detailMetric strong {
   color: var(--ui-text);
-  font-size: 1.15rem;
+  font-size: 1.55rem;
   line-height: 1;
 }
 
 .detailMetric span {
   min-width: 0;
-  color: var(--ui-muted-text);
+  color: color-mix(in srgb, var(--ui-muted-text), var(--ui-text) 12%);
   font-family: var(--font-mono);
-  font-size: 0.62rem;
-  font-weight: 800;
+  font-size: 0.72rem;
+  font-weight: 700;
   line-height: 1.15;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -48,21 +104,82 @@
   min-width: 0;
 }
 
-.pipelinePanel {
+.pipelinePanel,
+.readinessPanel {
   min-width: 0;
 }
 
+.readinessSummary {
+  color: color-mix(in srgb, var(--ui-muted-text), var(--ui-text) 16%);
+  line-height: 1.5;
+}
+
+.readinessTable {
+  display: grid;
+  border-block: 1px solid color-mix(in srgb, var(--ui-border), transparent 22%);
+}
+
+.readinessRow {
+  display: grid;
+  grid-template-columns: minmax(6.25rem, 0.66fr) minmax(8rem, max-content) minmax(0, 1.8fr);
+  gap: 0.75rem;
+  align-items: center;
+  min-width: 0;
+  padding: 0.72rem 0;
+}
+
+.readinessRow + .readinessRow {
+  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 45%);
+}
+
+.readinessKey {
+  color: var(--ui-muted-text);
+  letter-spacing: 0.08em;
+}
+
+.readinessStatus {
+  min-width: 0;
+}
+
+.readinessCopy {
+  min-width: 0;
+  color: color-mix(in srgb, var(--ui-muted-text), var(--ui-text) 18%);
+  line-height: 1.45;
+}
+
+@media (min-width: 62em) {
+  .activityEvidence {
+    grid-template-columns: fit-content(52rem) minmax(19rem, 1fr);
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 61.99375em) {
+  .detailHeroLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .detailHeroContent {
+    max-width: none;
+  }
+}
+
 @media (max-width: 47.99375em) {
+  .detailHeroTitle {
+    font-size: 2rem;
+  }
+
   .detailMetrics {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
   }
 
-  .detailMetric:nth-child(3) {
-    border-left: 0;
-    border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 26%);
+  .detailMetric {
+    min-height: 4.6rem;
+    padding: 0.75rem;
   }
 
-  .detailMetric:nth-child(4) {
-    border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 26%);
+  .readinessRow {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
   }
 }

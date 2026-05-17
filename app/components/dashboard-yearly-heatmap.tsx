@@ -1,4 +1,5 @@
 import { Badge, Group, Paper, Stack, Text, Title, Tooltip } from '@mantine/core';
+import { IconActivity } from '@tabler/icons-react';
 
 import classes from './dashboard-yearly-heatmap.module.css';
 import panelStyles from './panels.module.css';
@@ -17,6 +18,12 @@ const visibleWeekdayLabels = new Map([
 
 function toDateKey(date: Date) {
   return date.toISOString().split('T')[0];
+}
+
+function addUtcDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next;
 }
 
 function getStartOfWeek(date: Date) {
@@ -53,12 +60,40 @@ function formatActivityLabel(dateKey: string, count: number) {
   return `${label}: ${count} work log${count === 1 ? '' : 's'}`;
 }
 
-function getIntensityLevel(count: number) {
+function getIntensityLevel(count: number, maxCount?: number) {
   if (count <= 0) return 0;
+  if (maxCount !== undefined) {
+    if (maxCount <= 0) return 0;
+    if (count >= maxCount) return 4;
+    const level = Math.ceil((count / maxCount) * 4);
+    return Math.min(4, Math.max(1, level));
+  }
+
   if (count === 1) return 1;
   if (count <= 3) return 2;
   if (count <= 5) return 3;
   return 4;
+}
+
+function getCurrentStreak(data: YearlyActivityDatum[]) {
+  let streak = 0;
+  let previousDate: Date | null = null;
+
+  for (let index = data.length - 1; index >= 0; index -= 1) {
+    const day = data[index];
+    if (!day || day.count <= 0) break;
+
+    const currentDate = new Date(`${day.date}T00:00:00.000Z`);
+    if (previousDate) {
+      const expected = addUtcDays(previousDate, -1);
+      if (toDateKey(currentDate) !== toDateKey(expected)) break;
+    }
+
+    streak += 1;
+    previousDate = currentDate;
+  }
+
+  return streak;
 }
 
 function buildWeeks(data: YearlyActivityDatum[]) {
@@ -120,40 +155,71 @@ export function DashboardYearlyHeatmap({
   panelClassName,
   title = 'Current Year Activity',
   description,
+  variant = 'default',
+  rangeLabel = 'last 365d',
 }: {
   data: YearlyActivityDatum[];
   panelClassName?: string;
   title?: string;
   description?: string;
+  variant?: 'default' | 'projectDetail';
+  rangeLabel?: string;
 }) {
-  const rootClassName = [panelStyles.sectionPanel, panelClassName, classes.panel]
+  const projectDetail = variant === 'projectDetail';
+  const rootClassName = [
+    panelStyles.sectionPanel,
+    panelClassName,
+    classes.panel,
+    projectDetail ? classes.projectPanel : null,
+  ]
     .filter(Boolean)
     .join(' ');
   const sortedData = [...data].sort((left, right) => left.date.localeCompare(right.date));
-  const year = sortedData[0]?.date.slice(0, 4) ?? String(new Date().getFullYear());
+  const displayData = sortedData;
+  const year = displayData[0]?.date.slice(0, 4) ?? String(new Date().getFullYear());
   const totalLogs = sortedData.reduce((sum, day) => sum + day.count, 0);
-  const weeks = buildWeeks(sortedData);
-  const monthLabels = buildMonthLabels(weeks, sortedData[0]?.date);
+  const weeks = buildWeeks(displayData);
+  const monthLabels = buildMonthLabels(weeks, displayData[0]?.date);
+  const streak = getCurrentStreak(displayData);
+  const maxCount = projectDetail ? Math.max(0, ...displayData.map((day) => day.count)) : undefined;
 
   return (
     <Paper withBorder radius="lg" p={{ base: 'md', sm: 'lg' }} className={rootClassName}>
-      <Stack gap="md" data-yearly-heatmap="true">
-        <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
-          <Stack gap={4}>
-            <Title order={4}>{title}</Title>
-            <Text size="sm" c="dimmed">
-              {description ??
-                (totalLogs > 0
-                  ? `${totalLogs} work log${totalLogs === 1 ? '' : 's'} across ${sortedData.length} days so far.`
-                  : 'No work logs yet this year.')}
+      <Stack gap="md" data-yearly-heatmap="true" data-heatmap-variant={variant}>
+        <Group
+          justify="space-between"
+          align={projectDetail ? 'center' : 'flex-start'}
+          wrap="wrap"
+          gap="sm"
+        >
+          {projectDetail ? (
+            <Group gap="sm" align="center">
+              <IconActivity size={24} className={classes.titleIcon} aria-hidden="true" />
+              <Title order={4}>{title}</Title>
+            </Group>
+          ) : (
+            <Stack gap={4}>
+              <Title order={4}>{title}</Title>
+              <Text size="sm" c="dimmed">
+                {description ??
+                  (totalLogs > 0
+                    ? `${totalLogs} work log${totalLogs === 1 ? '' : 's'} across ${sortedData.length} days so far.`
+                    : 'No work logs yet this year.')}
+              </Text>
+            </Stack>
+          )}
+          {projectDetail ? (
+            <Text size="sm" className={classes.streakLabel}>
+              <span>streak</span> {streak}d
             </Text>
-          </Stack>
-          <Badge variant="light" color="gray" size="sm" radius="sm">
-            {year}
-          </Badge>
+          ) : (
+            <Badge variant="light" color="gray" size="sm" radius="sm">
+              {year}
+            </Badge>
+          )}
         </Group>
 
-        <div className={classes.calendar}>
+        <div className={classes.calendar} data-heatmap-scroll-region="true">
           <div
             className={classes.monthRow}
             style={{ gridTemplateColumns: `repeat(${weeks.length}, var(--heatmap-cell-size))` }}
@@ -172,11 +238,15 @@ export function DashboardYearlyHeatmap({
 
           <div className={classes.body}>
             <div className={classes.weekdayRail} aria-hidden="true">
-              {weekdayLabels.map((label, index) => (
-                <Text key={label} size="xs" c="dimmed" className={classes.weekdayLabel}>
-                  {visibleWeekdayLabels.get(index) ?? ''}
-                </Text>
-              ))}
+              {weekdayLabels.map((label, index) => {
+                const visibleLabel = visibleWeekdayLabels.get(index) ?? '';
+
+                return (
+                  <Text key={label} size="xs" c="dimmed" className={classes.weekdayLabel}>
+                    {projectDetail ? visibleLabel.slice(0, 1) : visibleLabel}
+                  </Text>
+                );
+              })}
             </div>
 
             <div
@@ -204,7 +274,7 @@ export function DashboardYearlyHeatmap({
                           className={classes.cell}
                           data-count={day.count}
                           data-date={day.date}
-                          data-level={getIntensityLevel(day.count)}
+                          data-level={getIntensityLevel(day.count, maxCount)}
                           aria-label={label}
                         />
                       </Tooltip>
@@ -215,6 +285,26 @@ export function DashboardYearlyHeatmap({
             </div>
           </div>
         </div>
+
+        {projectDetail ? (
+          <Group justify="space-between" align="center" gap="sm" className={classes.footer}>
+            <Group gap="xs" align="center" className={classes.legend}>
+              <Text size="sm">Less</Text>
+              {[0, 1, 2, 3, 4].map((level) => (
+                <span
+                  key={level}
+                  className={classes.legendCell}
+                  data-level={level}
+                  aria-hidden="true"
+                />
+              ))}
+              <Text size="sm">More</Text>
+            </Group>
+            <Text size="sm" className={classes.totalLabel}>
+              {`${totalLogs.toLocaleString()} logs · ${rangeLabel}`}
+            </Text>
+          </Group>
+        ) : null}
       </Stack>
     </Paper>
   );

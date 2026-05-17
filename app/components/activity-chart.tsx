@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge, Group, Paper, Stack, Text, Title, useMantineTheme } from '@mantine/core';
+import { Badge, Group, Paper, Stack, Text, useMantineTheme } from '@mantine/core';
 import { IconChartLine } from '@tabler/icons-react';
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import {
@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 
 import { EmptyState } from '@/app/components/empty-state';
+import { SectionTitleWithIcon } from '@/app/components/section-title-with-icon';
 
 import panelStyles from './panels.module.css';
 
@@ -104,9 +105,7 @@ export function ActivityChart({
     return (
       <Paper withBorder radius="lg" p={{ base: 'md', sm: 'lg' }} className={rootClassName}>
         <Stack gap="xs">
-          <Title order={4} className="activity-chart-title">
-            Work Activity
-          </Title>
+          <SectionTitleWithIcon icon={IconChartLine}>Work Activity</SectionTitleWithIcon>
           <EmptyState
             icon={<IconChartLine size={24} />}
             title="No work logs in the last 30 days"
@@ -120,9 +119,7 @@ export function ActivityChart({
   return (
     <Paper withBorder radius="lg" p={{ base: 'md', sm: 'lg' }} className={rootClassName}>
       <Group justify="space-between" align="center" mb="sm">
-        <Title order={4} className="activity-chart-title">
-          Work Activity
-        </Title>
+        <SectionTitleWithIcon icon={IconChartLine}>Work Activity</SectionTitleWithIcon>
         <Badge variant="light" color="gray" size="sm" radius="sm">
           {total} logs · 30d
         </Badge>

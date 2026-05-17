@@ -11,13 +11,17 @@ const mocked = vi.hoisted(() => ({
   listWorkLogsPage: vi.fn(),
   notFound: vi.fn(),
   projectEditPanelProps: vi.fn(),
+  navigationSearch: '',
   projectsFindFirst: vi.fn(),
   redirect: vi.fn(),
   requireOwnerUser: vi.fn(),
   resolveAgentInstructions: vi.fn(),
   resolveDeployStrategyConfig: vi.fn(),
   resolveProjectByKey: vi.fn(),
+  resolveTerminology: vi.fn(),
   revalidatePath: vi.fn(),
+  routerPush: vi.fn(),
+  routerReplace: vi.fn(),
   tasksFindMany: vi.fn(),
   updateProject: vi.fn(),
   writeAuditLog: vi.fn(),
@@ -41,12 +45,13 @@ vi.mock('@mantine/core', () => ({
     children,
     color,
     variant,
+    ...props
   }: {
     children: React.ReactNode;
     color?: string;
     variant?: string;
-  }) => (
-    <div data-color={color ?? ''} data-variant={variant ?? ''}>
+  } & React.HTMLAttributes<HTMLDivElement>) => (
+    <div data-color={color ?? ''} data-variant={variant ?? ''} {...props}>
       {children}
     </div>
   ),
@@ -55,21 +60,30 @@ vi.mock('@mantine/core', () => ({
     children,
     component,
     href,
+    leftSection: _leftSection,
     rel,
+    size: _size,
     target,
+    variant: _variant,
+    ...props
   }: {
     children: React.ReactNode;
     component?: string;
     href?: string;
+    leftSection?: React.ReactNode;
     rel?: string;
+    size?: string;
     target?: string;
-  }) =>
+    variant?: string;
+  } & React.HTMLAttributes<HTMLButtonElement | HTMLAnchorElement>) =>
     component === 'a' ? (
-      <a href={href} rel={rel} target={target}>
+      <a href={href} rel={rel} target={target} {...props}>
         {children}
       </a>
     ) : (
-      <button type="button">{children}</button>
+      <button type="button" {...props}>
+        {children}
+      </button>
     ),
   Container: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Group: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -94,11 +108,13 @@ vi.mock('@mantine/core', () => ({
 }));
 
 vi.mock('@tabler/icons-react', () => ({
+  IconActivity: () => null,
   IconClipboardList: () => null,
-  IconCloud: () => null,
-  IconFlag: () => null,
-  IconLink: () => null,
+  IconExternalLink: () => null,
+  IconLayoutKanban: () => null,
   IconListCheck: () => null,
+  IconPlus: () => null,
+  IconRocket: () => null,
 }));
 
 vi.mock('drizzle-orm', () => ({
@@ -115,6 +131,12 @@ vi.mock('next/cache', () => ({
 vi.mock('next/navigation', () => ({
   notFound: mocked.notFound,
   redirect: mocked.redirect,
+  usePathname: () => '/project/PROJ',
+  useRouter: () => ({
+    push: mocked.routerPush,
+    replace: mocked.routerReplace,
+  }),
+  useSearchParams: () => new URLSearchParams(mocked.navigationSearch),
 }));
 
 vi.mock('@/app/components/empty-state', () => ({
@@ -127,15 +149,21 @@ vi.mock('@/app/components/dashboard-yearly-heatmap', () => ({
     panelClassName,
     title,
     description,
+    variant,
+    rangeLabel,
   }: {
     data: Array<{ date: string; count: number }>;
     panelClassName?: string;
     title?: string;
     description?: string;
+    variant?: string;
+    rangeLabel?: string;
   }) => (
     <div
       data-testid="dashboard-yearly-heatmap"
       data-panel-class-name={panelClassName ?? ''}
+      data-heatmap-variant={variant ?? ''}
+      data-range-label={rangeLabel ?? ''}
       data-values={data.map((point) => `${point.date}:${point.count}`).join(',')}
     >
       {title}
@@ -148,16 +176,6 @@ vi.mock('@/app/components/link-button', () => ({
   LinkButton: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
   ),
-}));
-
-vi.mock('@/app/components/markdown-viewer', () => ({
-  MarkdownViewer: ({ markdown }: { markdown: string | null }) => (
-    <div data-testid="markdown-viewer">{markdown}</div>
-  ),
-}));
-
-vi.mock('@/app/components/metrics.module.css', () => ({
-  default: { metricTile: 'metricTile' },
 }));
 
 vi.mock('@/app/components/panels.module.css', () => ({
@@ -190,6 +208,15 @@ vi.mock('@/app/components/panels/project-labels-panel', () => ({
 vi.mock('@/app/components/panels/project-edit-panel', () => ({
   ProjectEditPanel: (props: {
     selectedProject: { name: string } | null;
+    labelManagement?: {
+      labels: Array<{ id: string; name: string; color: string; usageCount: number }>;
+    };
+    configurationManagement?: {
+      projectId: string;
+      projectName: string;
+      agentInstructions: string | null;
+      deployStrategy: { strategy: string; default_branch: string };
+    };
     updateProjectAction: (prevState: unknown, formData: FormData) => Promise<unknown>;
   }) => {
     mocked.projectEditPanelProps(props);
@@ -197,25 +224,6 @@ vi.mock('@/app/components/panels/project-edit-panel', () => ({
       <div data-testid="project-edit-panel" data-project-name={props.selectedProject?.name ?? ''} />
     );
   },
-}));
-
-vi.mock('@/app/components/project-hero-menu', () => ({
-  ProjectHeroMenu: ({
-    workLogHref,
-    editProjectHref,
-    integrationHref,
-  }: {
-    workLogHref: string;
-    editProjectHref: string;
-    integrationHref?: string;
-  }) => (
-    <div
-      data-testid="project-hero-menu"
-      data-work-log-href={workLogHref}
-      data-edit-project-href={editProjectHref}
-      data-integration-href={integrationHref ?? ''}
-    />
-  ),
 }));
 
 vi.mock('@/app/components/project-work-log-timeline', () => ({
@@ -227,6 +235,7 @@ vi.mock('@/app/components/task-panel-modal', () => ({
     children,
     title,
     closeHref,
+    opened,
     size,
     fullscreenStorageKey,
     resizableStorageKey,
@@ -234,21 +243,23 @@ vi.mock('@/app/components/task-panel-modal', () => ({
     children: React.ReactNode;
     title: string;
     closeHref: string;
+    opened?: boolean;
     size?: string;
     fullscreenStorageKey?: string;
     resizableStorageKey?: string;
-  }) => (
-    <div
-      data-testid="task-panel-modal"
-      data-title={title}
-      data-close-href={closeHref}
-      data-size={size ?? ''}
-      data-fullscreen-storage-key={fullscreenStorageKey ?? ''}
-      data-resizable-storage-key={resizableStorageKey ?? ''}
-    >
-      {children}
-    </div>
-  ),
+  }) =>
+    opened ? (
+      <div
+        data-testid="task-panel-modal"
+        data-title={title}
+        data-close-href={closeHref}
+        data-size={size ?? ''}
+        data-fullscreen-storage-key={fullscreenStorageKey ?? ''}
+        data-resizable-storage-key={resizableStorageKey ?? ''}
+      >
+        {children}
+      </div>
+    ) : null,
 }));
 
 vi.mock('@/app/components/task-status-bar', () => ({
@@ -301,11 +312,14 @@ vi.mock('@/lib/task-labels', () => ({
   listProjectTaskLabelUsageCounts: mocked.listProjectTaskLabelUsageCounts,
 }));
 
-vi.mock('@/lib/terminology', () => ({
-  resolveTerminology: vi.fn(() => ({
-    task: { singular: 'Task', singularLower: 'task', plural: 'Tasks', pluralLower: 'tasks' },
-  })),
-}));
+vi.mock('@/lib/terminology', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/terminology')>();
+
+  return {
+    ...actual,
+    resolveTerminology: mocked.resolveTerminology,
+  };
+});
 
 vi.mock('@/lib/user-settings', () => ({
   SETTING_KEYS: { KITCHEN_MODE: 'kitchenMode', TIMEZONE: 'timezone' },
@@ -322,12 +336,14 @@ vi.mock('@/lib/work-log-pagination', () => ({
 }));
 
 import ProjectDetailPage from '@/app/(workspace)/(main)/project/[key]/page';
+import { DEFAULT_TERMINOLOGY, getProjectDetailTerminology } from '@/lib/terminology';
 
 describe('project detail page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocked.db.query.projects.findFirst = mocked.projectsFindFirst;
     mocked.db.query.tasks.findMany = mocked.tasksFindMany;
+    mocked.navigationSearch = '';
     mocked.getOwnerUserOrNull.mockResolvedValue({ id: 'owner-1' });
     mocked.requireOwnerUser.mockResolvedValue({ id: 'owner-1' });
     mocked.resolveProjectByKey.mockResolvedValue({
@@ -355,6 +371,7 @@ describe('project detail page', () => {
     mocked.getUserSetting.mockImplementation((_ownerId: string, key: string) =>
       Promise.resolve(key === 'timezone' ? 'UTC' : 'false'),
     );
+    mocked.resolveTerminology.mockReturnValue(DEFAULT_TERMINOLOGY);
     mocked.listProjectWorkLogYearActivity.mockResolvedValue([]);
     mocked.listWorkLogsPage.mockResolvedValue({
       workLogs: [],
@@ -382,7 +399,7 @@ describe('project detail page', () => {
     mocked.writeAuditLog.mockResolvedValue(undefined);
   });
 
-  it('keeps the hero edit target on the project detail route', async () => {
+  it('keeps the project detail hero focused on identity, actions, and metrics', async () => {
     const html = renderToStaticMarkup(
       await ProjectDetailPage({
         params: Promise.resolve({ key: 'PROJ' }),
@@ -390,43 +407,69 @@ describe('project detail page', () => {
     );
 
     expect(html).toContain('data-project-detail-roster="true"');
-    expect(html).toContain('Project roster · PROJ');
+    expect(html).toContain('data-project-detail-hero-layout="true"');
+    expect(html).toContain('PROJ');
+    expect(html).toContain('Project One');
+    expect(html).toContain('Ship the next release.');
+    expect(html).toContain('Open Kanban');
+    expect(html).toContain('Open repo');
     expect(html).toContain('data-project-detail-metrics="true"');
     expect(html).toContain('OPEN');
     expect(html).toContain('RUNNING');
     expect(html).toContain('QUEUED');
-    expect(html).toContain('DONE · 7D');
-    expect(html).toContain('data-testid="project-hero-menu"');
-    expect(html).toContain('data-edit-project-href="/project/PROJ?panel=project-edit"');
-    expect(html).toContain('data-work-log-href="/dashboard?panel=worklog&amp;projectId=project-1"');
-    expect(html).toContain('data-integration-href=""');
+    expect(html).toContain('DONE');
+    expect(html).not.toContain('Project roster · PROJ');
+    expect(html).not.toContain('Setup health');
+    expect(html).not.toContain('data-testid="project-hero-menu"');
   });
 
-  it('groups the page into anchored overview, configuration, and activity sections', async () => {
+  it('uses terminology metadata for the active agent badge', async () => {
+    mocked.tasksFindMany.mockResolvedValueOnce([{ status: 'todo', runState: 'running' }]);
+
     const html = renderToStaticMarkup(
       await ProjectDetailPage({
         params: Promise.resolve({ key: 'PROJ' }),
       }),
     );
 
-    expect(html).toContain('aria-label="Project sections"');
-    expect(html).toContain('data-project-section-nav="true"');
-    expect(html).toContain('href="#project-overview"');
-    expect(html).toContain('href="#project-configuration"');
-    expect(html).toContain('href="#project-activity"');
-    expect(html).toContain('id="project-overview"');
-    expect(html).toContain('id="project-configuration"');
-    expect(html).toContain('id="project-activity"');
-    expect(html).toContain('>Configuration<');
-    expect(html).toContain('>Activity<');
-    expect(html).toContain('Edit Details');
-    expect(html).toContain('href="/project/PROJ?panel=project-edit"');
-    expect(html).toContain('href="/board/PROJ"');
-    expect(html).toContain('href="/dashboard?panel=task&amp;projectId=project-1"');
-    expect(html).toContain('href="/dashboard?panel=worklog&amp;projectId=project-1"');
+    expect(html).toContain('1 AI agent running');
+    expect(html).toContain('data-entity-type="agent"');
+    expect(html).toContain('data-entity-state="running"');
   });
 
-  it('renders project editing inside the shared modal shell on the detail route', async () => {
+  it('keeps detail content focused on activity with configuration in edit details', async () => {
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('id="project-activity"');
+    expect(html).not.toContain('aria-label="Project sections"');
+    expect(html).not.toContain('data-project-section-nav="true"');
+    expect(html).not.toContain('href="#project-overview"');
+    expect(html).not.toContain('href="#project-activity"');
+    expect(html).not.toContain('id="project-overview"');
+    expect(html).not.toContain('>README<');
+    expect(html).not.toContain('>Overview<');
+    expect(html).not.toContain('Keep the current goal and project context in one place.');
+    expect(html).not.toContain('href="#project-configuration"');
+    expect(html).not.toContain('id="project-configuration"');
+    expect(html).not.toContain('>Configuration<');
+    expect(html).not.toContain(
+      'Review project tasks, workspace activity, readiness, and recent work.',
+    );
+    expect(html).toContain('Activity · last 365 days');
+    expect(html).toContain('Edit Details');
+    expect(html).toContain('data-project-edit-panel-trigger="true"');
+    expect(html).not.toContain('href="/project/PROJ?panel=project-edit"');
+    expect(html).toContain('href="/board/PROJ"');
+    expect(html).toContain('href="/dashboard?panel=task&amp;projectId=project-1"');
+  });
+
+  it('renders project editing, labels, and configuration inside the shared modal shell on the detail route', async () => {
+    mocked.navigationSearch = 'panel=project-edit';
+
     const html = renderToStaticMarkup(
       await ProjectDetailPage({
         params: Promise.resolve({ key: 'PROJ' }),
@@ -444,22 +487,48 @@ describe('project detail page', () => {
     expect(html).toContain('data-resizable-storage-key="preqstation:project-edit-panel:size:v1"');
     expect(html).toContain('data-testid="project-edit-panel"');
     expect(html).toContain('data-project-name="Project One"');
+
+    const projectEditPanelProps = mocked.projectEditPanelProps.mock.calls[0]?.[0] as {
+      labelManagement?: {
+        labels: Array<{ id: string; name: string; color: string; usageCount: number }>;
+      };
+      configurationManagement?: {
+        projectId: string;
+        projectName: string;
+        agentInstructions: string | null;
+        deployStrategy: { strategy: string; default_branch: string };
+      };
+    };
+    expect(projectEditPanelProps.labelManagement?.labels).toEqual([
+      { id: 'label-1', projectId: 'project-1', name: 'Bug', color: 'red', usageCount: 3 },
+      { id: 'label-2', projectId: 'project-1', name: 'Feature', color: 'blue', usageCount: 0 },
+    ]);
+    expect(projectEditPanelProps.configurationManagement).toMatchObject({
+      projectId: 'project-1',
+      projectName: 'Project One',
+      agentInstructions: 'Keep it sharp.',
+      deployStrategy: { strategy: 'direct_commit', default_branch: 'main' },
+    });
   });
 
-  it('renders the project-owned labels panel on the detail page', async () => {
+  it('keeps project-owned labels and configuration editing out of the detail page body', async () => {
     const html = renderToStaticMarkup(
       await ProjectDetailPage({
         params: Promise.resolve({ key: 'PROJ' }),
       }),
     );
 
-    expect(html).toContain('data-testid="project-labels-panel"');
-    expect(html).toContain('data-label-count="2"');
-    expect(html).toContain('data-label-names="Bug,Feature"');
-    expect(html).toContain('Each label change stays local until you save it.');
-    expect(html).toContain('Changes stay local until you save them to the project.');
-    expect(html).toContain('data-label-usage="Bug:3,Feature:0"');
-    expect(html).toContain('Keep labels close to the work they belong to in this project.');
+    expect(html).not.toContain('data-testid="project-labels-panel"');
+    expect(html).not.toContain('data-label-count="2"');
+    expect(html).not.toContain('data-label-names="Bug,Feature"');
+    expect(html).not.toContain('Each label change stays local until you save it.');
+    expect(html).not.toContain('data-testid="agent-instructions-panel"');
+    expect(html).not.toContain('data-testid="deploy-settings-panel"');
+    expect(html).not.toContain('Changes stay local until you save them to the project.');
+    expect(html).not.toContain('Agent Instructions');
+    expect(html).not.toContain('Deployment Strategy');
+    expect(html).not.toContain('data-label-usage="Bug:3,Feature:0"');
+    expect(html).not.toContain('Keep labels close to the work they belong to in this project.');
   });
 
   it('surfaces a dispatch-ready setup summary when repo, deploy rules, instructions, and recent activity exist', async () => {
@@ -498,21 +567,62 @@ describe('project detail page', () => {
       vi.useRealTimers();
     }
 
-    expect(html).toContain('Setup health');
+    expect(html).toContain('Dispatch readiness');
+    expect(html).toContain('data-readiness-table="true"');
+    expect(html).toContain('data-readiness-check="repository"');
+    expect(html).toContain('data-readiness-check="deployment"');
+    expect(html).toContain('data-readiness-check="instructions"');
+    expect(html).toContain('data-readiness-check="activity"');
     expect(html).toContain('Dispatch-ready');
     expect(html).toContain('4 of 4 setup checks are ready.');
     expect(html).toContain('Repository linked for branch and PR work.');
     expect(html).toContain('Feature Branch to main. Auto-create a PR and push before review.');
     expect(html).toContain('Instructions saved for dispatched agents.');
     expect(html).toContain('Last recorded work on 2026-04-26.');
-    expect(html).toContain('1 open Task');
-    expect(html).not.toContain('1 open Tasks');
     expect(html).toContain(
       'href="https://github.com/example/repo" rel="noopener noreferrer" target="_blank"',
     );
   });
 
-  it('adds activity evidence to detail using visible work log history and task pipeline data', async () => {
+  it('renders dispatch readiness rows from terminology copy', async () => {
+    const defaultProjectDetail = getProjectDetailTerminology(DEFAULT_TERMINOLOGY);
+
+    mocked.resolveTerminology.mockReturnValueOnce({
+      ...DEFAULT_TERMINOLOGY,
+      projectDetail: {
+        ...defaultProjectDetail,
+        readiness: {
+          ...defaultProjectDetail.readiness,
+          sectionTitle: 'Launch readiness',
+          tableLabel: 'Launch checks',
+          rows: {
+            ...defaultProjectDetail.readiness.rows,
+            repository: {
+              ...defaultProjectDetail.readiness.rows.repository,
+              label: 'Source',
+              connectedStatus: 'Source connected',
+              connectedDescription: 'Source is ready for branch work.',
+            },
+          },
+        },
+      },
+    });
+
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('Launch readiness');
+    expect(html).toContain('aria-label="Launch checks"');
+    expect(html).toContain('>Source<');
+    expect(html).toContain('Source connected');
+    expect(html).toContain('Source is ready for branch work.');
+    expect(html).not.toContain('Dispatch readiness checks');
+  });
+
+  it('aligns detail activity sections with tasks, heatmap, readiness, and recent work', async () => {
     mocked.tasksFindMany.mockResolvedValueOnce([
       { status: 'todo' },
       { status: 'ready' },
@@ -557,13 +667,16 @@ describe('project detail page', () => {
       }),
     );
 
-    expect(html).toContain('Activity evidence');
+    expect(html).toContain('Tasks · this project');
+    expect(html).toContain('Activity · last 365 days');
+    expect(html).toContain('Dispatch readiness');
+    expect(html).not.toContain('Connections');
+    expect(html).toContain('Recent work log');
     expect(html).toContain('data-project-detail-activity-panel="true"');
-    expect(html).toContain('Task pipeline evidence');
     expect(html).toContain('data-testid="dashboard-yearly-heatmap"');
+    expect(html).toContain('data-heatmap-variant="projectDetail"');
+    expect(html).toContain('data-range-label="last 365d"');
     expect(html).toContain('data-values="2026-01-01:0,2026-04-25:7,2026-04-26:4"');
-    expect(html).toContain('4 total tasks');
-    expect(html).toContain('11 work logs this year');
     expect(mocked.listProjectWorkLogYearActivity).toHaveBeenCalledWith({
       ownerId: 'owner-1',
       projectId: 'project-1',
@@ -651,12 +764,14 @@ describe('project detail page', () => {
     expect(html).toContain('Direct Commit to main. Push before review.');
     expect(html).toContain('Add agent instructions so workers inherit project-specific rules.');
     expect(html).toContain('No work logs yet. Last project update 2026-04-24.');
-    expect(html).toContain('href="/project/PROJ?panel=project-edit"');
-    expect(html).toContain('href="/dashboard?panel=worklog&amp;projectId=project-1"');
+    expect(html).toContain('data-project-edit-panel-trigger="true"');
+    expect(html).not.toContain('href="/project/PROJ?panel=project-edit"');
     expect(html).not.toContain('Review settings');
   });
 
   it('updates the project detail modal in place without redirecting to the dashboard', async () => {
+    mocked.navigationSearch = 'panel=project-edit';
+
     renderToStaticMarkup(
       await ProjectDetailPage({
         params: Promise.resolve({ key: 'PROJ' }),

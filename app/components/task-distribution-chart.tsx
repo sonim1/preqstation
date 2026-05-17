@@ -1,9 +1,10 @@
 'use client';
 
-import { Badge, Group, Paper, Stack, Text, Title } from '@mantine/core';
+import { Badge, Group, Paper, Stack, Text } from '@mantine/core';
 import { IconChartBar } from '@tabler/icons-react';
 
 import { EmptyState } from '@/app/components/empty-state';
+import { SectionTitleWithIcon } from '@/app/components/section-title-with-icon';
 import { useTerminology } from '@/app/components/terminology-provider';
 import { TASK_STATUS_COLORS, type TaskStatus } from '@/lib/task-meta';
 import { getTaskStatusLabel } from '@/lib/terminology';
@@ -69,7 +70,7 @@ export function TaskDistributionChart({
     return (
       <Paper withBorder radius="lg" p={{ base: 'md', sm: 'lg' }} className={rootClassName}>
         <Stack gap="xs">
-          <Title order={4}>Workflow Snapshot</Title>
+          <SectionTitleWithIcon icon={IconChartBar}>Workflow Snapshot</SectionTitleWithIcon>
           <Text size="sm" c="dimmed">
             Bars compare current task counts across the workflow.
           </Text>
@@ -87,7 +88,7 @@ export function TaskDistributionChart({
     <Paper withBorder radius="lg" p={{ base: 'md', sm: 'lg' }} className={rootClassName}>
       <Group justify="space-between" align="flex-start" mb="sm">
         <Stack gap={4}>
-          <Title order={4}>Workflow Snapshot</Title>
+          <SectionTitleWithIcon icon={IconChartBar}>Workflow Snapshot</SectionTitleWithIcon>
           <Text size="sm" c="dimmed">
             Bars compare current task counts across the workflow.
           </Text>

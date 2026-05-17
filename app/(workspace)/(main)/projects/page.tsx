@@ -1,5 +1,5 @@
 import { Container, Stack, Title } from '@mantine/core';
-import { IconActivity } from '@tabler/icons-react';
+import { IconActivity, IconFolders } from '@tabler/icons-react';
 import { and, desc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -541,6 +541,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
         <Stack gap="md" className="dashboard-stack">
           <div className={styles.rosterHeader}>
             <WorkspacePageHeader
+              icon={IconFolders}
               title={`Projects roster · ${totalProjectCount} repos`}
               description="Workspace activity, live agent state, and repo readiness at a glance."
             />
@@ -554,7 +555,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
           <section className={styles.activityPanel}>
             <div className={styles.activityHeader}>
               <Title component="h2" order={3} className={styles.activityTitle}>
-                <IconActivity size={16} />
+                <IconActivity size={16} aria-hidden="true" />
                 Workspace activity
                 <span aria-hidden="true">·</span>
                 <span className={styles.activityRangeDesktop}>last 30 days</span>

@@ -1,4 +1,5 @@
 import { Container, Stack } from '@mantine/core';
+import { IconLayoutDashboard } from '@tabler/icons-react';
 import { asc, desc, eq } from 'drizzle-orm';
 import { redirect } from 'next/navigation';
 
@@ -177,6 +178,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     >
       <Stack gap="md" className="dashboard-stack is-overview">
         <WorkspacePageHeader
+          icon={IconLayoutDashboard}
           title="Dashboard"
           description="Today's work, portfolio signals, and the next things that need movement."
         />
