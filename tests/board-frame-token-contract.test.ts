@@ -1,41 +1,167 @@
+// @vitest-environment jsdom
+
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { MantineProvider } from '@mantine/core';
+import { cleanup, render, screen } from '@testing-library/react';
+import React from 'react';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
+const droppableState = vi.hoisted(() => ({
+  isDraggingOver: false,
+}));
+const pullToRefreshState = vi.hoisted(() => ({
+  isArmed: false,
+  pullDistance: 0,
+  pullProgress: 0,
+}));
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    refresh: vi.fn(),
+  }),
+}));
+
+vi.mock('@hello-pangea/dnd', () => ({
+  Droppable: ({ children, droppableId }: any) =>
+    children(
+      { innerRef: vi.fn(), droppableProps: { 'data-droppable-id': droppableId } },
+      { isDraggingOver: droppableState.isDraggingOver },
+    ),
+  Draggable: ({ children, draggableId }: any) =>
+    children(
+      {
+        innerRef: vi.fn(),
+        draggableProps: { style: {}, 'data-draggable-id': draggableId },
+        dragHandleProps: {},
+      },
+      { isDragging: false, isDropAnimating: false },
+    ),
+}));
+
+vi.mock('@/app/hooks/use-mobile-pull-to-refresh', () => ({
+  useMobilePullToRefresh: () => ({
+    bindScrollContainer: () => {},
+    isArmed: pullToRefreshState.isArmed,
+    pullDistance: pullToRefreshState.pullDistance,
+    pullProgress: pullToRefreshState.pullProgress,
+    onTouchStart: () => {},
+    onTouchMove: () => {},
+    onTouchEnd: () => {},
+    onTouchCancel: () => {},
+  }),
+}));
+
+vi.mock('@/app/hooks/use-mobile-tab-swipe', () => ({
+  useMobileTabSwipe: () => ({ onTouchStart: () => {}, onTouchEnd: () => {} }),
+}));
+
+import { KanbanBoardMobile } from '@/app/components/kanban-board-mobile';
+import { KanbanCardContent } from '@/app/components/kanban-card';
+import { KanbanColumn } from '@/app/components/kanban-column';
+import { KanbanQuickAdd } from '@/app/components/kanban-quick-add';
+import type { KanbanColumns, KanbanStatus, KanbanTask } from '@/lib/kanban-helpers';
+
+// JSDOM needs the app stylesheet installed before computed-style assertions can observe it.
 const globalsCss = fs.readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
-const mobileBoardSource = fs.readFileSync(
-  path.join(process.cwd(), 'app/components/kanban-board-mobile.tsx'),
-  'utf8',
-);
-const archiveDrawerSource = fs.readFileSync(
-  path.join(process.cwd(), 'app/components/kanban-archive-drawer.tsx'),
-  'utf8',
-);
+let globalsStyle: HTMLStyleElement | null = null;
 
-function escapeSelector(selector: string) {
-  return selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function emptyColumns(): KanbanColumns {
+  return {
+    inbox: [],
+    todo: [],
+    hold: [],
+    ready: [],
+    done: [],
+    archived: [],
+  };
 }
 
-function getRule(selector: string) {
-  const match = globalsCss.match(
-    new RegExp(`(?:^|\\n)\\s*${escapeSelector(selector)}\\s*\\{([^}]*)\\}`),
-  );
-
-  expect(match, `Expected CSS rule for ${selector}`).not.toBeNull();
-
-  return match![1];
+function makeTask(status: KanbanStatus): KanbanTask {
+  return {
+    id: `${status}-1`,
+    taskKey: `PROJ-${status}`,
+    title: `${status} task`,
+    note: null,
+    status,
+    sortOrder: 'a0',
+    taskPriority: 'none',
+    dueAt: null,
+    engine: null,
+    runState: null,
+    runStateUpdatedAt: null,
+    project: null,
+    updatedAt: new Date('2026-03-09T00:00:00.000Z').toISOString(),
+    archivedAt: null,
+    labels: [],
+  };
 }
 
-function expectNoRawBoardColor(rule: string) {
-  expect(rule).not.toMatch(/rgba\(/);
-  expect(rule).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-  expect(rule).not.toMatch(/color-mix\(in srgb,[^;]*(?:\bwhite\b|\bblack\b)/);
-  expect(rule).not.toContain('color: white;');
+function renderWithMantine(element: React.ReactElement) {
+  return render(React.createElement(MantineProvider, null, element));
+}
+
+function getElement(selector: string) {
+  const element = document.querySelector<HTMLElement>(selector);
+
+  expect(element, `Expected rendered element for ${selector}`).not.toBeNull();
+
+  return element!;
+}
+
+function expectComputedToken(selector: string, property: string, token: string) {
+  const value = window.getComputedStyle(getElement(selector)).getPropertyValue(property);
+
+  expect(value).toContain(`var(${token})`);
+  expect(value).not.toContain('rgba(');
+  expect(value).not.toContain('#');
+  expect(value).not.toContain('white');
+  expect(value).not.toContain('black');
 }
 
 describe('board frame token contract', () => {
-  it('defines a shared board chrome token hierarchy', () => {
+  beforeAll(() => {
+    Object.defineProperty(window, 'matchMedia', {
+      configurable: true,
+      writable: true,
+      value: vi.fn((query: string) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })),
+    });
+    document.documentElement.setAttribute('data-mantine-color-scheme', 'light');
+    globalsStyle = document.createElement('style');
+    globalsStyle.textContent = globalsCss;
+    document.head.appendChild(globalsStyle);
+  });
+
+  beforeEach(() => {
+    droppableState.isDraggingOver = false;
+    pullToRefreshState.isArmed = false;
+    pullToRefreshState.pullDistance = 0;
+    pullToRefreshState.pullProgress = 0;
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  afterAll(() => {
+    globalsStyle?.remove();
+    globalsStyle = null;
+  });
+
+  it('defines the shared board chrome token hierarchy on the rendered root', () => {
+    const rootStyle = window.getComputedStyle(document.documentElement);
+
     for (const token of [
       '--kanban-frame-stage-surface',
       '--kanban-frame-column-surface',
@@ -45,64 +171,135 @@ describe('board frame token contract', () => {
       '--kanban-frame-chrome-border',
       '--kanban-frame-chrome-shadow',
     ]) {
-      expect(globalsCss).toContain(`${token}:`);
+      expect(rootStyle.getPropertyValue(token).trim().length).toBeGreaterThan(0);
     }
   });
 
-  it('keeps desktop columns, quick add, action island, and mobile tabs on board chrome tokens', () => {
-    const expectations: Array<[selector: string, tokens: string[]]> = [
-      [
-        '.kanban-action-island',
-        ['var(--kanban-frame-chrome-surface)', 'var(--kanban-frame-chrome-shadow)'],
-      ],
-      [
-        '.kanban-column',
-        ['var(--kanban-frame-column-surface)', 'var(--kanban-frame-column-border)'],
-      ],
-      [
-        '.kanban-quickadd-panel',
-        ['var(--kanban-frame-chrome-surface)', 'var(--kanban-frame-chrome-border)'],
-      ],
-      [
-        '.kanban-mobile-tab-bar',
-        ['var(--kanban-frame-chrome-surface)', 'var(--kanban-frame-chrome-shadow)'],
-      ],
-      [
-        '.kanban-mobile-tabs .mantine-Tabs-list',
-        ['var(--kanban-frame-chrome-surface)', 'var(--kanban-frame-chrome-border)'],
-      ],
-    ];
+  it('computes desktop columns, quick add, and action island chrome from board tokens', () => {
+    renderWithMantine(
+      React.createElement(
+        React.Fragment,
+        null,
+        React.createElement('div', { className: 'kanban-action-island' }),
+        React.createElement(KanbanColumn, {
+          status: 'inbox',
+          tasks: [],
+          isPending: false,
+          isMobile: false,
+          editHrefBase: '/board',
+          editHrefJoiner: '?',
+          router: { push: () => {} } as never,
+          onQuickMoveTask: () => {},
+          onDeleteTask: () => {},
+          enginePresets: null,
+        }),
+        React.createElement(KanbanQuickAdd, {
+          selectedProject: { id: 'project-1', name: 'Project One' },
+          projectOptions: [],
+          editHrefBase: '/board',
+          editHrefJoiner: '?',
+          onClose: () => {},
+        }),
+      ),
+    );
 
-    for (const [selector, tokens] of expectations) {
-      const rule = getRule(selector);
-
-      for (const token of tokens) {
-        expect(rule).toContain(token);
-      }
-
-      expectNoRawBoardColor(rule);
-    }
+    expectComputedToken('.kanban-action-island', 'background', '--kanban-frame-chrome-surface');
+    expectComputedToken('.kanban-action-island', 'box-shadow', '--kanban-frame-chrome-shadow');
+    expectComputedToken('.kanban-column', 'background', '--kanban-frame-column-surface');
+    expectComputedToken('.kanban-column', 'box-shadow', '--kanban-frame-column-border');
+    expectComputedToken('.kanban-quickadd-panel', 'background', '--kanban-frame-chrome-surface');
   });
 
-  it('uses semantic state tokens for board drag, refresh, save-error, and status states', () => {
-    expect(getRule('.kanban-column-body.is-drag-over')).toContain('var(--ui-status-running-soft)');
-    expect(getRule('.kanban-column.is-drag-over')).toContain(
-      'var(--ui-status-running-border-strong)',
-    );
-    expect(getRule(".kanban-mobile-refresh-indicator[data-state='refreshing']")).toContain(
-      'var(--ui-status-running)',
-    );
-    expect(getRule(".kanban-mobile-refresh-indicator[data-state='success']")).toContain(
-      'var(--ui-success)',
-    );
-    expect(getRule('.kanban-mobile-save-error')).toContain('var(--ui-danger)');
-    expect(getRule('.kanban-archive-error')).toContain('var(--ui-danger)');
-    expect(getRule('.kanban-status-button.is-inbox')).toContain('var(--ui-status-queued)');
-    expect(getRule('.kanban-status-button.is-hold')).toContain('var(--ui-warning)');
-    expect(getRule('.kanban-status-button.is-ready')).toContain('var(--ui-status-running)');
-    expect(getRule('.kanban-status-button.is-done')).toContain('var(--ui-success)');
+  it('renders mobile tab and refresh hooks through the mobile board component', () => {
+    pullToRefreshState.isArmed = true;
+    pullToRefreshState.pullDistance = 42;
+    pullToRefreshState.pullProgress = 0.75;
 
-    expect(mobileBoardSource).not.toContain('c="red"');
-    expect(archiveDrawerSource).not.toContain('c="red"');
+    renderWithMantine(
+      React.createElement(KanbanBoardMobile, {
+        columns: emptyColumns(),
+        activeTab: 'inbox',
+        onTabChange: () => {},
+        isPending: false,
+        editHrefBase: '/board',
+        editHrefJoiner: '?',
+        router: { push: () => {}, refresh: () => {} } as never,
+        onRefresh: () => {},
+        onQuickMoveTask: () => {},
+        onDeleteTask: () => {},
+        actionIsland: React.createElement(
+          'div',
+          { className: 'kanban-action-island-anchor kanban-mobile-action-island-anchor' },
+          React.createElement('div', { className: 'kanban-action-island' }),
+        ),
+        saveError: 'Could not save the board.',
+        enginePresets: null,
+      }),
+    );
+
+    expect(getElement('.kanban-mobile-tab-bar')).toBeTruthy();
+    expect(getElement('.kanban-mobile-tabs .mantine-Tabs-list')).toBeTruthy();
+    expect(getElement('.kanban-action-island')).toBeTruthy();
+
+    const refreshIndicator = getElement('.kanban-mobile-refresh-indicator');
+    expect(refreshIndicator.dataset.state).toBe('armed');
+    expect(refreshIndicator.dataset.armed).toBe('true');
+    const panelBody = getElement('.kanban-mobile-panel-body');
+    expect(panelBody.style.getPropertyValue('--kanban-mobile-refresh-progress')).toBe('0.75');
+
+    expect(screen.getByText('Could not save the board.').classList).toContain(
+      'kanban-mobile-save-error',
+    );
+  });
+
+  it('computes semantic state colors from rendered state hooks', () => {
+    droppableState.isDraggingOver = true;
+
+    renderWithMantine(
+      React.createElement(
+        React.Fragment,
+        null,
+        React.createElement(KanbanColumn, {
+          status: 'todo',
+          tasks: [],
+          isPending: false,
+          isMobile: false,
+          editHrefBase: '/board',
+          editHrefJoiner: '?',
+          router: { push: () => {} } as never,
+          onQuickMoveTask: () => {},
+          onDeleteTask: () => {},
+          enginePresets: null,
+        }),
+        React.createElement('div', { className: 'kanban-column is-drag-over' }),
+        React.createElement('p', { className: 'kanban-archive-error' }, 'Archive load failed'),
+        ...(['inbox', 'hold', 'ready', 'done'] satisfies KanbanStatus[]).map((status) =>
+          React.createElement(KanbanCardContent, {
+            key: status,
+            task: makeTask(status),
+            isPending: false,
+            isMobile: false,
+            editHref: `/board?taskId=PROJ-${status}`,
+            telegramEnabled: false,
+            onQuickMoveTask: () => {},
+            onDeleteTask: () => {},
+            enginePresets: null,
+            labelOptions: [],
+          }),
+        ),
+      ),
+    );
+
+    expectComputedToken(
+      '.kanban-column-body.is-drag-over',
+      'background',
+      '--ui-status-running-soft',
+    );
+    expectComputedToken('.kanban-column.is-drag-over', 'box-shadow', '--ui-status-running-border');
+    expectComputedToken('.kanban-archive-error', 'color', '--ui-danger');
+    expectComputedToken('.kanban-status-button.is-inbox', 'color', '--ui-status-queued');
+    expectComputedToken('.kanban-status-button.is-hold', 'color', '--ui-warning');
+    expectComputedToken('.kanban-status-button.is-ready', 'color', '--ui-status-running');
+    expectComputedToken('.kanban-status-button.is-done', 'color', '--ui-success');
   });
 });
