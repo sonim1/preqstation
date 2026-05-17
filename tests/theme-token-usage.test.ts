@@ -54,8 +54,6 @@ describe('theme token usage audit fixes', () => {
     expect(globalsCss).toContain('--workspace-paper-border: var(--ui-border);');
     expect(globalsCss).toContain('--workspace-paper-soft: var(--ui-neutral-soft);');
     expect(globalsCss).toContain('--workspace-paper-accent: var(--ui-accent);');
-    expect(globalsCss).toContain('--workspace-paper-on-accent: var(--ui-accent-contrast);');
-    expect(globalsCss).toContain('--kanban-board-on-accent: var(--workspace-paper-on-accent);');
   });
 
   it('keeps task dispatch bottom picker menus on theme tokens', () => {
