@@ -544,6 +544,17 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('Archived</span>');
   });
 
+  it('sorts roster cards directly by last activity', () => {
+    expect(projectsPageSource).toContain(
+      'const activityDelta = b.lastActivityAt.getTime() - a.lastActivityAt.getTime();',
+    );
+    expect(projectsPageSource).not.toContain('sortActivityAt');
+  });
+
+  it('does not keep redundant active status label branches', () => {
+    expect(projectsPageSource).not.toContain("summary.runningCount > 0\n              ? 'Active'");
+  });
+
   it('filters paused and archived projects from the project filter chips', async () => {
     mocked.state.projects.push(
       {

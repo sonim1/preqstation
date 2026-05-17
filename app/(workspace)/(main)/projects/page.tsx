@@ -263,14 +263,13 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
         queuedCount,
         doneCount,
         lastActivityAt,
-        sortActivityAt: lastActivityAt,
         tone,
       };
     })
     .sort((a, b) => {
       const rankDelta = getProjectSortRank(a.project.status) - getProjectSortRank(b.project.status);
       if (rankDelta !== 0) return rankDelta;
-      const activityDelta = b.sortActivityAt.getTime() - a.sortActivityAt.getTime();
+      const activityDelta = b.lastActivityAt.getTime() - a.lastActivityAt.getTime();
       if (activityDelta !== 0) return activityDelta;
       return a.project.name.localeCompare(b.project.name);
     });
@@ -322,9 +321,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
           ? 'Archived'
           : summary.project.status === PAUSED_PROJECT_STATUS
             ? 'Paused'
-            : summary.runningCount > 0
-              ? 'Active'
-              : 'Active',
+            : 'Active',
       openTaskCount: summary.openTaskCount,
       runningCount: summary.runningCount,
       queuedCount: summary.queuedCount,
