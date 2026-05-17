@@ -30,6 +30,11 @@
   --ui-neutral-strong: #3f4a55;
   --ui-neutral-soft: rgba(92, 102, 112, 0.14);
   --ui-focus-ring: rgba(39, 77, 196, 0.4);
+  --ui-body-surface: #f7faff;
+  --ui-body-background:
+    radial-gradient(circle at 7% 8%, rgba(164, 226, 255, 0.74) 0%, transparent 34%),
+    radial-gradient(circle at 92% 4%, rgba(164, 180, 255, 0.66) 0%, transparent 30%),
+    linear-gradient(165deg, #f3f8ff 0%, var(--ui-body-surface) 42%, #fbfcff 100%);
   --ui-state-shell-surface: color-mix(
     in srgb,
     var(--ui-surface-panel),
@@ -171,11 +176,8 @@ html:has(.workspace-shell) body {
 html {
   --mantine-color-text: var(--ui-text);
   --mantine-color-dimmed: var(--ui-muted-text);
-  --mantine-color-body: #f7faff;
-  background:
-    radial-gradient(circle at 7% 8%, rgba(164, 226, 255, 0.74) 0%, transparent 34%),
-    radial-gradient(circle at 92% 4%, rgba(164, 180, 255, 0.66) 0%, transparent 30%),
-    linear-gradient(165deg, #f3f8ff 0%, #f7faff 42%, #fbfcff 100%);
+  --mantine-color-body: var(--ui-body-surface);
+  background: var(--ui-body-background);
 }
 
 html[data-mantine-color-scheme='dark'] {
@@ -210,6 +212,11 @@ html[data-mantine-color-scheme='dark'] {
   --ui-neutral-strong: #d2def2;
   --ui-neutral-soft: rgba(163, 178, 206, 0.2);
   --ui-focus-ring: rgba(110, 150, 255, 0.5);
+  --ui-body-surface: #0b1426;
+  --ui-body-background:
+    radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.1) 0%, transparent 36%),
+    radial-gradient(circle at 88% 2%, rgba(59, 130, 246, 0.08) 0%, transparent 32%),
+    linear-gradient(168deg, #090f1a 0%, #0d1526 48%, #0a1220 100%);
   --ui-glow: radial-gradient(circle at 78% 12%, rgba(56, 189, 248, 0.12), transparent 58%);
   --ui-hero-bg: linear-gradient(170deg, rgba(14, 25, 42, 0.96), rgba(20, 35, 57, 0.92));
   --ui-card-bg: linear-gradient(180deg, rgba(22, 35, 57, 0.96), rgba(16, 26, 43, 0.95));
@@ -220,11 +227,8 @@ html[data-mantine-color-scheme='dark'] {
   --ui-status-running-glow: rgba(56, 189, 248, 0.28);
   --mantine-color-text: var(--ui-text);
   --mantine-color-dimmed: var(--ui-muted-text);
-  --mantine-color-body: #0b1426;
-  background:
-    radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.1) 0%, transparent 36%),
-    radial-gradient(circle at 88% 2%, rgba(59, 130, 246, 0.08) 0%, transparent 32%),
-    linear-gradient(168deg, #090f1a 0%, #0d1526 48%, #0a1220 100%);
+  --mantine-color-body: var(--ui-body-surface);
+  background: var(--ui-body-background);
   --ui-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.2);
   --ui-elevation-2: 0 4px 12px rgba(0, 0, 0, 0.3);
   --ui-elevation-3: 0 12px 28px rgba(0, 0, 0, 0.4);
@@ -1022,20 +1026,20 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   color: inherit;
 }
 
-.auth-alert--warning,
-.onboarding-alert--warning {
+.auth-alert.auth-alert--warning,
+.onboarding-alert.onboarding-alert--warning {
   border-color: color-mix(in srgb, var(--ui-warning), var(--ui-border) 62%);
   background: color-mix(in srgb, var(--ui-warning-soft), var(--ui-surface-strong) 62%);
   color: var(--ui-warning);
 }
 
-.auth-alert--danger {
+.auth-alert.auth-alert--danger {
   border-color: color-mix(in srgb, var(--ui-danger), var(--ui-border) 62%);
   background: color-mix(in srgb, var(--ui-danger-soft), var(--ui-surface-strong) 62%);
   color: var(--ui-danger);
 }
 
-.onboarding-alert--success {
+.onboarding-alert.onboarding-alert--success {
   border-color: color-mix(in srgb, var(--ui-success), var(--ui-border) 62%);
   background: color-mix(in srgb, var(--ui-success-soft), var(--ui-surface-strong) 62%);
   color: var(--ui-success);
@@ -1119,19 +1123,19 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   box-shadow: var(--ui-elevation-1);
 }
 
-.onboarding-status-icon--success {
+.onboarding-status-icon.onboarding-status-icon--success {
   border-color: color-mix(in srgb, var(--ui-success), var(--ui-border) 62%);
   background: var(--ui-success-soft);
   color: var(--ui-success);
 }
 
-.onboarding-status-icon--warning {
+.onboarding-status-icon.onboarding-status-icon--warning {
   border-color: color-mix(in srgb, var(--ui-warning), var(--ui-border) 62%);
   background: var(--ui-warning-soft);
   color: var(--ui-warning);
 }
 
-.onboarding-status-icon--neutral {
+.onboarding-status-icon.onboarding-status-icon--neutral {
   background: var(--ui-neutral-soft);
   color: var(--ui-neutral-strong);
 }
@@ -1187,9 +1191,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   margin: 0;
   box-sizing: border-box;
   padding: var(--mantine-spacing-md, 20px);
-  background:
-    var(--ui-glow, radial-gradient(circle at 82% 16%, rgba(14, 165, 233, 0.18), transparent 54%)),
-    linear-gradient(180deg, var(--ui-surface-strong, #0d1828), var(--ui-surface, #111d2f));
+  background: var(--ui-glow), linear-gradient(180deg, var(--ui-surface-strong), var(--ui-surface));
   font-family:
     Inter,
     -apple-system,
@@ -1210,7 +1212,8 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 .route-state-global-card {
   box-sizing: border-box;
   padding: var(--mantine-spacing-xl, 22px);
-  border: 1px solid var(--ui-state-shell-border, rgba(132, 161, 202, 0.42));
+  border: 1px solid;
+  border-color: var(--ui-state-shell-border);
   border-radius: var(--mantine-radius-lg, 14px);
 }
 
