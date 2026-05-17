@@ -125,6 +125,28 @@ function getCssRuleBody(source: string, selector: string) {
   return match?.[1] ?? '';
 }
 
+function getCssBlockBody(source: string, prelude: string) {
+  const start = source.indexOf(prelude);
+  if (start === -1) return '';
+
+  const openBrace = source.indexOf('{', start);
+  if (openBrace === -1) return '';
+
+  let depth = 0;
+  for (let index = openBrace; index < source.length; index += 1) {
+    if (source[index] === '{') {
+      depth += 1;
+    } else if (source[index] === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        return source.slice(openBrace + 1, index);
+      }
+    }
+  }
+
+  return '';
+}
+
 function resolveWaveTopHeadroom(runState: 'queued' | 'running') {
   const { paths, waveHeight, waveShiftPercent, bandTopClearance } = getRunStateWaveConfig(runState);
   const highestCrest = Math.min(
@@ -287,6 +309,26 @@ describe('app/components/kanban-card', () => {
     );
   });
 
+  it('keeps focused card shadows valid when resting card elevation is disabled', () => {
+    const focusedRule = getCssBlockBody(cardsCss, '.kanbanCard.isFocused');
+    const focusPulseKeyframes = getCssBlockBody(cardsCss, '@keyframes kanbanCardFocusPulse');
+
+    expect(focusedRule).toContain('box-shadow:');
+    expect(focusPulseKeyframes).toContain('box-shadow:');
+    expect(focusedRule).not.toContain('var(--kanban-card-shadow-rest)');
+    expect(focusPulseKeyframes).not.toContain('var(--kanban-card-shadow-rest)');
+  });
+
+  it('keeps dark mode cards on the focus-ring shadow path', () => {
+    const darkModeRule =
+      cardsCss.match(
+        /:global\(html\[data-mantine-color-scheme='dark'\]\) \.kanbanCard\s*\{\s*--kanban-card-shadow-rest:[\s\S]*?\}/,
+      )?.[0] ?? '';
+
+    expect(darkModeRule).toContain('box-shadow: var(--kanban-card-focus-ring);');
+    expect(darkModeRule).not.toContain('box-shadow: none;');
+  });
+
   it('keeps the wave band geometry tied to top-clearance variables', () => {
     expect(cardsCss).toMatch(
       /\.kanbanRunWaveBand\s*\{[\s\S]*top:\s*calc\(var\(--wave-band-top\)\s*-\s*var\(--wave-band-top-clearance\)\);[\s\S]*height:\s*calc\(var\(--wave-height\)\s*\+\s*var\(--wave-band-top-clearance\)\);/,
@@ -299,92 +341,66 @@ describe('app/components/kanban-card', () => {
     );
   });
 
-  it('defines an in-bounds focus ring for kanban cards without dropping run-state shadows', () => {
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-focus-ring:\s*inset 0 0 0 0 transparent;[\s\S]*box-shadow:\s*var\(--kanban-card-focus-ring\),/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCard:focus-visible,\s*\.kanbanCard:focus-within\s*\{[\s\S]*outline:\s*none;[\s\S]*--kanban-card-focus-ring:\s*inset 0 0 0 2px/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanMetaChip\s*\{[\s\S]*background:\s*var\(--ui-surface-elevated\);/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanRunStateChip\s*\{[\s\S]*background:\s*var\(--ui-surface-elevated-strong\);/,
-    );
+  it('keeps a focus-ring rendering path for keyboard-focusable paper cards', () => {
+    const style = document.createElement('style');
+    style.textContent = cardsCss;
+    document.head.append(style);
+
+    const card = document.createElement('article');
+    card.className = 'itemCard kanbanCard';
+    document.body.append(card);
+
+    expect(getComputedStyle(card).boxShadow.trim()).toBe('var(--kanban-card-focus-ring)');
+
+    card.setAttribute('data-run-state', 'queued');
+    expect(getComputedStyle(card).boxShadow.trim()).toBe('var(--kanban-card-focus-ring)');
+
+    card.setAttribute('data-run-state', 'running');
+    expect(getComputedStyle(card).boxShadow.trim()).toBe('var(--kanban-card-focus-ring)');
+
+    card.remove();
+    style.remove();
   });
 
-  it('defines stronger four-sided card shadows and a board-scoped stage surface', () => {
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-rest:\s*0 0 0 1px [^;]+,\s*0 18px 34px -22px [^;]+,\s*0 6px 14px -10px [^;]+,\s*0 1px 3px [^;]+;/,
+  it('renders board cards with paper card classes and keyboard focusability', () => {
+    render(
+      <MantineProvider>
+        <KanbanColumn
+          status="todo"
+          tasks={[BASE_TASK]}
+          isPending={false}
+          isMobile={false}
+          editHrefBase="/board"
+          editHrefJoiner="?"
+          router={{ push: () => {} } as any}
+          onQuickMoveTask={() => {}}
+          onDeleteTask={() => {}}
+          enginePresets={null}
+        />
+      </MantineProvider>,
     );
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-queued:\s*0 0 0 1px [^;]+,\s*0 20px 38px -24px [^;]+,\s*0 8px 18px -12px [^;]+,\s*0 1px 3px [^;]+;/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-running:\s*0 0 0 1px [^;]+,\s*0 22px 42px -24px [^;]+,\s*0 10px 20px -14px [^;]+,\s*0 2px 6px [^;]+;/,
-    );
-    expect(globalsCss).toMatch(
-      /\.kanban-stage\s*\{[\s\S]*background:\s*var\(--kanban-stage-surface\);/,
-    );
+
+    const card = getCardForTitle('Label color update');
+    expect(card).toHaveClass(cardStyles.itemCard);
+    expect(card).toHaveClass(cardStyles.kanbanCard);
+    expect(card.getAttribute('tabindex')).toBe('0');
+    expect(card).not.toHaveClass(cardStyles.isFocused);
   });
 
-  it('renders boundary-free lanes with subtly rounded note cards carried by shadows', () => {
-    expect(globalsCss).toMatch(
-      /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*box-shadow:\s*none;/,
-    );
-    expect(globalsCss).toMatch(
-      /\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*border-radius:\s*0;/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-radius:\s*6px;[\s\S]*border:\s*0;[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*background:\s*var\(--kanban-note-surface\);/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCardFrame\s*\{[\s\S]*border-radius:\s*var\(--kanban-card-radius\);/,
-    );
-    expect(cardsCss).toMatch(
-      /\.itemCard\.kanbanCard\s*\{[\s\S]*border:\s*0;[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*box-shadow:\s*var\(--kanban-card-focus-ring\),\s*var\(--kanban-card-shadow-rest\);/,
-    );
-    expect(cardsCss).toMatch(/\.kanbanCard::after\s*\{[\s\S]*content:\s*none;/);
-  });
-
-  it('marks hold cards with a left warning accent instead of coloring the whole lane', () => {
-    expect(cardsCss).toMatch(
-      /\.kanbanCardHold::before\s*\{[\s\S]*position:\s*absolute;[\s\S]*left:\s*0;[\s\S]*width:\s*4px;[\s\S]*background:\s*linear-gradient\(/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCardHold::before\s*\{[\s\S]*box-shadow:\s*0 0 16px color-mix\(in srgb,\s*var\(--ui-warning\),\s*transparent 42%\);/,
-    );
-    expect(cardsCss).toMatch(/\.kanbanQueuedWarningIcon\s*\{/);
-  });
-
-  it('marks unread update cards with a left success accent', () => {
-    expect(cardsCss).toMatch(
-      /\.kanbanCardUpdated::before\s*\{[\s\S]*position:\s*absolute;[\s\S]*left:\s*0;[\s\S]*width:\s*4px;[\s\S]*background:\s*linear-gradient\([\s\S]*var\(--ui-success\)/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCardUpdated::before\s*\{[\s\S]*color-mix\(in srgb,\s*var\(--ui-success\),\s*black 18%\)/,
-    );
-    expect(cardsCss).not.toContain('#0f6b45');
-    expect(cardsCss).toMatch(
-      /\.kanbanCardUpdated::before\s*\{[\s\S]*box-shadow:\s*0 0 16px color-mix\(in srgb,\s*var\(--ui-success\),\s*transparent 42%\);/,
-    );
-  });
-
-  it('renders unread update cards with the success rail class, debug attribute, and hidden status text', () => {
+  it('renders unread update cards with the debug attribute and hidden status text', () => {
     const { desktopHtml } = renderQueuedTaskSurfaces({
       ...BASE_TASK,
       hasUnreadNotification: true,
     });
 
-    expect(desktopHtml).toContain('kanbanCardUpdated');
+    expect(desktopHtml).not.toContain('kanbanCardUpdated');
     expect(desktopHtml).toContain('data-has-unread-notification="true"');
     expect(desktopHtml).toContain('kanbanCardUnreadStatus');
     expect(desktopHtml).toContain('Unread update');
     expect(desktopHtml).not.toContain('aria-label="Open task');
   });
 
-  it('renders stale queued desktop and mobile cards with the warning accent and hidden emoji', () => {
+  it('renders stale queued desktop and mobile cards with the warning badge and stale data hook', () => {
     const staleTask: KanbanTask = {
       ...BASE_TASK,
       runState: 'queued',
@@ -394,7 +410,7 @@ describe('app/components/kanban-card', () => {
     const { desktopHtml, mobileHtml } = renderQueuedTaskSurfaces(staleTask);
 
     for (const html of [desktopHtml, mobileHtml]) {
-      expect(html).toContain('kanbanCardHold');
+      expect(html).not.toContain('kanbanCardHold');
       expect(html).toContain('data-run-state-stale="queued"');
       expect(html).toMatch(
         /data-kanban-queued-warning="true"[^>]*aria-hidden="true"|aria-hidden="true"[^>]*data-kanban-queued-warning="true"/,
@@ -463,26 +479,19 @@ describe('app/components/kanban-card', () => {
     expect(getCardForTitle('Focused card')).not.toHaveClass(cardStyles.isFocusDimmed);
   });
 
-  it('renders empty columns with a top-only aurora seam instead of a bordered panel', () => {
+  it('renders empty columns as quiet bordered paper panels', () => {
     const emptyStateRule = getCssRuleBody(globalsCss, '.kanban-empty-state--compact');
     const emptyStateAuroraRule = getCssRuleBody(globalsCss, '.kanban-empty-state--compact::before');
     const emptyStateSeamRule = getCssRuleBody(globalsCss, '.kanban-empty-state--compact::after');
 
-    expect(emptyStateRule).toContain('background: transparent;');
+    expect(emptyStateRule).toContain('background: var(--kanban-board-bg);');
     expect(emptyStateRule).toContain('flex-direction: column;');
     expect(emptyStateRule).toContain('justify-content: flex-start;');
-    expect(emptyStateRule).not.toContain('border:');
-    expect(emptyStateRule).not.toContain('border-radius:');
+    expect(emptyStateRule).toContain('border: 1px dashed var(--kanban-board-border);');
+    expect(emptyStateRule).toContain('border-radius: 6px;');
 
-    expect(emptyStateAuroraRule).toContain('position: absolute;');
-    expect(emptyStateAuroraRule).toContain('top: 0;');
-    expect(emptyStateAuroraRule).toContain('filter: blur(');
-    expect(emptyStateAuroraRule).toContain('linear-gradient(');
-
-    expect(emptyStateSeamRule).toContain('position: absolute;');
-    expect(emptyStateSeamRule).toContain('height: 1px;');
-    expect(emptyStateSeamRule).toContain('linear-gradient(');
-    expect(emptyStateSeamRule).toContain('90deg');
+    expect(emptyStateAuroraRule).toContain('content: none;');
+    expect(emptyStateSeamRule).toContain('content: none;');
   });
 
   it('keeps footer metadata as a natural continuation instead of a separated band', () => {
@@ -519,7 +528,7 @@ describe('app/components/kanban-card', () => {
     );
     expect(cardsCss).toMatch(/\.kanbanCardKey\s*\{[\s\S]*font-size:\s*0\.78rem;/);
     expect(cardsCss).toMatch(
-      /\.kanbanMetaChip\s*\{[\s\S]*gap:\s*5px;[\s\S]*min-height:\s*26px;[\s\S]*padding:\s*0 8px;[\s\S]*font-size:\s*0\.66rem;/,
+      /\.kanbanMetaChip\s*\{[\s\S]*gap:\s*5px;[\s\S]*min-height:\s*24px;[\s\S]*padding:\s*0 8px;[\s\S]*font-size:\s*0\.75rem;/,
     );
     expect(cardsCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanbanCardBody\s*\{[\s\S]*--kanban-card-inline-padding:\s*12px;[\s\S]*--kanban-card-bottom-padding:\s*11px;[\s\S]*padding:\s*11px 12px 11px 12px;/,

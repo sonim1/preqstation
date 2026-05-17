@@ -35,7 +35,7 @@ import {
 } from '@/lib/kanban-helpers';
 
 import cardStyles from './cards.module.css';
-import { KanbanCardContent, useStaleQueuedTask } from './kanban-card';
+import { KanbanCardContent } from './kanban-card';
 import { KanbanEmptyLane } from './kanban-empty-lane';
 import { useTerminology } from './terminology-provider';
 
@@ -142,7 +142,6 @@ function KanbanBoardMobileTaskCard({
   isFocused,
   isFocusDimmed,
 }: KanbanBoardMobileTaskCardProps) {
-  const isStaleQueued = useStaleQueuedTask(task.runState, task.runStateUpdatedAt);
   const hasUnreadNotification = Boolean(task.hasUnreadNotification);
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -160,8 +159,6 @@ function KanbanBoardMobileTaskCard({
       className={[
         cardStyles.itemCard,
         cardStyles.kanbanCard,
-        task.status === 'hold' || isStaleQueued ? cardStyles.kanbanCardHold : null,
-        hasUnreadNotification ? cardStyles.kanbanCardUpdated : null,
         'kanban-mobile-card',
         isFocused ? cardStyles.isFocused : null,
         isFocusDimmed ? cardStyles.isFocusDimmed : null,

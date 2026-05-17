@@ -10,7 +10,7 @@ import type { EnginePresets, KanbanStatus, KanbanTask } from '@/lib/kanban-helpe
 import { boardStatusLabel, statusColors } from '@/lib/kanban-helpers';
 
 import cardStyles from './cards.module.css';
-import { KanbanCardContent, useStaleQueuedTask } from './kanban-card';
+import { KanbanCardContent } from './kanban-card';
 import { useTerminology } from './terminology-provider';
 
 function shouldIgnoreCardSurfaceEvent(target: HTMLElement) {
@@ -105,7 +105,6 @@ function KanbanColumnTaskCard({
   isFocused,
   isFocusDimmed,
 }: KanbanColumnTaskCardProps) {
-  const isStaleQueued = useStaleQueuedTask(task.runState, task.runStateUpdatedAt);
   const hasUnreadNotification = Boolean(task.hasUnreadNotification);
   const editHref = `${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(task.taskKey)}`;
   const cardRef = useRef<HTMLDivElement>(null);
@@ -141,8 +140,6 @@ function KanbanColumnTaskCard({
           className={[
             cardStyles.itemCard,
             cardStyles.kanbanCard,
-            task.status === 'hold' || isStaleQueued ? cardStyles.kanbanCardHold : null,
-            hasUnreadNotification ? cardStyles.kanbanCardUpdated : null,
             snapshot.isDragging ? cardStyles.isDragging : null,
             isFocused ? cardStyles.isFocused : null,
             isFocusDimmed ? cardStyles.isFocusDimmed : null,
