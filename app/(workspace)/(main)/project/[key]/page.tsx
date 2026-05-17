@@ -51,6 +51,7 @@ import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 import { listProjectWorkLogYearActivity, listWorkLogsPage } from '@/lib/work-log-list';
 import { PROJECT_WORK_LOG_PAGE_SIZE } from '@/lib/work-log-pagination';
 
+import styles from './project-detail-page.module.css';
 import { ProjectSectionAnchorOffset } from './project-section-anchor-offset';
 
 type ProjectDetailPageProps = {
@@ -201,6 +202,9 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
     (t) =>
       t.status === 'inbox' || t.status === 'todo' || t.status === 'hold' || t.status === 'ready',
   ).length;
+  const runningTaskCount = todos.filter((t) => t.runState === 'running').length;
+  const queuedTaskCount = todos.filter((t) => t.runState === 'queued').length;
+  const doneTaskCount = todos.filter((t) => t.status === 'done').length;
   const openTaskLabel = openTaskCount === 1 ? terminology.task.singular : terminology.task.plural;
 
   const agentInstructions = resolveAgentInstructions(project.projectSettings);
@@ -588,16 +592,17 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           withBorder
           radius="lg"
           p={{ base: 'md', sm: 'xl' }}
-          className={panelStyles.heroPanel}
+          className={`${panelStyles.heroPanel} ${styles.detailHero}`}
+          data-project-detail-roster="true"
         >
           <Stack gap="lg">
             <Group justify="space-between" align="flex-start" wrap="wrap">
               <div>
                 <Title order={2} size="h3">
-                  {project.name}
+                  {`Project roster · ${projectKey.toUpperCase()}`}
                 </Title>
                 <Badge mt={6} variant="outline" color="indigo" w="fit-content">
-                  Key {projectKey.toUpperCase()}
+                  {project.name}
                 </Badge>
                 <Text c="dimmed" size="sm">
                   Project detail and delivery status
@@ -614,6 +619,25 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                 <ProjectHeroMenu workLogHref={newWorkLogHref} editProjectHref={editProjectHref} />
               </Group>
             </Group>
+
+            <div className={styles.detailMetrics} data-project-detail-metrics="true">
+              <div className={styles.detailMetric}>
+                <strong>{openTaskCount}</strong>
+                <span>OPEN</span>
+              </div>
+              <div className={styles.detailMetric}>
+                <strong>{runningTaskCount}</strong>
+                <span>RUNNING</span>
+              </div>
+              <div className={styles.detailMetric}>
+                <strong>{queuedTaskCount}</strong>
+                <span>QUEUED</span>
+              </div>
+              <div className={styles.detailMetric}>
+                <strong>{doneTaskCount}</strong>
+                <span>DONE · 7D</span>
+              </div>
+            </div>
 
             <Paper
               withBorder
@@ -963,23 +987,25 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
               </div>
             </Group>
 
-            <DashboardYearlyHeatmap
-              data={projectWorkLogYearActivity}
-              title="Activity evidence"
-              description={`${formatCountLabel(todos.length, 'total task', 'total tasks')} · ${formatCountLabel(currentYearWorkLogCount, 'work log this year', 'work logs this year')}`}
-            />
+            <div className={styles.activityEvidence} data-project-detail-activity-panel="true">
+              <DashboardYearlyHeatmap
+                data={projectWorkLogYearActivity}
+                title="Activity evidence"
+                description={`${formatCountLabel(todos.length, 'total task', 'total tasks')} · ${formatCountLabel(currentYearWorkLogCount, 'work log this year', 'work logs this year')}`}
+              />
 
-            <Paper
-              withBorder
-              radius="lg"
-              p={{ base: 'md', sm: 'lg' }}
-              className={panelStyles.sectionPanel}
-            >
-              <Title order={4} mb="sm">
-                {`${terminology.task.singular} pipeline evidence`}
-              </Title>
-              <TaskStatusBar tasks={todos} boardHref={boardHref} newTaskHref={newTaskHref} />
-            </Paper>
+              <Paper
+                withBorder
+                radius="lg"
+                p={{ base: 'md', sm: 'lg' }}
+                className={`${panelStyles.sectionPanel} ${styles.pipelinePanel}`}
+              >
+                <Title order={4} mb="sm">
+                  {`${terminology.task.singular} pipeline evidence`}
+                </Title>
+                <TaskStatusBar tasks={todos} boardHref={boardHref} newTaskHref={newTaskHref} />
+              </Paper>
+            </div>
 
             <Paper
               withBorder

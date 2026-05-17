@@ -73,7 +73,17 @@ vi.mock('@mantine/core', () => ({
     ),
   Container: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Group: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  Paper: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Paper: ({
+    children,
+    p: _p,
+    radius: _radius,
+    withBorder: _withBorder,
+    ...props
+  }: React.HTMLAttributes<HTMLDivElement> & {
+    p?: unknown;
+    radius?: unknown;
+    withBorder?: boolean;
+  }) => <div {...props}>{children}</div>,
   SimpleGrid: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Stack: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   Text: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -379,6 +389,13 @@ describe('project detail page', () => {
       }),
     );
 
+    expect(html).toContain('data-project-detail-roster="true"');
+    expect(html).toContain('Project roster · PROJ');
+    expect(html).toContain('data-project-detail-metrics="true"');
+    expect(html).toContain('OPEN');
+    expect(html).toContain('RUNNING');
+    expect(html).toContain('QUEUED');
+    expect(html).toContain('DONE · 7D');
     expect(html).toContain('data-testid="project-hero-menu"');
     expect(html).toContain('data-edit-project-href="/project/PROJ?panel=project-edit"');
     expect(html).toContain('data-work-log-href="/dashboard?panel=worklog&amp;projectId=project-1"');
@@ -541,6 +558,7 @@ describe('project detail page', () => {
     );
 
     expect(html).toContain('Activity evidence');
+    expect(html).toContain('data-project-detail-activity-panel="true"');
     expect(html).toContain('Task pipeline evidence');
     expect(html).toContain('data-testid="dashboard-yearly-heatmap"');
     expect(html).toContain('data-values="2026-01-01:0,2026-04-25:7,2026-04-26:4"');

@@ -34,24 +34,32 @@ function card(projectKey: string, name: string): ProjectPortfolioCardSummary {
     projectKey,
     isPaused: false,
     description: 'Cached project',
-    posture: { tone: 'steady' },
+    tone: 'active',
+    statusLabel: 'Active',
     openTaskCount: 1,
-    readyCount: 0,
-    holdCount: 0,
-    openLabel: 'Open tasks',
-    readyLabel: 'Ready',
-    holdLabel: 'Hold',
+    runningCount: 0,
+    queuedCount: 0,
+    doneCount: 0,
+    openLabel: 'OPEN',
+    repoLabel: `sonim1/${projectKey}`,
     repoUrl: null,
     vercelUrl: null,
     detailsHref: `/project/${projectKey}`,
     editHref: `/projects?panel=project-edit&projectKey=${projectKey}`,
-    backgroundUrl: null,
-    backgroundMode: 'fallback',
-    weeklyActivity: [],
-    weeklyActivityTotal: 0,
     lastActivityLabel: 'Last activity 1h ago',
-    activitySummary: '0 logs in 7d',
-    slot: 'lead',
+  };
+}
+
+function snapshot(cards: ProjectPortfolioCardSummary[]) {
+  return {
+    filterChips: [{ active: true, label: 'All', value: cards.length }],
+    rosterCards: cards,
+    workspaceActivity: Array.from({ length: 30 }, (_, index) => ({
+      date: `2026-03-${String(index + 1).padStart(2, '0')}`,
+      count: index === 29 ? 2 : 0,
+    })),
+    workspaceActivityTotal: 2,
+    workspacePeakLabel: 'peak d-0',
   };
 }
 
@@ -87,16 +95,9 @@ describe('app/(workspace)/(main)/projects/projects-offline-hydrator', () => {
     putSnapshotMock.mockResolvedValue(undefined);
   });
 
-  it('stores the current projects page snapshot while online', async () => {
+  it('stores the current roster snapshot while online', async () => {
     renderWithMantine(
-      <ProjectsOfflineHydrator
-        snapshot={{
-          featuredCard: card('PROJ', 'Project One'),
-          resumeCards: [],
-          quietCards: [],
-          summaryStrip: [{ label: 'Live projects', value: 1 }],
-        }}
-      >
+      <ProjectsOfflineHydrator snapshot={snapshot([card('PROJ', 'Project One')])}>
         <div>Online projects</div>
       </ProjectsOfflineHydrator>,
     );
@@ -108,33 +109,21 @@ describe('app/(workspace)/(main)/projects/projects-offline-hydrator', () => {
           kind: 'projects',
           entityKey: 'projects:index',
           payload: expect.objectContaining({
-            featuredCard: expect.objectContaining({ projectKey: 'PROJ' }),
+            rosterCards: [expect.objectContaining({ projectKey: 'PROJ' })],
           }),
         }),
       );
     });
   });
 
-  it('renders a saved projects snapshot while offline', async () => {
+  it('renders a saved roster snapshot while offline', async () => {
     useOfflineStatusMock.mockReturnValue({ online: false });
     getSnapshotMock.mockResolvedValue({
-      payload: {
-        featuredCard: card('CACH', 'Cached Project'),
-        resumeCards: [],
-        quietCards: [],
-        summaryStrip: [{ label: 'Live projects', value: 1 }],
-      },
+      payload: snapshot([card('CACH', 'Cached Project')]),
     });
 
     renderWithMantine(
-      <ProjectsOfflineHydrator
-        snapshot={{
-          featuredCard: null,
-          resumeCards: [],
-          quietCards: [],
-          summaryStrip: [],
-        }}
-      >
+      <ProjectsOfflineHydrator snapshot={snapshot([])}>
         <div>No projects yet</div>
       </ProjectsOfflineHydrator>,
     );
@@ -143,34 +132,21 @@ describe('app/(workspace)/(main)/projects/projects-offline-hydrator', () => {
     expect(screen.queryByText('No projects yet')).toBeNull();
   });
 
-  it('keeps the projects page header and content shell while offline', async () => {
+  it('keeps the projects page roster shell while offline', async () => {
     useOfflineStatusMock.mockReturnValue({ online: false });
     getSnapshotMock.mockResolvedValue({
-      payload: {
-        featuredCard: card('CACH', 'Cached Project'),
-        resumeCards: [],
-        quietCards: [],
-        summaryStrip: [{ label: 'Live projects', value: 1 }],
-      },
+      payload: snapshot([card('CACH', 'Cached Project')]),
     });
 
     renderWithMantine(
-      <ProjectsOfflineHydrator
-        snapshot={{
-          featuredCard: null,
-          resumeCards: [],
-          quietCards: [],
-          summaryStrip: [],
-        }}
-      >
+      <ProjectsOfflineHydrator snapshot={snapshot([])}>
         <div>No projects yet</div>
       </ProjectsOfflineHydrator>,
     );
 
-    expect(await screen.findByRole('heading', { name: 'Projects' })).toBeTruthy();
-    expect(
-      screen.getByText('Resume where work last moved. Keep the whole portfolio visible.'),
-    ).toBeTruthy();
+    expect(await screen.findByRole('heading', { name: 'Projects roster · 1 repos' })).toBeTruthy();
+    expect(screen.getByText('Workspace activity')).toBeTruthy();
     expect(document.querySelector('[data-projects-offline-container="true"]')).toBeTruthy();
+    expect(document.querySelector('[data-project-section="roster"]')).toBeTruthy();
   });
 });
