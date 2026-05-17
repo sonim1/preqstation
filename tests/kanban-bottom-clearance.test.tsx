@@ -360,7 +360,7 @@ describe('kanban bottom clearance hooks', () => {
       /\.kanban-mobile-tabs \.mantine-Tabs-tab\[data-active='true'\]\s*\{[\s\S]*color:\s*var\(--ui-accent-strong\);[\s\S]*background:\s*linear-gradient\([\s\S]*box-shadow:/,
     );
     expect(globalsCss).toMatch(
-      /\.kanban-mobile-tabs \.mantine-Tabs-tab\[data-active='true'\] \.kanban-mobile-tab-count\s*\{[\s\S]*background:\s*var\(--ui-accent-strong\);[\s\S]*color:\s*var\(--ui-surface\);/,
+      /\.kanban-mobile-tabs \.mantine-Tabs-tab\[data-active='true'\] \.kanban-mobile-tab-count\s*\{[\s\S]*background:\s*var\(--ui-accent-strong\);[\s\S]*color:\s*var\(--ui-on-accent\);/,
     );
     expect(globalsCss).toMatch(
       /html\[data-mantine-color-scheme='dark'\] \.kanban-mobile-tabs \.mantine-Tabs-tab\[data-active='true'\]\s*\{[\s\S]*background:\s*linear-gradient\([\s\S]*box-shadow:\s*inset 0 0 0 1px color-mix\(in srgb,\s*var\(--ui-accent\),\s*transparent 70%\);/,
