@@ -17,6 +17,14 @@ const cardsCss = fs.readFileSync(
   path.join(process.cwd(), 'app/components/cards.module.css'),
   'utf8',
 );
+const taskPanelModalCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/task-panel-modal.module.css'),
+  'utf8',
+);
+const readyQaActionsCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/ready-qa-actions.module.css'),
+  'utf8',
+);
 const globalErrorSource = fs.readFileSync(path.join(process.cwd(), 'app/global-error.tsx'), 'utf8');
 const designSystemPath = path.join(process.cwd(), 'DESIGN.md');
 const require = createRequire(import.meta.url);
@@ -34,12 +42,17 @@ function getReferencedUiTokens(source: string) {
   return new Set(Array.from(source.matchAll(/var\((--ui-[\w-]+)/g), ([, token]) => token));
 }
 
-function renderCssFixture(body: string, colorScheme: 'light' | 'dark' = 'light') {
+function renderCssFixture(
+  body: string,
+  colorScheme: 'light' | 'dark' = 'light',
+  cssSources: string[] = [],
+) {
   const schemeAttribute = colorScheme === 'dark' ? ' data-mantine-color-scheme="dark"' : '';
+  const styleTags = [globalsCss, ...cssSources].map((css) => `<style>${css}</style>`).join('');
 
   return new JSDOM(`
     <html${schemeAttribute}>
-      <head><style>${globalsCss}</style></head>
+      <head>${styleTags}</head>
       <body>${body}</body>
     </html>
   `);
@@ -82,6 +95,9 @@ describe('theme token usage audit fixes', () => {
   it('defines shared surface and state tokens for audited surfaces', () => {
     expect(globalsCss).toMatch(/--ui-surface-elevated:\s*color-mix/);
     expect(globalsCss).toMatch(/--ui-surface-panel:\s*color-mix/);
+    expect(globalsCss).toMatch(/--ui-surface-modal:\s*color-mix/);
+    expect(globalsCss).toMatch(/--ui-surface-modal-header:\s*linear-gradient/);
+    expect(globalsCss).toMatch(/--ui-surface-modal-body:\s*color-mix/);
     expect(globalsCss).toMatch(/--ui-panel-orb:/);
     expect(globalsCss).toMatch(/--ui-status-running:/);
   });
@@ -118,6 +134,8 @@ describe('theme token usage audit fixes', () => {
   it('reuses shared ui tokens across panels, project surfaces, and kanban card chrome', () => {
     expect(panelsCss).toContain('var(--ui-panel-orb)');
     expect(panelsCss).toContain('blur(var(--ui-panel-blur))');
+    expect(panelsCss).toContain('background: var(--ui-surface-panel);');
+    expect(panelsCss).toContain('box-shadow: var(--ui-elevation-2);');
     expect(projectsCss).toContain('var(--ui-surface-panel)');
     expect(projectsCss).toContain('var(--ui-surface-muted)');
     expect(projectsCss).toContain('var(--ui-surface-elevated)');
@@ -126,6 +144,46 @@ describe('theme token usage audit fixes', () => {
     expect(cardsCss).toContain('var(--ui-surface-elevated-strong)');
     expect(cardsCss).toContain('var(--ui-status-running)');
     expect(cardsCss).toContain('var(--ui-status-queued)');
+    expect(cardsCss).toMatch(/\.projectBoardCard\s*\{[\s\S]*background:\s*var\(--ui-card-bg\);/);
+  });
+
+  it('renders task panel and QA modals on the shared modal shell tokens', () => {
+    const taskPanelDom = renderCssFixture(
+      `
+        <section data-testid="task-panel-content" class="content">
+          <header data-testid="task-panel-header" class="header"></header>
+          <div data-testid="task-panel-body" class="body"></div>
+        </section>
+      `,
+      'light',
+      [taskPanelModalCss],
+    );
+    const readyQaDom = renderCssFixture(
+      `
+        <section data-testid="ready-qa-content" class="qaModalContent">
+          <header data-testid="ready-qa-header" class="qaModalHeader"></header>
+          <div data-testid="ready-qa-body" class="qaModalBody"></div>
+        </section>
+      `,
+      'light',
+      [readyQaActionsCss],
+    );
+
+    for (const [dom, prefix] of [
+      [taskPanelDom, 'task-panel'],
+      [readyQaDom, 'ready-qa'],
+    ] as const) {
+      expectComputedProperties(dom, `${prefix}-content`, {
+        background: 'var(--ui-surface-modal)',
+        'box-shadow': 'var(--ui-elevation-3)',
+      });
+      expectComputedProperties(dom, `${prefix}-header`, {
+        background: 'var(--ui-surface-modal-header)',
+      });
+      expectComputedProperties(dom, `${prefix}-body`, {
+        background: 'var(--ui-surface-modal-body)',
+      });
+    }
   });
 
   it('keeps app-level ui token references defined in globals', () => {

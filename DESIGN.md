@@ -40,6 +40,7 @@ Canonical tokens live in `app/globals.css`. Treat `--ui-*` variables as the app-
 - `--ui-surface`, `--ui-surface-soft`, `--ui-surface-strong`: base surface hierarchy.
 - `--ui-surface-panel`, `--ui-surface-panel-strong`, `--ui-surface-muted`, `--ui-surface-muted-strong`: shared panel and quiet-surface variants.
 - `--ui-surface-elevated`, `--ui-surface-elevated-strong`: card and raised chrome surfaces.
+- `--ui-surface-modal`, `--ui-surface-modal-header`, `--ui-surface-modal-body`: shared modal shell surfaces.
 - `--ui-border`, `--ui-shadow`, `--ui-elevation-0`, `--ui-elevation-1`, `--ui-elevation-2`, `--ui-elevation-3`: borders and depth.
 - `--ui-text`, `--ui-muted-text`, `--ui-on-accent`: foreground text.
 - `--ui-accent`, `--ui-accent-strong`, `--ui-accent-soft`: primary action and focus.

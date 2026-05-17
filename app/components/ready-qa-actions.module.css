@@ -1,6 +1,6 @@
 .qaModalContent {
   border: 1px solid color-mix(in srgb, var(--ui-border), transparent 8%);
-  background: color-mix(in srgb, var(--ui-surface-strong), transparent 4%);
+  background: var(--ui-surface-modal);
   box-shadow: var(--ui-elevation-3);
   backdrop-filter: blur(18px);
   overflow: hidden;
@@ -8,13 +8,9 @@
 
 .qaModalHeader {
   border-bottom: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--ui-surface-soft), transparent 2%),
-    color-mix(in srgb, var(--ui-surface), transparent 6%)
-  );
+  background: var(--ui-surface-modal-header);
 }
 
 .qaModalBody {
-  background: color-mix(in srgb, var(--ui-surface), transparent 4%);
+  background: var(--ui-surface-modal-body);
 }
