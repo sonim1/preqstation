@@ -154,7 +154,7 @@ export function KanbanArchiveDrawer({
         </Stack>
         {loadMoreError ? (
           <Stack gap={2}>
-            <Text size="sm" c="red">
+            <Text size="sm" className="kanban-archive-error">
               {loadMoreError}
             </Text>
             <Text size="xs" c="dimmed">
