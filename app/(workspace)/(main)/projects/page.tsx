@@ -23,12 +23,7 @@ import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
 import { getProjectActivityStatus } from '@/lib/project-activity';
 import { getProjectPortfolioBgUrl } from '@/lib/project-backgrounds';
 import { normalizeProjectKey } from '@/lib/project-key';
-import {
-  ACTIVE_PROJECT_STATUS,
-  isProjectStatus,
-  PAUSED_PROJECT_STATUS,
-  PROJECT_STATUS_LABELS,
-} from '@/lib/project-meta';
+import { ACTIVE_PROJECT_STATUS, PAUSED_PROJECT_STATUS } from '@/lib/project-meta';
 import { resolveTerminology } from '@/lib/terminology';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 
@@ -286,15 +281,9 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
       openLabel: `Open ${terminology.task.plural}`,
       readyLabel: terminology.statuses.ready,
       holdLabel: terminology.statuses.hold,
-      statusLabel: isProjectStatus(summary.project.status)
-        ? PROJECT_STATUS_LABELS[summary.project.status]
-        : summary.project.status,
-      priorityLabel:
-        summary.project.priority != null ? `Priority ${summary.project.priority}` : 'No priority',
       repoUrl: summary.project.repoUrl,
       vercelUrl: summary.project.vercelUrl,
       detailsHref: `/project/${summary.project.projectKey}`,
-      boardHref: `/board/${summary.project.projectKey}`,
       editHref: `/projects?panel=project-edit&projectKey=${summary.project.projectKey}`,
       backgroundUrl,
       backgroundMode: backgroundUrl ? 'image' : 'fallback',

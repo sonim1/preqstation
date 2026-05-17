@@ -51,7 +51,6 @@ const mocked = vi.hoisted(() => {
       updatedAt: Date;
       repoUrl?: string | null;
       vercelUrl?: string | null;
-      priority?: number;
       bgImage: string | null;
       bgImageCredit: unknown;
       deletedAt: Date | null;
@@ -466,34 +465,34 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html.indexOf('Hold Project')).toBeLessThan(html.indexOf('Drift Project'));
     expect(html.indexOf('Drift Project')).toBeLessThan(html.indexOf('Paused Project'));
     expect(resumeSectionHtml).not.toContain('Paused Project');
-    expect(html).toContain('Image-led project for immediate re-entry.');
-    expect(html).toContain('Second project in the resume lane.');
-    expect(html).toContain('Active project with blocked edges.');
-    expect(html).toContain('Deliberately quiet work.');
-    expect(html).toContain('Repo linked');
+    expect(html).not.toContain('Image-led project for immediate re-entry.');
+    expect(html).not.toContain('Second project in the resume lane.');
+    expect(html).not.toContain('Deliberately quiet work.');
+    expect(html).not.toContain('Repo linked');
     expect(html).not.toContain('Deploy linked');
     expect(html).toContain('data-connectivity-status="complete"');
     expect(html).toContain('aria-label="Repository connected. Deploy connected."');
     expect(html).toContain('data-connectivity-status="warning"');
     expect(html).toContain('aria-label="Repository missing. Deploy missing."');
     expect(
-      /data-project-card-slot="lead"[\s\S]*?data-connectivity-status="complete"[\s\S]*?>RCNT<\/span>[\s\S]*?>Recent Project<\/h3>/.test(
+      /data-project-card-slot="lead"[\s\S]*?data-connectivity-status="complete"[\s\S]*?>RCNT<\/span>[\s\S]*?aria-hidden="true">-<\/span>[\s\S]*?>Recent Project<\/h3>/.test(
         html,
       ),
     ).toBe(true);
     expect(
-      /data-project-card-slot="support"[\s\S]*?data-connectivity-status="warning"[\s\S]*?>SUPP<\/span>[\s\S]*?>Support Project<\/h3>/.test(
+      /data-project-card-slot="support"[\s\S]*?data-connectivity-status="warning"[\s\S]*?>SUPP<\/span>[\s\S]*?aria-hidden="true">-<\/span>[\s\S]*?>Support Project<\/h3>/.test(
         html,
       ),
     ).toBe(true);
     expect(html).not.toMatch(/>(steady|heavy|drifting|quiet)</);
     expect(html).not.toContain('ready to revive');
     expect(html).not.toContain('needs nudge');
+    expect(html).not.toContain('blocked edges');
     expect(html).not.toContain('queue full');
     expect(html).not.toContain('quick re-entry');
     expect(html).not.toContain('low drag');
     expect(html).not.toContain('on hold');
-    expect(html).toContain('/board/RCNT');
+    expect(html).not.toContain('/board/RCNT');
     expect(html).not.toContain('revisit');
     expect(html).toContain('data-testid="project-card-worklog-sparkline"');
     expect(html).toContain('data-total="6"');
@@ -538,23 +537,23 @@ describe('app/(workspace)/(main)/projects/page', () => {
     );
   });
 
-  it('stacks the summary panel full-width and uses compact handoff card heights', () => {
+  it('stacks the summary panel full-width and trims oversized project card min-heights', () => {
     expect(projectsPageCss).toMatch(/\.topGrid\s*\{[\s\S]*grid-template-columns:\s*1fr;/);
     expect(projectsPageCss).not.toMatch(
       /\.topGrid\s*\{[\s\S]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(0,\s*1fr\);/,
     );
-    expect(projectsPageCss).toMatch(/\.projectCard\s*\{[\s\S]*min-height:\s*0;/);
+    expect(projectsPageCss).toMatch(/\.projectCard\s*\{[\s\S]*min-height:\s*16rem;/);
     expect(projectsPageCss).toMatch(
-      /\.projectCard\[data-project-card-slot='lead'\]\s*\{[\s\S]*min-height:\s*0;/,
+      /\.projectCard\[data-project-card-slot='lead'\]\s*\{[\s\S]*min-height:\s*18rem;/,
     );
     expect(projectsPageCss).toMatch(
-      /\.projectCard\[data-project-card-slot='support'\]\s*\{[\s\S]*min-height:\s*0;/,
+      /\.projectCard\[data-project-card-slot='support'\]\s*\{[\s\S]*min-height:\s*18rem;/,
     );
     expect(projectsPageCss).toMatch(
-      /\.projectCard\[data-project-card-slot='quiet'\]\s*\{[\s\S]*min-height:\s*0;/,
+      /\.projectCard\[data-project-card-slot='quiet'\]\s*\{[\s\S]*min-height:\s*14rem;/,
     );
     expect(projectsPageCss).toMatch(
-      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.projectCard,[\s\S]*min-height:\s*0;/,
+      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.projectCard,[\s\S]*min-height:\s*16rem;/,
     );
   });
 
@@ -576,97 +575,25 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectPortfolioCardSource).toContain('<ProjectCardWorklogSparkline');
     expect(projectPortfolioCardSource).toContain('className={styles.cardLink}');
     expect(projectPortfolioCardSource).toMatch(
-      /data-connectivity-status=\{connectionStatus\}[\s\S]*styles\.metaLabel[\s\S]*styles\.cardTitle[\s\S]*styles\.cardDescription/,
+      /data-connectivity-status=\{connectionStatus\}[\s\S]*styles\.metaLabel[\s\S]*styles\.metaDivider[\s\S]*styles\.cardTitle/,
     );
     expect(projectPortfolioCardSource).toContain('canPause={!card.isPaused}');
     expect(projectPortfolioCardSource).not.toContain('card.posture.reason');
     expect(projectPortfolioCardSource).not.toContain('card.posture.label');
     expect(projectPortfolioCardSource).not.toContain('styles.cardChip');
     expect(projectPortfolioCardSource).not.toContain('styles.cardCopy');
-    expect(projectPortfolioCardSource).toContain('className={styles.cardDescription}');
+    expect(projectPortfolioCardSource).not.toContain('className={styles.cardDescription}');
     expect(projectPortfolioCardSource).not.toContain('styles.actionRow');
     expect(projectPortfolioCardSource).not.toContain('styles.boardLink');
     expect(projectPortfolioCardSource).not.toContain('freshnessLabel');
-    expect(projectPortfolioCardSource).toContain('boardHref');
-    expect(projectPortfolioCardSource).toContain('statusLabel:');
-    expect(projectPortfolioCardSource).toContain('{card.statusLabel}');
+    expect(projectPortfolioCardSource).not.toContain('boardHref');
+    expect(projectPortfolioCardSource).not.toContain('statusLabel:');
+    expect(projectPortfolioCardSource).not.toContain('{card.statusLabel}');
     expect(projectPortfolioCardSource).not.toContain('Details');
     expect(projectsPageSource).not.toContain('Momentum Roster');
     expect(projectsPageSource).not.toContain('Radar Matrix');
     expect(projectsPageSource).not.toContain('RADAR_SECTIONS');
     expect(projectsPageSource).not.toContain('getTrendHeights');
-  });
-
-  it('renders project cards in the HTML handoff row language with badges and direct actions', async () => {
-    mocked.state.projects = [
-      {
-        id: 'project-1',
-        name: 'PreqStation',
-        projectKey: 'PQST',
-        description: 'Coordinate PREQ task execution.',
-        status: 'active',
-        priority: 5,
-        updatedAt: new Date('2026-03-14T10:00:00Z'),
-        repoUrl: 'https://github.com/sonim1/preqstation',
-        vercelUrl: null,
-        bgImage: null,
-        bgImageCredit: null,
-        deletedAt: null,
-        projectSettings: [],
-      },
-    ];
-    mocked.state.statusCounts = [
-      { projectId: 'project-1', status: 'todo', _count: { id: 2 } },
-      { projectId: 'project-1', status: 'ready', _count: { id: 1 } },
-    ];
-
-    const page = await ProjectsPage();
-    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
-
-    expect(html).toContain('data-card-language="daycare-handoff"');
-    expect(html).toContain('Status');
-    expect(html).toContain('Active');
-    expect(html).toContain('Priority 5');
-    expect(html).toContain('Repo linked');
-    expect(html).toContain('Board');
-    expect(html).toContain('href="/project/PQST"');
-    expect(html).toContain('href="/board/PQST"');
-    expect(html).toContain('View detail');
-    expect(html).toContain('Open board');
-    expect(projectPortfolioCardSource).toContain('className={styles.badgeRail}');
-    expect(projectPortfolioCardSource).not.toContain('aria-label={`${card.name} project facts`}');
-    expect(projectPortfolioCardSource).toContain('className={styles.directActions}');
-    expect(projectsPageCss).toMatch(/--project-card-bg:\s*var\(--workspace-paper-surface\);/);
-    expect(projectsPageCss).toMatch(/\.badgeRail\s*\{[\s\S]*gap:\s*5px;/);
-    expect(projectsPageCss).toMatch(
-      /\.projectCard:hover,\s*\.projectCard:focus-within\s*\{[\s\S]*border-color:\s*var\(--project-accent\);/,
-    );
-  });
-
-  it('labels missing project priority without implying a default value', async () => {
-    mocked.state.projects = [
-      {
-        id: 'project-1',
-        name: 'Unprioritized Project',
-        projectKey: 'NONE',
-        description: 'No priority has been assigned.',
-        status: 'active',
-        updatedAt: new Date('2026-03-14T10:00:00Z'),
-        repoUrl: null,
-        vercelUrl: null,
-        bgImage: null,
-        bgImageCredit: null,
-        deletedAt: null,
-        projectSettings: [],
-      },
-    ];
-    mocked.state.statusCounts = [];
-
-    const page = await ProjectsPage();
-    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
-
-    expect(html).toContain('No priority');
-    expect(html).not.toContain('Priority 2');
   });
 
   it('renders resume and quiet sections through Mantine SimpleGrid wrappers', async () => {
@@ -787,8 +714,8 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectsPageCss).toMatch(/\.portfolioSection\s*\{[^}]*min-width:\s*0;/);
     expect(projectsPageCss).toMatch(/\.resumeGrid\s*\{[^}]*min-width:\s*0;/);
     expect(projectsPageCss).toMatch(/\.quietGrid\s*\{[^}]*min-width:\s*0;/);
-    expect(projectsPageCss).toContain('--project-card-bg: var(--workspace-paper-surface);');
-    expect(projectsPageCss).toMatch(/\.projectCard::before\s*\{[\s\S]*content:\s*none;/);
+    expect(projectsPageCss).toContain('--card-image');
+    expect(projectsPageCss).toMatch(/\.projectCard::before\s*\{[\s\S]*linear-gradient\(/);
     expect(projectsPageCss).not.toMatch(/\.mosaic\s*\{/);
     expect(projectsPageCss).not.toMatch(/\.quietLane\s*\{/);
     expect(projectsPageCss).not.toMatch(/grid-column:\s*span\s+(7|5|4);/);
