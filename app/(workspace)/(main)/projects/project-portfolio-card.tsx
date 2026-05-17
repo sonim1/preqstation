@@ -2,12 +2,13 @@ import { Tooltip } from '@mantine/core';
 import {
   IconAlertTriangle,
   IconCircleCheck,
+  IconExternalLink,
   IconEye,
+  IconGitBranch,
   IconPlayerPause,
   IconSubtask,
 } from '@tabler/icons-react';
 import Link from 'next/link';
-import type { CSSProperties } from 'react';
 
 import { ProjectCardMenu } from '@/app/components/project-card-menu';
 import { ProjectCardWorklogSparkline } from '@/app/components/project-card-worklog-sparkline';
@@ -34,9 +35,12 @@ export type ProjectPortfolioCardSummary = {
   openLabel: string;
   readyLabel: string;
   holdLabel: string;
+  statusLabel: string;
+  priorityLabel: string;
   repoUrl: string | null;
   vercelUrl: string | null;
   detailsHref: string;
+  boardHref: string;
   editHref: string;
   backgroundUrl: string | null;
   backgroundMode: ProjectCardBackgroundMode;
@@ -62,21 +66,14 @@ export function ProjectPortfolioCard({
   const connectionSummary = `Repository ${repoLinked ? 'connected' : 'missing'}. Deploy ${
     deployLinked ? 'connected' : 'missing'
   }.`;
-  const cardStyle =
-    card.backgroundMode === 'image' && card.backgroundUrl
-      ? ({
-          '--card-image': `url(${card.backgroundUrl})`,
-        } as CSSProperties)
-      : undefined;
-
   return (
     <article
       id={`project-${card.projectKey}`}
       className={styles.projectCard}
+      data-card-language="daycare-handoff"
       data-project-card-slot={card.slot}
       data-project-card-background={card.backgroundMode}
       data-tone={card.posture.tone}
-      style={cardStyle}
     >
       <div className={styles.cardInner}>
         <Link
@@ -130,10 +127,8 @@ export function ProjectPortfolioCard({
             </Tooltip>
             <div className={styles.cardHeading}>
               <span className={styles.metaLabel}>{card.projectKey}</span>
-              <span className={styles.metaDivider} aria-hidden="true">
-                -
-              </span>
               <h3 className={styles.cardTitle}>{card.name}</h3>
+              <p className={styles.cardDescription}>{card.description}</p>
             </div>
           </div>
           <div className={styles.cardMeta}>
@@ -145,6 +140,19 @@ export function ProjectPortfolioCard({
               projectName={card.name}
             />
           </div>
+        </div>
+
+        <div className={styles.badgeRail}>
+          <span className={styles.badge}>
+            Status <strong>{card.statusLabel}</strong>
+          </span>
+          <span className={`${styles.badge} ${styles.badgeRank}`}>{card.priorityLabel}</span>
+          <span className={`${styles.badge} ${repoLinked ? styles.badgeOk : styles.badgeWarn}`}>
+            {repoLinked ? 'Repo linked' : 'Repo missing'}
+          </span>
+          <Link href={card.boardHref} className={`${styles.badge} ${styles.badgeInfo}`}>
+            Board
+          </Link>
         </div>
 
         <div className={styles.metricStrip}>
@@ -169,6 +177,27 @@ export function ProjectPortfolioCard({
             </span>
             <strong className={styles.metricValue}>{card.holdCount}</strong>
           </div>
+        </div>
+
+        <div className={styles.directActions}>
+          <Link href={card.detailsHref} className={styles.directAction}>
+            View detail
+          </Link>
+          <Link href={card.boardHref} className={styles.directAction}>
+            <IconGitBranch size={14} />
+            Open board
+          </Link>
+          {repoLinked ? (
+            <a
+              href={card.repoUrl ?? undefined}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.directAction}
+            >
+              <IconExternalLink size={14} />
+              Repo
+            </a>
+          ) : null}
         </div>
 
         {!card.isPaused ? (

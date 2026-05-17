@@ -178,9 +178,9 @@ describe('app/components/workspace-shell', () => {
     expect(html).not.toContain('Toggle color scheme');
   });
 
-  it('matches the desktop account avatar size to the 44px navbar controls', () => {
+  it('matches the desktop account avatar size to the compact 40px header controls', () => {
     expect(workspaceShellSource).toMatch(
-      /className="workspace-avatar-trigger"[\s\S]*<Avatar color="blue" radius="xl" size=\{44\}>/,
+      /className="workspace-avatar-trigger"[\s\S]*<Avatar color="blue" radius="xl" size=\{40\}>/,
     );
   });
 
@@ -196,16 +196,19 @@ describe('app/components/workspace-shell', () => {
     expect(html).toContain('aria-label="Go to dashboard"');
   });
 
-  it('keeps the workspace brand mark on an aspect-ratio-safe render contract', () => {
+  it('keeps the workspace brand mark on the handoff 34px bordered mark contract', () => {
     const brandMarkSourceMatch = workspaceShellSource.match(
       /<Image[\s\S]*?src="\/brand\/preqstation-app-icon\.svg"[\s\S]*?width=\{(\d+)\}[\s\S]*?height=\{(\d+)\}[\s\S]*?className="workspace-brand-mark"/,
     );
     const brandMarkRule = globalsCss.match(/\.workspace-brand-mark\s*\{([\s\S]*?)\}/)?.[1] ?? '';
 
     expect(brandMarkSourceMatch).not.toBeNull();
-    expect(brandMarkSourceMatch?.[1]).not.toBe(brandMarkSourceMatch?.[2]);
-    expect(brandMarkRule).toMatch(/width:\s*auto;/);
-    expect(brandMarkRule).toMatch(/height:\s*28px;/);
+    expect(brandMarkSourceMatch?.[1]).toBe('34');
+    expect(brandMarkSourceMatch?.[2]).toBe('34');
+    expect(brandMarkRule).toMatch(/width:\s*34px;/);
+    expect(brandMarkRule).toMatch(/height:\s*34px;/);
+    expect(brandMarkRule).toMatch(/border:\s*1px solid var\(--ui-text\);/);
+    expect(brandMarkRule).toMatch(/border-radius:\s*5px;/);
   });
 
   it('disables eager workspace route prefetching and marks board links with prefetch={false}', () => {
@@ -543,6 +546,18 @@ describe('app/components/workspace-shell', () => {
     expect(globalsCss).toMatch(
       /html\[data-mantine-color-scheme='dark'\] \.workspace-nav-link\[data-active='true'\]\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--ui-accent-soft\), var\(--ui-surface-strong\) 26%\);[^}]*color:\s*var\(--ui-text\);/,
     );
+  });
+
+  it('uses the handoff compact left menu treatment for top-level nav rows', () => {
+    const navLinkRule = globalsCss.match(/\.workspace-nav-link\s*\{([\s\S]*?)\}/)?.[1] ?? '';
+
+    expect(globalsCss).toMatch(/--workspace-control-size:\s*40px;/);
+    expect(navLinkRule).toMatch(/min-height:\s*var\(--workspace-control-size\);/);
+    expect(navLinkRule).toMatch(/border-radius:\s*6px;/);
+    expect(navLinkRule).toMatch(/font-size:\s*13px;/);
+    expect(navLinkRule).toMatch(/font-weight:\s*700;/);
+    expect(navLinkRule).toMatch(/text-transform:\s*uppercase;/);
+    expect(navLinkRule).toMatch(/letter-spacing:\s*0\.05em;/);
   });
 
   it('keeps the header and account menu on flat surfaces instead of blur-heavy chrome', () => {

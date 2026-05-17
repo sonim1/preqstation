@@ -381,6 +381,29 @@ describe('project detail page', () => {
     expect(html).toContain('href="/dashboard?panel=worklog&amp;projectId=project-1"');
   });
 
+  it('uses the handoff fact-panel and side-detail rhythm without dropping project actions', async () => {
+    mocked.tasksFindMany.mockResolvedValueOnce([{ status: 'todo' }, { status: 'ready' }]);
+
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('data-project-detail-layout="handoff"');
+    expect(html).toContain('data-project-detail-main="true"');
+    expect(html).toContain('data-project-detail-side="true"');
+    expect(html).toContain('data-project-fact-grid="true"');
+    expect(html).toContain('data-project-fact-panel="setup"');
+    expect(html).toContain('data-project-fact-panel="repository"');
+    expect(html).toContain('data-project-fact-panel="deployment"');
+    expect(html).toContain('data-project-fact-panel="activity"');
+    expect(html).toContain('Project facts');
+    expect(html).toContain('Open Kanban');
+    expect(html).toContain('New Task');
+    expect(html).toContain('Edit Details');
+  });
+
   it('renders project editing inside the shared modal shell on the detail route', async () => {
     const html = renderToStaticMarkup(
       await ProjectDetailPage({
