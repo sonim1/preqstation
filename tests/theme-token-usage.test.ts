@@ -17,6 +17,14 @@ const cardsCss = fs.readFileSync(
   path.join(process.cwd(), 'app/components/cards.module.css'),
   'utf8',
 );
+const taskPanelModalCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/task-panel-modal.module.css'),
+  'utf8',
+);
+const readyQaActionsCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/ready-qa-actions.module.css'),
+  'utf8',
+);
 const globalErrorSource = fs.readFileSync(path.join(process.cwd(), 'app/global-error.tsx'), 'utf8');
 const designSystemPath = path.join(process.cwd(), 'DESIGN.md');
 const require = createRequire(import.meta.url);
@@ -82,6 +90,9 @@ describe('theme token usage audit fixes', () => {
   it('defines shared surface and state tokens for audited surfaces', () => {
     expect(globalsCss).toMatch(/--ui-surface-elevated:\s*color-mix/);
     expect(globalsCss).toMatch(/--ui-surface-panel:\s*color-mix/);
+    expect(globalsCss).toMatch(/--ui-surface-modal:\s*color-mix/);
+    expect(globalsCss).toMatch(/--ui-surface-modal-header:\s*linear-gradient/);
+    expect(globalsCss).toMatch(/--ui-surface-modal-body:\s*color-mix/);
     expect(globalsCss).toMatch(/--ui-panel-orb:/);
     expect(globalsCss).toMatch(/--ui-status-running:/);
   });
@@ -118,6 +129,8 @@ describe('theme token usage audit fixes', () => {
   it('reuses shared ui tokens across panels, project surfaces, and kanban card chrome', () => {
     expect(panelsCss).toContain('var(--ui-panel-orb)');
     expect(panelsCss).toContain('blur(var(--ui-panel-blur))');
+    expect(panelsCss).toContain('background: var(--ui-surface-panel);');
+    expect(panelsCss).toContain('box-shadow: var(--ui-elevation-2);');
     expect(projectsCss).toContain('var(--ui-surface-panel)');
     expect(projectsCss).toContain('var(--ui-surface-muted)');
     expect(projectsCss).toContain('var(--ui-surface-elevated)');
@@ -126,6 +139,17 @@ describe('theme token usage audit fixes', () => {
     expect(cardsCss).toContain('var(--ui-surface-elevated-strong)');
     expect(cardsCss).toContain('var(--ui-status-running)');
     expect(cardsCss).toContain('var(--ui-status-queued)');
+    expect(cardsCss).toMatch(/\.projectBoardCard\s*\{[\s\S]*background:\s*var\(--ui-card-bg\);/);
+  });
+
+  it('keeps task panel and QA modals on the shared modal shell tokens', () => {
+    for (const modalCss of [taskPanelModalCss, readyQaActionsCss]) {
+      expect(modalCss).toContain('border: 1px solid color-mix(in srgb, var(--ui-border)');
+      expect(modalCss).toContain('background: var(--ui-surface-modal);');
+      expect(modalCss).toContain('box-shadow: var(--ui-elevation-3);');
+      expect(modalCss).toContain('background: var(--ui-surface-modal-header);');
+      expect(modalCss).toContain('background: var(--ui-surface-modal-body);');
+    }
   });
 
   it('keeps app-level ui token references defined in globals', () => {

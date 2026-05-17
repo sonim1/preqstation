@@ -39,6 +39,13 @@
   --ui-surface-panel-strong: color-mix(in srgb, var(--ui-surface-strong), #112136 30%);
   --ui-surface-muted: color-mix(in srgb, var(--ui-surface-soft), #112136 20%);
   --ui-surface-muted-strong: color-mix(in srgb, var(--ui-surface-soft), #112136 18%);
+  --ui-surface-modal: color-mix(in srgb, var(--ui-surface-strong), transparent 4%);
+  --ui-surface-modal-header: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-surface-soft), transparent 2%),
+    color-mix(in srgb, var(--ui-surface), transparent 6%)
+  );
+  --ui-surface-modal-body: color-mix(in srgb, var(--ui-surface), transparent 4%);
   --ui-panel-orb: radial-gradient(circle, rgba(56, 189, 248, 0.16), transparent 70%);
   --ui-panel-blur: 4px;
   --ui-status-queued: #a8bfff;

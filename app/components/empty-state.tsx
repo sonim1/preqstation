@@ -3,8 +3,9 @@ import type { CSSProperties, ReactNode } from 'react';
 
 const EMPTY_STATE_ICON_STYLE = {
   '--ti-bd': '1px solid color-mix(in srgb, var(--ui-border), transparent 12%)',
-  '--ti-bg': 'color-mix(in srgb, var(--ui-neutral-soft), var(--ui-surface-strong) 24%)',
+  '--ti-bg': 'var(--ui-surface-muted)',
   '--ti-color': 'var(--ui-muted-text)',
+  boxShadow: 'var(--ui-elevation-1)',
 } as CSSProperties;
 
 type EmptyStateProps = {

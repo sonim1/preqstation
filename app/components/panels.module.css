@@ -4,7 +4,7 @@
   overflow: hidden;
   border-color: var(--ui-border);
   background: var(--ui-hero-bg);
-  box-shadow: var(--ui-shadow);
+  box-shadow: var(--ui-elevation-3);
   isolation: isolate;
 }
 
@@ -36,8 +36,8 @@
 /* Section panel */
 .sectionPanel {
   border-color: var(--ui-border);
-  background: var(--ui-surface);
-  box-shadow: var(--ui-shadow);
+  background: var(--ui-surface-panel);
+  box-shadow: var(--ui-elevation-2);
   backdrop-filter: blur(var(--ui-panel-blur));
 }
 
@@ -85,5 +85,5 @@
 }
 
 :global(html[data-mantine-color-scheme='dark']) .sectionPanel {
-  background: var(--ui-surface);
+  background: var(--ui-surface-panel);
 }
