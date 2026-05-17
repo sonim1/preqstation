@@ -40,6 +40,7 @@
 
 .detailStatusDot[data-project-status-tone='queued'] {
   --project-detail-status-color: var(--ui-status-queued);
+  /* No dedicated queued glow token yet; the border token matches the current glow opacity. */
   --project-detail-status-glow: var(--ui-status-queued-border);
 }
 
