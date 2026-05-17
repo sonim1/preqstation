@@ -92,6 +92,8 @@ const workspaceShellSource = fs.readFileSync(
   path.join(process.cwd(), 'app/components/workspace-shell.tsx'),
   'utf8',
 );
+const workspaceChromeCss =
+  globalsCss.match(/\.workspace-header\s*\{[\s\S]*?(?=\.login-container\s*\{)/)?.[0] ?? '';
 
 type RenderWorkspaceShellArgs =
   | boolean
@@ -213,6 +215,10 @@ function getWorkspaceNavbar(container: HTMLElement) {
   expect(navbar).not.toBeNull();
 
   return navbar as HTMLElement;
+}
+
+function stripCssWords(source: string) {
+  return source.replace(/white-space/g, 'white_space');
 }
 
 function expectBefore(first: Element, second: Element) {
@@ -597,8 +603,8 @@ describe('app/components/workspace-shell', () => {
 
     expect(nestedBoardFocusRule).toMatch(/outline:\s*none;/);
     expect(nestedBoardFocusRule).toMatch(/color:\s*var\(--ui-text\);/);
-    expect(nestedBoardFocusRule).toMatch(/background:\s*var\(--ui-accent-soft\);/);
-    expect(nestedBoardFocusRule).toMatch(/box-shadow:/);
+    expect(nestedBoardFocusRule).toMatch(/background:\s*var\(--ui-workspace-accent-surface\);/);
+    expect(nestedBoardFocusRule).toMatch(/box-shadow:\s*var\(--ui-workspace-focus-shadow\);/);
     expect(nestedBoardBodyFocusRule).toBe('');
   });
 
@@ -632,7 +638,7 @@ describe('app/components/workspace-shell', () => {
 
   it('defines a shared focus-visible treatment for header and rail controls', () => {
     expect(globalsCss).toMatch(
-      /\.workspace-brand-link:focus-visible,\s*\.workspace-divider-rail-button:focus-visible,\s*\.workspace-header-sidebar-toggle:focus-visible,\s*\.workspace-avatar-trigger:focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*border-color:\s*var\(--ui-accent\);[\s\S]*box-shadow:/,
+      /\.workspace-brand-link:focus-visible,\s*\.workspace-divider-rail-button:focus-visible,\s*\.workspace-header-sidebar-toggle:focus-visible,\s*\.workspace-notification-trigger:focus-visible,\s*\.workspace-avatar-trigger:focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*border-color:\s*var\(--ui-accent\);[\s\S]*box-shadow:\s*var\(--ui-workspace-outer-focus-shadow\);/,
     );
   });
 
@@ -649,13 +655,13 @@ describe('app/components/workspace-shell', () => {
   it('uses flatter token-based sidebar chrome instead of blur-heavy gradients', () => {
     expect(globalsCss).not.toMatch(/\.workspace-navbar\s*\{[^}]*backdrop-filter:/);
     expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-surface\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--ui-accent-soft\), var\(--ui-surface-strong\) 42%\);/,
+      /\.workspace-board-subnav-surface\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);/,
     );
     expect(globalsCss).toMatch(
-      /\.workspace-nav-link\[data-active='true'\]\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--ui-accent-soft\), var\(--ui-surface-strong\) 34%\);[^}]*color:\s*var\(--ui-text\);/,
+      /\.workspace-nav-link\[data-active='true'\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*color:\s*var\(--ui-text\);/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-nav-link\[data-active='true'\]\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--ui-accent-soft\), var\(--ui-surface-strong\) 26%\);[^}]*color:\s*var\(--ui-text\);/,
+      /html\[data-mantine-color-scheme='dark'\] \.workspace-nav-link\[data-active='true'\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*color:\s*var\(--ui-text\);/,
     );
   });
 
@@ -664,19 +670,52 @@ describe('app/components/workspace-shell', () => {
     expect(globalsCss).not.toMatch(/\.workspace-user-menu\s*\{[^}]*backdrop-filter:/);
     expect(globalsCss).toMatch(/\.workspace-header\s*\{[^}]*background:\s*var\(--ui-surface\);/);
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-user-menu\s*\{[^}]*background:\s*var\(--ui-surface-strong\);/,
+      /html\[data-mantine-color-scheme='dark'\] \.workspace-user-menu\s*\{[^}]*background:\s*var\(--ui-workspace-popover-surface\);/,
+    );
+  });
+
+  it('keeps repeated workspace chrome surfaces and shadows on ui tokens', () => {
+    expect(globalsCss).toMatch(/--ui-workspace-control-surface:/);
+    expect(globalsCss).toMatch(/--ui-workspace-control-shadow:/);
+    expect(globalsCss).toMatch(/--ui-workspace-popover-shadow:/);
+    expect(stripCssWords(workspaceChromeCss)).not.toMatch(
+      /\b(?:white|black|rgba)\b|#[\da-fA-F]{3,8}/,
+    );
+    expect(globalsCss).toMatch(
+      /\.command-palette-trigger\s*\{[^}]*background:\s*var\(--ui-workspace-control-surface\);[^}]*box-shadow:[^}]*var\(--ui-workspace-control-shadow\);/,
+    );
+    expect(globalsCss).toMatch(
+      /\.workspace-mobile-project-picker\s*\{[^}]*background:\s*var\(--ui-workspace-control-surface\);[^}]*box-shadow:[^}]*var\(--ui-workspace-control-shadow\);/,
+    );
+    expect(globalsCss).toMatch(
+      /\.workspace-user-menu\s*\{[^}]*background:\s*var\(--ui-workspace-popover-surface\);[^}]*box-shadow:\s*var\(--ui-workspace-popover-shadow\);/,
+    );
+  });
+
+  it('shares accent state tokens between project picker items and board subnav', () => {
+    expect(globalsCss).toMatch(/--ui-workspace-accent-surface:/);
+    expect(globalsCss).toMatch(/--ui-workspace-accent-border:/);
+    expect(globalsCss).toMatch(/--ui-workspace-focus-shadow:/);
+    expect(globalsCss).toMatch(
+      /\.workspace-project-picker-item\.is-selected,\s*\.workspace-board-picker-item\[data-current-board='true'\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--ui-workspace-accent-border\);/,
+    );
+    expect(globalsCss).toMatch(
+      /\.workspace-board-subnav-surface\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--ui-workspace-accent-border\);/,
+    );
+    expect(globalsCss).toMatch(
+      /\.workspace-board-subnav-link:focus-visible\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*var\(--ui-workspace-focus-shadow\);/,
     );
   });
 
   it('keeps the left header chrome on token-driven dark surfaces', () => {
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-brand-link,\s*html\[data-mantine-color-scheme='dark'\] \.workspace-avatar-trigger\s*\{[^}]*background:\s*var\(--ui-surface-soft\);/,
+      /html\[data-mantine-color-scheme='dark'\] \.workspace-brand-link,\s*html\[data-mantine-color-scheme='dark'\] \.workspace-avatar-trigger\s*\{[^}]*background:\s*var\(--ui-workspace-control-surface\);/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker\s*\{[^}]*border-color:\s*color-mix\(in srgb,\s*var\(--ui-border\),\s*var\(--ui-accent\)\s*24%\);[^}]*background:\s*var\(--ui-surface-soft\);/,
+      /html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker\s*\{[^}]*border-color:\s*var\(--ui-workspace-control-border\);[^}]*background:\s*var\(--ui-workspace-control-surface\);/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker:hover,\s*html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker:focus-visible\s*\{[^}]*border-color:\s*color-mix\(in srgb,\s*var\(--ui-accent\),\s*var\(--ui-border\)\s*40%\);[^}]*background:\s*color-mix\(in srgb,\s*var\(--ui-accent-soft\),\s*var\(--ui-surface-soft\)\s*70%\);/,
+      /html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker:hover,\s*html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker:focus-visible\s*\{[^}]*border-color:\s*var\(--ui-workspace-accent-border-soft\);[^}]*background:\s*var\(--ui-workspace-control-hover-surface\);/,
     );
   });
 
@@ -742,13 +781,13 @@ describe('app/components/workspace-shell', () => {
       /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-header,\s*[\s\S]*\.workspace-navbar\s*\{[\s\S]*background:\s*var\(--ui-surface-strong\);/,
     );
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-navbar\s*\{[\s\S]*box-shadow:\s*18px 0 32px -24px rgba\(20,\s*44,\s*84,\s*0\.45\);/,
+      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-navbar\s*\{[\s\S]*box-shadow:\s*var\(--ui-elevation-3\);/,
     );
     expect(globalsCss).toMatch(
       /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*html\[data-mantine-color-scheme='dark'\] \.workspace-header,\s*[\s\S]*html\[data-mantine-color-scheme='dark'\] \.workspace-navbar\s*\{[\s\S]*background:\s*var\(--ui-surface-strong\);/,
     );
     expect(globalsCss).toMatch(
-      /\.workspace-mobile-account\s*\{[^}]*background:\s*var\(--ui-surface-soft\);[^}]*padding:\s*10px;/,
+      /\.workspace-mobile-account\s*\{[^}]*background:\s*var\(--ui-workspace-popover-surface\);[^}]*padding:\s*10px;/,
     );
     expect(globalsCss).toMatch(
       /\.workspace-mobile-account-email\s*\{[^}]*overflow-wrap:\s*anywhere;/,
@@ -782,7 +821,19 @@ describe('app/components/workspace-shell', () => {
     );
   });
 
-  it('gives the mobile project picker more room for long project names', () => {
+  it('lets the mobile picker shrink between fixed header controls', () => {
+    expect(globalsCss).toMatch(
+      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-header-inner\s*\{[\s\S]*grid-template-columns:\s*auto minmax\(0,\s*1fr\) auto;/,
+    );
+    expect(globalsCss).toMatch(
+      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-header-middle\s*\{[\s\S]*width:\s*100%;/,
+    );
+    expect(globalsCss).toMatch(
+      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*width:\s*min\(100%,\s*260px\);[\s\S]*max-width:\s*100%;/,
+    );
+  });
+
+  it('gives the mobile project picker responsive room for long project names', () => {
     expect(globalsCss).toMatch(
       /\.workspace-mobile-project-picker\s*\{[^}]*max-width:\s*min\(60vw, 260px\);/,
     );
@@ -790,7 +841,7 @@ describe('app/components/workspace-shell', () => {
       /\.workspace-mobile-project-picker-label\s*\{[^}]*max-width:\s*min\(38vw, 168px\);/,
     );
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*max-width:\s*min\(64vw, 260px\);/,
+      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*width:\s*min\(100%,\s*260px\);[\s\S]*max-width:\s*100%;/,
     );
   });
 });
