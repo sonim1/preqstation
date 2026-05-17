@@ -90,6 +90,43 @@
     inset 0 0 0 2px var(--ui-focus-ring), inset 0 0 0 3px var(--ui-accent-soft);
   --ui-workspace-outer-focus-shadow: 0 0 0 3px
     color-mix(in srgb, var(--ui-focus-ring), transparent 45%);
+  --ui-admin-surface:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-surface-soft), var(--ui-surface-strong) 18%),
+      color-mix(in srgb, var(--ui-surface), var(--ui-surface-soft) 22%)
+    ),
+    var(--ui-surface);
+  --ui-admin-surface-strong: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    var(--ui-surface-soft) 28%
+  );
+  --ui-admin-surface-muted: color-mix(in srgb, var(--ui-surface), transparent 6%);
+  --ui-admin-border: color-mix(in srgb, var(--ui-border), transparent 10%);
+  --ui-admin-border-strong: color-mix(in srgb, var(--ui-accent), var(--ui-border) 56%);
+  --ui-admin-divider: color-mix(in srgb, var(--ui-border), transparent 20%);
+  --ui-admin-control-surface: color-mix(in srgb, var(--ui-surface-soft), transparent 12%);
+  --ui-admin-control-hover-surface: color-mix(
+    in srgb,
+    var(--ui-accent-soft),
+    var(--ui-surface-soft) 72%
+  );
+  --ui-admin-control-border: color-mix(in srgb, var(--ui-border), transparent 12%);
+  --ui-admin-control-accent-surface: color-mix(
+    in srgb,
+    var(--ui-accent-soft),
+    var(--ui-surface-soft) 62%
+  );
+  --ui-admin-control-accent-border: color-mix(in srgb, var(--ui-accent), var(--ui-border) 52%);
+  --ui-admin-label-tile-surface: color-mix(in srgb, var(--ui-surface-soft), transparent 22%);
+  --ui-admin-label-tile-border: color-mix(in srgb, var(--ui-border), transparent 22%);
+  --ui-admin-status-success-surface: var(--ui-success-soft);
+  --ui-admin-status-success-text: var(--ui-success);
+  --ui-admin-status-neutral-surface: var(--ui-neutral-soft);
+  --ui-admin-status-neutral-text: var(--ui-neutral-strong);
+  --ui-admin-danger-surface: var(--ui-danger-soft);
+  --ui-admin-danger-text: var(--ui-danger);
   --kanban-stage-surface: linear-gradient(
     180deg,
     rgba(236, 243, 252, 0.9),

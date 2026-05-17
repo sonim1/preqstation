@@ -4,6 +4,7 @@ import { NativeSelect, Stack, Text, TextInput } from '@mantine/core';
 import { useActionState, useEffect, useState } from 'react';
 
 import { LiveMarkdownEditor } from '@/app/components/live-markdown-editor';
+import controlClasses from '@/app/components/settings-controls.module.css';
 import { SubmitButton } from '@/app/components/submit-button';
 import { TaskLabelPicker } from '@/app/components/task-label-picker';
 import { TaskMetadataPriorityPicker } from '@/app/components/task-metadata-controls';
@@ -89,6 +90,7 @@ export function TaskFormPanel({
                 label={`${terminology.task.singular} title`}
                 placeholder={`Enter ${terminology.task.singularLower} title`}
                 required
+                className={controlClasses.touchInput}
               />
               <NativeSelect
                 name="projectId"
@@ -103,6 +105,7 @@ export function TaskFormPanel({
                   { value: '', label: 'Select a project' },
                   ...projects.map((project) => ({ value: project.id, label: project.name })),
                 ]}
+                className={controlClasses.touchInput}
               />
             </div>
           </Stack>
@@ -157,7 +160,9 @@ export function TaskFormPanel({
                 label={`${terminology.task.singular} priority`}
               />
               <div className={classes.actions}>
-                <SubmitButton>{`Create ${terminology.task.singular}`}</SubmitButton>
+                <SubmitButton className={controlClasses.touchButton}>
+                  {`Create ${terminology.task.singular}`}
+                </SubmitButton>
               </div>
             </Stack>
           </section>

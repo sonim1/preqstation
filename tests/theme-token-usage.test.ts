@@ -25,6 +25,38 @@ const readyQaActionsCss = fs.readFileSync(
   path.join(process.cwd(), 'app/components/ready-qa-actions.module.css'),
   'utf8',
 );
+const settingsPageCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/(workspace)/(main)/settings/settings-page.module.css'),
+  'utf8',
+);
+const settingsControlsCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/settings-controls.module.css'),
+  'utf8',
+);
+const telegramSettingsCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/telegram-settings.module.css'),
+  'utf8',
+);
+const taskFormPanelCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/panels/task-form-panel.module.css'),
+  'utf8',
+);
+const agentInstructionsSource = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/panels/agent-instructions-panel.tsx'),
+  'utf8',
+);
+const deploySettingsSource = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/panels/deploy-settings-panel.tsx'),
+  'utf8',
+);
+const projectFormPanelSource = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/panels/project-form-panel.tsx'),
+  'utf8',
+);
+const worklogFormPanelSource = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/panels/worklog-form-panel.tsx'),
+  'utf8',
+);
 const globalErrorSource = fs.readFileSync(path.join(process.cwd(), 'app/global-error.tsx'), 'utf8');
 const designSystemPath = path.join(process.cwd(), 'DESIGN.md');
 const require = createRequire(import.meta.url);
@@ -145,6 +177,45 @@ describe('theme token usage audit fixes', () => {
     expect(cardsCss).toContain('var(--ui-status-running)');
     expect(cardsCss).toContain('var(--ui-status-queued)');
     expect(cardsCss).toMatch(/\.projectBoardCard\s*\{[\s\S]*background:\s*var\(--ui-card-bg\);/);
+  });
+
+  it('defines shared settings and admin panel tokens for management surfaces', () => {
+    for (const token of [
+      '--ui-admin-surface',
+      '--ui-admin-surface-strong',
+      '--ui-admin-border',
+      '--ui-admin-divider',
+      '--ui-admin-control-surface',
+      '--ui-admin-control-hover-surface',
+      '--ui-admin-control-accent-surface',
+      '--ui-admin-status-success-surface',
+      '--ui-admin-status-neutral-surface',
+    ]) {
+      expect(globalsCss).toContain(`${token}:`);
+    }
+  });
+
+  it('keeps settings, telegram, labels, and form panels on shared admin tokens', () => {
+    expect(settingsPageCss).toContain('var(--ui-admin-surface)');
+    expect(settingsPageCss).toContain('var(--ui-admin-divider)');
+    expect(settingsPageCss).toContain('var(--ui-admin-control-surface)');
+    expect(settingsPageCss).toContain('var(--ui-admin-label-tile-surface)');
+    expect(telegramSettingsCss).toContain('var(--ui-admin-control-accent-surface)');
+    expect(telegramSettingsCss).toContain('var(--ui-admin-status-success-surface)');
+    expect(telegramSettingsCss).not.toContain('var(--mantine-color-blue');
+    expect(settingsControlsCss).toContain('.panelForm');
+    expect(settingsControlsCss).toContain('var(--ui-admin-control-surface)');
+    expect(taskFormPanelCss).toContain('var(--ui-admin-surface)');
+    expect(taskFormPanelCss).toContain('var(--ui-admin-divider)');
+
+    for (const source of [
+      agentInstructionsSource,
+      deploySettingsSource,
+      projectFormPanelSource,
+      worklogFormPanelSource,
+    ]) {
+      expect(source).toContain('controlClasses.panelForm');
+    }
   });
 
   it('renders task panel and QA modals on the shared modal shell tokens', () => {

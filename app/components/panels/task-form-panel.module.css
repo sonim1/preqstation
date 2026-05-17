@@ -7,6 +7,10 @@
 .notesSection,
 .metaSection {
   min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--ui-admin-border);
+  border-radius: 8px;
+  background: var(--ui-admin-surface);
 }
 
 .columns {
@@ -26,6 +30,8 @@
 .sectionHeader {
   display: grid;
   gap: 0.2rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--ui-admin-divider);
 }
 
 .sectionTitle {
@@ -34,6 +40,7 @@
 
 .sectionDescription {
   max-width: 46ch;
+  color: var(--ui-muted-text);
 }
 
 .actions {

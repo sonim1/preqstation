@@ -4,6 +4,7 @@ import { Code, Stack, Text, Textarea } from '@mantine/core';
 import { type FormEvent, useEffect, useRef, useState, useTransition } from 'react';
 
 import { type SettingSaveState, SettingSaveStatus } from '@/app/components/setting-save-status';
+import controlClasses from '@/app/components/settings-controls.module.css';
 import { SubmitButton } from '@/app/components/submit-button';
 
 type ActionState = { ok: true; message?: string } | { ok: false; message: string } | null;
@@ -73,8 +74,8 @@ export function AgentInstructionsPanel({ action, projectId, value }: AgentInstru
   }
 
   return (
-    <form onSubmit={handleSubmit}>
-      <Stack gap="md">
+    <form onSubmit={handleSubmit} className={controlClasses.panelForm}>
+      <Stack gap="md" className={controlClasses.panelStack}>
         <SettingSaveStatus mode="manual" state={currentState} errorMessage={errorMessage} />
         <input type="hidden" name="projectId" value={projectId} />
         <Textarea
@@ -86,12 +87,13 @@ export function AgentInstructionsPanel({ action, projectId, value }: AgentInstru
           placeholder="Optional project-wide guidance for dispatched agents."
           autosize
           minRows={4}
+          className={controlClasses.touchInput}
         />
         <div>
           <Text size="sm" fw={500} mb={4}>
             Project-wide examples
           </Text>
-          <Code block style={exampleCodeStyle}>
+          <Code block className={controlClasses.panelCode} style={exampleCodeStyle}>
             {[
               'Follow the existing component patterns before adding new abstractions.',
               'Update focused tests for behavior changes.',
@@ -99,7 +101,11 @@ export function AgentInstructionsPanel({ action, projectId, value }: AgentInstru
             ].join('\n')}
           </Code>
         </div>
-        <SubmitButton w="fit-content" disabled={!isDirty || isPending}>
+        <SubmitButton
+          w="fit-content"
+          disabled={!isDirty || isPending}
+          className={controlClasses.touchButton}
+        >
           Save Instructions
         </SubmitButton>
       </Stack>

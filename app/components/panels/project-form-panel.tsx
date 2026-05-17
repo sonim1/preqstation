@@ -6,6 +6,7 @@ import { useActionState, useEffect } from 'react';
 
 import { LiveMarkdownEditor } from '@/app/components/live-markdown-editor';
 import { ProjectBackgroundPicker } from '@/app/components/project-background-picker';
+import controlClasses from '@/app/components/settings-controls.module.css';
 import { SubmitButton } from '@/app/components/submit-button';
 import { showErrorNotification } from '@/lib/notifications';
 
@@ -31,14 +32,21 @@ export function ProjectFormPanel({ createProjectAction }: ProjectFormPanelProps)
   }, [router, state]);
 
   return (
-    <form action={formAction}>
-      <Stack gap="md">
-        <TextInput name="name" label="Project name" placeholder="Enter project name" required />
+    <form action={formAction} className={controlClasses.panelForm}>
+      <Stack gap="md" className={controlClasses.panelStack}>
+        <TextInput
+          name="name"
+          label="Project name"
+          placeholder="Enter project name"
+          required
+          className={controlClasses.touchInput}
+        />
         <TextInput
           name="projectKey"
           label="Project key"
           placeholder="AB12"
           description="3-4 uppercase letters/numbers. Leave empty to auto-generate from name. Immutable after creation."
+          className={controlClasses.touchInput}
         />
         <LiveMarkdownEditor
           name="descriptionMd"
@@ -52,7 +60,7 @@ export function ProjectFormPanel({ createProjectAction }: ProjectFormPanelProps)
           <ProjectBackgroundPicker name="bgImage" />
         </div>
         <Group justify="flex-end">
-          <SubmitButton>Create Project</SubmitButton>
+          <SubmitButton className={controlClasses.touchButton}>Create Project</SubmitButton>
         </Group>
       </Stack>
     </form>
