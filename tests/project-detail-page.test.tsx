@@ -545,7 +545,7 @@ describe('project detail page', () => {
     expect(html).toContain('data-testid="dashboard-yearly-heatmap"');
     expect(html).toContain('data-values="2026-01-01:0,2026-04-25:7,2026-04-26:4"');
     expect(html).toContain('4 total tasks');
-    expect(html).toContain('3 recent work logs');
+    expect(html).toContain('11 work logs this year');
     expect(mocked.listProjectWorkLogYearActivity).toHaveBeenCalledWith({
       ownerId: 'owner-1',
       projectId: 'project-1',

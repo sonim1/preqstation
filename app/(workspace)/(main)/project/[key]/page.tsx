@@ -209,7 +209,10 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   const hasAgentInstructions = trimmedAgentInstructions.length > 0;
   const hasRepo = Boolean(project.repoUrl);
   const latestWorkLog = projectWorkLogPage.workLogs[0] ?? null;
-  const recentWorkLogCount = projectWorkLogPage.workLogs.length;
+  const currentYearWorkLogCount = projectWorkLogYearActivity.reduce(
+    (sum, day) => sum + day.count,
+    0,
+  );
   const lastWorkedAt = toValidDate(latestWorkLog?.workedAt);
   const lastProjectUpdate = toValidDate(project.updatedAt);
   const activityStatus = getProjectActivityStatus({
@@ -963,7 +966,7 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
             <DashboardYearlyHeatmap
               data={projectWorkLogYearActivity}
               title="Activity evidence"
-              description={`${formatCountLabel(todos.length, 'total task', 'total tasks')} · ${formatCountLabel(recentWorkLogCount, 'recent work log', 'recent work logs')}`}
+              description={`${formatCountLabel(todos.length, 'total task', 'total tasks')} · ${formatCountLabel(currentYearWorkLogCount, 'work log this year', 'work logs this year')}`}
             />
 
             <Paper
