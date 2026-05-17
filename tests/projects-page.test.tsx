@@ -369,7 +369,8 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('OPEN');
     expect(html).toContain('RUNNING');
     expect(html).toContain('QUEUED');
-    expect(html).toContain('DONE · 7D');
+    expect(html).toContain('DONE');
+    expect(html).not.toContain('DONE · 7D');
     expect(html).toContain('data-project-section="roster"');
     expect(html).not.toContain('data-portfolio-featured="true"');
     expect(html).not.toContain('Quiet edge');

@@ -110,7 +110,7 @@ export function ProjectPortfolioCard({
           </div>
           <div className={styles.metric}>
             <strong className={styles.metricValue}>{card.doneCount}</strong>
-            <span className={styles.metricLabel}>DONE · 7D</span>
+            <span className={styles.metricLabel}>DONE</span>
           </div>
         </div>
 
