@@ -71,9 +71,18 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/app/components/command-palette', () => ({
   CommandPalette: () => null,
-  CommandPaletteTrigger: ({ variant = 'full' }: { variant?: 'compact' | 'full' }) => (
-    <div data-command-palette-trigger={variant}>Search trigger</div>
-  ),
+  CommandPaletteTrigger: ({ variant = 'full' }: { variant?: 'compact' | 'full' }) => {
+    const className =
+      variant === 'compact'
+        ? 'command-palette-trigger command-palette-trigger--compact'
+        : 'command-palette-trigger';
+
+    return (
+      <button type="button" className={className} data-command-palette-trigger={variant}>
+        Search trigger
+      </button>
+    );
+  },
 }));
 
 vi.mock('@/app/components/project-picker-menu', () => ({
@@ -92,8 +101,6 @@ const workspaceShellSource = fs.readFileSync(
   path.join(process.cwd(), 'app/components/workspace-shell.tsx'),
   'utf8',
 );
-const workspaceChromeCss =
-  globalsCss.match(/\.workspace-header\s*\{[\s\S]*?(?=\.login-container\s*\{)/)?.[0] ?? '';
 
 type RenderWorkspaceShellArgs =
   | boolean
@@ -217,12 +224,87 @@ function getWorkspaceNavbar(container: HTMLElement) {
   return navbar as HTMLElement;
 }
 
-function stripCssWords(source: string) {
-  return source.replace(/white-space/g, 'white_space');
-}
-
 function expectBefore(first: Element, second: Element) {
   expect(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+}
+
+function renderWorkspaceCssFixture(markup: string) {
+  const style = document.createElement('style');
+  const fixture = document.createElement('div');
+
+  style.textContent = globalsCss;
+  fixture.innerHTML = markup;
+  document.head.append(style);
+  document.body.append(fixture);
+
+  return {
+    fixture,
+    cleanup: () => {
+      fixture.remove();
+      style.remove();
+    },
+  };
+}
+
+function getRequiredFixtureElement(fixture: HTMLElement, testId: string) {
+  const element = fixture.querySelector<HTMLElement>(`[data-testid="${testId}"]`);
+
+  expect(element).not.toBeNull();
+
+  return element as HTMLElement;
+}
+
+function expectComputedStyleProperties(
+  element: HTMLElement,
+  expectedProperties: Record<string, string>,
+) {
+  const style = window.getComputedStyle(element);
+
+  for (const [property, value] of Object.entries(expectedProperties)) {
+    expect(style.getPropertyValue(property)).toBe(value);
+  }
+}
+
+function getCssRuleProperties(selector: string, properties: string[]) {
+  const style = document.createElement('style');
+
+  style.textContent = globalsCss;
+  document.head.append(style);
+
+  try {
+    const rule = findCssStyleRule(style.sheet?.cssRules, selector);
+
+    if (!rule) {
+      return null;
+    }
+
+    return Object.fromEntries(
+      properties.map((property) => [property, rule.style.getPropertyValue(property)]),
+    );
+  } finally {
+    style.remove();
+  }
+}
+
+function findCssStyleRule(rules: CSSRuleList | undefined, selector: string): CSSStyleRule | null {
+  if (!rules) {
+    return null;
+  }
+
+  for (const rule of Array.from(rules)) {
+    if ('selectorText' in rule && (rule as CSSStyleRule).selectorText === selector) {
+      return rule as CSSStyleRule;
+    }
+
+    const nestedRules = (rule as CSSRule & { cssRules?: CSSRuleList }).cssRules;
+    const nestedMatch = findCssStyleRule(nestedRules, selector);
+
+    if (nestedMatch) {
+      return nestedMatch;
+    }
+  }
+
+  return null;
 }
 
 describe('app/components/workspace-shell', () => {
@@ -609,10 +691,29 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('defines a custom focus-visible treatment for top-level workspace nav links', () => {
-    expect(globalsCss).toMatch(
-      /\.workspace-nav-link:not\(\.workspace-board-subnav-link\):focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*background:\s*var\(--ui-accent-soft\);[\s\S]*color:\s*var\(--ui-text\);[\s\S]*box-shadow:/,
+    const { container } = renderWorkspaceShellDom({
+      desktopOpened: true,
+      pathname: '/board/ALPHA',
+      rememberedProjectKey: 'ALPHA',
+    });
+    const navbar = within(getWorkspaceNavbar(container));
+    const boardsLink = navbar.getByRole('link', { name: 'Boards' });
+    const currentBoardLink = navbar.getByRole('link', { name: 'Alpha' });
+    const focusRule = getCssRuleProperties(
+      '.workspace-nav-link:not(.workspace-board-subnav-link):focus-visible',
+      ['outline', 'background', 'color', 'box-shadow'],
     );
-    expect(globalsCss).not.toMatch(/\.workspace-nav-link:focus-visible\s*\{/);
+
+    expect(Array.from(boardsLink.classList)).toContain('workspace-nav-link');
+    expect(Array.from(boardsLink.classList)).not.toContain('workspace-board-subnav-link');
+    expect(Array.from(currentBoardLink.classList)).toContain('workspace-board-subnav-link');
+    expect(focusRule).toEqual({
+      outline: 'none',
+      background: 'var(--ui-workspace-accent-surface)',
+      color: 'var(--ui-text)',
+      'box-shadow': 'var(--ui-workspace-focus-shadow)',
+    });
+    expect(getCssRuleProperties('.workspace-nav-link:focus-visible', ['background'])).toBeNull();
   });
 
   it('applies grouped nav label and top-level nav link hooks in the rendered sidebar', () => {
@@ -675,21 +776,37 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('keeps repeated workspace chrome surfaces and shadows on ui tokens', () => {
-    expect(globalsCss).toMatch(/--ui-workspace-control-surface:/);
-    expect(globalsCss).toMatch(/--ui-workspace-control-shadow:/);
-    expect(globalsCss).toMatch(/--ui-workspace-popover-shadow:/);
-    expect(stripCssWords(workspaceChromeCss)).not.toMatch(
-      /\b(?:white|black|rgba)\b|#[\da-fA-F]{3,8}/,
-    );
-    expect(globalsCss).toMatch(
-      /\.command-palette-trigger\s*\{[^}]*background:\s*var\(--ui-workspace-control-surface\);[^}]*box-shadow:[^}]*var\(--ui-workspace-control-shadow\);/,
-    );
-    expect(globalsCss).toMatch(
-      /\.workspace-mobile-project-picker\s*\{[^}]*background:\s*var\(--ui-workspace-control-surface\);[^}]*box-shadow:[^}]*var\(--ui-workspace-control-shadow\);/,
-    );
-    expect(globalsCss).toMatch(
-      /\.workspace-user-menu\s*\{[^}]*background:\s*var\(--ui-workspace-popover-surface\);[^}]*box-shadow:\s*var\(--ui-workspace-popover-shadow\);/,
-    );
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <header class="workspace-header" data-testid="header"></header>
+      <nav class="workspace-navbar" data-testid="navbar"></nav>
+      <button class="command-palette-trigger" data-testid="command-palette-trigger"></button>
+      <a class="workspace-mobile-project-picker" data-testid="mobile-project-picker"></a>
+      <div class="workspace-user-menu" data-testid="user-menu"></div>
+    `);
+
+    try {
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'header'), {
+        background: 'var(--ui-surface)',
+      });
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'navbar'), {
+        background: 'var(--ui-surface)',
+        'box-shadow': 'var(--ui-elevation-1)',
+      });
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'command-palette-trigger'), {
+        background: 'var(--ui-workspace-control-surface)',
+        'box-shadow': 'var(--ui-workspace-control-inset), var(--ui-workspace-control-shadow)',
+      });
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'mobile-project-picker'), {
+        background: 'var(--ui-workspace-control-surface)',
+        'box-shadow': 'var(--ui-workspace-control-inset), var(--ui-workspace-control-shadow)',
+      });
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'user-menu'), {
+        background: 'var(--ui-workspace-popover-surface)',
+        'box-shadow': 'var(--ui-workspace-popover-shadow)',
+      });
+    } finally {
+      cleanup();
+    }
   });
 
   it('shares accent state tokens between project picker items and board subnav', () => {
