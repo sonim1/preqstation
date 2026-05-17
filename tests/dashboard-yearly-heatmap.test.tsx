@@ -68,6 +68,7 @@ describe('app/components/dashboard-yearly-heatmap', () => {
     expect(html).toContain('Wed');
     expect(html).toContain('Fri');
     expect(html).toContain('data-yearly-heatmap="true"');
+    expect(html).toContain('data-heatmap-scroll-region="true"');
     expect(html).toContain('data-date="2026-01-01"');
     expect(html).toContain('data-date="2026-01-02"');
     expect(html).toContain('data-count="3"');
@@ -102,5 +103,35 @@ describe('app/components/dashboard-yearly-heatmap', () => {
     expect(html).toContain('>Jan</');
     expect(html).toContain('>Feb</');
     expect(html).not.toContain('data-date="2026-02-01"');
+  });
+
+  it('renders the project detail heatmap with provided yearly data, streak, and legend', () => {
+    const html = renderToStaticMarkup(
+      <MantineProvider>
+        <DashboardYearlyHeatmap
+          data={[
+            { date: '2026-05-14', count: 2 },
+            { date: '2026-05-15', count: 5 },
+            { date: '2026-05-16', count: 10 },
+          ]}
+          title="Activity · last 365 days"
+          variant="projectDetail"
+          rangeLabel="last 365d"
+        />
+      </MantineProvider>,
+    );
+
+    expect(html).toContain('data-heatmap-variant="projectDetail"');
+    expect(html).toContain('Activity · last 365 days');
+    expect(html).toContain('streak');
+    expect(html).toContain('3d');
+    expect(html).toContain('Less');
+    expect(html).toContain('More');
+    expect(html).toContain('17 logs · last 365d');
+    expect(html).not.toContain('data-date="2025-05-17"');
+    expect(html).toMatch(/data-count="2" data-date="2026-05-14" data-level="1"/);
+    expect(html).toMatch(/data-count="5" data-date="2026-05-15" data-level="2"/);
+    expect(html).toMatch(/data-count="10" data-date="2026-05-16" data-level="4"/);
+    expect(html).toContain('data-date="2026-05-16"');
   });
 });

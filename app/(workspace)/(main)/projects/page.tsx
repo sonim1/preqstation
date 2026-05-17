@@ -1,10 +1,9 @@
-import { Container, SimpleGrid, Stack, TextInput } from '@mantine/core';
-import { IconActivity, IconFolderPlus, IconSearch } from '@tabler/icons-react';
+import { Container, Stack, Title } from '@mantine/core';
+import { IconActivity, IconFolders } from '@tabler/icons-react';
 import { and, desc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-import { EmptyState } from '@/app/components/empty-state';
 import { LinkButton } from '@/app/components/link-button';
 import { ProjectEditPanel } from '@/app/components/panels/project-edit-panel';
 import {
@@ -29,9 +28,11 @@ import {
 import { resolveTerminology } from '@/lib/terminology';
 import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 
-import { ProjectPortfolioCard, type ProjectPortfolioCardSummary } from './project-portfolio-card';
+import type { ProjectPortfolioCardSummary } from './project-portfolio-card';
+import { getProjectFilterStatus } from './project-roster-filter';
 import { ProjectsOfflineHydrator } from './projects-offline-hydrator';
 import styles from './projects-page.module.css';
+import { ProjectsRosterClient } from './projects-roster-client';
 import { WorkspaceActivityChart } from './workspace-activity-chart';
 
 const DAY_MS = 86_400_000;
@@ -47,82 +48,10 @@ type ProjectsPageProps = {
 };
 
 type WorkspaceActivity = { date: string; count: number };
-type ProjectFilterStatus = 'all' | 'active' | 'paused' | 'archived';
 
 function getLastQueryValue(value: string | string[] | undefined) {
   if (Array.isArray(value)) return value.at(-1) ?? '';
   return value ?? '';
-}
-
-function getProjectFilterStatus(value: string): ProjectFilterStatus {
-  switch (value.toLowerCase()) {
-    case 'active':
-    case 'paused':
-    case 'archived':
-      return value.toLowerCase() as ProjectFilterStatus;
-    default:
-      return 'all';
-  }
-}
-
-function normalizeSearchValue(value: string) {
-  return value
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
-function compactSearchValue(value: string) {
-  return normalizeSearchValue(value).replace(/[^a-z0-9]+/g, '');
-}
-
-function getSearchTokens(value: string) {
-  return normalizeSearchValue(value)
-    .split(/[^a-z0-9]+/)
-    .map((token) => token.trim())
-    .filter(Boolean);
-}
-
-function isSubsequence(needle: string, haystack: string) {
-  if (!needle) return true;
-  if (needle.length < 3) return false;
-
-  for (let start = 0; start < haystack.length; start += 1) {
-    if (haystack[start] !== needle[0]) continue;
-
-    let haystackIndex = start;
-    let matched = true;
-    for (let needleIndex = 1; needleIndex < needle.length; needleIndex += 1) {
-      let nextIndex = -1;
-      const searchEnd = Math.min(haystack.length - 1, haystackIndex + 4);
-      for (let candidate = haystackIndex + 1; candidate <= searchEnd; candidate += 1) {
-        if (haystack[candidate] === needle[needleIndex]) {
-          nextIndex = candidate;
-          break;
-        }
-      }
-
-      if (nextIndex === -1) {
-        matched = false;
-        break;
-      }
-
-      haystackIndex = nextIndex;
-    }
-
-    if (matched) return true;
-  }
-
-  return false;
-}
-
-function matchesSearchToken(searchText: string, token: string) {
-  const normalizedText = normalizeSearchValue(searchText);
-  if (normalizedText.includes(token)) return true;
-
-  const compactText = compactSearchValue(searchText);
-  const compactToken = compactSearchValue(token);
-  return compactText.includes(compactToken) || isSubsequence(compactToken, compactText);
 }
 
 function getProjectSortRank(status: string) {
@@ -256,7 +185,6 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
   const panelParam = getLastQueryValue(queryParams.panel);
   const projectKeyParam = getLastQueryValue(queryParams.projectKey);
   const searchQuery = getLastQueryValue(queryParams.q).trim();
-  const searchTokens = getSearchTokens(searchQuery);
   const selectedProjectFilter = getProjectFilterStatus(getLastQueryValue(queryParams.status));
   const activePanel = panelParam === 'project-edit' ? 'project-edit' : null;
   const editingProjectKey = normalizeProjectKey(projectKeyParam);
@@ -335,13 +263,14 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
         queuedCount,
         doneCount,
         lastActivityAt,
+        sortActivityAt: lastActivityAt,
         tone,
       };
     })
     .sort((a, b) => {
       const rankDelta = getProjectSortRank(a.project.status) - getProjectSortRank(b.project.status);
       if (rankDelta !== 0) return rankDelta;
-      const activityDelta = b.lastActivityAt.getTime() - a.lastActivityAt.getTime();
+      const activityDelta = b.sortActivityAt.getTime() - a.sortActivityAt.getTime();
       if (activityDelta !== 0) return activityDelta;
       return a.project.name.localeCompare(b.project.name);
     });
@@ -362,30 +291,6 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
     0,
   );
   const activeAgentCount = runningAgentCount + queuedAgentCount;
-  const filteredProjectSummaries = projectSummaries.filter((summary) => {
-    const matchesStatus =
-      selectedProjectFilter === 'all' ||
-      (selectedProjectFilter === 'active' && summary.project.status === ACTIVE_PROJECT_STATUS) ||
-      (selectedProjectFilter === 'paused' && summary.project.status === PAUSED_PROJECT_STATUS) ||
-      (selectedProjectFilter === 'archived' && summary.project.status === DONE_PROJECT_STATUS);
-
-    if (!matchesStatus) return false;
-    if (searchTokens.length === 0) return true;
-
-    const repoLabel = getRepoLabel(summary.project.repoUrl, summary.project.projectKey);
-    const searchableValues = [
-      summary.project.name,
-      summary.project.projectKey,
-      summary.project.description ?? '',
-      repoLabel,
-      summary.project.repoUrl ?? '',
-      summary.project.vercelUrl ?? '',
-    ];
-
-    return searchTokens.every((token) =>
-      searchableValues.some((value) => matchesSearchToken(value, token)),
-    );
-  });
   const workspaceActivity: WorkspaceActivity[] = activityDays.map((date) => ({
     date,
     count: workspaceActivityByDate.get(date) ?? 0,
@@ -417,7 +322,9 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
           ? 'Archived'
           : summary.project.status === PAUSED_PROJECT_STATUS
             ? 'Paused'
-            : 'Active',
+            : summary.runningCount > 0
+              ? 'Active'
+              : 'Active',
       openTaskCount: summary.openTaskCount,
       runningCount: summary.runningCount,
       queuedCount: summary.queuedCount,
@@ -432,7 +339,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
     };
   }
 
-  const rosterCards = filteredProjectSummaries.map((summary) => toProjectCardSummary(summary));
+  const rosterCards = projectSummaries.map((summary) => toProjectCardSummary(summary));
   const filterChips = [
     {
       label: 'All',
@@ -625,6 +532,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
         <Stack gap="md" className="dashboard-stack">
           <div className={styles.rosterHeader}>
             <WorkspacePageHeader
+              icon={IconFolders}
               title={`Projects roster · ${totalProjectCount} repos`}
               description="Workspace activity, live agent state, and repo readiness at a glance."
             />
@@ -637,8 +545,8 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
 
           <section className={styles.activityPanel}>
             <div className={styles.activityHeader}>
-              <span className={styles.activityTitle}>
-                <IconActivity size={16} />
+              <Title component="h2" order={3} className={styles.activityTitle}>
+                <IconActivity size={16} aria-hidden="true" />
                 Workspace activity
                 <span aria-hidden="true">·</span>
                 <span className={styles.activityRangeDesktop}>last 30 days</span>
@@ -647,7 +555,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
                 <span>
                   {totalProjectCount} project{totalProjectCount === 1 ? '' : 's'}
                 </span>
-              </span>
+              </Title>
               <span className={styles.activityMeta}>
                 <strong>{workspaceActivityTotal}</strong> logs
                 <span>{workspacePeakLabel}</span>
@@ -663,76 +571,18 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
             </div>
           </section>
 
-          <form className={styles.toolbar} method="GET">
-            {activePanel ? <input type="hidden" name="panel" value={activePanel} /> : null}
-            {editingProjectKey ? (
-              <input type="hidden" name="projectKey" value={editingProjectKey} />
-            ) : null}
-            {selectedProjectFilter !== 'all' ? (
-              <input type="hidden" name="status" value={selectedProjectFilter} />
-            ) : null}
-            <TextInput
-              aria-label="Find a project"
-              className={styles.searchInput}
-              defaultValue={searchQuery}
-              leftSection={<IconSearch size={14} />}
-              name="q"
-              placeholder="Find a project"
-              size="xs"
-              variant="filled"
-            />
-            <div className={styles.filterChips} aria-label="Project filters">
-              {filterChips.map((chip) => (
-                <button
-                  key={chip.label}
-                  aria-pressed={chip.active}
-                  className={styles.filterChip}
-                  data-active={chip.active}
-                  name="status"
-                  type="submit"
-                  value={chip.filter === 'all' ? '' : chip.filter}
-                >
-                  {chip.label} {chip.value}
-                </button>
-              ))}
-            </div>
-            <span className={styles.agentStatus} data-active={activeAgentCount > 0}>
-              {activeAgentCount} agents running
-            </span>
-          </form>
-
-          {totalProjectCount === 0 ? (
-            <EmptyState
-              icon={<IconFolderPlus size={24} />}
-              title="No projects yet"
-              description={`Create your first project to start tracking ${terminology.task.pluralLower} and progress.`}
-              action={<LinkButton href="/dashboard?panel=project">Create Project</LinkButton>}
-            />
-          ) : rosterCards.length === 0 ? (
-            <EmptyState
-              icon={<IconSearch size={24} />}
-              title="No matching projects"
-              description="Adjust the search or project filter to see more repos."
-              action={<LinkButton href="/projects">Clear filters</LinkButton>}
-            />
-          ) : (
-            <section className={styles.portfolioSection} data-project-section="roster">
-              <SimpleGrid
-                cols={{ base: 1, md: 2, xl: 3 }}
-                spacing="sm"
-                className={styles.rosterGrid}
-              >
-                {rosterCards.map((card) => (
-                  <ProjectPortfolioCard
-                    key={card.id}
-                    card={card}
-                    deleteAction={deleteProject}
-                    pauseAction={pauseProject}
-                  />
-                ))}
-              </SimpleGrid>
-            </section>
-          )}
+          <ProjectsRosterClient
+            allCards={rosterCards}
+            deleteProjectAction={deleteProject}
+            filterChips={filterChips}
+            initialState={{
+              activeAgentCount,
+              searchQuery,
+              selectedProjectFilter,
+              terminologyTaskPluralLower: terminology.task.pluralLower,
+            }}
+            pauseProjectAction={pauseProject}
+          />
         </Stack>
       </ProjectsOfflineHydrator>
 

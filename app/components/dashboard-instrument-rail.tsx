@@ -1,10 +1,11 @@
 'use client';
 
-import { Group, Paper, Progress, Stack, Text, Title } from '@mantine/core';
-import { IconPlugConnected } from '@tabler/icons-react';
+import { Group, Paper, Progress, Stack, Text } from '@mantine/core';
+import { IconListCheck, IconPlugConnected } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
+import { SectionTitleWithIcon } from '@/app/components/section-title-with-icon';
 import type { Terminology } from '@/lib/terminology';
 
 import { DashboardInfoHint } from './dashboard-info-hint';
@@ -84,7 +85,9 @@ export function DashboardInstrumentRail({
             data-dashboard-header="at-the-pass"
           >
             <Group gap={6} align="center" wrap="nowrap">
-              <Title order={3}>At the Pass</Title>
+              <SectionTitleWithIcon icon={IconListCheck} iconSize={22} order={3}>
+                At the Pass
+              </SectionTitleWithIcon>
               <DashboardInfoHint
                 label="At the Pass"
                 tooltip="Ready work, release handoffs, and inspection."
@@ -150,14 +153,13 @@ export function DashboardInstrumentRail({
 
         <div className={classes.railModule} data-dashboard-module="mise-en-place">
           <Group justify="space-between" align="center" mb="sm">
-            <Group gap={6} align="center">
-              <Title order={4}>Mise en Place</Title>
+            <Group gap={6} align="center" wrap="nowrap">
+              <SectionTitleWithIcon icon={IconPlugConnected}>Mise en Place</SectionTitleWithIcon>
               <DashboardInfoHint
                 label="Mise en Place"
                 tooltip="Connected project coverage across repository and deploy surfaces."
               />
             </Group>
-            <IconPlugConnected size={16} color="var(--ui-muted-text)" />
           </Group>
 
           <div className={classes.miniMetricBar}>

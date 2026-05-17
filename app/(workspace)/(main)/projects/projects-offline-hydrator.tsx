@@ -1,7 +1,7 @@
 'use client';
 
 import { SimpleGrid, Stack } from '@mantine/core';
-import { IconActivity } from '@tabler/icons-react';
+import { IconActivity, IconFolders } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 
 import { useOfflineStatus } from '@/app/components/offline-status-provider';
@@ -35,6 +35,7 @@ function OfflineProjectsView({ snapshot }: { snapshot: ProjectsOfflineSnapshotPa
     <Stack gap="md" className="dashboard-stack" data-projects-offline-snapshot="true">
       <div className={styles.rosterHeader}>
         <WorkspacePageHeader
+          icon={IconFolders}
           title={`Projects roster · ${snapshot.rosterCards.length} repos`}
           description="Workspace activity, live agent state, and repo readiness at a glance."
         />
@@ -43,7 +44,7 @@ function OfflineProjectsView({ snapshot }: { snapshot: ProjectsOfflineSnapshotPa
       <section className={styles.activityPanel} data-projects-offline-container="true">
         <div className={styles.activityHeader}>
           <span className={styles.activityTitle}>
-            <IconActivity size={16} />
+            <IconActivity size={16} aria-hidden="true" />
             Workspace activity
             <span aria-hidden="true">·</span>
             <span className={styles.activityRangeDesktop}>last 30 days</span>

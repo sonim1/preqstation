@@ -1,5 +1,5 @@
-import { WorkspaceLoadingShell } from '@/app/components/workspace-loading-shell';
+import { ProjectsLoadingShell } from './projects-loading-shell';
 
 export default function Loading() {
-  return <WorkspaceLoadingShell />;
+  return <ProjectsLoadingShell />;
 }
