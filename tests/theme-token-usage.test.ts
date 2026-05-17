@@ -19,6 +19,31 @@ const cardsCss = fs.readFileSync(
 const globalErrorSource = fs.readFileSync(path.join(process.cwd(), 'app/global-error.tsx'), 'utf8');
 const designSystemPath = path.join(process.cwd(), 'DESIGN.md');
 
+function getDefinedUiTokens(source: string) {
+  return new Set(Array.from(source.matchAll(/(--ui-[\w-]+)\s*:/g), ([, token]) => token));
+}
+
+function getReferencedUiTokens(source: string) {
+  return new Set(Array.from(source.matchAll(/var\((--ui-[\w-]+)/g), ([, token]) => token));
+}
+
+function getMantineBridgeRuleBodies(source: string) {
+  const start = source.indexOf(".mantine-Button-root[data-variant='light'],");
+  const end = source.indexOf("html[data-mantine-color-scheme='dark'] .kanban-column");
+
+  expect(start).toBeGreaterThanOrEqual(0);
+  expect(end).toBeGreaterThan(start);
+
+  const bridgeSource = source.slice(start, end);
+
+  return Array.from(
+    bridgeSource.matchAll(
+      /[^{}]*\.mantine-(?:Button|ActionIcon|Badge|Input|Textarea|Select|NativeSelect|Combobox)[^{}]*\{([^{}]*)\}/g,
+    ),
+    ([, body]) => body,
+  );
+}
+
 describe('theme token usage audit fixes', () => {
   it('documents the lightweight design system token contract', () => {
     expect(fs.existsSync(designSystemPath)).toBe(true);
@@ -71,5 +96,24 @@ describe('theme token usage audit fixes', () => {
     expect(cardsCss).toContain('var(--ui-surface-elevated-strong)');
     expect(cardsCss).toContain('var(--ui-status-running)');
     expect(cardsCss).toContain('var(--ui-status-queued)');
+  });
+
+  it('keeps app-level ui token references defined in globals', () => {
+    const definedTokens = getDefinedUiTokens(globalsCss);
+    const missingTokens = Array.from(getReferencedUiTokens(globalsCss)).filter(
+      (token) => !definedTokens.has(token),
+    );
+
+    expect(missingTokens).toEqual([]);
+  });
+
+  it('keeps Mantine component bridge overrides on semantic tokens', () => {
+    const rawColorPattern =
+      /(?:rgba?\(|hsla?\(|#[0-9a-fA-F]{3,8}\b|color-mix\([^)]*\b(?:white|black)\b|(?:color|background|border-color):\s*(?:white|black)\b|var\(--mantine-color-(?:blue|gray|white|black)[^)]+\))/;
+    const rawBridgeBodies = getMantineBridgeRuleBodies(globalsCss).filter((body) =>
+      rawColorPattern.test(body),
+    );
+
+    expect(rawBridgeBodies).toEqual([]);
   });
 });

@@ -28,7 +28,7 @@
 - **Primary brand:** `#274dc4` in light mode and `#3e6ae1` in dark mode via `--ui-accent`.
 - **Primary strong:** `#1f3ea0` in light mode and `#365fcd` in dark mode via `--ui-accent-strong`.
 - **Surfaces:** Use `--ui-surface`, `--ui-surface-soft`, `--ui-surface-strong`, `--ui-surface-panel`, `--ui-surface-muted`, and `--ui-surface-elevated` instead of one-off surface colors.
-- **Text:** Use `--ui-text` and `--ui-muted-text` for app chrome and CSS-module UI. Mantine text props may still use Mantine's semantic text colors when they resolve cleanly to the active scheme.
+- **Text:** Use `--ui-text` and `--ui-muted-text` for app chrome and CSS-module UI. Use `--ui-on-accent` for text on primary accent or image-overlay controls. Mantine text props may still use Mantine's semantic text colors when they resolve cleanly to the active scheme.
 - **State:** Use `--ui-success`, `--ui-danger`, `--ui-warning`, `--ui-neutral-strong`, and their soft variants for status, alerts, and badges.
 - **Execution state:** Use `--ui-status-queued`, `--ui-status-running`, and related border/glow tokens for live agent execution state.
 - **Dark mode:** Dark mode is the default. Redesign surfaces for dark mode rather than simply inverting light colors.
@@ -41,7 +41,7 @@ Canonical tokens live in `app/globals.css`. Treat `--ui-*` variables as the app-
 - `--ui-surface-panel`, `--ui-surface-panel-strong`, `--ui-surface-muted`, `--ui-surface-muted-strong`: shared panel and quiet-surface variants.
 - `--ui-surface-elevated`, `--ui-surface-elevated-strong`: card and raised chrome surfaces.
 - `--ui-border`, `--ui-shadow`, `--ui-elevation-0`, `--ui-elevation-1`, `--ui-elevation-2`, `--ui-elevation-3`: borders and depth.
-- `--ui-text`, `--ui-muted-text`: foreground text.
+- `--ui-text`, `--ui-muted-text`, `--ui-on-accent`: foreground text.
 - `--ui-accent`, `--ui-accent-strong`, `--ui-accent-soft`: primary action and focus.
 - `--ui-success`, `--ui-danger`, `--ui-warning`, `--ui-neutral-strong` and soft variants: semantic state.
 - `--ui-focus-ring`: focus outlines.
