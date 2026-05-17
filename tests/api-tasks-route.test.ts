@@ -366,7 +366,7 @@ describe('app/api/tasks/route', () => {
       mocked.db.query.tasks.findMany.mockResolvedValueOnce([
         {
           ...BASE_TODO,
-          project: { repoUrl: 'https://github.com/acme/app' },
+          project: { repoUrl: 'acme/app' },
           runState: 'queued',
           runStateUpdatedAt: new Date('2026-02-18T01:00:00.000Z'),
           dispatchTarget: 'telegram',
@@ -393,7 +393,7 @@ describe('app/api/tasks/route', () => {
             run_state: 'queued',
             run_state_updated_at: '2026-02-18T01:00:00.000Z',
             priority: 'none',
-            repo: 'https://github.com/acme/app',
+            repo: 'acme/app',
             engine: null,
             branch_name: 'none-1-task-a',
             dispatch_target: 'telegram',
@@ -429,7 +429,7 @@ describe('app/api/tasks/route', () => {
       const response = await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
         }),
       );
 
@@ -487,7 +487,7 @@ describe('app/api/tasks/route', () => {
       const response = await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: '',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
         }),
       );
 
@@ -503,7 +503,7 @@ describe('app/api/tasks/route', () => {
 
     it('returns 400 for Zod schema validation errors (missing title)', async () => {
       const response = await POST(
-        jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, { repo: 'https://github.com/acme/app' }),
+        jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, { repo: 'acme/app' }),
       );
 
       expect(response.status).toBe(400);
@@ -515,13 +515,49 @@ describe('app/api/tasks/route', () => {
       );
     });
 
+    it('returns 400 for GitHub URL repo payloads', async () => {
+      const response = await POST(
+        jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
+          title: 'Task A',
+          repo: 'https://github.com/acme/app',
+        }),
+      );
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual(
+        expect.objectContaining({
+          error: 'Invalid payload',
+          issues: expect.any(Array),
+        }),
+      );
+      expect(mocked.resolveProjectByRepo).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 for SSH repo payloads', async () => {
+      const response = await POST(
+        jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
+          title: 'Task A',
+          repo: 'git@github.com:acme/app.git',
+        }),
+      );
+
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual(
+        expect.objectContaining({
+          error: 'Invalid payload',
+          issues: expect.any(Array),
+        }),
+      );
+      expect(mocked.resolveProjectByRepo).not.toHaveBeenCalled();
+    });
+
     it('creates task with NONE prefix when repo does not match any project', async () => {
       mocked.resolveProjectByRepo.mockResolvedValueOnce(null);
 
       const response = await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/unknown/repo',
+          repo: 'unknown/repo',
         }),
       );
 
@@ -543,7 +579,7 @@ describe('app/api/tasks/route', () => {
         taskPrefix: 'TEST',
         taskNumber: 1,
         projectId: 'project-1',
-        project: { repoUrl: 'https://github.com/acme/app' },
+        project: { repoUrl: 'acme/app' },
       };
       mocked.txReturningFn.mockResolvedValueOnce([createdTask]);
       mocked.db.query.tasks.findFirst.mockResolvedValueOnce(createdTask);
@@ -551,7 +587,7 @@ describe('app/api/tasks/route', () => {
       const response = await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
         }),
       );
 
@@ -575,7 +611,7 @@ describe('app/api/tasks/route', () => {
       await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
         }),
       );
 
@@ -597,7 +633,7 @@ describe('app/api/tasks/route', () => {
       await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
           status: 'inbox',
         }),
       );
@@ -625,7 +661,7 @@ describe('app/api/tasks/route', () => {
       await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
         }),
       );
 
@@ -645,7 +681,7 @@ describe('app/api/tasks/route', () => {
       await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
           status: 'todo',
         }),
       );
@@ -673,7 +709,7 @@ describe('app/api/tasks/route', () => {
       await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
           labels: ['bug'],
         }),
       );
@@ -715,7 +751,7 @@ describe('app/api/tasks/route', () => {
         taskPrefix: 'TEST',
         taskNumber: 1,
         projectId: 'project-1',
-        project: { repoUrl: 'https://github.com/acme/app' },
+        project: { repoUrl: 'acme/app' },
         label: null,
         labelAssignments: [
           { position: 0, label: { id: 'label-bug', name: 'bug', color: 'red' } },
@@ -726,7 +762,7 @@ describe('app/api/tasks/route', () => {
       const response = await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
           labels: ['bug', 'frontend'],
         }),
       );
@@ -767,7 +803,7 @@ describe('app/api/tasks/route', () => {
       const response = await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
         }),
       );
       const body = await response.json();
@@ -793,7 +829,7 @@ describe('app/api/tasks/route', () => {
       await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
           engine: 'codex',
         }),
       );
@@ -813,7 +849,7 @@ describe('app/api/tasks/route', () => {
       await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
         }),
       );
 
@@ -832,7 +868,7 @@ describe('app/api/tasks/route', () => {
       await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
         }),
       );
 
@@ -861,7 +897,7 @@ describe('app/api/tasks/route', () => {
       await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
         }),
       );
 
@@ -888,7 +924,7 @@ describe('app/api/tasks/route', () => {
       await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
           branch: 'feature/my-branch',
         }),
       );
@@ -912,7 +948,7 @@ describe('app/api/tasks/route', () => {
       await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
-          repo: 'https://github.com/acme/app',
+          repo: 'acme/app',
           description: 'Some description',
           acceptance_criteria: ['AC1', 'AC2'],
         }),

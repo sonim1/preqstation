@@ -151,6 +151,42 @@ describe('app/api/tasks/[id]/route', () => {
     expect(mocked.db.update).not.toHaveBeenCalled();
   });
 
+  it('PATCH rejects GitHub URL repo payloads', async () => {
+    const response = await PATCH(
+      patchRequest({
+        repo: 'https://github.com/acme/app',
+      }),
+      { params: Promise.resolve({ id: 'NONE-1' }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        error: 'Invalid payload',
+        issues: expect.any(Array),
+      }),
+    );
+    expect(mocked.db.update).not.toHaveBeenCalled();
+  });
+
+  it('PATCH rejects SSH repo payloads', async () => {
+    const response = await PATCH(
+      patchRequest({
+        repo: 'git@github.com:acme/app.git',
+      }),
+      { params: Promise.resolve({ id: 'NONE-1' }) },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        error: 'Invalid payload',
+        issues: expect.any(Array),
+      }),
+    );
+    expect(mocked.db.update).not.toHaveBeenCalled();
+  });
+
   it('GET returns every assigned label in the task payload', async () => {
     mocked.db.query.tasks.findFirst.mockResolvedValueOnce({
       id: 'todo-1',
@@ -1076,7 +1112,7 @@ describe('app/api/tasks/[id]/route', () => {
       runStateUpdatedAt: new Date('2026-04-08T14:00:00.000Z'),
       projectId: 'project-1',
       project: {
-        repoUrl: 'https://github.com/acme/app',
+        repoUrl: 'acme/app',
         projectSettings: [
           { key: 'deploy_strategy', value: 'feature_branch' },
           { key: 'deploy_default_branch', value: 'main' },
@@ -1125,7 +1161,7 @@ describe('app/api/tasks/[id]/route', () => {
       runStateUpdatedAt: new Date('2026-04-08T14:00:00.000Z'),
       projectId: 'project-1',
       project: {
-        repoUrl: 'https://github.com/acme/app',
+        repoUrl: 'acme/app',
         projectSettings: [
           { key: 'deploy_strategy', value: 'feature_branch' },
           { key: 'deploy_default_branch', value: 'main' },
@@ -1416,7 +1452,7 @@ describe('app/api/tasks/[id]/route', () => {
         taskPriority: 'none',
         engine: 'codex',
         projectId: 'project-1',
-        project: { repoUrl: 'https://github.com/acme/app', projectSettings: [] },
+        project: { repoUrl: 'acme/app', projectSettings: [] },
         label: null,
       })
       .mockResolvedValueOnce({
@@ -1432,7 +1468,7 @@ describe('app/api/tasks/[id]/route', () => {
         createdAt: new Date('2026-02-18T00:00:00.000Z'),
         updatedAt: new Date('2026-02-18T00:00:00.000Z'),
         projectId: 'project-1',
-        project: { repoUrl: 'https://github.com/acme/app', projectSettings: [] },
+        project: { repoUrl: 'acme/app', projectSettings: [] },
         label: null,
         labelAssignments: [
           { position: 0, label: { id: 'label-bug', name: 'bug', color: 'red' } },
@@ -1470,7 +1506,7 @@ describe('app/api/tasks/[id]/route', () => {
       taskPriority: 'none',
       engine: 'codex',
       projectId: 'project-1',
-      project: { repoUrl: 'https://github.com/acme/app', projectSettings: [] },
+      project: { repoUrl: 'acme/app', projectSettings: [] },
       label: null,
     });
     mocked.db.query.projects.findFirst.mockResolvedValueOnce({
@@ -1481,7 +1517,7 @@ describe('app/api/tasks/[id]/route', () => {
 
     const response = await PATCH(
       patchRequest({
-        repo: 'https://github.com/acme/other',
+        repo: 'acme/other',
       }),
       { params: Promise.resolve({ id: 'NONE-1' }) },
     );
@@ -1505,7 +1541,7 @@ describe('app/api/tasks/[id]/route', () => {
       createdAt: new Date('2026-02-18T00:00:00.000Z'),
       updatedAt: new Date('2026-02-18T00:00:00.000Z'),
       projectId: 'project-1',
-      project: { repoUrl: 'https://github.com/acme/app', projectSettings: [] },
+      project: { repoUrl: 'acme/app', projectSettings: [] },
       label: null,
       labelAssignments: [],
     });

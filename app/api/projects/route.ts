@@ -11,6 +11,7 @@ import {
 } from '@/lib/content-limits';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects } from '@/lib/db/schema';
+import { normalizeGithubRepoIdInput } from '@/lib/github-repo';
 import { requireOwnerUser } from '@/lib/owner';
 import {
   assertValidProjectKeyInput,
@@ -23,11 +24,19 @@ import {
 } from '@/lib/project-key';
 import { assertSameOrigin } from '@/lib/request-security';
 
+const githubRepoIdSchema = z
+  .string()
+  .trim()
+  .refine((value) => value === '' || normalizeGithubRepoIdInput(value) !== null, {
+    message: 'GitHub repo must use owner/repo format.',
+  })
+  .transform((value) => (value === '' ? '' : normalizeGithubRepoIdInput(value) || value));
+
 const createProjectSchema = z.object({
   name: z.string().trim().min(1).max(PROJECT_NAME_MAX_LENGTH),
   projectKey: z.string().trim().max(16).optional().or(z.literal('')),
   description: z.string().trim().max(PROJECT_DESCRIPTION_MAX_LENGTH).optional().or(z.literal('')),
-  repoUrl: z.string().url().optional().or(z.literal('')),
+  repoUrl: githubRepoIdSchema.optional(),
   vercelUrl: z.string().url().optional().or(z.literal('')),
   priority: z.coerce.number().int().min(1).max(PROJECT_PRIORITY_MAX).optional(),
 });

@@ -39,6 +39,7 @@ import { writeAuditLog } from '@/lib/audit';
 import { TODO_LABEL_NAME_MAX_LENGTH } from '@/lib/content-limits';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, taskLabels, tasks } from '@/lib/db/schema';
+import { githubRepoIdToUrl } from '@/lib/github-repo';
 import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
 import { getProjectActivityStatus } from '@/lib/project-activity';
 import { isProjectStatus, PROJECT_STATUS_COLORS, PROJECT_STATUS_LABELS } from '@/lib/project-meta';
@@ -211,7 +212,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
   const deployStrategy = resolveDeployStrategyConfig(project.projectSettings);
   const trimmedAgentInstructions = agentInstructions?.trim() ?? '';
   const hasAgentInstructions = trimmedAgentInstructions.length > 0;
-  const hasRepo = Boolean(project.repoUrl);
+  const repoHref = githubRepoIdToUrl(project.repoUrl);
+  const hasRepo = Boolean(repoHref);
   const latestWorkLog = projectWorkLogPage.workLogs[0] ?? null;
   const currentYearWorkLogCount = projectWorkLogYearActivity.reduce(
     (sum, day) => sum + day.count,
@@ -708,11 +710,11 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                   <Text size="sm" c="dimmed">
                     {hasRepo
                       ? 'Repository linked for branch and PR work.'
-                      : 'Add the repository URL in Edit Details before dispatching coding work.'}
+                      : 'Add the GitHub repo ID in Edit Details before dispatching coding work.'}
                   </Text>
                   <Button
                     component="a"
-                    href={hasRepo ? (project.repoUrl ?? editProjectHref) : editProjectHref}
+                    href={repoHref ?? editProjectHref}
                     target={hasRepo ? '_blank' : undefined}
                     rel={hasRepo ? 'noopener noreferrer' : undefined}
                     variant="subtle"

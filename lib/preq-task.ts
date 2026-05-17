@@ -1,10 +1,11 @@
 import anyAscii from 'any-ascii';
-import { and, asc, eq, ilike, isNull } from 'drizzle-orm';
+import { and, asc, eq, ilike, isNull, or } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
 import { projects, taskLabels } from '@/lib/db/schema';
 import type { DbClientOrTx } from '@/lib/db/types';
 import { getEngineConfig } from '@/lib/engine-icons';
+import { githubRepoIdToUrl, normalizeGithubRepoIdInput } from '@/lib/github-repo';
 import {
   type ProjectSettingEntry,
   resolveAgentInstructions,
@@ -101,14 +102,22 @@ export async function resolveProjectByRepo(
   repo: string | null | undefined,
   client: DbClientOrTx = db,
 ) {
-  const normalizedRepo = (repo || '').trim();
+  const normalizedRepo = normalizeGithubRepoIdInput(repo || '');
   if (!normalizedRepo) return null;
+  const githubUrl = githubRepoIdToUrl(normalizedRepo);
+  const repoReferences = [
+    normalizedRepo,
+    githubUrl,
+    githubUrl ? `${githubUrl}.git` : null,
+    `git@github.com:${normalizedRepo}.git`,
+    `ssh://git@github.com/${normalizedRepo}.git`,
+  ].filter((value): value is string => Boolean(value));
 
   const project = await client.query.projects.findFirst({
     where: and(
       eq(projects.ownerId, ownerId),
       isNull(projects.deletedAt),
-      eq(projects.repoUrl, normalizedRepo),
+      or(...repoReferences.map((repoReference) => eq(projects.repoUrl, repoReference))),
     ),
     columns: { id: true, name: true, projectKey: true },
   });

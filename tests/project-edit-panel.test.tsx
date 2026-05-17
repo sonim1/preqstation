@@ -103,6 +103,26 @@ describe('app/components/panels/project-edit-panel', () => {
     expect(html).toContain('Unsaved changes.');
   });
 
+  it('labels the GitHub field as a repo ID input', () => {
+    const html = renderProjectEditPanel({
+      id: 'project-1',
+      name: 'Project One',
+      projectKey: 'PROJ',
+      description: 'Updated description',
+      status: 'paused',
+      priority: 4,
+      bgImage: null,
+      bgImageCredit: null,
+      repoUrl: 'sonim1/preqstation',
+      vercelUrl: null,
+    });
+
+    expect(html).toContain('GitHub repo');
+    expect(html).toContain('placeholder="sonim1/preqstation-landingpage"');
+    expect(html).not.toContain('GitHub repo URL');
+    expect(html).not.toContain('placeholder="https://github.com/you/repo"');
+  });
+
   it('passes an async submit callback to autosave and surfaces server-action failures', async () => {
     let capturedSubmit: ((form: HTMLFormElement) => void | Promise<void>) | undefined;
     useAutoSaveMock.mockImplementation(

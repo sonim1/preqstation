@@ -86,7 +86,7 @@ Response shape:
         "id": "project-1",
         "key": "PQST",
         "name": "PreqStation",
-        "repoUrl": "https://github.com/sonim1/preqstation"
+        "repoUrl": "sonim1/preqstation"
       }
     }
   ]

@@ -167,6 +167,40 @@ describe('app/api/projects/route', () => {
     );
   });
 
+  it('POST accepts GitHub repo IDs', async () => {
+    const response = await POST(
+      postRequest({
+        name: 'Project A',
+        repoUrl: 'sonim1/preqstation',
+      }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(mocked.valuesFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        repoUrl: 'sonim1/preqstation',
+      }),
+    );
+  });
+
+  it('POST rejects GitHub URLs for repoUrl', async () => {
+    const response = await POST(
+      postRequest({
+        name: 'Project A',
+        repoUrl: 'https://github.com/sonim1/preqstation',
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        error: 'Invalid payload',
+        issues: expect.any(Array),
+      }),
+    );
+    expect(mocked.db.insert).not.toHaveBeenCalled();
+  });
+
   it('POST accepts manual projectKey', async () => {
     mocked.returningFn.mockResolvedValueOnce([
       {

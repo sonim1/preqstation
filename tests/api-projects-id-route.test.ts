@@ -139,6 +139,44 @@ describe('app/api/projects/[id]/route', () => {
     );
   });
 
+  it('PATCH accepts GitHub repo IDs', async () => {
+    const response = await PATCH(
+      patchRequest({
+        repoUrl: 'sonim1/preqstation',
+      }),
+      {
+        params: Promise.resolve({ id: 'project-1' }),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocked.setFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        repoUrl: 'sonim1/preqstation',
+      }),
+    );
+  });
+
+  it('PATCH rejects GitHub URLs for repoUrl', async () => {
+    const response = await PATCH(
+      patchRequest({
+        repoUrl: 'https://github.com/sonim1/preqstation',
+      }),
+      {
+        params: Promise.resolve({ id: 'project-1' }),
+      },
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        error: 'Invalid payload',
+        issues: expect.any(Array),
+      }),
+    );
+    expect(mocked.db.update).not.toHaveBeenCalled();
+  });
+
   it('PATCH returns 404 when project does not exist', async () => {
     mocked.db.query.projects.findFirst.mockResolvedValueOnce(null);
 

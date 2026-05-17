@@ -134,7 +134,7 @@ Coding agent checks task status via preq_get_task, then:
 | `users`                         | Single-owner account, password hash, optional TOTP 2FA state                                                    |
 | `tasks`                         | Task items with `taskKey` (e.g. `PROJ-123`), workflow status, priority, engine, branch, sort order, `run_state` |
 | `task_labels`                   | Project-owned task label taxonomy (`project_id` required, unique name per project, owner-protected via RLS)     |
-| `projects`                      | GitHub/Vercel project tracking with repo URL, background image, soft-delete                                     |
+| `projects`                      | GitHub/Vercel project tracking with GitHub repo ID, background image, soft-delete                               |
 | `project_settings`              | Per-project config (deploy strategy, default branch, auto PR, squash merge, agent instructions)                 |
 | `oauth_clients`                 | Registered OAuth clients for MCP installs, including client name and redirect URIs                              |
 | `mcp_connections`               | Owner-visible MCP connection metadata (display name, engine, last used, expiry, revoked state)                  |

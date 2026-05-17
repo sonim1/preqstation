@@ -17,6 +17,7 @@ import { updateProject as runUpdateProjectAction } from '@/lib/actions/project-a
 import { writeAuditLog } from '@/lib/audit';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, taskLabels, tasks, workLogs } from '@/lib/db/schema';
+import { normalizeGithubRepoReference } from '@/lib/github-repo';
 import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
 import { getProjectActivityStatus } from '@/lib/project-activity';
 import { normalizeProjectKey } from '@/lib/project-key';
@@ -178,17 +179,7 @@ function toDateKey(value: Date | string | null | undefined) {
 }
 
 function getRepoLabel(repoUrl: string | null | undefined, projectKey: string) {
-  if (!repoUrl) return projectKey;
-
-  try {
-    const parsed = new URL(repoUrl);
-    const [owner, repo] = parsed.pathname.replace(/^\/|\/$/g, '').split('/');
-    if (owner && repo) return `${owner}/${repo}`;
-  } catch {
-    return projectKey;
-  }
-
-  return projectKey;
+  return normalizeGithubRepoReference(repoUrl) ?? projectKey;
 }
 
 export default async function ProjectsPage({ searchParams }: ProjectsPageProps = {}) {

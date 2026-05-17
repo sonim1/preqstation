@@ -8,6 +8,7 @@ import { TODO_NOTE_MAX_LENGTH, TODO_TITLE_MAX_LENGTH } from '@/lib/content-limit
 import { withOwnerDb } from '@/lib/db/rls';
 import { taskLabelAssignments, tasks, workLogs } from '@/lib/db/schema';
 import { ENGINE_KEYS, normalizeEngineKey } from '@/lib/engine-icons';
+import { normalizeGithubRepoIdInput } from '@/lib/github-repo';
 import {
   ENTITY_TASK,
   ENTITY_WORKLOG,
@@ -66,6 +67,14 @@ import {
 const PREQ_LIFECYCLE_ACTIONS = ['plan', 'start', 'complete', 'review', 'block'] as const;
 type PreqLifecycleAction = (typeof PREQ_LIFECYCLE_ACTIONS)[number];
 
+const optionalGithubRepoIdSchema = z
+  .string()
+  .trim()
+  .refine((value) => value === '' || normalizeGithubRepoIdInput(value) !== null, {
+    message: 'GitHub repo must use owner/repo format.',
+  })
+  .transform((value) => (value === '' ? '' : normalizeGithubRepoIdInput(value) || value));
+
 const updateTaskSchema = z.object({
   title: z.string().trim().min(1).max(TODO_TITLE_MAX_LENGTH).optional(),
   description: z.string().trim().max(TODO_NOTE_MAX_LENGTH).optional().or(z.literal('')),
@@ -75,7 +84,7 @@ const updateTaskSchema = z.object({
   lifecycle_action: z.enum(PREQ_LIFECYCLE_ACTIONS).optional(),
   priority: z.string().optional(),
   assignee: z.string().optional(),
-  repo: z.string().trim().optional().or(z.literal('')),
+  repo: optionalGithubRepoIdSchema.optional(),
   branch: z.string().trim().optional().or(z.literal('')),
   labels: z.array(z.string().trim().min(1).max(40)).optional(),
   acceptance_criteria: z.array(z.string().trim().min(1).max(200)).optional(),

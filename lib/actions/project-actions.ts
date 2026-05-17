@@ -4,6 +4,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, workLogs } from '@/lib/db/schema';
+import { normalizeGithubRepoIdInput } from '@/lib/github-repo';
 import { stripPreqChoiceBlocks } from '@/lib/markdown';
 import { ENTITY_PROJECT, PROJECT_CREATED, PROJECT_UPDATED, writeOutboxEvent } from '@/lib/outbox';
 import {
@@ -59,6 +60,12 @@ function normalizeOptionalUrl(value: string) {
   } catch {
     return null;
   }
+}
+
+function normalizeOptionalGithubRepoId(value: string) {
+  const input = value.trim();
+  if (!input) return null;
+  return normalizeGithubRepoIdInput(input);
 }
 
 // ---------- createProject ----------
@@ -235,11 +242,15 @@ export async function updateProject(
     const nextRepoUrl =
       params.repoUrl === undefined
         ? (existing.repoUrl ?? null)
-        : normalizeOptionalUrl(params.repoUrl || '');
+        : normalizeOptionalGithubRepoId(params.repoUrl || '');
     const nextVercelUrl =
       params.vercelUrl === undefined
         ? (existing.vercelUrl ?? null)
         : normalizeOptionalUrl(params.vercelUrl || '');
+
+    if (params.repoUrl !== undefined && (params.repoUrl || '').trim() && !nextRepoUrl) {
+      return fail('INVALID_INPUT', 'GitHub repo must use owner/repo format.');
+    }
 
     const changed =
       existing.name !== nextName ||

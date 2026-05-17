@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import * as preqTask from '@/lib/preq-task';
 import {
   generateBranchName,
+  resolveProjectByRepo,
   serializePreqTask,
   toInternalTaskStatus,
   toPreqTaskStatus,
@@ -96,7 +97,7 @@ describe('serializePreqTask', () => {
         createdAt: new Date('2026-03-10T00:00:00.000Z'),
         updatedAt: new Date('2026-03-10T01:00:00.000Z'),
         project: {
-          repoUrl: 'https://github.com/example/repo',
+          repoUrl: 'example/repo',
           settings: [
             {
               key: PROJECT_SETTING_KEYS.AGENT_INSTRUCTIONS,
@@ -162,6 +163,46 @@ describe('serializePreqTask', () => {
     );
 
     expect(serialized.labels).toEqual(['feature', 'frontend']);
+  });
+});
+
+describe('resolveProjectByRepo', () => {
+  it('rejects URL repo input before querying projects', async () => {
+    const client = {
+      query: {
+        projects: {
+          findFirst: vi.fn(),
+        },
+      },
+    };
+
+    await expect(
+      resolveProjectByRepo('owner-1', 'https://github.com/example/repo', client as never),
+    ).resolves.toBeNull();
+    expect(client.query.projects.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('resolves a project from canonical owner/repo input', async () => {
+    const client = {
+      query: {
+        projects: {
+          findFirst: vi.fn().mockResolvedValue({
+            id: 'project-1',
+            name: 'Example',
+            projectKey: 'EX',
+          }),
+        },
+      },
+    };
+
+    await expect(
+      resolveProjectByRepo('owner-1', ' example/repo ', client as never),
+    ).resolves.toEqual({
+      id: 'project-1',
+      name: 'Example',
+      projectKey: 'EX',
+    });
+    expect(client.query.projects.findFirst).toHaveBeenCalledTimes(1);
   });
 });
 

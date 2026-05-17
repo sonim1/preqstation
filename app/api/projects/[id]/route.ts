@@ -12,6 +12,7 @@ import {
 } from '@/lib/content-limits';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects } from '@/lib/db/schema';
+import { normalizeGithubRepoIdInput } from '@/lib/github-repo';
 import { ENTITY_PROJECT, PROJECT_UPDATED, writeOutboxEvent } from '@/lib/outbox';
 import { requireOwnerUser } from '@/lib/owner';
 import { isValidBgValue } from '@/lib/project-backgrounds';
@@ -19,10 +20,18 @@ import { PROJECT_STATUSES } from '@/lib/project-meta';
 import { normalizeProjectSettingsInput, setProjectSetting } from '@/lib/project-settings';
 import { assertSameOrigin } from '@/lib/request-security';
 
+const githubRepoIdSchema = z
+  .string()
+  .trim()
+  .refine((value) => value === '' || normalizeGithubRepoIdInput(value) !== null, {
+    message: 'GitHub repo must use owner/repo format.',
+  })
+  .transform((value) => (value === '' ? '' : normalizeGithubRepoIdInput(value) || value));
+
 const updateProjectSchema = z.object({
   name: z.string().trim().min(1).max(PROJECT_NAME_MAX_LENGTH).optional(),
   description: z.string().trim().max(PROJECT_DESCRIPTION_MAX_LENGTH).optional().or(z.literal('')),
-  repoUrl: z.string().url().optional().or(z.literal('')),
+  repoUrl: githubRepoIdSchema.optional(),
   vercelUrl: z.string().url().optional().or(z.literal('')),
   priority: z.coerce.number().int().min(1).max(PROJECT_PRIORITY_MAX).optional(),
   status: z.enum(PROJECT_STATUSES).optional(),

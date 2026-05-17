@@ -8,6 +8,7 @@ import { TODO_NOTE_MAX_LENGTH, TODO_TITLE_MAX_LENGTH } from '@/lib/content-limit
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, taskLabelAssignments, tasks } from '@/lib/db/schema';
 import { ENGINE_KEYS, normalizeEngineKey } from '@/lib/engine-icons';
+import { normalizeGithubRepoIdInput } from '@/lib/github-repo';
 import { ENTITY_TASK, TASK_CREATED, writeOutboxEvent } from '@/lib/outbox';
 import {
   buildTaskNote,
@@ -36,13 +37,21 @@ import { coerceTaskRunState, isTaskStatus, parseTaskPriority } from '@/lib/task-
 import { buildTaskRunStateUpdate } from '@/lib/task-run-state';
 import { resolveAppendSortOrder, TASK_BOARD_ORDER } from '@/lib/task-sort-order';
 
+const githubRepoIdSchema = z
+  .string()
+  .trim()
+  .refine((value) => normalizeGithubRepoIdInput(value) !== null, {
+    message: 'GitHub repo must use owner/repo format.',
+  })
+  .transform((value) => normalizeGithubRepoIdInput(value) || value);
+
 const createTaskSchema = z.object({
   title: z.string().trim().min(1).max(TODO_TITLE_MAX_LENGTH),
   description: z.string().trim().max(TODO_NOTE_MAX_LENGTH).optional().or(z.literal('')),
   status: z.enum(PREQ_TASK_STATUSES).optional(),
   priority: z.string().optional(),
   assignee: z.string().optional(),
-  repo: z.string().trim().min(1),
+  repo: githubRepoIdSchema,
   branch: z.string().trim().optional().or(z.literal('')),
   labels: z.array(z.string().trim().min(1).max(40)).optional(),
   acceptance_criteria: z.array(z.string().trim().min(1).max(200)).optional(),

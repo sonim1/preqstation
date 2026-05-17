@@ -184,8 +184,8 @@ export function ProjectEditPanel({ selectedProject, updateProjectAction }: Proje
         </div>
         <TextInput
           name="repoUrl"
-          label="GitHub repo URL"
-          placeholder="https://github.com/you/repo"
+          label="GitHub repo"
+          placeholder="sonim1/preqstation-landingpage"
           defaultValue={selectedProject.repoUrl || ''}
           onChange={markDirty}
           onBlur={() => triggerSave(0)}

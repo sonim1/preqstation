@@ -4,20 +4,14 @@ import { ActionIcon, CopyButton, Group, Paper, Text, Tooltip } from '@mantine/co
 import { IconCheck, IconChevronDown, IconCopy, IconTerminal2 } from '@tabler/icons-react';
 
 import cardStyles from '@/app/components/cards.module.css';
+import { normalizeGithubRepoReference } from '@/lib/github-repo';
 
 type OpenClawGuideProps = {
   projects: Array<{ projectKey: string; name: string; repoUrl: string | null }>;
 };
 
-function normalizeRepoUrl(repoUrl: string | null): string {
-  if (!repoUrl) return '';
-
-  return repoUrl
-    .trim()
-    .replace(/^git@github\.com:/iu, 'https://github.com/')
-    .replace(/^ssh:\/\/git@github\.com\//iu, 'https://github.com/')
-    .replace(/\.git$/iu, '')
-    .replace(/\/$/u, '');
+function normalizeRepoId(repoUrl: string | null): string {
+  return normalizeGithubRepoReference(repoUrl) || '';
 }
 
 export function buildPrompt(
@@ -25,9 +19,9 @@ export function buildPrompt(
 ): string {
   const pairs = projects
     .map((project) => {
-      const repoUrl = normalizeRepoUrl(project.repoUrl);
-      if (!repoUrl) return null;
-      return `${project.projectKey.toUpperCase()}=${repoUrl}`;
+      const repoId = normalizeRepoId(project.repoUrl);
+      if (!repoId) return null;
+      return `${project.projectKey.toUpperCase()}=${repoId}`;
     })
     .filter(Boolean);
 
