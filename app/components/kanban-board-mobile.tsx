@@ -369,7 +369,7 @@ export function KanbanBoardMobile({
                     className={`kanban-mobile-panel-list kanban-fill-height${hasTasks ? ' kanban-bottom-clearance' : ' kanban-mobile-panel-list--empty'}`}
                   >
                     {isActivePanel && saveError ? (
-                      <Text c="red" size="sm" className="kanban-mobile-save-error">
+                      <Text size="sm" className="kanban-mobile-save-error">
                         {saveError}
                       </Text>
                     ) : null}
