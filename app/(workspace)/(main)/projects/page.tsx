@@ -29,11 +29,36 @@ import { ProjectsOfflineHydrator } from './projects-offline-hydrator';
 import styles from './projects-page.module.css';
 
 const DAY_MS = 86_400_000;
+type ProjectsSearchParams = {
+  panel?: string | string[];
+  projectKey?: string | string[];
+  q?: string | string[];
+  status?: string | string[];
+};
+
 type ProjectsPageProps = {
-  searchParams?: Promise<{ panel?: string; projectKey?: string }>;
+  searchParams?: Promise<ProjectsSearchParams>;
 };
 
 type WorkspaceActivity = { date: string; count: number };
+type ProjectFilterStatus = 'all' | 'live' | 'active' | 'paused' | 'archived';
+
+function getLastQueryValue(value: string | string[] | undefined) {
+  if (Array.isArray(value)) return value.at(-1) ?? '';
+  return value ?? '';
+}
+
+function getProjectFilterStatus(value: string): ProjectFilterStatus {
+  switch (value.toLowerCase()) {
+    case 'live':
+    case 'active':
+    case 'paused':
+    case 'archived':
+      return value.toLowerCase() as ProjectFilterStatus;
+    default:
+      return 'all';
+  }
+}
 
 function toValidDate(value: Date | string | null | undefined) {
   if (!value) return null;
@@ -106,8 +131,7 @@ function getActivityLevel(count: number, peak: number) {
 }
 
 export default async function ProjectsPage({ searchParams }: ProjectsPageProps = {}) {
-  const queryParams = await (searchParams ??
-    Promise.resolve<{ panel?: string; projectKey?: string }>({}));
+  const queryParams = await (searchParams ?? Promise.resolve<ProjectsSearchParams>({}));
   const owner = await getOwnerUserOrNull();
   if (!owner) redirect('/login?reason=auth');
 
@@ -177,8 +201,13 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
   );
 
   const terminology = resolveTerminology(kitchenMode === 'true');
-  const activePanel = queryParams.panel === 'project-edit' ? 'project-edit' : null;
-  const editingProjectKey = normalizeProjectKey(queryParams.projectKey || '');
+  const panelParam = getLastQueryValue(queryParams.panel);
+  const projectKeyParam = getLastQueryValue(queryParams.projectKey);
+  const searchQuery = getLastQueryValue(queryParams.q).trim();
+  const normalizedSearchQuery = searchQuery.toLowerCase();
+  const selectedProjectFilter = getProjectFilterStatus(getLastQueryValue(queryParams.status));
+  const activePanel = panelParam === 'project-edit' ? 'project-edit' : null;
+  const editingProjectKey = normalizeProjectKey(projectKeyParam);
   const editingProject =
     activePanel === 'project-edit' && editingProjectKey
       ? (allProjects.find((project) => project.projectKey === editingProjectKey) ?? null)
@@ -285,6 +314,26 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
     (sum, summary) => sum + summary.runningCount,
     0,
   );
+  const filteredProjectSummaries = projectSummaries.filter((summary) => {
+    const matchesStatus =
+      selectedProjectFilter === 'all' ||
+      (selectedProjectFilter === 'live' && summary.runningCount > 0) ||
+      (selectedProjectFilter === 'active' &&
+        summary.project.status === ACTIVE_PROJECT_STATUS) ||
+      (selectedProjectFilter === 'paused' &&
+        summary.project.status === PAUSED_PROJECT_STATUS);
+
+    if (!matchesStatus) return false;
+    if (!normalizedSearchQuery) return true;
+
+    const repoLabel = getRepoLabel(summary.project.repoUrl, summary.project.projectKey);
+    return [
+      summary.project.name,
+      summary.project.projectKey,
+      summary.project.description ?? '',
+      repoLabel,
+    ].some((value) => value.toLowerCase().includes(normalizedSearchQuery));
+  });
   const workspaceActivity: WorkspaceActivity[] = activityDays.map((date) => ({
     date,
     count: workspaceActivityByDate.get(date) ?? 0,
@@ -330,13 +379,38 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
     };
   }
 
-  const rosterCards = projectSummaries.map((summary) => toProjectCardSummary(summary));
+  const rosterCards = filteredProjectSummaries.map((summary) => toProjectCardSummary(summary));
   const filterChips = [
-    { label: 'All', value: totalProjectCount, active: true },
-    { label: 'Live', value: liveProjectCount, active: false },
-    { label: 'Active', value: activeProjectCount, active: false },
-    { label: 'Paused', value: pausedProjectCount, active: false },
-    { label: 'Archived', value: 0, active: false },
+    {
+      label: 'All',
+      value: totalProjectCount,
+      filter: 'all' as const,
+      active: selectedProjectFilter === 'all',
+    },
+    {
+      label: 'Live',
+      value: liveProjectCount,
+      filter: 'live' as const,
+      active: selectedProjectFilter === 'live',
+    },
+    {
+      label: 'Active',
+      value: activeProjectCount,
+      filter: 'active' as const,
+      active: selectedProjectFilter === 'active',
+    },
+    {
+      label: 'Paused',
+      value: pausedProjectCount,
+      filter: 'paused' as const,
+      active: selectedProjectFilter === 'paused',
+    },
+    {
+      label: 'Archived',
+      value: 0,
+      filter: 'archived' as const,
+      active: selectedProjectFilter === 'archived',
+    },
   ];
 
   async function deleteProject(formData: FormData) {
@@ -552,10 +626,18 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
             </div>
           </section>
 
-          <div className={styles.toolbar}>
+          <form className={styles.toolbar} method="GET">
+            {activePanel ? <input type="hidden" name="panel" value={activePanel} /> : null}
+            {editingProjectKey ? (
+              <input type="hidden" name="projectKey" value={editingProjectKey} />
+            ) : null}
+            {selectedProjectFilter !== 'all' ? (
+              <input type="hidden" name="status" value={selectedProjectFilter} />
+            ) : null}
             <TextInput
               aria-label="Find a project"
               className={styles.searchInput}
+              defaultValue={searchQuery}
               leftSection={<IconSearch size={14} />}
               name="q"
               placeholder="Find a project"
@@ -564,15 +646,23 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
             />
             <div className={styles.filterChips} aria-label="Project filters">
               {filterChips.map((chip) => (
-                <span key={chip.label} className={styles.filterChip} data-active={chip.active}>
+                <button
+                  key={chip.label}
+                  aria-pressed={chip.active}
+                  className={styles.filterChip}
+                  data-active={chip.active}
+                  name="status"
+                  type="submit"
+                  value={chip.filter === 'all' ? '' : chip.filter}
+                >
                   {chip.label} {chip.value}
-                </span>
+                </button>
               ))}
             </div>
             <span className={styles.agentStatus}>
               {runningAgentCount + queuedAgentCount} agents running
             </span>
-          </div>
+          </form>
 
           {totalProjectCount === 0 ? (
             <EmptyState
@@ -580,6 +670,13 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
               title="No projects yet"
               description={`Create your first project to start tracking ${terminology.task.pluralLower} and progress.`}
               action={<LinkButton href="/dashboard?panel=project">Create Project</LinkButton>}
+            />
+          ) : rosterCards.length === 0 ? (
+            <EmptyState
+              icon={<IconSearch size={24} />}
+              title="No matching projects"
+              description="Adjust the search or project filter to see more repos."
+              action={<LinkButton href="/projects">Clear filters</LinkButton>}
             />
           ) : (
             <section className={styles.portfolioSection} data-project-section="roster">

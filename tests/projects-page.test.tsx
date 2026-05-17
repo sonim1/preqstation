@@ -369,6 +369,67 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).not.toContain('data-project-card-background="image"');
   });
 
+  it('filters the roster by search query and status query params', async () => {
+    mocked.state.projects.push(
+      {
+        id: 'project-2',
+        name: 'PreqStation Skill',
+        projectKey: 'PSKL',
+        description: 'Worker runtime setup for Claude Code, Codex, and Gemini.',
+        status: 'active',
+        updatedAt: new Date('2026-03-13T12:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/preqstation-skill',
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+      {
+        id: 'project-3',
+        name: 'PreqStation Dispatcher',
+        projectKey: 'DISP',
+        description: 'Operator-host setup and dispatch.',
+        status: 'paused',
+        updatedAt: new Date('2026-03-08T10:00:00Z'),
+        repoUrl: 'https://github.com/sonim1/preqstation-dispatcher',
+        vercelUrl: null,
+        bgImage: null,
+        bgImageCredit: null,
+        deletedAt: null,
+        projectSettings: [],
+      },
+    );
+    mocked.state.statusCounts.push(
+      { projectId: 'project-2', status: 'todo', _count: { id: 2 } },
+      { projectId: 'project-3', status: 'todo', _count: { id: 2 } },
+    );
+    mocked.state.runStateCounts = [
+      { projectId: 'project-1', runState: 'running', _count: { id: 1 } },
+      { projectId: 'project-2', runState: 'queued', _count: { id: 1 } },
+    ];
+    mocked.state.latestWorkLogs.push(
+      { projectId: 'project-2', lastWorkedAt: new Date('2026-03-14T11:46:00Z') },
+      { projectId: 'project-3', lastWorkedAt: new Date('2026-03-12T12:00:00Z') },
+    );
+
+    const page = await ProjectsPage({
+      searchParams: Promise.resolve({ q: 'preqstation', status: 'live' }),
+    });
+    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
+
+    expect(html).toContain('<form');
+    expect(html).toContain('method="GET"');
+    expect(html).toContain('name="q"');
+    expect(html).toContain('value="preqstation"');
+    expect(html).toContain('name="status"');
+    expect(html).toContain('value="live"');
+    expect(html).toContain('aria-pressed="true"');
+    expect(html).toContain('PreqStation Core');
+    expect(html).not.toContain('PreqStation Skill');
+    expect(html).not.toContain('PreqStation Dispatcher');
+  });
+
   it('pauses a project in place from the projects route', async () => {
     mocked.updateProject.mockResolvedValue({
       ok: true,
