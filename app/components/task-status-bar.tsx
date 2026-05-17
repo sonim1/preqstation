@@ -32,11 +32,8 @@ export function TaskStatusBar({ tasks, boardHref, newTaskHref }: TaskStatusBarPr
   const doneCount = counts.done + counts.archived;
   const completionPct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
   const visibleStatuses = allStatuses.filter((status) => counts[status] > 0);
-  const distributionSummary = `${total} ${
-    total === 1 ? terminology.task.singularLower : terminology.task.pluralLower
-  } total: ${visibleStatuses
-    .map((status) => `${counts[status]} ${taskStatusLabel(status, terminology)}`)
-    .join(', ')}.`;
+  const chartStatuses = visibleStatuses.filter((status) => status !== 'archived');
+  const chartTotal = chartStatuses.reduce((sum, status) => sum + counts[status], 0);
 
   if (total === 0) {
     return (
@@ -51,8 +48,8 @@ export function TaskStatusBar({ tasks, boardHref, newTaskHref }: TaskStatusBarPr
     );
   }
 
-  const sections = visibleStatuses.map((s) => ({
-    value: (counts[s] / total) * 100,
+  const sections = chartStatuses.map((s) => ({
+    value: chartTotal > 0 ? (counts[s] / chartTotal) * 100 : 0,
     color: `var(--mantine-color-${statusColors[s]}-6)`,
     label: taskStatusLabel(s, terminology),
     count: counts[s],
@@ -78,10 +75,6 @@ export function TaskStatusBar({ tasks, boardHref, newTaskHref }: TaskStatusBarPr
         </Group>
       </Group>
 
-      <Text size="sm" c="dimmed" mb="xs">
-        {distributionSummary}
-      </Text>
-
       <Anchor href={boardHref} underline="never">
         <Progress.Root size={28} radius="md">
           {sections.map((section) => {
@@ -101,8 +94,8 @@ export function TaskStatusBar({ tasks, boardHref, newTaskHref }: TaskStatusBarPr
                   aria-valuemax={100}
                   aria-valuemin={0}
                   aria-valuenow={percentage}
-                  aria-label={`${section.label}: ${section.count} of ${total} ${terminology.task.pluralLower} (${percentage}%)`}
-                  aria-valuetext={`${section.count} of ${total} ${terminology.task.pluralLower} (${percentage}%)`}
+                  aria-label={`${section.label}: ${section.count} of ${chartTotal} charted ${terminology.task.pluralLower} (${percentage}%)`}
+                  aria-valuetext={`${section.count} of ${chartTotal} charted ${terminology.task.pluralLower} (${percentage}%)`}
                 >
                   {section.value > 8 && (
                     <Progress.Label fz={11}>

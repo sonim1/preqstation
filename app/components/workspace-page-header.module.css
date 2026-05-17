@@ -8,6 +8,18 @@
   min-width: 0;
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.titleIcon {
+  flex: 0 0 auto;
+  color: var(--mantine-color-blue-5);
+}
+
 .title {
   margin: 0;
   font-size: clamp(1.35rem, 2vw, 1.8rem);
@@ -23,6 +35,10 @@
   .copy {
     justify-items: center;
     text-align: center;
+  }
+
+  .titleRow {
+    justify-content: center;
   }
 
   .description {

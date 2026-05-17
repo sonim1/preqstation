@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { and, desc, eq, isNull, or, sql } from 'drizzle-orm';
 
-import { resolveDisplayTimeZone } from '@/lib/date-time';
+import { getDayRangeForTimeZone, resolveDisplayTimeZone } from '@/lib/date-time';
 import { db } from '@/lib/db';
 import { workLogs } from '@/lib/db/schema';
 import type { DbClientOrTx } from '@/lib/db/types';
@@ -24,6 +24,11 @@ type ListProjectWorkLogYearActivityOptions = {
   client?: DbClientOrTx;
 };
 
+type ProjectWorkLogActivityRow = {
+  date: string | Date;
+  count: bigint | number;
+};
+
 function clampPageSize(limit: number) {
   if (!Number.isFinite(limit) || limit < 1) return DEFAULT_WORK_LOG_PAGE_SIZE;
   return Math.min(Math.trunc(limit), DEFAULT_WORK_LOG_PAGE_SIZE);
@@ -42,6 +47,27 @@ function formatPlainDate(value: Temporal.PlainDate) {
   return `${value.year}-${pad(value.month)}-${pad(value.day)}`;
 }
 
+function plainDateStartInTimeZone(value: Temporal.PlainDate, timeZone: string) {
+  const start = Temporal.ZonedDateTime.from({
+    timeZone,
+    year: value.year,
+    month: value.month,
+    day: value.day,
+    hour: 0,
+    minute: 0,
+    second: 0,
+    millisecond: 0,
+    microsecond: 0,
+    nanosecond: 0,
+  });
+
+  return new Date(start.epochMilliseconds);
+}
+
+function toTimestampParam(value: Date) {
+  return value.toISOString();
+}
+
 function toDateKey(value: Date | string | null | undefined) {
   if (!value) return null;
   if (value instanceof Date) return value.toISOString().split('T')[0] ?? null;
@@ -53,6 +79,56 @@ function toDateKey(value: Date | string | null | undefined) {
   const parsed = new Date(normalized);
   if (Number.isNaN(parsed.getTime())) return null;
   return parsed.toISOString().split('T')[0] ?? null;
+}
+
+function readRows<T>(result: unknown): T[] {
+  return Array.isArray(result)
+    ? (result as T[])
+    : Array.isArray((result as { rows?: T[] }).rows)
+      ? (result as { rows: T[] }).rows
+      : [];
+}
+
+function isMissingProjectWorkLogRollupRelationError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const maybeError = error as { code?: string; message?: string };
+
+  return (
+    maybeError.code === '42P01' ||
+    Boolean(
+      maybeError.message?.includes('does not exist') &&
+      maybeError.message.includes('dashboard_project_work_log_daily'),
+    )
+  );
+}
+
+async function loadProjectWorkLogRowsFromSource({
+  ownerId,
+  projectId,
+  start,
+  end,
+  timeZone,
+  client,
+}: {
+  ownerId: string;
+  projectId: string;
+  start: string;
+  end: string;
+  timeZone: string;
+  client: DbClientOrTx;
+}) {
+  const result = await client.execute<ProjectWorkLogActivityRow>(sql`
+    SELECT (worked_at AT TIME ZONE ${timeZone})::date as date, COUNT(*)::bigint as count
+    FROM work_logs
+    WHERE owner_id = ${ownerId}::uuid
+      AND project_id = ${projectId}::uuid
+      AND worked_at >= ${start}::timestamptz
+      AND worked_at < ${end}::timestamptz
+    GROUP BY 1
+    ORDER BY date ASC
+  `);
+
+  return readRows<ProjectWorkLogActivityRow>(result);
 }
 
 export async function listWorkLogsPage({
@@ -118,19 +194,49 @@ export async function listProjectWorkLogYearActivity({
   const today = Temporal.Instant.fromEpochMilliseconds(now.getTime())
     .toZonedDateTimeISO(resolvedTimeZone)
     .toPlainDate();
-  const start = Temporal.PlainDate.from({ year: today.year, month: 1, day: 1 });
+  const start = today.subtract({ days: 364 });
   const startDate = formatPlainDate(start);
   const endDate = formatPlainDate(today);
+  const todayRange = getDayRangeForTimeZone(resolvedTimeZone, now);
+  const rangeStart = toTimestampParam(plainDateStartInTimeZone(start, resolvedTimeZone));
+  const todayStart = toTimestampParam(todayRange.start);
+  const todayEnd = toTimestampParam(todayRange.end);
 
-  const rows = await client.execute<{ date: string | Date; count: bigint | number }>(sql`
-    SELECT bucket_date as date, count
-    FROM dashboard_project_work_log_daily
-    WHERE owner_id = ${ownerId}::uuid
-      AND project_id = ${projectId}::uuid
-      AND bucket_date >= ${startDate}::date
-      AND bucket_date <= ${endDate}::date
-    ORDER BY bucket_date ASC
-  `);
+  let rows: ProjectWorkLogActivityRow[];
+
+  try {
+    const result = await client.execute<ProjectWorkLogActivityRow>(sql`
+      SELECT bucket_date as date, count
+      FROM dashboard_project_work_log_daily
+      WHERE owner_id = ${ownerId}::uuid
+        AND project_id = ${projectId}::uuid
+        AND bucket_date >= ${startDate}::date
+        AND bucket_date < ${endDate}::date
+      UNION ALL
+      SELECT ${endDate}::date as date, COUNT(*)::bigint as count
+      FROM work_logs
+      WHERE owner_id = ${ownerId}::uuid
+        AND project_id = ${projectId}::uuid
+        AND worked_at >= ${todayStart}::timestamptz
+        AND worked_at < ${todayEnd}::timestamptz
+      ORDER BY date ASC
+    `);
+
+    rows = readRows<ProjectWorkLogActivityRow>(result);
+  } catch (error) {
+    if (!isMissingProjectWorkLogRollupRelationError(error)) {
+      throw error;
+    }
+
+    rows = await loadProjectWorkLogRowsFromSource({
+      ownerId,
+      projectId,
+      start: rangeStart,
+      end: todayEnd,
+      timeZone: resolvedTimeZone,
+      client,
+    });
+  }
 
   const countByDate = new Map(
     rows.flatMap((row) => {

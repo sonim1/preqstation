@@ -1,18 +1,20 @@
 'use client';
 
-import { Badge, Group, Paper, Stack, Stepper, Text, Title, Tooltip } from '@mantine/core';
+import { Badge, Group, Paper, Stack, Stepper, Text, Tooltip } from '@mantine/core';
 import {
   IconCircleCheck,
   IconEye,
   IconInbox,
   IconListCheck,
   IconPlayerPause,
+  IconTargetArrow,
 } from '@tabler/icons-react';
 import Link from 'next/link';
 import { type ComponentType } from 'react';
 
 import { EmptyState } from '@/app/components/empty-state';
 import { LinkButton } from '@/app/components/link-button';
+import { SectionTitleWithIcon } from '@/app/components/section-title-with-icon';
 import { TaskPriorityIcon } from '@/app/components/task-priority-icon';
 import type { OnTheLineLaneRole } from '@/lib/dashboard-on-the-line';
 import { TASK_RUN_STATE_LABELS } from '@/lib/task-meta';
@@ -188,7 +190,9 @@ export function DashboardFocusedWorkLane({
         data-dashboard-header="on-the-line"
       >
         <Group gap={6} align="center" wrap="nowrap">
-          <Title order={3}>On the Line</Title>
+          <SectionTitleWithIcon icon={IconTargetArrow} iconSize={22} order={3}>
+            On the Line
+          </SectionTitleWithIcon>
           <DashboardInfoHint label="On the Line" tooltip="The work surface." />
         </Group>
         <div className={classes.summaryCluster}>

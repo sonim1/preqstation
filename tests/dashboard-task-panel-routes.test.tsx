@@ -28,6 +28,7 @@ vi.mock('@mantine/core', () => ({
 vi.mock('@tabler/icons-react', () => ({
   IconClipboardList: () => null,
   IconInfoCircle: () => null,
+  IconLayoutDashboard: () => null,
   IconChevronsUp: () => null,
   IconChevronUp: () => null,
   IconMinus: () => null,

@@ -1,5 +1,8 @@
-import { Group, Text, Title } from '@mantine/core';
+import { Group, Text } from '@mantine/core';
+import { IconGauge, IconGridDots, IconRoute } from '@tabler/icons-react';
 import Link from 'next/link';
+
+import { SectionTitleWithIcon } from '@/app/components/section-title-with-icon';
 
 import { DashboardActivityFlowBarsList } from './dashboard-activity-flow-bars-list';
 import { DashboardInfoHint } from './dashboard-info-hint';
@@ -250,7 +253,7 @@ export function DashboardPortfolioOverview({
             <div className={classes.portfolioSubhead}>
               <div>
                 <Group gap={6} align="center" wrap="nowrap">
-                  <Title order={4}>Service Pace</Title>
+                  <SectionTitleWithIcon icon={IconGauge}>Service Pace</SectionTitleWithIcon>
                   <DashboardInfoHint
                     label="Service Pace"
                     tooltip="Weekly work-log rhythm without the extra dashboard noise."
@@ -279,7 +282,7 @@ export function DashboardPortfolioOverview({
             <div className={classes.portfolioMatrixCard} data-portfolio-module="priority-matrix">
               <div className={classes.portfolioSubhead}>
                 <div>
-                  <Title order={4}>Priority Matrix</Title>
+                  <SectionTitleWithIcon icon={IconGridDots}>Priority Matrix</SectionTitleWithIcon>
                   <Text size="sm" style={{ color: 'var(--ui-muted-text)' }}>
                     Fresh projects stay left. Heavier open load rises to the top.
                   </Text>
@@ -396,7 +399,7 @@ export function DashboardPortfolioOverview({
             <div className={classes.portfolioSubhead}>
               <div>
                 <Group gap={6} align="center" wrap="nowrap">
-                  <Title order={4}>Activity Flow</Title>
+                  <SectionTitleWithIcon icon={IconRoute}>Activity Flow</SectionTitleWithIcon>
                   <DashboardInfoHint label="Activity Flow" tooltip={activityFlowHelp} />
                 </Group>
               </div>

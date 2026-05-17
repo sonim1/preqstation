@@ -1,12 +1,13 @@
 'use client';
 
-import { Badge, Button, Group, Paper, Stack, Text, Title } from '@mantine/core';
+import { Badge, Button, Group, Paper, Stack, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { IconCheck, IconPencil, IconSun, IconTargetArrow } from '@tabler/icons-react';
 import { useState, useTransition } from 'react';
 
 import { EmptyState } from '@/app/components/empty-state';
 import { LinkButton } from '@/app/components/link-button';
+import { SectionTitleWithIcon } from '@/app/components/section-title-with-icon';
 import { TaskPriorityIcon } from '@/app/components/task-priority-icon';
 import { useTerminology } from '@/app/components/terminology-provider';
 
@@ -152,7 +153,7 @@ export function FocusQueuePanel({
   return (
     <Paper withBorder radius="lg" p={{ base: 'md', sm: 'lg' }} className={rootClassName}>
       <Group justify="space-between" align="center" mb="sm">
-        <Title order={4}>Focus Queue</Title>
+        <SectionTitleWithIcon icon={IconTargetArrow}>Focus Queue</SectionTitleWithIcon>
         <Badge variant="light" color="gray">
           {visibleTodos.length} todo
         </Badge>
