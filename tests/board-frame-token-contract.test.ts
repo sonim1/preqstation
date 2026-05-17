@@ -393,5 +393,17 @@ describe('board frame token contract', () => {
     );
     expectComputedToken('.kanban-status-button.is-done', 'color', '--ui-success');
     expectComputedToken('.kanban-status-button.is-archived', 'color', '--ui-muted-text');
+
+    document.documentElement.setAttribute('data-mantine-color-scheme', 'dark');
+
+    expectComputedToken('.kanban-status-button.is-inbox', 'color', '--ui-status-queued-foreground');
+    expectComputedToken('.kanban-status-button.is-hold', 'color', '--ui-warning');
+    expectComputedToken(
+      '.kanban-status-button.is-ready',
+      'color',
+      '--ui-status-running-foreground',
+    );
+    expectComputedToken('.kanban-status-button.is-done', 'color', '--ui-success');
+    expectComputedToken('.kanban-status-button.is-archived', 'color', '--ui-muted-text');
   });
 });

@@ -2523,6 +2523,30 @@ html[data-mantine-color-scheme='dark'] .workspace-navbar {
   box-shadow: var(--ui-elevation-1);
 }
 
+html[data-mantine-color-scheme='dark'] .kanban-status-button {
+  color: var(--ui-neutral-strong);
+}
+
+html[data-mantine-color-scheme='dark'] .kanban-status-button.is-inbox {
+  color: var(--ui-status-queued-foreground);
+}
+
+html[data-mantine-color-scheme='dark'] .kanban-status-button.is-hold {
+  color: var(--ui-warning);
+}
+
+html[data-mantine-color-scheme='dark'] .kanban-status-button.is-ready {
+  color: var(--ui-status-running-foreground);
+}
+
+html[data-mantine-color-scheme='dark'] .kanban-status-button.is-done {
+  color: var(--ui-success);
+}
+
+html[data-mantine-color-scheme='dark'] .kanban-status-button.is-archived {
+  color: var(--ui-muted-text);
+}
+
 html[data-mantine-color-scheme='dark'] .kanban-archive-trigger {
   border-color: var(--kanban-frame-chrome-border);
   background: var(--kanban-frame-chrome-surface);
