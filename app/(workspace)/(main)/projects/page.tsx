@@ -314,6 +314,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
     (sum, summary) => sum + summary.runningCount,
     0,
   );
+  const activeAgentCount = runningAgentCount + queuedAgentCount;
   const filteredProjectSummaries = projectSummaries.filter((summary) => {
     const matchesStatus =
       selectedProjectFilter === 'all' ||
@@ -659,8 +660,8 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
                 </button>
               ))}
             </div>
-            <span className={styles.agentStatus}>
-              {runningAgentCount + queuedAgentCount} agents running
+            <span className={styles.agentStatus} data-active={activeAgentCount > 0}>
+              {activeAgentCount} agents running
             </span>
           </form>
 

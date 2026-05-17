@@ -430,6 +430,18 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).not.toContain('PreqStation Dispatcher');
   });
 
+  it('marks the agent status indicator inactive when no agents are running or queued', async () => {
+    mocked.state.runStateCounts = [];
+
+    const page = await ProjectsPage();
+    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
+
+    expect(html).toContain('data-active="false">0 agents running');
+    expect(projectsPageCss).toMatch(
+      /\.agentStatus\[data-active=['"]false['"]\]::before\s*\{[\s\S]*display:\s*none;/,
+    );
+  });
+
   it('pauses a project in place from the projects route', async () => {
     mocked.updateProject.mockResolvedValue({
       ok: true,

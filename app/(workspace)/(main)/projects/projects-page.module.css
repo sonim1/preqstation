@@ -168,6 +168,10 @@ button.filterChip {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ui-status-running-glow), transparent 28%);
 }
 
+.agentStatus[data-active='false']::before {
+  display: none;
+}
+
 .portfolioSection {
   min-width: 0;
   display: grid;
