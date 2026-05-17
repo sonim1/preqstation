@@ -150,6 +150,9 @@ describe('app/(workspace)/(main)/projects/projects-offline-hydrator', () => {
     expect(document.querySelector('[data-projects-offline-container="true"]')).toBeTruthy();
     expect(document.querySelector('[data-projects-activity-chart="bar"]')).toBeTruthy();
     expect(document.querySelectorAll('[data-projects-activity-bar]')).toHaveLength(30);
+    expect(document.querySelectorAll('[data-projects-activity-mobile-hidden="true"]')).toHaveLength(
+      23,
+    );
     expect(screen.getByLabelText('2026-03-30: 2 work logs')).toBeTruthy();
     expect(screen.getByText('2026-03-30 · 2 work logs')).toBeTruthy();
     expect(document.querySelector('[data-project-section="roster"]')).toBeTruthy();

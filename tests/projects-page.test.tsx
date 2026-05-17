@@ -345,7 +345,9 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('3 projects');
     expect(html).toContain('New project');
     expect(html).toContain('data-projects-activity-chart="bar"');
+    expect(html).toContain('data-projects-activity-range="desktop-30-mobile-7"');
     expect(html.match(/data-projects-activity-bar=/g)).toHaveLength(30);
+    expect(html.match(/data-projects-activity-mobile-hidden="true"/g)).toHaveLength(23);
     expect(html).toContain('data-projects-activity-bar="2026-03-14"');
     expect(html).toContain('aria-label="2026-03-14: 3 work logs"');
     expect(html).toContain('2026-03-14 · 3 work logs');
@@ -550,6 +552,15 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectsPageCss).toMatch(/\.activityPanel\s*\{/);
     expect(projectsPageCss).toMatch(/\.activityBarChart\s*\{/);
     expect(projectsPageCss).toMatch(/grid-template-columns:\s*repeat\(30,\s*minmax\(0,\s*1fr\)\);/);
+    expect(projectsPageCss).toMatch(
+      /@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.activityBarChart\s*\{[\s\S]*grid-template-columns:\s*repeat\(7,\s*minmax\(0,\s*1fr\)\);/,
+    );
+    expect(projectsPageCss).toMatch(
+      /\.activityBarWrap\[data-projects-activity-mobile-hidden=['"]true['"]\]\s*\{[\s\S]*display:\s*none;/,
+    );
+    expect(projectsPageCss).toMatch(
+      /\.activityRangeMobile\s*\{[\s\S]*display:\s*none;[\s\S]*@media \(max-width: 47\.99375em\)\s*\{[\s\S]*\.activityRangeDesktop\s*\{[\s\S]*display:\s*none;/,
+    );
     expect(projectsPageCss).toMatch(/\.activityBarWrap:hover\s+\.activityTooltip/);
     expect(projectsPageCss).toMatch(/height:\s*var\(--activity-bar-height\);/);
     expect(projectsPageCss).toMatch(/\.rosterGrid\s*\{[\s\S]*min-width:\s*0;/);

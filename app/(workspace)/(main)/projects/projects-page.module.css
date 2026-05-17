@@ -51,6 +51,10 @@
   white-space: nowrap;
 }
 
+.activityRangeMobile {
+  display: none;
+}
+
 .activityBarChart {
   display: grid;
   grid-template-columns: repeat(30, minmax(0, 1fr));
@@ -502,10 +506,23 @@ button.filterChip {
     gap: 0.35rem;
   }
 
+  .activityRangeDesktop {
+    display: none;
+  }
+
+  .activityRangeMobile {
+    display: inline;
+  }
+
   .activityBarChart {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 0.18rem;
     min-height: 2.8rem;
     padding-top: 0.7rem;
+  }
+
+  .activityBarWrap[data-projects-activity-mobile-hidden='true'] {
+    display: none;
   }
 
   .activityBarWrap {

@@ -311,10 +311,8 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
     const matchesStatus =
       selectedProjectFilter === 'all' ||
       (selectedProjectFilter === 'live' && summary.runningCount > 0) ||
-      (selectedProjectFilter === 'active' &&
-        summary.project.status === ACTIVE_PROJECT_STATUS) ||
-      (selectedProjectFilter === 'paused' &&
-        summary.project.status === PAUSED_PROJECT_STATUS);
+      (selectedProjectFilter === 'active' && summary.project.status === ACTIVE_PROJECT_STATUS) ||
+      (selectedProjectFilter === 'paused' && summary.project.status === PAUSED_PROJECT_STATUS);
 
     if (!matchesStatus) return false;
     if (!normalizedSearchQuery) return true;
@@ -587,7 +585,8 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
                 <IconActivity size={16} />
                 Workspace activity
                 <span aria-hidden="true">·</span>
-                <span>last 30 days</span>
+                <span className={styles.activityRangeDesktop}>last 30 days</span>
+                <span className={styles.activityRangeMobile}>last 7 days</span>
                 <span aria-hidden="true">·</span>
                 <span>
                   {totalProjectCount} project{totalProjectCount === 1 ? '' : 's'}
@@ -600,7 +599,10 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
             </div>
             <WorkspaceActivityChart data={workspaceActivity} peak={workspaceActivityPeak} />
             <div className={styles.activityLegend} aria-hidden="true">
-              <span>30 days ago</span>
+              <span>
+                <span className={styles.activityRangeDesktop}>30 days ago</span>
+                <span className={styles.activityRangeMobile}>7 days ago</span>
+              </span>
               <span>today</span>
             </div>
           </section>

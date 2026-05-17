@@ -11,6 +11,8 @@ type ActivityBarStyle = CSSProperties & {
   '--activity-bar-height': string;
 };
 
+const MOBILE_ACTIVITY_DAYS = 7;
+
 function formatWorkLogCount(count: number) {
   return `${count} work log${count === 1 ? '' : 's'}`;
 }
@@ -40,17 +42,23 @@ export function WorkspaceActivityChart({
     <div
       className={styles.activityBarChart}
       data-projects-activity-chart="bar"
+      data-projects-activity-range="desktop-30-mobile-7"
       role="img"
-      aria-label="Workspace activity across the last 30 days"
+      aria-label="Workspace activity across the last 30 days on desktop and last 7 days on mobile"
     >
-      {data.map((point) => {
+      {data.map((point, index) => {
         const logCount = formatWorkLogCount(point.count);
+        const hiddenOnMobile = index < Math.max(0, data.length - MOBILE_ACTIVITY_DAYS);
         const barStyle: ActivityBarStyle = {
           '--activity-bar-height': getActivityBarHeight(point.count, peak),
         };
 
         return (
-          <span key={point.date} className={styles.activityBarWrap}>
+          <span
+            key={point.date}
+            className={styles.activityBarWrap}
+            data-projects-activity-mobile-hidden={hiddenOnMobile ? 'true' : undefined}
+          >
             <span
               className={styles.activityBar}
               data-activity-level={getActivityLevel(point.count, peak)}

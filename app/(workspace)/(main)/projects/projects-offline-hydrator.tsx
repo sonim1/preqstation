@@ -46,7 +46,8 @@ function OfflineProjectsView({ snapshot }: { snapshot: ProjectsOfflineSnapshotPa
             <IconActivity size={16} />
             Workspace activity
             <span aria-hidden="true">·</span>
-            <span>last 30 days</span>
+            <span className={styles.activityRangeDesktop}>last 30 days</span>
+            <span className={styles.activityRangeMobile}>last 7 days</span>
             <span aria-hidden="true">·</span>
             <span>
               {snapshot.rosterCards.length} project
