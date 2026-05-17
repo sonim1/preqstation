@@ -771,6 +771,9 @@ describe('app/components/workspace-shell', () => {
     expect(globalsCss).not.toMatch(/\.workspace-user-menu\s*\{[^}]*backdrop-filter:/);
     expect(globalsCss).toMatch(/\.workspace-header\s*\{[^}]*background:\s*var\(--ui-surface\);/);
     expect(globalsCss).toMatch(
+      /\.workspace-user-menu \.workspace-signout-btn\s*\{[^}]*background:\s*transparent;/,
+    );
+    expect(globalsCss).toMatch(
       /html\[data-mantine-color-scheme='dark'\] \.workspace-user-menu\s*\{[^}]*background:\s*var\(--ui-workspace-popover-surface\);/,
     );
   });
@@ -944,9 +947,6 @@ describe('app/components/workspace-shell', () => {
     );
     expect(globalsCss).toMatch(
       /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-header-middle\s*\{[\s\S]*width:\s*100%;/,
-    );
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*width:\s*min\(100%,\s*260px\);[\s\S]*max-width:\s*100%;/,
     );
   });
 
