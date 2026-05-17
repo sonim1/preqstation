@@ -3469,7 +3469,7 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 
 .task-dispatch-send-shortcut {
   border-color: color-mix(in srgb, var(--ui-on-accent), transparent 70%);
-  background: color-mix(in srgb, var(--ui-text), transparent 82%);
+  background: color-mix(in srgb, var(--ui-on-accent), transparent 82%);
   color: color-mix(in srgb, var(--ui-on-accent), transparent 8%);
 }
 

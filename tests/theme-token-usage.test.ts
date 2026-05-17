@@ -98,6 +98,15 @@ describe('theme token usage audit fixes', () => {
     expect(menuRule?.[1]).toContain('var(--ui-surface-elevated)');
   });
 
+  it('keeps task dispatch send shortcut overlays on accent foreground tokens', () => {
+    const shortcutRule = globalsCss.match(/\.task-dispatch-send-shortcut\s*\{([^}]*)\}/);
+
+    expect(shortcutRule?.[1]).toContain(
+      'background: color-mix(in srgb, var(--ui-on-accent), transparent 82%);',
+    );
+    expect(shortcutRule?.[1]).not.toContain('var(--ui-text)');
+  });
+
   it('moves the global error page onto app tokens instead of a file-local palette', () => {
     expect(globalErrorSource).toContain('var(--ui-surface');
     expect(globalErrorSource).toContain('var(--ui-text');
