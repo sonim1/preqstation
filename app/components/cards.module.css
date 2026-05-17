@@ -824,7 +824,7 @@
   --kanban-card-shadow-rest: none;
   --kanban-card-shadow-queued: none;
   --kanban-card-shadow-running: none;
-  box-shadow: none;
+  box-shadow: var(--kanban-card-focus-ring);
 }
 
 :global(html[data-mantine-color-scheme='dark']) .kanbanCardFrame {

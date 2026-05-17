@@ -319,6 +319,16 @@ describe('app/components/kanban-card', () => {
     expect(focusPulseKeyframes).not.toContain('var(--kanban-card-shadow-rest)');
   });
 
+  it('keeps dark mode cards on the focus-ring shadow path', () => {
+    const darkModeRule =
+      cardsCss.match(
+        /:global\(html\[data-mantine-color-scheme='dark'\]\) \.kanbanCard\s*\{\s*--kanban-card-shadow-rest:[\s\S]*?\}/,
+      )?.[0] ?? '';
+
+    expect(darkModeRule).toContain('box-shadow: var(--kanban-card-focus-ring);');
+    expect(darkModeRule).not.toContain('box-shadow: none;');
+  });
+
   it('keeps the wave band geometry tied to top-clearance variables', () => {
     expect(cardsCss).toMatch(
       /\.kanbanRunWaveBand\s*\{[\s\S]*top:\s*calc\(var\(--wave-band-top\)\s*-\s*var\(--wave-band-top-clearance\)\);[\s\S]*height:\s*calc\(var\(--wave-height\)\s*\+\s*var\(--wave-band-top-clearance\)\);/,
