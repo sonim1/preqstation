@@ -35,8 +35,8 @@ const ConnectionsConfirmActionContext = createContext<ConnectionsConfirmActionCo
 const CONFIRM_BUTTON_STYLE = {
   '--button-bg': 'var(--ui-danger)',
   '--button-hover': 'color-mix(in srgb, var(--ui-danger), var(--ui-surface-strong) 18%)',
-  '--button-color': 'var(--ui-surface-strong)',
-  '--button-bd': '1px solid color-mix(in srgb, var(--ui-danger), transparent 18%)',
+  '--button-color': 'var(--ui-on-danger)',
+  '--button-bd': '1px solid var(--ui-security-danger-border)',
 } as CSSProperties;
 
 export function ConnectionsConfirmActionProvider({ children }: { children: ReactNode }) {

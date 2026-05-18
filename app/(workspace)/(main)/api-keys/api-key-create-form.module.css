@@ -1,0 +1,83 @@
+.root {
+  display: grid;
+  gap: 16px;
+}
+
+.formShell {
+  padding: 14px;
+  border: 1px solid var(--ui-security-control-border);
+  border-radius: 6px;
+  background: var(--ui-security-control-surface);
+}
+
+.formRow {
+  align-items: flex-end;
+}
+
+.field {
+  flex: 1 1 14rem;
+  min-width: 0;
+  max-width: 22rem;
+}
+
+.input {
+  --input-height: var(--ui-hit-touch-min);
+}
+
+.submitButton {
+  --button-height: var(--ui-hit-touch-min);
+  min-height: var(--ui-hit-touch-min);
+}
+
+.securityAlert {
+  border: 1px solid var(--api-key-alert-border);
+  background: var(--api-key-alert-surface);
+  color: var(--ui-text);
+}
+
+.securityAlert :global(.mantine-Alert-title) {
+  color: var(--api-key-alert-color);
+}
+
+.securityAlertDanger {
+  --api-key-alert-surface: var(--ui-security-danger-surface);
+  --api-key-alert-border: var(--ui-security-danger-border);
+  --api-key-alert-color: var(--ui-danger);
+}
+
+.securityAlertSuccess {
+  --api-key-alert-surface: var(--ui-security-success-surface);
+  --api-key-alert-border: var(--ui-security-success-border);
+  --api-key-alert-color: var(--ui-success);
+}
+
+.securityAlertNeutral {
+  --api-key-alert-surface: var(--ui-security-neutral-surface);
+  --api-key-alert-border: var(--ui-security-neutral-border);
+  --api-key-alert-color: var(--ui-neutral-strong);
+}
+
+.tokenDisplay {
+  border: 1px solid var(--ui-security-success-border);
+  background: var(--ui-surface-strong);
+  color: var(--ui-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.environmentDisplay {
+  border: 1px solid var(--ui-security-neutral-border);
+  background: var(--ui-surface-strong);
+  color: var(--ui-text);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 36rem) {
+  .field,
+  .submitButton {
+    flex-basis: 100%;
+    max-width: none;
+    width: 100%;
+  }
+}

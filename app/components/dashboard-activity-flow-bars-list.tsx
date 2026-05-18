@@ -1,7 +1,7 @@
 'use client';
 
 import { BarsList, type BarsListBarData } from '@mantine/charts';
-import { Tooltip, useMantineTheme } from '@mantine/core';
+import { Tooltip } from '@mantine/core';
 import Link from 'next/link';
 
 import classes from './dashboard-operator-desk.module.css';
@@ -16,24 +16,47 @@ type DashboardActivityFlowBarsListProps = {
 type ActivityBarData = BarsListBarData & {
   id: string;
   projectKey: string;
-  color: string;
+  tokenColor: string;
+  tokenTextColor: string;
   tooltipLabel: string;
 };
 
-const ACTIVITY_BAR_COLORS = ['blue.6', 'teal.6', 'green.6', 'yellow.5', 'orange.5'] as const;
+const ACTIVITY_BAR_TOKENS = [
+  {
+    color: 'var(--ui-workload-level-4)',
+    textColor: 'var(--ui-on-workload-level-4)',
+  },
+  {
+    color: 'var(--ui-workload-level-3)',
+    textColor: 'var(--ui-on-workload-level-3)',
+  },
+  {
+    color: 'var(--ui-workload-level-2)',
+    textColor: 'var(--ui-on-workload-level-2)',
+  },
+  {
+    color: 'var(--ui-workload-level-1)',
+    textColor: 'var(--ui-on-workload-level-1)',
+  },
+  {
+    color: 'var(--ui-workflow-ready)',
+    textColor: 'var(--ui-on-workflow-ready)',
+  },
+] as const;
 const OUTSIDE_LABEL_THRESHOLD = 44;
 
 export function DashboardActivityFlowBarsList({ projects }: DashboardActivityFlowBarsListProps) {
-  const theme = useMantineTheme();
   const data: ActivityBarData[] = projects.map((project, index) => {
     const totalLogs = project.activity.reduce((sum, point) => sum + point.count, 0);
+    const token = ACTIVITY_BAR_TOKENS[index % ACTIVITY_BAR_TOKENS.length];
 
     return {
       id: project.id,
       projectKey: project.projectKey,
       name: project.name,
       value: totalLogs,
-      color: ACTIVITY_BAR_COLORS[index % ACTIVITY_BAR_COLORS.length],
+      tokenColor: token.color,
+      tokenTextColor: token.textColor,
       tooltipLabel: [
         project.projectKey,
         `${totalLogs} logs`,
@@ -64,12 +87,6 @@ export function DashboardActivityFlowBarsList({ projects }: DashboardActivityFlo
           const activityBar = barData as ActivityBarData;
           const fillWidth = maxValue > 0 ? Math.round((activityBar.value / maxValue) * 100) : 0;
           const labelPosition = fillWidth < OUTSIDE_LABEL_THRESHOLD ? 'outside' : 'inside';
-          const colors = theme.variantColorResolver({
-            color: activityBar.color,
-            theme,
-            variant: 'filled',
-            autoContrast: true,
-          });
           const label = (
             <Link
               href={`/board/${activityBar.projectKey}`}
@@ -107,8 +124,8 @@ export function DashboardActivityFlowBarsList({ projects }: DashboardActivityFlo
                       data-activity-bar-width={String(fillWidth)}
                       style={{
                         width: `${fillWidth}%`,
-                        backgroundColor: colors.background,
-                        color: colors.color,
+                        backgroundColor: activityBar.tokenColor,
+                        color: activityBar.tokenTextColor,
                       }}
                     >
                       {labelPosition === 'inside' ? label : null}

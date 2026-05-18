@@ -1,8 +1,8 @@
 .board {
   display: grid;
   gap: 1rem;
-  --dashboard-seam-color: color-mix(in srgb, var(--ui-border), transparent 34%);
-  --dashboard-seam-fade: color-mix(in srgb, var(--ui-border), transparent 84%);
+  --dashboard-seam-color: var(--ui-dashboard-seam);
+  --dashboard-seam-fade: var(--ui-dashboard-seam-fade);
   --dashboard-seam-span: clamp(5rem, 18vw, 8rem);
 }
 
@@ -243,7 +243,7 @@
   color: var(--ui-text);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, white, transparent 90%),
-    0 6px 14px -12px rgba(15, 23, 42, 0.92);
+    var(--ui-elevation-1);
 }
 
 .portfolioMatrixDotWatch {
@@ -260,7 +260,7 @@
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, white, transparent 88%),
     0 0 0 1px color-mix(in srgb, var(--ui-surface), transparent 10%),
-    0 10px 20px -16px rgba(15, 23, 42, 0.96);
+    var(--ui-elevation-2);
 }
 
 .portfolioMatrixCount {
@@ -291,7 +291,7 @@
   transition:
     opacity 140ms ease,
     transform 140ms ease;
-  box-shadow: 0 16px 34px -24px rgba(15, 23, 42, 0.98);
+  box-shadow: var(--ui-elevation-3);
 }
 
 .portfolioMatrixTooltipLine {
@@ -405,6 +405,8 @@
   display: flex;
   align-items: center;
   border-radius: 999px;
+  background: var(--ui-workload-level-1);
+  color: var(--ui-text);
 }
 
 .portfolioActivityBarTrack[data-activity-label-position='inside'] .portfolioActivityBarFill {

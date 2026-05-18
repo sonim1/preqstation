@@ -93,16 +93,16 @@ describe('responsive density audit fixes', () => {
     );
     expect(globalsCss).not.toContain('.kanban-hold-rail');
     expect(globalsCss).toMatch(
-      /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;/,
+      /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*var\(--kanban-frame-column-surface\);/,
     );
     expect(globalsCss).toMatch(
-      /\.kanban-column--hold \.kanban-column-title\s*\{[\s\S]*color:\s*color-mix\(in srgb,\s*var\(--ui-warning\),\s*#6b4500 22%\);/,
+      /\.kanban-column--hold \.kanban-column-title\s*\{[\s\S]*color:\s*var\(--ui-warning\);/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\]\s+\.kanban-column,\s*html\[data-mantine-color-scheme='dark'\]\s+\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;/,
+      /html\[data-mantine-color-scheme='dark'\]\s+\.kanban-column,\s*html\[data-mantine-color-scheme='dark'\]\s+\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*var\(--kanban-frame-column-surface\);/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\]\s+\.kanban-column--hold \.kanban-column-title\s*\{[\s\S]*color:\s*#f4c64d;/,
+      /html\[data-mantine-color-scheme='dark'\]\s+\.kanban-column--hold \.kanban-column-title\s*\{[\s\S]*color:\s*var\(--ui-warning\);/,
     );
     expect(kanbanColumnSource).toContain('kanban-column-title');
     expect(kanbanColumnSource).toContain('cardStyles.kanbanCardHold');
