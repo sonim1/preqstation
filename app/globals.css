@@ -56,6 +56,24 @@
   --ui-security-neutral-surface: var(--ui-neutral-soft);
   --ui-security-neutral-border: color-mix(in srgb, var(--ui-neutral-strong), var(--ui-border) 70%);
   --ui-focus-ring: rgba(39, 77, 196, 0.4);
+  --ui-body-surface: #f7faff;
+  --ui-body-background:
+    radial-gradient(circle at 7% 8%, rgba(164, 226, 255, 0.74) 0%, transparent 34%),
+    radial-gradient(circle at 92% 4%, rgba(164, 180, 255, 0.66) 0%, transparent 30%),
+    linear-gradient(165deg, #f3f8ff 0%, var(--ui-body-surface) 42%, #fbfcff 100%);
+  --ui-state-shell-surface: color-mix(
+    in srgb,
+    var(--ui-surface-panel),
+    var(--ui-surface-strong) 18%
+  );
+  --ui-state-shell-border: color-mix(in srgb, var(--ui-border), transparent 8%);
+  --ui-state-shell-muted-surface: color-mix(
+    in srgb,
+    var(--ui-neutral-soft),
+    var(--ui-surface-strong) 52%
+  );
+  --ui-field-min-height: var(--ui-hit-touch-min);
+  --ui-action-min-height: var(--ui-hit-touch-min);
   --ui-glow: radial-gradient(circle at 82% 16%, rgba(14, 165, 233, 0.18), transparent 54%);
   --ui-hero-bg: linear-gradient(164deg, rgba(255, 255, 255, 0.9), rgba(245, 250, 255, 0.8));
   --ui-card-bg: linear-gradient(170deg, rgba(255, 255, 255, 0.92), rgba(245, 250, 255, 0.86));
@@ -231,10 +249,10 @@ html:has(.workspace-shell) body {
 }
 
 html {
-  background:
-    radial-gradient(circle at 7% 8%, rgba(164, 226, 255, 0.74) 0%, transparent 34%),
-    radial-gradient(circle at 92% 4%, rgba(164, 180, 255, 0.66) 0%, transparent 30%),
-    linear-gradient(165deg, #f3f8ff 0%, #f7faff 42%, #fbfcff 100%);
+  --mantine-color-text: var(--ui-text);
+  --mantine-color-dimmed: var(--ui-muted-text);
+  --mantine-color-body: var(--ui-body-surface);
+  background: var(--ui-body-background);
 }
 
 html[data-mantine-color-scheme='dark'] {
@@ -269,6 +287,11 @@ html[data-mantine-color-scheme='dark'] {
   --ui-neutral-strong: #d2def2;
   --ui-neutral-soft: rgba(163, 178, 206, 0.2);
   --ui-focus-ring: rgba(110, 150, 255, 0.5);
+  --ui-body-surface: #0b1426;
+  --ui-body-background:
+    radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.1) 0%, transparent 36%),
+    radial-gradient(circle at 88% 2%, rgba(59, 130, 246, 0.08) 0%, transparent 32%),
+    linear-gradient(168deg, #090f1a 0%, #0d1526 48%, #0a1220 100%);
   --ui-glow: radial-gradient(circle at 78% 12%, rgba(56, 189, 248, 0.12), transparent 58%);
   --ui-hero-bg: linear-gradient(170deg, rgba(14, 25, 42, 0.96), rgba(20, 35, 57, 0.92));
   --ui-card-bg: linear-gradient(180deg, rgba(22, 35, 57, 0.96), rgba(16, 26, 43, 0.95));
@@ -279,11 +302,8 @@ html[data-mantine-color-scheme='dark'] {
   --ui-status-running-glow: rgba(56, 189, 248, 0.28);
   --mantine-color-text: var(--ui-text);
   --mantine-color-dimmed: var(--ui-muted-text);
-  --mantine-color-body: #0b1426;
-  background:
-    radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.1) 0%, transparent 36%),
-    radial-gradient(circle at 88% 2%, rgba(59, 130, 246, 0.08) 0%, transparent 32%),
-    linear-gradient(168deg, #090f1a 0%, #0d1526 48%, #0a1220 100%);
+  --mantine-color-body: var(--ui-body-surface);
+  background: var(--ui-body-background);
   --ui-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.2);
   --ui-elevation-2: 0 4px 12px rgba(0, 0, 0, 0.3);
   --ui-elevation-3: 0 12px 28px rgba(0, 0, 0, 0.4);
@@ -1024,28 +1044,107 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   margin-top: 8px;
 }
 
+.auth-shell,
 .login-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding-block: var(--mantine-spacing-md);
+  color: var(--ui-text);
 }
 
 @media (min-width: 36em) {
+  .auth-shell,
   .login-container {
     padding-block: 56px;
   }
 }
 
+.auth-card,
 .login-card {
+  border-color: var(--ui-state-shell-border);
+  background: var(--ui-state-shell-surface);
+  color: var(--ui-text);
+  box-shadow: var(--ui-elevation-3);
   padding: var(--mantine-spacing-md);
 }
 
 @media (min-width: 36em) {
+  .auth-card,
   .login-card {
     padding: var(--mantine-spacing-xl);
   }
+}
+
+.auth-brand-lockup {
+  min-width: 0;
+}
+
+.auth-card-title {
+  color: var(--ui-text);
+}
+
+.auth-card-subtitle {
+  color: var(--ui-muted-text);
+}
+
+.auth-alert,
+.onboarding-alert {
+  border: 1px solid var(--ui-state-shell-border);
+  background: var(--ui-state-shell-muted-surface);
+  color: var(--ui-text);
+}
+
+.auth-alert .mantine-Alert-icon,
+.onboarding-alert .mantine-Alert-icon {
+  color: inherit;
+}
+
+.auth-alert.auth-alert--warning,
+.onboarding-alert.onboarding-alert--warning {
+  border-color: color-mix(in srgb, var(--ui-warning), var(--ui-border) 62%);
+  background: color-mix(in srgb, var(--ui-warning-soft), var(--ui-surface-strong) 62%);
+  color: var(--ui-warning);
+}
+
+.auth-alert.auth-alert--danger {
+  border-color: color-mix(in srgb, var(--ui-danger), var(--ui-border) 62%);
+  background: color-mix(in srgb, var(--ui-danger-soft), var(--ui-surface-strong) 62%);
+  color: var(--ui-danger);
+}
+
+.onboarding-alert.onboarding-alert--success {
+  border-color: color-mix(in srgb, var(--ui-success), var(--ui-border) 62%);
+  background: color-mix(in srgb, var(--ui-success-soft), var(--ui-surface-strong) 62%);
+  color: var(--ui-success);
+}
+
+.auth-shell .mantine-Input-input,
+.onboarding-shell .mantine-Input-input {
+  min-height: var(--ui-field-min-height);
+}
+
+.auth-shell .mantine-Button-root,
+.onboarding-shell .mantine-Button-root {
+  min-height: var(--ui-action-min-height);
+}
+
+.auth-primary-action,
+.onboarding-primary-action,
+.onboarding-secondary-action,
+.route-state-primary-action,
+.route-state-secondary-action {
+  min-height: var(--ui-action-min-height);
+}
+
+.auth-primary-action .mantine-Button-label,
+.onboarding-primary-action .mantine-Button-label,
+.onboarding-secondary-action .mantine-Button-label,
+.route-state-primary-action .mantine-Button-label,
+.route-state-secondary-action .mantine-Button-label {
+  white-space: normal;
+  text-align: center;
 }
 
 .login-brand-mark {
@@ -1053,6 +1152,202 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   height: 28px;
   display: block;
   border-radius: 8px;
+}
+
+.onboarding-shell {
+  min-height: 100vh;
+  padding-block: var(--mantine-spacing-md);
+  color: var(--ui-text);
+}
+
+.onboarding-shell-frame {
+  width: 100%;
+}
+
+.onboarding-brand {
+  color: var(--ui-text);
+}
+
+.onboarding-stepper {
+  border: 1px solid var(--ui-state-shell-border);
+  border-radius: var(--mantine-radius-lg);
+  background: var(--ui-state-shell-muted-surface);
+  padding: var(--mantine-spacing-md);
+}
+
+.onboarding-card {
+  border-color: var(--ui-state-shell-border);
+  background: var(--ui-state-shell-surface);
+  color: var(--ui-text);
+  box-shadow: var(--ui-elevation-2);
+}
+
+.onboarding-card--locked {
+  background: var(--ui-state-shell-muted-surface);
+}
+
+.onboarding-nested-panel {
+  border-color: var(--ui-state-shell-border);
+  background: color-mix(in srgb, var(--ui-surface-muted), var(--ui-surface-strong) 36%);
+}
+
+.onboarding-status-icon {
+  border: 1px solid var(--ui-state-shell-border);
+  background: var(--ui-state-shell-muted-surface);
+  color: var(--ui-muted-text);
+  box-shadow: var(--ui-elevation-1);
+}
+
+.onboarding-status-icon.onboarding-status-icon--success {
+  border-color: color-mix(in srgb, var(--ui-success), var(--ui-border) 62%);
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
+}
+
+.onboarding-status-icon.onboarding-status-icon--warning {
+  border-color: color-mix(in srgb, var(--ui-warning), var(--ui-border) 62%);
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+
+.onboarding-status-icon.onboarding-status-icon--neutral {
+  background: var(--ui-neutral-soft);
+  color: var(--ui-neutral-strong);
+}
+
+.onboarding-badge {
+  border-color: var(--ui-state-shell-border);
+  background: var(--ui-state-shell-muted-surface);
+  color: var(--ui-text);
+}
+
+.onboarding-badge--success {
+  border-color: color-mix(in srgb, var(--ui-success), var(--ui-border) 62%);
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
+}
+
+.onboarding-badge--warning {
+  border-color: color-mix(in srgb, var(--ui-warning), var(--ui-border) 62%);
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+
+.onboarding-action-row,
+.route-state-actions {
+  flex-wrap: wrap;
+}
+
+.onboarding-code {
+  border: 1px solid var(--ui-state-shell-border);
+  background: color-mix(in srgb, var(--ui-surface-muted), var(--ui-surface-strong) 34%);
+  color: var(--ui-text);
+}
+
+@media (max-width: 35.99em) {
+  .auth-primary-action,
+  .onboarding-primary-action,
+  .onboarding-secondary-action,
+  .route-state-primary-action,
+  .route-state-secondary-action {
+    width: 100%;
+  }
+}
+
+.route-state-page {
+  min-height: calc(100dvh - var(--app-shell-header-offset, 0px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ui-text);
+}
+
+.route-state-global-page {
+  margin: 0;
+  box-sizing: border-box;
+  padding: var(--mantine-spacing-md, 20px);
+  background: var(--ui-glow), linear-gradient(180deg, var(--ui-surface-strong), var(--ui-surface));
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    Segoe UI,
+    sans-serif;
+}
+
+.route-state-card {
+  width: 100%;
+  max-width: 560px;
+  border-color: var(--ui-state-shell-border);
+  background: var(--ui-state-shell-surface);
+  color: var(--ui-text);
+  box-shadow: var(--ui-elevation-2);
+}
+
+.route-state-global-card {
+  box-sizing: border-box;
+  padding: var(--mantine-spacing-xl, 22px);
+  border: 1px solid;
+  border-color: var(--ui-state-shell-border);
+  border-radius: var(--mantine-radius-lg, 14px);
+}
+
+.route-state-eyebrow {
+  color: var(--ui-muted-text);
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+.route-state-title {
+  color: var(--ui-text);
+  margin: 0;
+}
+
+.route-state-description,
+.route-state-reference {
+  color: var(--ui-muted-text);
+  margin: 0;
+}
+
+.route-state-reference {
+  font-size: 0.75rem;
+}
+
+.route-state-global-card .route-state-title {
+  margin-block: 8px 10px;
+  font-size: 1.625rem;
+  line-height: 1.2;
+}
+
+.route-state-global-card .route-state-description {
+  margin-bottom: 10px;
+}
+
+.route-state-global-card .route-state-reference {
+  margin-bottom: 14px;
+}
+
+.route-state-primary-action {
+  border: 1px solid color-mix(in srgb, var(--ui-accent), var(--ui-border) 42%);
+  background: var(--ui-accent);
+  color: var(--ui-on-accent);
+}
+
+.route-state-native-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--mantine-radius-md, 9px);
+  padding: 8px 14px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.route-state-secondary-action {
+  border-color: var(--ui-state-shell-border);
+  background: var(--ui-surface-soft);
+  color: var(--ui-text);
 }
 
 .activity-chart-panel {
@@ -2256,6 +2551,44 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   color: var(--ui-neutral-strong);
 }
 
+.mantine-Button-root[data-variant='filled']:not([data-color]),
+.mantine-Button-root[data-variant='filled'][data-color='blue'] {
+  background: var(--ui-accent);
+  color: var(--ui-on-accent);
+}
+
+.mantine-Button-root[data-variant='filled'][data-color='green'] {
+  background: var(--ui-success);
+  color: var(--ui-on-accent);
+}
+
+.mantine-Button-root[data-variant='filled'][data-color='red'] {
+  background: var(--ui-danger);
+  color: var(--ui-on-accent);
+}
+
+.mantine-Button-root[data-variant='default'],
+.mantine-ActionIcon-root[data-variant='default'] {
+  border-color: var(--ui-border);
+  background: var(--ui-surface-soft);
+  color: var(--ui-text);
+}
+
+.mantine-Button-root[data-variant='default']:hover,
+.mantine-ActionIcon-root[data-variant='default']:hover {
+  background: var(--ui-surface-muted);
+}
+
+.mantine-Button-root:disabled,
+.mantine-Button-root[data-disabled],
+.mantine-ActionIcon-root:disabled,
+.mantine-ActionIcon-root[data-disabled] {
+  border-color: color-mix(in srgb, var(--ui-border), transparent 18%);
+  background: var(--ui-surface-muted);
+  color: color-mix(in srgb, var(--ui-muted-text), transparent 8%);
+  opacity: 1;
+}
+
 .mantine-Button-root[data-variant='light']:not([data-color]),
 .mantine-Button-root[data-variant='light'][data-color='blue'],
 .mantine-ActionIcon-root[data-variant='light']:not([data-color]),
@@ -2349,6 +2682,105 @@ html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
   background: var(--ui-neutral-soft);
   border-color: color-mix(in srgb, var(--ui-neutral-strong), transparent 70%);
   color: var(--ui-neutral-strong);
+}
+
+.mantine-Paper-root {
+  color: var(--ui-text);
+}
+
+.mantine-Paper-root[data-with-border] {
+  border-color: var(--ui-border);
+}
+
+.mantine-Alert-root {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-state-shell-muted-surface);
+  color: var(--ui-text);
+}
+
+.mantine-Alert-root[data-color='green'] {
+  border-color: color-mix(in srgb, var(--ui-success), var(--ui-border) 62%);
+  background: color-mix(in srgb, var(--ui-success-soft), var(--ui-surface-strong) 62%);
+  color: var(--ui-success);
+}
+
+.mantine-Alert-root[data-color='red'] {
+  border-color: color-mix(in srgb, var(--ui-danger), var(--ui-border) 62%);
+  background: color-mix(in srgb, var(--ui-danger-soft), var(--ui-surface-strong) 62%);
+  color: var(--ui-danger);
+}
+
+.mantine-Alert-root[data-color='yellow'],
+.mantine-Alert-root[data-color='orange'] {
+  border-color: color-mix(in srgb, var(--ui-warning), var(--ui-border) 62%);
+  background: color-mix(in srgb, var(--ui-warning-soft), var(--ui-surface-strong) 62%);
+  color: var(--ui-warning);
+}
+
+.mantine-Alert-icon {
+  color: inherit;
+}
+
+.mantine-ThemeIcon-root {
+  border: 1px solid var(--ui-border);
+  background: var(--ui-state-shell-muted-surface);
+  color: var(--ui-muted-text);
+}
+
+.mantine-ThemeIcon-root[data-color='green'] {
+  border-color: color-mix(in srgb, var(--ui-success), var(--ui-border) 62%);
+  background: var(--ui-success-soft);
+  color: var(--ui-success);
+}
+
+.mantine-ThemeIcon-root[data-color='yellow'],
+.mantine-ThemeIcon-root[data-color='orange'] {
+  border-color: color-mix(in srgb, var(--ui-warning), var(--ui-border) 62%);
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+
+.mantine-ThemeIcon-root[data-color='gray'] {
+  background: var(--ui-neutral-soft);
+  color: var(--ui-neutral-strong);
+}
+
+.mantine-Stepper-root {
+  color: var(--ui-text);
+}
+
+.mantine-Stepper-stepIcon {
+  border-color: var(--ui-border);
+  background: var(--ui-state-shell-muted-surface);
+  color: var(--ui-muted-text);
+}
+
+.mantine-Stepper-stepIcon[data-progress],
+.mantine-Stepper-stepIcon[data-completed] {
+  border-color: color-mix(in srgb, var(--ui-accent), var(--ui-border) 44%);
+  background: var(--ui-accent-soft);
+  color: var(--ui-accent-strong);
+}
+
+.mantine-Stepper-stepLabel {
+  color: var(--ui-text);
+}
+
+.mantine-Stepper-separator {
+  background: var(--ui-border);
+}
+
+.mantine-Skeleton-root {
+  background: var(--ui-state-shell-muted-surface);
+}
+
+.mantine-Skeleton-root::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--ui-surface-strong), transparent 34%),
+    transparent
+  );
 }
 
 html[data-mantine-color-scheme='dark'] .workspace-divider-button {
