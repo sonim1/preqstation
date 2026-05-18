@@ -293,7 +293,9 @@ vi.mock('@/lib/owner', () => ({
 
 vi.mock('@/lib/project-meta', () => ({
   ACTIVE_PROJECT_STATUS: 'active',
+  DONE_PROJECT_STATUS: 'done',
   isProjectStatus: (value: string) => value === 'active' || value === 'paused' || value === 'done',
+  PAUSED_PROJECT_STATUS: 'paused',
   PROJECT_STATUS_COLORS: { active: 'blue', paused: 'yellow', done: 'gray' },
   PROJECT_STATUS_LABELS: { active: 'Active', paused: 'Paused', done: 'Done' },
 }));
@@ -435,6 +437,64 @@ describe('project detail page', () => {
     expect(html).toContain('1 AI agent running');
     expect(html).toContain('data-entity-type="agent"');
     expect(html).toContain('data-entity-state="running"');
+    expect(html).toContain('data-project-status-tone="live"');
+    expect(html).not.toContain('data-project-status-tone="paused"');
+  });
+
+  it('uses the queued detail tone for inactive projects with queued tasks', async () => {
+    mocked.tasksFindMany.mockResolvedValueOnce([{ status: 'todo', runState: 'queued' }]);
+
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('data-project-status-tone="queued"');
+    expect(html).not.toContain('data-project-status-tone="paused"');
+  });
+
+  it('uses the paused detail tone when active projects have inactive activity', async () => {
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('data-project-status-tone="paused"');
+    expect(html).not.toContain('data-project-status-tone="active"');
+  });
+
+  it('uses the at-risk detail tone when active projects have warning activity', async () => {
+    mocked.listWorkLogsPage.mockResolvedValueOnce({
+      workLogs: [
+        {
+          id: 'log-1',
+          title: 'Recent project activity',
+          detail: null,
+          engine: 'codex',
+          workedAt: new Date('2026-04-22T12:00:00.000Z'),
+        },
+      ],
+      nextOffset: null,
+    });
+
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-27T12:00:00.000Z'));
+
+    let html = '';
+    try {
+      html = renderToStaticMarkup(
+        await ProjectDetailPage({
+          params: Promise.resolve({ key: 'PROJ' }),
+        }),
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(html).toContain('data-project-status-tone="at-risk"');
+    expect(html).not.toContain('data-project-status-tone="stale"');
   });
 
   it('keeps detail content focused on activity with configuration in edit details', async () => {

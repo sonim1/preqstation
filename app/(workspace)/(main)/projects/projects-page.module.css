@@ -128,7 +128,7 @@
   padding: 0.34rem 0.48rem;
   border: 1px solid color-mix(in srgb, var(--ui-border), transparent 8%);
   border-radius: 0.35rem;
-  background: color-mix(in srgb, var(--ui-surface-strong), black 6%);
+  background: color-mix(in srgb, var(--ui-surface-strong), var(--ui-surface-muted) 18%);
   box-shadow: var(--ui-elevation-2);
   color: var(--ui-text);
   font-family: var(--font-mono);
@@ -253,6 +253,17 @@ button.filterChip {
   border-radius: 0.55rem;
   background: var(--ui-surface-elevated);
   box-shadow: var(--ui-elevation-1);
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.projectCard:has(.cardLink:hover),
+.projectCard:focus-within {
+  border-color: color-mix(in srgb, var(--ui-accent), transparent 38%);
+  box-shadow: var(--ui-elevation-2);
+  transform: translateY(-0.08rem);
 }
 
 .projectCard[data-project-card-tone='live'] {
@@ -273,6 +284,15 @@ button.filterChip {
   box-shadow: none;
 }
 
+.projectCard[data-project-card-tone='paused']:has(.cardLink:hover),
+.projectCard[data-project-card-tone='paused']:focus-within,
+.projectCard[data-project-card-tone='archived']:has(.cardLink:hover),
+.projectCard[data-project-card-tone='archived']:focus-within {
+  border-color: color-mix(in srgb, var(--ui-border), transparent 28%);
+  box-shadow: none;
+  transform: none;
+}
+
 .projectCard[data-project-card-tone='stale'] {
   border-color: color-mix(in srgb, var(--ui-danger), transparent 58%);
 }
@@ -290,7 +310,7 @@ button.filterChip {
 }
 
 .cardLink:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--ui-accent), white 14%);
+  outline: 2px solid var(--ui-focus-ring);
   outline-offset: -2px;
 }
 
@@ -389,11 +409,19 @@ button.filterChip {
   align-items: center;
   justify-content: flex-end;
   gap: 0.35rem;
+  min-width: 0;
 }
 
 .statusBadge {
+  max-width: min(7rem, 34vw);
   font-family: var(--font-mono);
   text-transform: none;
+}
+
+.statusBadge :global(.mantine-Badge-label) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cardDescription {

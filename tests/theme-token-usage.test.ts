@@ -13,6 +13,10 @@ const projectsCss = fs.readFileSync(
   path.join(process.cwd(), 'app/(workspace)/(main)/projects/projects-page.module.css'),
   'utf8',
 );
+const projectDetailCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/(workspace)/(main)/project/[key]/project-detail-page.module.css'),
+  'utf8',
+);
 const cardsCss = fs.readFileSync(
   path.join(process.cwd(), 'app/components/cards.module.css'),
   'utf8',
@@ -162,11 +166,61 @@ describe('theme token usage audit fixes', () => {
     expect(projectsCss).toContain('var(--ui-surface-muted)');
     expect(projectsCss).toContain('var(--ui-surface-elevated)');
     expect(projectsCss).not.toContain('#112136');
+    expect(projectsCss).not.toMatch(/color-mix\(in srgb,[^;]*(?:\bblack\b|\bwhite\b)/);
     expect(cardsCss).toContain('var(--ui-surface-elevated)');
     expect(cardsCss).toContain('var(--ui-surface-elevated-strong)');
     expect(cardsCss).toContain('var(--ui-status-running)');
     expect(cardsCss).toContain('var(--ui-status-queued)');
     expect(cardsCss).toMatch(/\.projectBoardCard\s*\{[\s\S]*background:\s*var\(--ui-card-bg\);/);
+  });
+
+  it('renders project detail status and metric chrome with shared ui tokens', () => {
+    const dom = renderCssFixture(
+      `
+        <section data-testid="detail-hero" class="detailHero">
+          <span data-testid="detail-status-default" class="detailStatusDot"></span>
+          <span
+            data-testid="detail-status-live"
+            class="detailStatusDot"
+            data-project-status-tone="live"
+          ></span>
+          <span
+            data-testid="detail-status-queued"
+            class="detailStatusDot"
+            data-project-status-tone="queued"
+          ></span>
+          <span
+            data-testid="detail-status-at-risk"
+            class="detailStatusDot"
+            data-project-status-tone="at-risk"
+          ></span>
+          <article data-testid="detail-metric" class="detailMetric"></article>
+        </section>
+      `,
+      'light',
+      [projectDetailCss],
+    );
+
+    expectComputedProperties(dom, 'detail-status-default', {
+      '--project-detail-status-color': 'var(--ui-success)',
+      '--project-detail-status-glow': 'var(--ui-success-soft)',
+    });
+    expectComputedProperties(dom, 'detail-status-live', {
+      '--project-detail-status-color': 'var(--ui-status-running)',
+      '--project-detail-status-glow': 'var(--ui-status-running-glow)',
+    });
+    expectComputedProperties(dom, 'detail-status-queued', {
+      '--project-detail-status-color': 'var(--ui-status-queued)',
+      '--project-detail-status-glow': 'var(--ui-status-queued-border)',
+    });
+    expectComputedProperties(dom, 'detail-status-at-risk', {
+      '--project-detail-status-color': 'var(--ui-warning)',
+      '--project-detail-status-glow': 'var(--ui-warning-soft)',
+    });
+    expectComputedProperties(dom, 'detail-metric', {
+      background: 'var(--ui-surface-elevated)',
+      'box-shadow': 'var(--ui-elevation-1)',
+    });
   });
 
   it('defines shared settings and admin panel tokens for management surfaces', () => {

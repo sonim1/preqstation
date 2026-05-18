@@ -742,6 +742,9 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectsPageCss).toMatch(/\.cardInner\s*\{[\s\S]*pointer-events:\s*none;/);
     expect(projectsPageCss).toMatch(/\.projectCard\[data-project-card-tone=['"]archived['"]\]/);
     expect(projectsPageCss).toMatch(/\.projectCard\[data-project-card-tone=['"]paused['"]\]/);
+    expect(projectsPageCss).toMatch(
+      /\.projectCard\[data-project-card-tone=['"]paused['"]\]:has\(\.cardLink:hover\),[\s\S]*\.projectCard\[data-project-card-tone=['"]archived['"]\]:focus-within\s*\{[\s\S]*box-shadow:\s*none;[\s\S]*transform:\s*none;/,
+    );
     expect(projectsPageCss).not.toContain('--card-image');
     expect(projectsPageCss).not.toMatch(/\.projectCard::before\s*\{/);
     expect(projectPortfolioCardSource).toContain('data-project-roster-card="true"');

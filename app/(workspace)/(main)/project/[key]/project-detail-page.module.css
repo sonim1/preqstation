@@ -24,11 +24,40 @@
 }
 
 .detailStatusDot {
+  --project-detail-status-color: var(--ui-success);
+  --project-detail-status-glow: var(--ui-success-soft);
   width: 0.6rem;
   height: 0.6rem;
   border-radius: 999px;
-  background: var(--mantine-color-blue-5);
-  box-shadow: 0 0 0 0.22rem color-mix(in srgb, var(--mantine-color-blue-5), transparent 76%);
+  background: var(--project-detail-status-color);
+  box-shadow: 0 0 0 0.22rem var(--project-detail-status-glow);
+}
+
+.detailStatusDot[data-project-status-tone='live'] {
+  --project-detail-status-color: var(--ui-status-running);
+  --project-detail-status-glow: var(--ui-status-running-glow);
+}
+
+.detailStatusDot[data-project-status-tone='queued'] {
+  --project-detail-status-color: var(--ui-status-queued);
+  /* No dedicated queued glow token yet; the border token matches the current glow opacity. */
+  --project-detail-status-glow: var(--ui-status-queued-border);
+}
+
+.detailStatusDot[data-project-status-tone='at-risk'] {
+  --project-detail-status-color: var(--ui-warning);
+  --project-detail-status-glow: var(--ui-warning-soft);
+}
+
+.detailStatusDot[data-project-status-tone='stale'] {
+  --project-detail-status-color: var(--ui-danger);
+  --project-detail-status-glow: var(--ui-danger-soft);
+}
+
+.detailStatusDot[data-project-status-tone='paused'],
+.detailStatusDot[data-project-status-tone='archived'] {
+  --project-detail-status-color: var(--ui-neutral-strong);
+  --project-detail-status-glow: var(--ui-neutral-soft);
 }
 
 .detailEyebrowText {
@@ -59,7 +88,7 @@
 }
 
 .detailPrimaryAction {
-  box-shadow: 0 0.45rem 1.2rem color-mix(in srgb, var(--mantine-color-blue-7), transparent 76%);
+  box-shadow: 0 0.45rem 1.2rem color-mix(in srgb, var(--ui-accent), transparent 76%);
 }
 
 .detailMetrics {
@@ -76,8 +105,9 @@
   min-height: 5.15rem;
   padding: 0.9rem 1rem;
   border: 1px solid color-mix(in srgb, var(--ui-border), var(--ui-accent) 12%);
-  border-radius: 0.6rem;
-  background: color-mix(in srgb, var(--ui-surface-panel), transparent 12%);
+  border-radius: 0.5rem;
+  background: var(--ui-surface-elevated);
+  box-shadow: var(--ui-elevation-1);
 }
 
 .detailMetric strong {

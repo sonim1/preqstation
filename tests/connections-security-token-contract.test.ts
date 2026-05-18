@@ -125,10 +125,7 @@ beforeEach(() => {
   mocked.getUserSetting.mockResolvedValue('UTC');
   mocked.listOwnerBrowserSessions.mockResolvedValue([]);
   mocked.listOwnerMcpConnections.mockResolvedValue([]);
-  mocked.useActionState.mockReturnValue([
-    { error: null, token: null },
-    mocked.createApiKeyAction,
-  ]);
+  mocked.useActionState.mockReturnValue([{ error: null, token: null }, mocked.createApiKeyAction]);
 });
 
 afterEach(() => {
