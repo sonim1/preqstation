@@ -943,11 +943,11 @@ describe('app/(workspace)/(main)/connections/page', () => {
 
     const html = await renderConnectionsPage();
 
-    expect(html).toContain('--badge-bg:var(--ui-warning-soft)');
+    expect(html).toContain('--badge-bg:var(--ui-security-warning-surface)');
     expect(html).toContain('--badge-color:var(--ui-warning)');
-    expect(html).toContain('--badge-bg:var(--ui-neutral-soft)');
-    expect(html).toContain('--badge-color:var(--ui-neutral-strong)');
-    expect(html).toContain('--button-bg:var(--ui-danger-soft)');
+    expect(html).toContain('--badge-bg:var(--ui-security-success-surface)');
+    expect(html).toContain('--badge-color:var(--ui-success)');
+    expect(html).toContain('--button-bg:var(--ui-security-danger-surface)');
     expect(html).toContain('--button-color:var(--ui-danger)');
     expect(html).not.toContain('var(--mantine-color-dimmed)');
   });

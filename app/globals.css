@@ -25,10 +25,33 @@
   --ui-success-soft: rgba(31, 94, 53, 0.16);
   --ui-danger: #8a2332;
   --ui-danger-soft: rgba(138, 35, 50, 0.14);
+  --ui-on-danger: var(--ui-surface-strong);
   --ui-warning: #72501f;
   --ui-warning-soft: rgba(114, 80, 31, 0.16);
   --ui-neutral-strong: #3f4a55;
   --ui-neutral-soft: rgba(92, 102, 112, 0.14);
+  --ui-table-surface: var(--ui-surface);
+  --ui-table-border: color-mix(in srgb, var(--ui-border), transparent 14%);
+  --ui-table-header-surface: color-mix(in srgb, var(--ui-surface-soft), var(--ui-neutral-soft) 30%);
+  --ui-table-row-border: color-mix(in srgb, var(--ui-border), transparent 16%);
+  --ui-table-row-hover: color-mix(in srgb, var(--ui-accent-soft), transparent 54%);
+  --ui-table-row-selected: color-mix(in srgb, var(--ui-accent-soft), var(--ui-surface-soft) 68%);
+  --ui-table-card-surface: color-mix(in srgb, var(--ui-surface-soft), var(--ui-surface) 42%);
+  --ui-table-card-border: color-mix(in srgb, var(--ui-border), transparent 10%);
+  --ui-security-control-surface: color-mix(
+    in srgb,
+    var(--ui-surface-soft),
+    var(--ui-neutral-soft) 18%
+  );
+  --ui-security-control-border: color-mix(in srgb, var(--ui-border), transparent 12%);
+  --ui-security-success-surface: var(--ui-success-soft);
+  --ui-security-success-border: color-mix(in srgb, var(--ui-success), var(--ui-border) 64%);
+  --ui-security-warning-surface: var(--ui-warning-soft);
+  --ui-security-warning-border: color-mix(in srgb, var(--ui-warning), var(--ui-border) 64%);
+  --ui-security-danger-surface: var(--ui-danger-soft);
+  --ui-security-danger-border: color-mix(in srgb, var(--ui-danger), var(--ui-border) 64%);
+  --ui-security-neutral-surface: var(--ui-neutral-soft);
+  --ui-security-neutral-border: color-mix(in srgb, var(--ui-neutral-strong), var(--ui-border) 70%);
   --ui-focus-ring: rgba(39, 77, 196, 0.4);
   --ui-glow: radial-gradient(circle at 82% 16%, rgba(14, 165, 233, 0.18), transparent 54%);
   --ui-hero-bg: linear-gradient(164deg, rgba(255, 255, 255, 0.9), rgba(245, 250, 255, 0.8));
