@@ -45,6 +45,35 @@
   width: 100%;
 }
 
+.panelForm {
+  min-width: 0;
+}
+
+.panelStack {
+  min-width: 0;
+}
+
+.panelHelp {
+  color: var(--ui-muted-text);
+}
+
+.panelSummary {
+  border-color: var(--ui-admin-control-border);
+  background: var(--ui-admin-control-surface);
+  box-shadow: var(--ui-elevation-0);
+}
+
+.panelCode {
+  max-width: 100%;
+  border: 1px solid var(--ui-admin-control-border);
+  background: var(--ui-admin-control-surface);
+  color: var(--ui-text);
+}
+
+.panelIcon {
+  color: var(--ui-muted-text);
+}
+
 .statusSlot {
   min-height: 1.5rem;
 }
@@ -53,6 +82,18 @@
   --button-height: var(--ui-hit-touch-min);
   width: 100%;
   min-width: 0;
+  border-color: var(--ui-admin-control-border);
+  background: var(--ui-admin-control-surface);
+}
+
+.colorTrigger:hover {
+  border-color: var(--ui-admin-control-accent-border);
+  background: var(--ui-admin-control-hover-surface);
+}
+
+.colorPopover {
+  border-color: var(--ui-admin-control-border);
+  background: var(--ui-admin-surface-strong);
 }
 
 .swatchButton {

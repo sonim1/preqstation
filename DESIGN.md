@@ -50,6 +50,7 @@ Canonical tokens live in `app/globals.css`. Treat `--ui-*` variables as the app-
 - `--ui-focus-ring`: focus outlines.
 - `--ui-hit-min`, `--ui-hit-touch-min`, `--ui-control-sm`, `--ui-control-md`: interactive sizing.
 - `--ui-status-queued`, `--ui-status-running`, and related border/glow tokens: agent run state.
+- `--ui-dashboard-seam`, `--ui-dashboard-seam-fade`, `--ui-dashboard-chart-*`, `--ui-workflow-*`, and `--ui-workload-level-*`: dashboard operator desk dividers, chart accents, workflow bars, and workload/heatmap intensity.
 
 Component-local variables are allowed when they describe one surface's mechanics, such as `--kanban-card-radius`, `--heatmap-cell-size`, or `--button-height`. They should derive from app tokens when they represent color, surface, focus, or elevation.
 

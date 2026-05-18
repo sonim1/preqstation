@@ -4,6 +4,7 @@ import { NativeSelect, Stack, TextInput } from '@mantine/core';
 import { useActionState, useEffect } from 'react';
 
 import { LiveMarkdownEditor } from '@/app/components/live-markdown-editor';
+import controlClasses from '@/app/components/settings-controls.module.css';
 import { SubmitButton } from '@/app/components/submit-button';
 import { showErrorNotification } from '@/lib/notifications';
 
@@ -29,9 +30,15 @@ export function WorklogFormPanel({
   }, [state]);
 
   return (
-    <form action={formAction}>
-      <Stack gap="md">
-        <TextInput name="title" label="Log title" placeholder="What did you finish?" required />
+    <form action={formAction} className={controlClasses.panelForm}>
+      <Stack gap="md" className={controlClasses.panelStack}>
+        <TextInput
+          name="title"
+          label="Log title"
+          placeholder="What did you finish?"
+          required
+          className={controlClasses.touchInput}
+        />
         <NativeSelect
           name="projectId"
           label="Project"
@@ -40,13 +47,14 @@ export function WorklogFormPanel({
             { value: '', label: 'No project' },
             ...projects.map((project) => ({ value: project.id, label: project.name })),
           ]}
+          className={controlClasses.touchInput}
         />
         <LiveMarkdownEditor
           name="detailMd"
           label="Work log detail (Markdown)"
           placeholder="## What I did\n- implemented x\n- fixed y"
         />
-        <SubmitButton>Save Work Log</SubmitButton>
+        <SubmitButton className={controlClasses.touchButton}>Save Work Log</SubmitButton>
       </Stack>
     </form>
   );

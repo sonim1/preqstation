@@ -27,7 +27,7 @@ export function DashboardServicePaceSparkline({ data }: { data: WeeklyActivity[]
     <WeeklySparkline
       data={data}
       h={84}
-      color="var(--ui-accent)"
+      color="var(--ui-dashboard-chart-primary)"
       curveType="linear"
       strokeWidth={2}
       fillOpacity={0.28}

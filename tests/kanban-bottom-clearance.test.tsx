@@ -348,7 +348,7 @@ describe('kanban bottom clearance hooks', () => {
       /\.kanban-mobile-tabs \.mantine-Tabs-tab\s*\{[\s\S]*border-radius:\s*0;[\s\S]*color:\s*var\(--ui-muted-text\);[\s\S]*background:\s*transparent;[\s\S]*-webkit-tap-highlight-color:\s*transparent;[\s\S]*transition:/,
     );
     expect(globalsCss).toMatch(
-      /\.kanban-mobile-tabs \.mantine-Tabs-tab:hover,\s*\.kanban-mobile-tabs \.mantine-Tabs-tab:active\s*\{[\s\S]*background:\s*color-mix\(in srgb,\s*var\(--ui-surface-soft\),\s*transparent 18%\);/,
+      /\.kanban-mobile-tabs \.mantine-Tabs-tab:hover,\s*\.kanban-mobile-tabs \.mantine-Tabs-tab:active\s*\{[\s\S]*background:\s*var\(--kanban-frame-chrome-surface-hover\);/,
     );
     expect(globalsCss).toMatch(
       /\.kanban-mobile-tabs \.mantine-Tabs-tab:focus\s*\{[\s\S]*background:\s*transparent;/,

@@ -377,12 +377,12 @@ describe('app/components/kanban-card', () => {
     );
   });
 
-  it('renders boundary-free lanes with subtly rounded note cards carried by shadows', () => {
+  it('renders tokenized board lanes with subtly rounded note cards carried by shadows', () => {
     expect(globalsCss).toMatch(
-      /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*box-shadow:\s*none;/,
+      /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*var\(--kanban-frame-column-surface\);[\s\S]*background:\s*var\(--kanban-frame-column-surface\);[\s\S]*box-shadow:\s*inset -1px 0 0 var\(--kanban-frame-column-border\);/,
     );
     expect(globalsCss).toMatch(
-      /\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*border-radius:\s*0;/,
+      /\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*var\(--kanban-frame-column-surface\);[\s\S]*background:\s*var\(--kanban-frame-column-surface\);[\s\S]*border-radius:\s*0;/,
     );
     expect(cardsCss).toMatch(
       /\.kanbanCard\s*\{[\s\S]*--kanban-card-radius:\s*6px;[\s\S]*border:\s*0;[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*background:\s*var\(--kanban-note-surface\);/,

@@ -3,14 +3,8 @@
 }
 
 .section {
-  border-color: color-mix(in srgb, var(--ui-border), transparent 10%);
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--ui-surface-soft), white 2%),
-      color-mix(in srgb, var(--ui-surface), black 2%)
-    ),
-    var(--ui-surface);
+  border-color: var(--ui-admin-border);
+  background: var(--ui-admin-surface);
   box-shadow: none;
   backdrop-filter: none;
 }
@@ -42,7 +36,7 @@
 .sectionHeader {
   padding-bottom: 0.9rem;
   margin-bottom: 0.9rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--ui-border), transparent 20%);
+  border-bottom: 1px solid var(--ui-admin-divider);
 }
 
 .sectionTitle {
@@ -66,7 +60,7 @@
   display: grid;
   gap: 0.85rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--ui-border), transparent 20%);
+  border-bottom: 1px solid var(--ui-admin-divider);
 }
 
 .labelSubhead {
@@ -105,9 +99,9 @@
   width: 100%;
   min-width: 0;
   padding: 0.7rem;
-  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 22%);
+  border: 1px solid var(--ui-admin-label-tile-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--ui-surface-soft), transparent 22%);
+  background: var(--ui-admin-label-tile-surface);
 }
 
 .labelRowHeader {
@@ -122,7 +116,7 @@
   height: 0.85rem;
   border-radius: 999px;
   flex-shrink: 0;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ui-border), transparent 35%);
+  box-shadow: inset 0 0 0 1px var(--ui-admin-control-border);
 }
 
 .labelRowMeta {
@@ -155,6 +149,16 @@
   flex-shrink: 0;
 }
 
+.labelColorButton {
+  border-color: var(--ui-admin-control-border);
+  background: var(--ui-admin-control-surface);
+}
+
+.labelColorButton:hover {
+  border-color: var(--ui-admin-control-accent-border);
+  background: var(--ui-admin-control-hover-surface);
+}
+
 .labelDeleteButton {
   width: 1.9rem;
   min-width: 1.9rem;
@@ -163,6 +167,8 @@
 
 .labelColorPicker {
   padding: 0.65rem;
+  border-color: var(--ui-admin-control-border);
+  background: var(--ui-admin-surface-strong);
 }
 
 .labelRowFeedback {
@@ -188,7 +194,7 @@
 
 .preferenceItem + .preferenceItem {
   padding-top: 1rem;
-  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 20%);
+  border-top: 1px solid var(--ui-admin-divider);
 }
 
 .preferenceHeader {

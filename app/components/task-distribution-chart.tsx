@@ -6,7 +6,7 @@ import { IconChartBar } from '@tabler/icons-react';
 import { EmptyState } from '@/app/components/empty-state';
 import { SectionTitleWithIcon } from '@/app/components/section-title-with-icon';
 import { useTerminology } from '@/app/components/terminology-provider';
-import { TASK_STATUS_COLORS, type TaskStatus } from '@/lib/task-meta';
+import type { TaskStatus } from '@/lib/task-meta';
 import { getTaskStatusLabel } from '@/lib/terminology';
 
 import panelStyles from './panels.module.css';
@@ -18,6 +18,15 @@ type TaskDistributionProps = {
   ready: number;
   done: number;
   panelClassName?: string;
+};
+
+const WORKFLOW_STATUS_TOKENS: Record<TaskStatus, string> = {
+  inbox: 'var(--ui-workflow-inbox)',
+  todo: 'var(--ui-workflow-todo)',
+  hold: 'var(--ui-workflow-hold)',
+  ready: 'var(--ui-workflow-ready)',
+  done: 'var(--ui-workflow-done)',
+  archived: 'var(--ui-neutral-strong)',
 };
 
 export function TaskDistributionChart({
@@ -149,6 +158,5 @@ export function TaskDistributionChart({
 }
 
 function resolveWorkflowBarColor(status: TaskStatus) {
-  const color = TASK_STATUS_COLORS[status];
-  return `var(--mantine-color-${color}-6)`;
+  return WORKFLOW_STATUS_TOKENS[status];
 }
