@@ -14,6 +14,7 @@
     rgba(242, 240, 234, 0.95)
   );
   --ui-reading-border: rgba(118, 105, 86, 0.22);
+  --ui-reading-code-border: var(--ui-reading-border);
   --ui-shadow: 0 22px 52px -34px rgba(21, 45, 89, 0.5);
   --ui-text: #0f203d;
   --ui-muted-text: #4f668a;
@@ -30,6 +31,8 @@
   --ui-warning-soft: rgba(114, 80, 31, 0.16);
   --ui-neutral-strong: #3f4a55;
   --ui-neutral-soft: rgba(92, 102, 112, 0.14);
+  --ui-syntax-selector: color-mix(in srgb, var(--ui-danger), var(--ui-warning) 28%);
+  --ui-syntax-function: var(--ui-warning);
   --ui-table-surface: var(--ui-surface);
   --ui-table-border: color-mix(in srgb, var(--ui-border), transparent 14%);
   --ui-table-header-surface: color-mix(in srgb, var(--ui-surface-soft), var(--ui-neutral-soft) 30%);
@@ -104,12 +107,24 @@
   --ui-dashboard-chart-primary-soft: color-mix(in srgb, var(--ui-accent-soft), transparent 18%);
   --ui-dashboard-chart-grid: color-mix(in srgb, var(--ui-border), transparent 36%);
   --ui-dashboard-chart-tooltip: var(--ui-surface-strong);
+  --ui-work-log-marker-ring-spread: 4px;
   --ui-workflow-inbox: color-mix(in srgb, var(--ui-accent), var(--ui-success) 22%);
   --ui-workflow-todo: var(--ui-accent);
   --ui-workflow-hold: var(--ui-warning);
   --ui-workflow-ready: color-mix(in srgb, var(--ui-warning), var(--ui-accent) 18%);
   --ui-on-workflow-ready: var(--ui-on-accent);
   --ui-workflow-done: var(--ui-success);
+  --ui-status-history-badge-border-mix: 38%;
+  --ui-status-history-warning-border: color-mix(
+    in srgb,
+    var(--ui-warning),
+    var(--ui-border) var(--ui-status-history-badge-border-mix)
+  );
+  --ui-status-history-success-border: color-mix(
+    in srgb,
+    var(--ui-success),
+    var(--ui-border) var(--ui-status-history-badge-border-mix)
+  );
   --ui-workload-level-0: color-mix(in srgb, var(--ui-surface-strong), var(--ui-neutral-soft) 34%);
   --ui-workload-level-1: color-mix(in srgb, var(--ui-success-soft), var(--ui-surface-strong) 52%);
   --ui-workload-level-2: color-mix(in srgb, var(--ui-success), var(--ui-surface-soft) 42%);
@@ -2172,6 +2187,7 @@ button.task-notification-item:disabled {
   border-radius: var(--mantine-radius-md);
   padding: 10px 12px;
   background: var(--ui-reading-surface);
+  color: var(--ui-text);
   overflow: auto;
 }
 
@@ -2228,10 +2244,10 @@ button.task-notification-item:disabled {
   margin: 10px 0;
   min-width: 320px;
   overflow-x: auto;
-  border: 1px solid var(--ui-border);
+  border: 1px solid var(--ui-reading-border);
   border-radius: var(--mantine-radius-sm);
-  background: var(--mantine-color-white);
-  color: #0f203d;
+  background: var(--ui-surface-strong);
+  color: var(--ui-text);
   padding: 12px;
 }
 
@@ -2241,8 +2257,10 @@ button.task-notification-item:disabled {
 }
 
 .markdown-output code {
-  background: var(--mantine-color-indigo-0);
+  border: 1px solid var(--ui-reading-code-border);
   border-radius: 6px;
+  background: var(--ui-neutral-soft);
+  color: var(--ui-text);
   padding: 1px 6px;
   font-size: 12px;
 }
@@ -2276,7 +2294,7 @@ button.task-notification-item:disabled {
   outline: none;
   font-size: 15px;
   line-height: 1.5;
-  color: var(--mantine-color-text);
+  color: var(--ui-text);
   caret-color: currentColor;
 }
 
@@ -2294,7 +2312,7 @@ button.task-notification-item:disabled {
   top: 14px;
   left: 14px;
   right: 14px;
-  color: var(--mantine-color-gray-5);
+  color: var(--ui-muted-text);
   pointer-events: none;
   font-size: 14px;
 }
@@ -2316,7 +2334,7 @@ button.task-notification-item:disabled {
 }
 
 .live-editor-raw-input::placeholder {
-  color: var(--mantine-color-gray-5);
+  color: var(--ui-muted-text);
 }
 
 .live-editor-raw-input:focus-visible {
@@ -2387,9 +2405,9 @@ button.task-notification-item:disabled {
 
 .live-editor-quote {
   margin: 10px 0;
-  border-left: 3px solid var(--mantine-color-blue-4);
+  border-left: 3px solid var(--ui-accent);
   padding-left: 10px;
-  color: var(--mantine-color-gray-7);
+  color: var(--ui-muted-text);
 }
 
 .live-editor-bold {
@@ -2401,8 +2419,10 @@ button.task-notification-item:disabled {
 }
 
 .live-editor-code {
-  background: var(--mantine-color-indigo-0);
+  border: 1px solid var(--ui-reading-code-border);
   border-radius: 6px;
+  background: var(--ui-neutral-soft);
+  color: var(--ui-text);
   padding: 1px 6px;
   font-size: 12px;
 }
@@ -2414,9 +2434,10 @@ button.task-notification-item:disabled {
 }
 
 .live-editor-code-block {
-  background: var(--mantine-color-gray-1);
-  border: 1px solid var(--mantine-color-gray-3);
+  border: 1px solid var(--ui-reading-border);
   border-radius: 6px;
+  background: var(--ui-reading-surface-soft);
+  color: var(--ui-text);
   padding: 12px 16px;
   font-family: var(--mantine-font-family-monospace);
   font-size: 13px;
@@ -2442,10 +2463,10 @@ button.task-notification-item:disabled {
   margin: 0;
   min-width: 320px;
   overflow-x: auto;
-  border: 1px solid var(--ui-border);
+  border: 1px solid var(--ui-reading-border);
   border-radius: var(--mantine-radius-sm);
-  background: var(--mantine-color-white);
-  color: #0f203d;
+  background: var(--ui-surface-strong);
+  color: var(--ui-text);
   padding: 12px;
 }
 
@@ -2457,8 +2478,10 @@ button.task-notification-item:disabled {
 .live-editor-mermaid-source {
   margin-top: 8px;
   overflow-x: auto;
-  border: 1px solid var(--ui-border);
+  border: 1px solid var(--ui-reading-border);
   border-radius: var(--mantine-radius-sm);
+  background: var(--ui-reading-surface-soft);
+  color: var(--ui-text);
   padding: 10px 12px;
   font-family: var(--mantine-font-family-monospace);
   font-size: 12px;
@@ -2466,28 +2489,28 @@ button.task-notification-item:disabled {
 }
 
 .live-editor-tokenComment {
-  color: #6a9955;
+  color: var(--ui-muted-text);
 }
 .live-editor-tokenPunctuation {
-  color: #d4d4d4;
+  color: var(--ui-neutral-strong);
 }
 .live-editor-tokenProperty {
-  color: #b5cea8;
+  color: var(--ui-success);
 }
 .live-editor-tokenSelector {
-  color: #ce9178;
+  color: var(--ui-syntax-selector);
 }
 .live-editor-tokenOperator {
-  color: #d4d4d4;
+  color: var(--ui-neutral-strong);
 }
 .live-editor-tokenAttr {
-  color: #c586c0;
+  color: var(--ui-accent);
 }
 .live-editor-tokenVariable {
-  color: #9cdcfe;
+  color: var(--ui-accent-strong);
 }
 .live-editor-tokenFunction {
-  color: #dcdcaa;
+  color: var(--ui-syntax-function);
 }
 
 .live-editor-ul,
@@ -3061,34 +3084,36 @@ html[data-mantine-color-scheme='dark'] .kanban-archive-trigger {
 
 html[data-mantine-color-scheme='dark'] .markdown-output code,
 html[data-mantine-color-scheme='dark'] .live-editor-code {
-  background: rgba(129, 154, 255, 0.26);
+  background: var(--ui-neutral-soft);
 }
 
 html[data-mantine-color-scheme='dark'] .markdown-output .mermaid,
 html[data-mantine-color-scheme='dark'] .live-editor-mermaid-block .mermaid {
-  border-color: var(--mantine-color-gray-3);
+  border-color: var(--ui-reading-border);
+  background: var(--ui-surface-strong);
+  color: var(--ui-text);
 }
 
 html[data-mantine-color-scheme='dark'] .live-editor-code-block {
-  background: var(--mantine-color-dark-7);
-  border-color: var(--mantine-color-dark-4);
+  background: var(--ui-reading-surface-soft);
+  border-color: var(--ui-reading-border);
 }
 
 html[data-mantine-color-scheme='dark'] .live-editor-placeholder {
-  color: rgba(158, 176, 205, 0.72);
+  color: var(--ui-muted-text);
 }
 
 html[data-mantine-color-scheme='dark'] .live-editor-raw-input::placeholder {
-  color: rgba(158, 176, 205, 0.72);
+  color: var(--ui-muted-text);
 }
 
 html[data-mantine-color-scheme='dark'] .live-editor-quote {
   color: var(--ui-muted-text);
-  border-left-color: rgba(96, 165, 250, 0.72);
+  border-left-color: var(--ui-accent);
 }
 
 html[data-mantine-color-scheme='dark'] .live-editor-link {
-  color: #a8c0ff;
+  color: var(--ui-accent);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3749,11 +3774,11 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 }
 
 .task-dispatch-actions .openclaw-actions-label {
-  color: var(--mantine-color-text);
+  color: var(--ui-text);
 }
 
 .task-dispatch-actions .openclaw-dispatch-help {
-  color: var(--mantine-color-dimmed);
+  color: var(--ui-muted-text);
 }
 
 .openclaw-action-bar {
@@ -3995,9 +4020,9 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
   min-height: 6.25rem;
   max-height: 14rem;
   overflow: auto;
-  border: 0;
+  border: 1px solid var(--ui-reading-border);
   border-radius: 8px;
-  background: color-mix(in srgb, var(--ui-surface-strong), var(--ui-neutral-strong) 10%);
+  background: var(--ui-reading-surface-soft);
   color: var(--ui-text);
   padding: 0.75rem 4.5rem 0.75rem 0.75rem;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;

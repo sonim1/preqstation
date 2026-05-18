@@ -72,17 +72,33 @@ function findClosingBrace(source: string, openingBraceIndex: number) {
 }
 
 function getRuleBody(source: string, selector: string) {
-  const selectorIndex = source.indexOf(selector);
-  if (selectorIndex < 0) {
-    throw new Error(`Missing CSS selector: ${selector}`);
+  for (let searchStart = 0; searchStart < source.length; ) {
+    const selectorIndex = source.indexOf(selector, searchStart);
+    if (selectorIndex < 0) {
+      break;
+    }
+
+    const openingBraceIndex = source.indexOf('{', selectorIndex + selector.length);
+    if (openingBraceIndex < 0) {
+      break;
+    }
+
+    const selectorStart =
+      Math.max(source.lastIndexOf('}', selectorIndex), source.lastIndexOf('{', selectorIndex)) + 1;
+    const selectorList = source.slice(selectorStart, openingBraceIndex);
+    const selectorMatches = selectorList
+      .split(',')
+      .map((candidate) => candidate.trim())
+      .includes(selector);
+
+    if (selectorMatches) {
+      return source.slice(openingBraceIndex + 1, findClosingBrace(source, openingBraceIndex));
+    }
+
+    searchStart = selectorIndex + selector.length;
   }
 
-  const openingBraceIndex = source.indexOf('{', selectorIndex + selector.length);
-  if (openingBraceIndex < 0) {
-    throw new Error(`Missing rule body for CSS selector: ${selector}`);
-  }
-
-  return source.slice(openingBraceIndex + 1, findClosingBrace(source, openingBraceIndex));
+  throw new Error(`Missing CSS selector: ${selector}`);
 }
 
 function expectTokenBackground(ruleBody: string, tokenName: string) {
@@ -91,6 +107,16 @@ function expectTokenBackground(ruleBody: string, tokenName: string) {
 }
 
 describe('task edit reading surface CSS', () => {
+  it('matches exact selector names when reading rule bodies', () => {
+    const ruleBody = getRuleBody(
+      '.live-editor-link-button { color: red; } .live-editor-link { color: blue; }',
+      '.live-editor-link',
+    );
+
+    expect(ruleBody).toContain('color: blue;');
+    expect(ruleBody).not.toContain('color: red;');
+  });
+
   it('defines shared reading surface tokens in light and dark scopes', () => {
     const lightTokens = getRuleBody(globalsCss, ':root');
     const darkTokens = getRuleBody(globalsCss, "html[data-mantine-color-scheme='dark']");
@@ -100,6 +126,21 @@ describe('task edit reading surface CSS', () => {
       expect(tokenScope).toContain('--ui-reading-surface-soft:');
       expect(tokenScope).toContain('--ui-reading-border:');
     }
+  });
+
+  it('maps inline code borders through a shared semantic token', () => {
+    const rootTokens = getRuleBody(globalsCss, ':root');
+    const markdownCodeRule = getRuleBody(globalsCss, '.markdown-output code');
+    const liveEditorCodeRule = getRuleBody(globalsCss, '.live-editor-code');
+
+    expect(rootTokens).toContain('--ui-reading-code-border: var(--ui-reading-border);');
+
+    for (const ruleBody of [markdownCodeRule, liveEditorCodeRule]) {
+      expect(ruleBody).toContain('border: 1px solid var(--ui-reading-code-border);');
+      expect(ruleBody).not.toContain('color-mix(in srgb, var(--ui-border), transparent 24%)');
+    }
+
+    expect(globalsCss).not.toContain('color-mix(in srgb, var(--ui-border), transparent 24%)');
   });
 
   it('uses reading surface tokens for markdown and live editor surfaces', () => {
@@ -122,7 +163,59 @@ describe('task edit reading surface CSS', () => {
     );
   });
 
-  it('keeps mermaid fallback source readable on a light canvas in dark mode', () => {
+  it('keeps task edit scoped styles on defined ui tokens', () => {
+    const definedTokens = new Set(
+      Array.from(getRuleBody(globalsCss, ':root').matchAll(/(--ui-[\w-]+)\s*:/g)).map(
+        ([, token]) => token,
+      ),
+    );
+    const referencedTokens = Array.from(
+      `${globalsCss}\n${taskEditFormCss}`.matchAll(/var\((--ui-[\w-]+)/g),
+    ).map(([, token]) => token);
+
+    expect([...new Set(referencedTokens)].filter((token) => !definedTokens.has(token))).toEqual([]);
+  });
+
+  it('puts the task edit panel sections on the shared tokenized surface', () => {
+    const sectionSurfaceRule = getRuleBody(taskEditFormCss, '.sectionSurface');
+
+    expect(sectionSurfaceRule).toContain('border: 1px solid var(--ui-border);');
+    expect(sectionSurfaceRule).toContain('border-radius: 8px;');
+    expectTokenBackground(sectionSurfaceRule, '--ui-surface');
+  });
+
+  it('uses semantic tokens for editor and markdown text accents', () => {
+    const rootTokens = getRuleBody(globalsCss, ':root');
+    const markdownCodeRule = getRuleBody(globalsCss, '.markdown-output code');
+    const liveEditorCodeRule = getRuleBody(globalsCss, '.live-editor-code');
+    const liveEditorCodeBlockRule = getRuleBody(globalsCss, '.live-editor-code-block');
+    const liveEditorQuoteRule = getRuleBody(globalsCss, '.live-editor-quote');
+    const liveEditorLinkRule = getRuleBody(globalsCss, '.live-editor-link');
+    const tokenSelectorRule = getRuleBody(globalsCss, '.live-editor-tokenSelector');
+    const tokenFunctionRule = getRuleBody(globalsCss, '.live-editor-tokenFunction');
+    const selectorTokenValue = rootTokens.match(/--ui-syntax-selector:\s*([^;]+);/)?.[1];
+    const functionTokenValue = rootTokens.match(/--ui-syntax-function:\s*([^;]+);/)?.[1];
+
+    for (const ruleBody of [
+      markdownCodeRule,
+      liveEditorCodeRule,
+      liveEditorCodeBlockRule,
+      liveEditorQuoteRule,
+      liveEditorLinkRule,
+    ]) {
+      expect(ruleBody).toContain('var(--ui-');
+      expect(ruleBody).not.toContain('var(--mantine-color-');
+      expect(ruleBody).not.toMatch(/#[0-9a-fA-F]{3,8}|rgba?\(/);
+    }
+
+    expect(tokenSelectorRule).toContain('color: var(--ui-syntax-selector);');
+    expect(tokenFunctionRule).toContain('color: var(--ui-syntax-function);');
+    expect(selectorTokenValue).toBeTruthy();
+    expect(functionTokenValue).toBeTruthy();
+    expect(selectorTokenValue).not.toBe(functionTokenValue);
+  });
+
+  it('keeps mermaid fallback source readable on the tokenized canvas in dark mode', () => {
     const dom = new JSDOM(`
       <html data-mantine-color-scheme="dark">
         <head><style>${globalsCss}</style></head>
@@ -144,8 +237,8 @@ describe('task edit reading surface CSS', () => {
     for (const node of mermaidNodes) {
       const style = dom.window.getComputedStyle(node);
 
-      expect(style.background).toBe('var(--mantine-color-white)');
-      expect(style.color).toBe('rgb(15, 32, 61)');
+      expect(style.background).toBe('var(--ui-surface-strong)');
+      expect(style.color).toBe('var(--ui-text)');
     }
   });
 

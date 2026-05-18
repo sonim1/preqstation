@@ -187,7 +187,7 @@
   flex: 0 0 1rem;
   display: inline-grid;
   place-items: center;
-  color: var(--ui-text-muted);
+  color: var(--ui-muted-text);
 }
 
 .commentEngineIcon {
@@ -197,12 +197,12 @@
 }
 
 .commentUserIcon {
-  color: var(--ui-text-muted);
+  color: var(--ui-muted-text);
 }
 
 .commentSystemIcon {
   border-radius: 999px;
-  background: var(--ui-text-muted);
+  background: var(--ui-muted-text);
 }
 
 .commentBodyMarkdown {
@@ -277,6 +277,10 @@
 .sectionSurface {
   min-width: 0;
   padding: clamp(0.875rem, 1.4vw, 1rem);
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: var(--ui-surface);
+  box-shadow: var(--ui-elevation-1);
 }
 
 .skeletonNotesEditor {
@@ -317,7 +321,7 @@
 
 .sectionHelpTrigger {
   flex-shrink: 0;
-  color: var(--mantine-color-dimmed);
+  color: var(--ui-muted-text);
 }
 
 .metaHeader {
