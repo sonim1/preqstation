@@ -96,6 +96,17 @@
   --ui-workflow-ready: color-mix(in srgb, var(--ui-warning), var(--ui-accent) 18%);
   --ui-on-workflow-ready: var(--ui-on-accent);
   --ui-workflow-done: var(--ui-success);
+  --ui-status-history-badge-border-mix: 38%;
+  --ui-status-history-warning-border: color-mix(
+    in srgb,
+    var(--ui-warning),
+    var(--ui-border) var(--ui-status-history-badge-border-mix)
+  );
+  --ui-status-history-success-border: color-mix(
+    in srgb,
+    var(--ui-success),
+    var(--ui-border) var(--ui-status-history-badge-border-mix)
+  );
   --ui-workload-level-0: color-mix(in srgb, var(--ui-surface-strong), var(--ui-neutral-soft) 34%);
   --ui-workload-level-1: color-mix(in srgb, var(--ui-success-soft), var(--ui-surface-strong) 52%);
   --ui-workload-level-2: color-mix(in srgb, var(--ui-success), var(--ui-surface-soft) 42%);

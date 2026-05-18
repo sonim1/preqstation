@@ -49,7 +49,7 @@ function getStatusBadgeStyle(status: string): CSSProperties {
   if (status === 'hold' || status === 'ready') {
     return {
       backgroundColor: 'var(--ui-warning-soft)',
-      borderColor: 'color-mix(in srgb, var(--ui-warning), var(--ui-border) 38%)',
+      borderColor: 'var(--ui-status-history-warning-border)',
       color: 'var(--ui-warning)',
     };
   }
@@ -57,7 +57,7 @@ function getStatusBadgeStyle(status: string): CSSProperties {
   if (status === 'done') {
     return {
       backgroundColor: 'var(--ui-success-soft)',
-      borderColor: 'color-mix(in srgb, var(--ui-success), var(--ui-border) 38%)',
+      borderColor: 'var(--ui-status-history-success-border)',
       color: 'var(--ui-success)',
     };
   }
