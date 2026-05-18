@@ -284,6 +284,15 @@ button.filterChip {
   box-shadow: none;
 }
 
+.projectCard[data-project-card-tone='paused']:has(.cardLink:hover),
+.projectCard[data-project-card-tone='paused']:focus-within,
+.projectCard[data-project-card-tone='archived']:has(.cardLink:hover),
+.projectCard[data-project-card-tone='archived']:focus-within {
+  border-color: color-mix(in srgb, var(--ui-border), transparent 28%);
+  box-shadow: none;
+  transform: none;
+}
+
 .projectCard[data-project-card-tone='stale'] {
   border-color: color-mix(in srgb, var(--ui-danger), transparent 58%);
 }

@@ -144,9 +144,13 @@ describe('theme token usage audit fixes', () => {
   });
 
   it('moves the global error page onto app tokens instead of a file-local palette', () => {
-    expect(globalErrorSource).toContain('var(--ui-surface');
-    expect(globalErrorSource).toContain('var(--ui-text');
-    expect(globalErrorSource).toContain('var(--ui-border');
+    expect(globalErrorSource).toContain('route-state-page');
+    expect(globalErrorSource).toContain('route-state-card');
+    expect(globalErrorSource).toContain('route-state-primary-action');
+    expect(globalsCss).toContain('.route-state-global-page');
+    expect(globalsCss).toContain('var(--ui-surface');
+    expect(globalsCss).toContain('var(--ui-text');
+    expect(globalsCss).toContain('var(--ui-border');
     expect(globalErrorSource).not.toContain("background: '#0b1220'");
     expect(globalErrorSource).not.toContain("color: '#e8effa'");
   });

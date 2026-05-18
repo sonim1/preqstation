@@ -105,9 +105,10 @@ function getProjectDetailStatusTone({
   runningTaskCount: number;
 }): ProjectDetailStatusTone {
   if (projectStatus === DONE_PROJECT_STATUS) return 'archived';
-  if (projectStatus === PAUSED_PROJECT_STATUS || activityStatus === 'inactive') return 'paused';
+  if (projectStatus === PAUSED_PROJECT_STATUS) return 'paused';
   if (runningTaskCount > 0) return 'live';
   if (queuedTaskCount > 0) return 'queued';
+  if (activityStatus === 'inactive') return 'paused';
   if (activityStatus === 'critical') return 'stale';
   if (activityStatus === 'warning') return 'at-risk';
   return 'active';

@@ -437,6 +437,21 @@ describe('project detail page', () => {
     expect(html).toContain('1 AI agent running');
     expect(html).toContain('data-entity-type="agent"');
     expect(html).toContain('data-entity-state="running"');
+    expect(html).toContain('data-project-status-tone="live"');
+    expect(html).not.toContain('data-project-status-tone="paused"');
+  });
+
+  it('uses the queued detail tone for inactive projects with queued tasks', async () => {
+    mocked.tasksFindMany.mockResolvedValueOnce([{ status: 'todo', runState: 'queued' }]);
+
+    const html = renderToStaticMarkup(
+      await ProjectDetailPage({
+        params: Promise.resolve({ key: 'PROJ' }),
+      }),
+    );
+
+    expect(html).toContain('data-project-status-tone="queued"');
+    expect(html).not.toContain('data-project-status-tone="paused"');
   });
 
   it('uses the paused detail tone when active projects have inactive activity', async () => {
