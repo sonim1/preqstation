@@ -4,8 +4,6 @@ import { Button, Container, Group, Paper, Stack, Text, Title } from '@mantine/co
 import Link from 'next/link';
 import { useEffect } from 'react';
 
-import panelStyles from './components/panels.module.css';
-
 type AppErrorPageProps = {
   error: Error & { digest?: string };
   reset: () => void;
@@ -17,29 +15,28 @@ export default function AppErrorPage({ error, reset }: AppErrorPageProps) {
   }, [error]);
 
   return (
-    <Container size="sm" py={{ base: 'lg', sm: 'xl' }}>
-      <Paper
-        withBorder
-        radius="lg"
-        p={{ base: 'lg', sm: 'xl' }}
-        className={panelStyles.sectionPanel}
-      >
+    <Container size="sm" py={{ base: 'lg', sm: 'xl' }} className="route-state-page">
+      <Paper withBorder radius="lg" p={{ base: 'lg', sm: 'xl' }} className="route-state-card">
         <Stack gap="sm">
-          <Text size="sm" fw={700} c="dimmed">
+          <Text size="sm" fw={700} className="route-state-eyebrow">
             ERROR
           </Text>
-          <Title order={2}>Something Went Wrong</Title>
-          <Text c="dimmed">An unexpected error occurred while rendering this page.</Text>
+          <Title order={2} className="route-state-title">
+            Something Went Wrong
+          </Title>
+          <Text className="route-state-description">
+            An unexpected error occurred while rendering this page.
+          </Text>
           {error.digest ? (
-            <Text size="xs" c="dimmed">
+            <Text size="xs" className="route-state-reference">
               Ref: {error.digest}
             </Text>
           ) : null}
-          <Group gap="xs">
-            <Button variant="default" onClick={reset}>
+          <Group gap="xs" className="route-state-actions">
+            <Button variant="default" onClick={reset} className="route-state-secondary-action">
               Try Again
             </Button>
-            <Button component={Link} href="/dashboard">
+            <Button component={Link} href="/dashboard" className="route-state-primary-action">
               Go to Dashboard
             </Button>
           </Group>
