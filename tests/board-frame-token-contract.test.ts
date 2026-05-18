@@ -66,6 +66,13 @@ import type { KanbanColumns, KanbanStatus, KanbanTask } from '@/lib/kanban-helpe
 
 // JSDOM needs the app stylesheet installed before computed-style assertions can observe it.
 const globalsCss = fs.readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
+const renderedWorkflowStatuses = [
+  'inbox',
+  'hold',
+  'ready',
+  'done',
+  'archived',
+] as const satisfies readonly Exclude<KanbanStatus, 'todo'>[];
 let globalsStyle: HTMLStyleElement | null = null;
 
 function emptyColumns(): KanbanColumns {
@@ -119,6 +126,16 @@ function expectComputedToken(selector: string, property: string, token: string) 
   expect(value).not.toContain('#');
   expect(value).not.toContain('white');
   expect(value).not.toContain('black');
+}
+
+function expectWorkflowStatusToken(status: Exclude<KanbanStatus, 'todo'>) {
+  const style = window.getComputedStyle(getElement(`.kanban-status-button.is-${status}`));
+  const statusToken = style.getPropertyValue('--kanban-workflow-status-color');
+
+  expect(style.getPropertyValue('color')).toContain('var(--kanban-workflow-status-color)');
+  expect(statusToken).toContain(`var(--ui-workflow-status-${status})`);
+  expect(statusToken).not.toContain('rgba(');
+  expect(statusToken).not.toContain('#');
 }
 
 function parseHexColor(value: string): [number, number, number] {
@@ -384,26 +401,15 @@ describe('board frame token contract', () => {
     );
     expectComputedToken('.kanban-column.is-drag-over', 'box-shadow', '--ui-status-running-border');
     expectComputedToken('.kanban-archive-error', 'color', '--ui-danger');
-    expectComputedToken('.kanban-status-button.is-inbox', 'color', '--ui-status-queued-foreground');
-    expectComputedToken('.kanban-status-button.is-hold', 'color', '--ui-warning');
-    expectComputedToken(
-      '.kanban-status-button.is-ready',
-      'color',
-      '--ui-status-running-foreground',
-    );
-    expectComputedToken('.kanban-status-button.is-done', 'color', '--ui-success');
-    expectComputedToken('.kanban-status-button.is-archived', 'color', '--ui-muted-text');
+
+    for (const status of renderedWorkflowStatuses) {
+      expectWorkflowStatusToken(status);
+    }
 
     document.documentElement.setAttribute('data-mantine-color-scheme', 'dark');
 
-    expectComputedToken('.kanban-status-button.is-inbox', 'color', '--ui-status-queued-foreground');
-    expectComputedToken('.kanban-status-button.is-hold', 'color', '--ui-warning');
-    expectComputedToken(
-      '.kanban-status-button.is-ready',
-      'color',
-      '--ui-status-running-foreground',
-    );
-    expectComputedToken('.kanban-status-button.is-done', 'color', '--ui-success');
-    expectComputedToken('.kanban-status-button.is-archived', 'color', '--ui-muted-text');
+    for (const status of renderedWorkflowStatuses) {
+      expectWorkflowStatusToken(status);
+    }
   });
 });

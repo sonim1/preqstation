@@ -105,6 +105,7 @@ describe('theme token usage audit fixes', () => {
     expect(designSystem).toContain('Canonical tokens live in `app/globals.css`');
     expect(designSystem).toContain('`--ui-surface`');
     expect(designSystem).toContain('`--ui-accent`');
+    expect(designSystem).toContain('`--ui-workflow-status-inbox`');
     expect(designSystem).toContain('`--ui-hit-touch-min`');
   });
 
@@ -116,6 +117,7 @@ describe('theme token usage audit fixes', () => {
     expect(globalsCss).toMatch(/--ui-surface-modal-body:\s*color-mix/);
     expect(globalsCss).toMatch(/--ui-panel-orb:/);
     expect(globalsCss).toMatch(/--ui-status-running:/);
+    expect(globalsCss).toMatch(/--ui-workflow-status-done:/);
   });
 
   it('keeps task dispatch bottom picker menus on theme tokens', () => {

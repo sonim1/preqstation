@@ -30,6 +30,7 @@
 - **Surfaces:** Use `--ui-surface`, `--ui-surface-soft`, `--ui-surface-strong`, `--ui-surface-panel`, `--ui-surface-muted`, and `--ui-surface-elevated` instead of one-off surface colors.
 - **Text:** Use `--ui-text` and `--ui-muted-text` for app chrome and CSS-module UI. Use `--ui-on-accent` for text on primary accent or image-overlay controls. Mantine text props may still use Mantine's semantic text colors when they resolve cleanly to the active scheme.
 - **State:** Use `--ui-success`, `--ui-danger`, `--ui-warning`, `--ui-neutral-strong`, and their soft variants for status, alerts, and badges.
+- **Workflow state:** Use `--ui-workflow-status-inbox`, `--ui-workflow-status-todo`, `--ui-workflow-status-hold`, `--ui-workflow-status-ready`, `--ui-workflow-status-done`, and `--ui-workflow-status-archived` for Kanban task lifecycle controls and indicators.
 - **Execution state:** Use `--ui-status-queued`, `--ui-status-running`, and related border/glow tokens for live agent execution state.
 - **Dark mode:** Dark mode is the default. Redesign surfaces for dark mode rather than simply inverting light colors.
 
@@ -45,6 +46,7 @@ Canonical tokens live in `app/globals.css`. Treat `--ui-*` variables as the app-
 - `--ui-text`, `--ui-muted-text`, `--ui-on-accent`: foreground text.
 - `--ui-accent`, `--ui-accent-strong`, `--ui-accent-soft`: primary action and focus.
 - `--ui-success`, `--ui-danger`, `--ui-warning`, `--ui-neutral-strong` and soft variants: semantic state.
+- `--ui-workflow-status-inbox`, `--ui-workflow-status-todo`, `--ui-workflow-status-hold`, `--ui-workflow-status-ready`, `--ui-workflow-status-done`, `--ui-workflow-status-archived`: task workflow state.
 - `--ui-focus-ring`: focus outlines.
 - `--ui-hit-min`, `--ui-hit-touch-min`, `--ui-control-sm`, `--ui-control-md`: interactive sizing.
 - `--ui-status-queued`, `--ui-status-running`, and related border/glow tokens: agent run state.

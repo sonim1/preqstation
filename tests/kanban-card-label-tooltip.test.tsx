@@ -163,8 +163,8 @@ describe('app/components/kanban-card label tooltip behavior', () => {
 
     expect(html).toContain('data-kanban-label="primary"');
     expect(html).toContain('data-tooltip-open-delay="0"');
-    expect(html).toContain('data-tooltip-style-bg="rgba(11, 20, 38, 0.96)"');
-    expect(html).toContain('data-tooltip-style-color="#f5f8ff"');
+    expect(html).toContain('data-tooltip-style-bg="var(--ui-tooltip-surface)"');
+    expect(html).toContain('data-tooltip-style-color="var(--ui-tooltip-text)"');
   });
 
   it('opens hidden-label tooltip immediately and uses the dedicated tooltip surface styling hook', () => {
@@ -182,8 +182,8 @@ describe('app/components/kanban-card label tooltip behavior', () => {
     );
 
     expect(html).toContain('data-tooltip-open-delay="0"');
-    expect(html).toContain('data-tooltip-style-bg="rgba(11, 20, 38, 0.96)"');
-    expect(html).toContain('data-tooltip-style-color="#f5f8ff"');
+    expect(html).toContain('data-tooltip-style-bg="var(--ui-tooltip-surface)"');
+    expect(html).toContain('data-tooltip-style-color="var(--ui-tooltip-text)"');
     expect(html).toContain('data-kanban-label-summary="true"');
     expect(html).toContain('>UI</span>');
     expect(html).toContain('>Manual</span>');
@@ -192,8 +192,8 @@ describe('app/components/kanban-card label tooltip behavior', () => {
         openDelay: 0,
         styles: expect.objectContaining({
           tooltip: expect.objectContaining({
-            background: 'rgba(11, 20, 38, 0.96)',
-            color: '#f5f8ff',
+            background: 'var(--ui-tooltip-surface)',
+            color: 'var(--ui-tooltip-text)',
           }),
         }),
       }),
@@ -222,8 +222,8 @@ describe('app/components/kanban-card label tooltip behavior', () => {
 
     expect(html).toContain('data-kanban-label-shortcut="labels"');
     expect(html).toContain('data-tooltip-open-delay="0"');
-    expect(html).toContain('data-tooltip-style-bg="rgba(11, 20, 38, 0.96)"');
-    expect(html).toContain('data-tooltip-style-color="#f5f8ff"');
+    expect(html).toContain('data-tooltip-style-bg="var(--ui-tooltip-surface)"');
+    expect(html).toContain('data-tooltip-style-color="var(--ui-tooltip-text)"');
   });
 
   it('shows the telegram detail as separate rows in the desktop send tooltip', () => {
@@ -296,7 +296,10 @@ describe('app/components/kanban-card label tooltip behavior', () => {
   it('uses an arrow cursor on the summary and explicit contrast rules inside the tooltip', () => {
     expect(cardsCss).toMatch(/\.kanbanLabelSummary\s*\{[\s\S]*cursor:\s*default;/);
     expect(cardsCss).toMatch(
-      /\.kanbanLabelTooltipSurface\s*\{[\s\S]*background:\s*rgba\(11,\s*20,\s*38,\s*0\.96\);[\s\S]*color:\s*#f5f8ff;/,
+      /\.kanbanLabelTooltipSurface\s*\{[\s\S]*background:\s*var\(--kanban-card-tooltip-surface\);[\s\S]*color:\s*var\(--kanban-card-tooltip-text\);/,
+    );
+    expect(cardsCss).toMatch(
+      /\.kanbanLabelTooltipSurface\s*\{[\s\S]*border:\s*var\(--kanban-card-tooltip-border\);/,
     );
     expect(cardsCss).toMatch(/\.kanbanLabelTooltipItem\s*\{[\s\S]*color:\s*inherit;/);
   });

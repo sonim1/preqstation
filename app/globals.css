@@ -121,6 +121,16 @@
   --ui-on-workload-level-3: var(--ui-on-accent);
   --ui-on-workload-level-4: var(--ui-on-accent);
   --ui-workload-border: color-mix(in srgb, var(--ui-border), transparent 18%);
+  --ui-workflow-status-inbox: color-mix(in srgb, var(--ui-accent), var(--ui-muted-text) 42%);
+  --ui-workflow-status-todo: var(--ui-neutral-strong);
+  --ui-workflow-status-hold: var(--ui-warning);
+  --ui-workflow-status-ready: color-mix(in srgb, var(--ui-warning), var(--ui-accent) 18%);
+  --ui-workflow-status-done: var(--ui-success);
+  --ui-workflow-status-done-indicator: var(--ui-workflow-status-done);
+  --ui-workflow-status-archived: var(--ui-muted-text);
+  --ui-tooltip-surface: var(--ui-surface-elevated-strong);
+  --ui-tooltip-text: var(--ui-text);
+  --ui-tooltip-border: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
   --ui-hit-min: 24px;
   --ui-hit-touch-min: 44px;
   --ui-control-sm: 28px;
@@ -285,6 +295,11 @@ html[data-mantine-color-scheme='dark'] {
   --ui-status-running-foreground: var(--ui-status-running);
   --ui-status-running-soft: rgba(56, 189, 248, 0.18);
   --ui-status-running-glow: rgba(56, 189, 248, 0.28);
+  --ui-workflow-status-done-indicator: color-mix(
+    in srgb,
+    var(--ui-success),
+    var(--mantine-color-body) 42%
+  );
   --mantine-color-text: var(--ui-text);
   --mantine-color-dimmed: var(--ui-muted-text);
   --mantine-color-body: var(--ui-body-surface);
@@ -2065,30 +2080,32 @@ button.task-notification-item:disabled {
 }
 
 .kanban-status-button {
+  --kanban-workflow-status-color: var(--ui-workflow-status-todo);
+
   margin-top: 0;
   flex: 0 0 auto;
   align-self: center;
-  color: var(--ui-neutral-strong);
+  color: var(--kanban-workflow-status-color);
 }
 
 .kanban-status-button.is-inbox {
-  color: var(--ui-status-queued-foreground);
+  --kanban-workflow-status-color: var(--ui-workflow-status-inbox);
 }
 
 .kanban-status-button.is-hold {
-  color: var(--ui-warning);
+  --kanban-workflow-status-color: var(--ui-workflow-status-hold);
 }
 
 .kanban-status-button.is-ready {
-  color: var(--ui-status-running-foreground);
+  --kanban-workflow-status-color: var(--ui-workflow-status-ready);
 }
 
 .kanban-status-button.is-done {
-  color: var(--ui-success);
+  --kanban-workflow-status-color: var(--ui-workflow-status-done);
 }
 
 .kanban-status-button.is-archived {
-  color: var(--ui-muted-text);
+  --kanban-workflow-status-color: var(--ui-workflow-status-archived);
 }
 
 .kanban-status-indicator {
@@ -2130,17 +2147,12 @@ button.task-notification-item:disabled {
 }
 
 .kanban-status-indicator.is-done {
-  background: var(--ui-success);
-  border-color: var(--ui-success);
+  background: var(--ui-workflow-status-done-indicator);
+  border-color: var(--ui-workflow-status-done-indicator);
 }
 
 .kanban-status-indicator.is-done .kanban-status-indicator-fill {
   display: none;
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-status-indicator.is-done {
-  background: var(--ui-success);
-  border-color: var(--ui-success);
 }
 
 .kanban-status-indicator-check {
@@ -3040,30 +3052,6 @@ html[data-mantine-color-scheme='dark'] .kanban-mobile-panel {
 
 html[data-mantine-color-scheme='dark'] .workspace-navbar {
   box-shadow: var(--ui-elevation-1);
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-status-button {
-  color: var(--ui-neutral-strong);
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-status-button.is-inbox {
-  color: var(--ui-status-queued-foreground);
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-status-button.is-hold {
-  color: var(--ui-warning);
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-status-button.is-ready {
-  color: var(--ui-status-running-foreground);
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-status-button.is-done {
-  color: var(--ui-success);
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-status-button.is-archived {
-  color: var(--ui-muted-text);
 }
 
 html[data-mantine-color-scheme='dark'] .kanban-archive-trigger {

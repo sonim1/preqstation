@@ -41,6 +41,9 @@ Use semantic tokens before adding new colors:
 - Accent: `--ui-accent`, `--ui-accent-strong`, `--ui-accent-soft`.
 - State: `--ui-success`, `--ui-danger`, `--ui-warning`,
   `--ui-neutral-strong`, and soft variants.
+- Workflow state: `--ui-workflow-status-inbox`, `--ui-workflow-status-todo`,
+  `--ui-workflow-status-hold`, `--ui-workflow-status-ready`,
+  `--ui-workflow-status-done`, and `--ui-workflow-status-archived`.
 - Execution state: `--ui-status-queued`, `--ui-status-running`, and related
   border/glow tokens.
 - Interaction: `--ui-focus-ring`, `--ui-hit-min`, `--ui-hit-touch-min`,

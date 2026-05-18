@@ -34,6 +34,21 @@ const RUN_STATE_LABELS: Record<TaskRunState, string> = {
 const KANBAN_CARD_MENU_REQUIRED_RIGHT_SPACE = 220;
 export const STALE_QUEUED_THRESHOLD_MS = 60 * 60 * 1000;
 const STALE_QUEUED_WARNING_LABEL = 'Queued for more than 1 hour';
+const LABEL_TOOLTIP_STYLES = {
+  arrow: {
+    background: 'var(--ui-tooltip-surface)',
+    border: 'var(--ui-tooltip-border)',
+  },
+  tooltip: {
+    background: 'var(--ui-tooltip-surface)',
+    border: 'var(--ui-tooltip-border)',
+    boxShadow: 'var(--ui-elevation-2)',
+    color: 'var(--ui-tooltip-text)',
+  },
+} satisfies {
+  arrow: React.CSSProperties;
+  tooltip: React.CSSProperties;
+};
 
 export function resolveRunStateFrameStyle(runState: TaskRunState | null | undefined) {
   if (runState === 'queued') {
@@ -421,27 +436,12 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const statusActionAriaLabel = isStaleQueued
     ? `${STALE_QUEUED_WARNING_LABEL}. ${doneActionLabel}`
     : doneActionLabel;
-  const labelTooltipBackground = 'rgba(11, 20, 38, 0.96)';
-  const labelTooltipBorder = '1px solid rgba(255, 255, 255, 0.08)';
-  const labelTooltipText = '#f5f8ff';
   const hasPriorityIcon = taskPriority !== 'none';
   const canEditLabels = Boolean(onUpdateTaskLabels) && labelOptions.length > 0;
   const hasUnreadNotification = Boolean(task.hasUnreadNotification);
   const hasFooterMeta = Boolean(
     task.runState || task.dueAt || engineConfig || checklistCounts || primaryLabel || canEditLabels,
   );
-  const labelTooltipStyles = {
-    arrow: {
-      background: labelTooltipBackground,
-      border: labelTooltipBorder,
-    },
-    tooltip: {
-      background: labelTooltipBackground,
-      border: labelTooltipBorder,
-      boxShadow: 'var(--ui-elevation-2)',
-      color: labelTooltipText,
-    },
-  } as const;
 
   const renderLabelInline = (label: (typeof task.labels)[number]) => (
     <>
@@ -713,7 +713,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
                       onProjectLabelOptionsChange={onProjectLabelOptionsChange}
                       renderLabelInline={renderLabelInline}
                       renderLabelTooltipItem={renderLabelTooltipItem}
-                      labelTooltipStyles={labelTooltipStyles}
+                      labelTooltipStyles={LABEL_TOOLTIP_STYLES}
                     />
                   ) : primaryLabel ? (
                     <Tooltip
@@ -723,7 +723,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
                           {renderLabelTooltipItem(primaryLabel)}
                         </div>
                       }
-                      styles={labelTooltipStyles}
+                      styles={LABEL_TOOLTIP_STYLES}
                       withArrow
                       openDelay={0}
                     >
@@ -741,7 +741,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
                           {additionalLabels.map((label) => renderLabelTooltipItem(label))}
                         </div>
                       }
-                      styles={labelTooltipStyles}
+                      styles={LABEL_TOOLTIP_STYLES}
                       withArrow
                       openDelay={0}
                       multiline
