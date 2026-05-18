@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AgentInstructionsPanel } from '@/app/components/panels/agent-instructions-panel';
+import controlClasses from '@/app/components/settings-controls.module.css';
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -84,6 +85,22 @@ describe('app/components/panels/agent-instructions-panel', () => {
     );
 
     expect((screen.getByLabelText('Agent instructions') as HTMLTextAreaElement).value).toBe('');
+  });
+
+  it('applies the shared settings panel form class to the rendered form', () => {
+    render(
+      <MantineProvider>
+        <AgentInstructionsPanel
+          action={vi.fn(async () => null)}
+          projectId="project-1"
+          value="Follow existing component patterns."
+        />
+      </MantineProvider>,
+    );
+
+    const form = screen.getByLabelText('Agent instructions').closest('form');
+
+    expect(form?.classList.contains(controlClasses.panelForm)).toBe(true);
   });
 
   it('surfaces dirty and saved states without refreshing the route', async () => {

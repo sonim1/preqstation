@@ -39,38 +39,41 @@ const ENGINE_LABELS = {
 type ConnectionRecord = Awaited<ReturnType<typeof listOwnerMcpConnections>>[number];
 type BrowserSessionRecord = Awaited<ReturnType<typeof listOwnerBrowserSessions>>[number];
 type DisplayStatus = ConnectionDisplayStatus;
+type StatusBadgeTone = 'danger' | 'neutral' | 'success' | 'warning';
 
 function formatTimestamp(value: Date | null, timeZone: string) {
   if (!value) return 'Never';
   return formatDateTimeForDisplay(value, timeZone);
 }
 
-function getStatusBadgeStyle(status: string): CSSProperties {
-  const baseStyle = {
-    '--badge-bd': '1px solid color-mix(in srgb, var(--ui-border), transparent 12%)',
-  } as CSSProperties;
-
-  if (status === 'Revoked') {
-    return {
-      ...baseStyle,
-      '--badge-bg': 'var(--ui-danger-soft)',
-      '--badge-color': 'var(--ui-danger)',
-    } as CSSProperties;
-  }
-
-  if (status === 'Expired' || status === 'Expiring Soon') {
-    return {
-      ...baseStyle,
-      '--badge-bg': 'var(--ui-warning-soft)',
-      '--badge-color': 'var(--ui-warning)',
-    } as CSSProperties;
-  }
-
-  return {
-    ...baseStyle,
-    '--badge-bg': 'var(--ui-neutral-soft)',
+const STATUS_BADGE_STYLES: Record<StatusBadgeTone, CSSProperties> = {
+  danger: {
+    '--badge-bg': 'var(--ui-security-danger-surface)',
+    '--badge-color': 'var(--ui-danger)',
+    '--badge-bd': '1px solid var(--ui-security-danger-border)',
+  } as CSSProperties,
+  neutral: {
+    '--badge-bg': 'var(--ui-security-neutral-surface)',
     '--badge-color': 'var(--ui-neutral-strong)',
-  } as CSSProperties;
+    '--badge-bd': '1px solid var(--ui-security-neutral-border)',
+  } as CSSProperties,
+  success: {
+    '--badge-bg': 'var(--ui-security-success-surface)',
+    '--badge-color': 'var(--ui-success)',
+    '--badge-bd': '1px solid var(--ui-security-success-border)',
+  } as CSSProperties,
+  warning: {
+    '--badge-bg': 'var(--ui-security-warning-surface)',
+    '--badge-color': 'var(--ui-warning)',
+    '--badge-bd': '1px solid var(--ui-security-warning-border)',
+  } as CSSProperties,
+};
+
+function getStatusBadgeStyle(status: DisplayStatus): CSSProperties {
+  if (status === 'Revoked' || status === 'Expired') return STATUS_BADGE_STYLES.danger;
+  if (status === 'Expiring Soon') return STATUS_BADGE_STYLES.warning;
+  if (status === 'Active') return STATUS_BADGE_STYLES.success;
+  return STATUS_BADGE_STYLES.neutral;
 }
 
 function inferEngineLabel(values: Array<string | null | undefined>) {
@@ -172,10 +175,11 @@ function sortConnectionsForTable(connections: ConnectionRecord[], now: number) {
 }
 
 const REVOKE_ACTION_BUTTON_STYLE = {
-  '--button-bg': 'var(--ui-danger-soft)',
-  '--button-hover': 'color-mix(in srgb, var(--ui-danger-soft), var(--ui-surface-strong) 18%)',
+  '--button-bg': 'var(--ui-security-danger-surface)',
+  '--button-hover':
+    'color-mix(in srgb, var(--ui-security-danger-surface), var(--ui-surface-strong) 18%)',
   '--button-color': 'var(--ui-danger)',
-  '--button-bd': '1px solid color-mix(in srgb, var(--ui-danger), var(--ui-border) 72%)',
+  '--button-bd': '1px solid var(--ui-security-danger-border)',
 } as CSSProperties;
 
 function getCurrentTimeMs() {

@@ -299,7 +299,7 @@ export function TelegramSettings({
         </div>
 
         <div className={classes.channelShell}>
-          <Text size="sm" c="dimmed">
+          <Text size="sm" className={classes.channelHelp}>
             Choose a channel tab. Status describes setup, not which tab is selected.
           </Text>
           <div className={classes.channelTabs} role="tablist" aria-label="Telegram channels">
@@ -331,7 +331,12 @@ export function TelegramSettings({
                   <Text size="sm" className={classes.channelTabMeta}>
                     {channel.summary}
                   </Text>
-                  <Text size="xs" fw={600} c={status.tone === 'positive' ? 'green.6' : 'dimmed'}>
+                  <Text
+                    size="xs"
+                    fw={600}
+                    className={classes.channelStatus}
+                    data-tone={status.tone}
+                  >
                     Status: {status.label}
                   </Text>
                 </UnstyledButton>
@@ -361,7 +366,7 @@ export function TelegramSettings({
                     <Text fw={700} className={classes.channelPanelTitle}>
                       {channel.title} Channel
                     </Text>
-                    <Text size="sm" c="dimmed">
+                    <Text size="sm" className={classes.channelDescription}>
                       {channel.description}
                     </Text>
                   </div>
@@ -418,7 +423,7 @@ export function TelegramSettings({
                       value={channelStateForPanel.chatId}
                     />
                     <div className={classes.channelHint}>
-                      <Text size="sm" c="dimmed">
+                      <Text size="sm" className={classes.channelHintText}>
                         Enable this channel to add a chat ID and send a test message.
                       </Text>
                     </div>
