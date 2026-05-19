@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import { Container, Stack, Title } from '@mantine/core';
 import { IconActivity, IconFolders } from '@tabler/icons-react';
 import { and, desc, eq, isNotNull, isNull, or, sql } from 'drizzle-orm';
@@ -14,8 +15,10 @@ import { TaskPanelModal } from '@/app/components/task-panel-modal';
 import { WorkspacePageHeader } from '@/app/components/workspace-page-header';
 import { updateProject as runUpdateProjectAction } from '@/lib/actions/project-actions';
 import { writeAuditLog } from '@/lib/audit';
+import { resolveDisplayTimeZone } from '@/lib/date-time';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, taskLabels, tasks, workLogs } from '@/lib/db/schema';
+import type { DbClientOrTx } from '@/lib/db/types';
 import { normalizeGithubRepoReference } from '@/lib/github-repo';
 import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
 import { getProjectActivityStatus } from '@/lib/project-activity';
@@ -47,6 +50,12 @@ type ProjectsPageProps = {
   searchParams?: Promise<ProjectsSearchParams>;
 };
 
+type ProjectActivityRow = {
+  project_id: string;
+  worked_day: string | Date;
+  count: number | bigint;
+};
+
 type WorkspaceActivity = { date: string; count: number };
 
 function getLastQueryValue(value: string | string[] | undefined) {
@@ -64,6 +73,14 @@ function toValidDate(value: Date | string | null | undefined) {
   if (!value) return null;
   const parsed = value instanceof Date ? value : new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function pad(value: number) {
+  return String(value).padStart(2, '0');
+}
+
+function formatPlainDate(value: Temporal.PlainDate) {
+  return `${value.year}-${pad(value.month)}-${pad(value.day)}`;
 }
 
 function formatUtcDate(value: Date) {
@@ -85,12 +102,14 @@ function formatRelativeActivity(value: Date, now: Date) {
   return `${Math.floor(days / 7)}w ago`;
 }
 
-function getRecentUtcDates(now: Date, length: number) {
+function getRecentDateKeys(now: Date, length: number, timeZone: string) {
+  const today = Temporal.Instant.fromEpochMilliseconds(now.getTime())
+    .toZonedDateTimeISO(resolveDisplayTimeZone(timeZone))
+    .toPlainDate();
+  const start = today.subtract({ days: length - 1 });
+
   return Array.from({ length }, (_, index) => {
-    const date = new Date(now);
-    date.setUTCHours(0, 0, 0, 0);
-    date.setUTCDate(date.getUTCDate() - (length - 1 - index));
-    return formatUtcDate(date);
+    return formatPlainDate(start.add({ days: index }));
   });
 }
 
@@ -111,6 +130,58 @@ function getRepoLabel(repoUrl: string | null | undefined, projectKey: string) {
   return normalizeGithubRepoReference(repoUrl) ?? projectKey;
 }
 
+function isMissingProjectActivityRollupRelationError(error: unknown) {
+  if (!error || typeof error !== 'object') return false;
+  const maybeError = error as { code?: string; message?: string };
+
+  return (
+    maybeError.code === '42P01' ||
+    Boolean(
+      maybeError.message?.includes('does not exist') &&
+      maybeError.message.includes('dashboard_project_work_log_daily'),
+    )
+  );
+}
+
+async function loadProjectActivityRows({
+  ownerId,
+  startDate,
+  timeZone,
+  client,
+}: {
+  ownerId: string;
+  startDate: string;
+  timeZone: string;
+  client: DbClientOrTx;
+}) {
+  try {
+    return await client.execute<ProjectActivityRow>(sql`
+      select project_id, bucket_date as worked_day, count
+      from dashboard_project_work_log_daily
+      where owner_id = ${ownerId}::uuid
+        and bucket_date >= ${startDate}::date
+      order by project_id asc, bucket_date asc
+    `);
+  } catch (error) {
+    if (!isMissingProjectActivityRollupRelationError(error)) {
+      throw error;
+    }
+  }
+
+  return client.execute<ProjectActivityRow>(sql`
+    select
+      project_id,
+      (worked_at at time zone ${timeZone})::date as worked_day,
+      count(*)::int as count
+    from work_logs
+    where owner_id = ${ownerId}::uuid
+      and project_id is not null
+      and (worked_at at time zone ${timeZone})::date >= ${startDate}::date
+    group by project_id, worked_day
+    order by project_id asc, worked_day asc
+  `);
+}
+
 export default async function ProjectsPage({ searchParams }: ProjectsPageProps = {}) {
   const queryParams = await (searchParams ?? Promise.resolve<ProjectsSearchParams>({}));
   const owner = await getOwnerUserOrNull();
@@ -122,7 +193,6 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
   );
 
   const now = new Date();
-  const activityWindowStart = formatUtcDate(new Date(now.getTime() - 29 * DAY_MS));
   const [
     allProjects,
     statusCounts,
@@ -130,8 +200,14 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
     latestWorkLogs,
     projectActivityRows,
     kitchenMode,
-  ] = await withOwnerDb(owner.id, async (client) =>
-    Promise.all([
+    activityTimeZone,
+  ] = await withOwnerDb(owner.id, async (client) => {
+    const savedTimeZone = await getUserSetting(owner.id, SETTING_KEYS.TIMEZONE, client);
+    const resolvedTimeZone = resolveDisplayTimeZone(savedTimeZone);
+    const activityWindowStart =
+      getRecentDateKeys(now, 30, resolvedTimeZone)[0] ?? formatUtcDate(now);
+
+    return Promise.all([
       client.query.projects.findMany({
         where: and(eq(projects.ownerId, owner.id), isNull(projects.deletedAt)),
         orderBy: [desc(projects.updatedAt)],
@@ -163,23 +239,16 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
         .from(workLogs)
         .where(and(eq(workLogs.ownerId, owner.id), isNotNull(workLogs.projectId)))
         .groupBy(workLogs.projectId),
-      client.execute<{ project_id: string; worked_day: string | Date; count: number | bigint }>(
-        sql`
-            select
-              ${workLogs.projectId} as project_id,
-              (${workLogs.workedAt} at time zone 'UTC')::date as worked_day,
-              count(*)::int as count
-            from ${workLogs}
-            where ${workLogs.ownerId} = ${owner.id}
-              and ${workLogs.projectId} is not null
-              and (${workLogs.workedAt} at time zone 'UTC')::date >= ${activityWindowStart}::date
-            group by ${workLogs.projectId}, worked_day
-            order by ${workLogs.projectId} asc, worked_day asc
-          `,
-      ),
+      loadProjectActivityRows({
+        ownerId: owner.id,
+        startDate: activityWindowStart,
+        timeZone: resolvedTimeZone,
+        client,
+      }),
       getUserSetting(owner.id, SETTING_KEYS.KITCHEN_MODE, client),
-    ]),
-  );
+      Promise.resolve(resolvedTimeZone),
+    ]);
+  });
 
   const terminology = resolveTerminology(kitchenMode === 'true');
   const panelParam = getLastQueryValue(queryParams.panel);
@@ -212,7 +281,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps =
   const lastWorkedAtByProjectId = new Map(
     latestWorkLogs.map((row) => [row.projectId, toValidDate(row.lastWorkedAt)] as const),
   );
-  const activityDays = getRecentUtcDates(now, 30);
+  const activityDays = getRecentDateKeys(now, 30, activityTimeZone);
   const workspaceActivityByDate = new Map<string, number>();
   for (const row of projectActivityRows) {
     const dateKey = toDateKey(row.worked_day);
