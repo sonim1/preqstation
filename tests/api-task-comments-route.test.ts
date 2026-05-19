@@ -150,6 +150,46 @@ describe('app/api/tasks/[id]/comments/route', () => {
     );
   });
 
+  it('uses explicit Hermes dispatch payloads for comment messages', async () => {
+    mocked.db.query.tasks.findFirst.mockResolvedValueOnce({
+      id: 'task-1',
+      projectId: 'project-1',
+      taskKey: 'PQST-74',
+      taskPrefix: 'PQST',
+      status: 'todo',
+      branch: 'task/pqst-74/comment-is-not-wroking',
+      engine: 'codex',
+      dispatchTarget: 'telegram',
+    });
+
+    const response = await POST(
+      postRequest({
+        body: 'Please review this comment',
+        engine: 'gemini-cli',
+        dispatchTarget: 'hermes-telegram',
+      }),
+      {
+        params: Promise.resolve({ id: 'PQST-74' }),
+      },
+    );
+
+    expect(response.status).toBe(201);
+    expect(mocked.valuesFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runState: 'queued',
+        engine: 'gemini-cli',
+        dispatchTarget: 'hermes-telegram',
+      }),
+    );
+    expect(mocked.resolveTelegramDispatchConfig).toHaveBeenCalledWith({}, 'hermes');
+    expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
+      'bot-token',
+      '12345',
+      expect.stringContaining('comment_id=comment-1'),
+      { normalizeCommand: false },
+    );
+  });
+
   it('keeps explicit non-dispatch comments local only', async () => {
     mocked.returningFn.mockResolvedValueOnce([
       {

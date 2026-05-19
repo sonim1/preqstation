@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { MantineProvider } from '@mantine/core';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -1275,7 +1275,11 @@ describe('app/components/task-edit-form', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/todos/PROJ-187/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body: 'Please check this' }),
+        body: JSON.stringify({
+          body: 'Please check this',
+          engine: 'codex',
+          dispatchTarget: 'hermes-telegram',
+        }),
       });
     });
     expect(onTaskQueued).toHaveBeenCalledWith(
@@ -1287,6 +1291,193 @@ describe('app/components/task-edit-form', () => {
     expect(await screen.findByText('Comment queued.')).toBeTruthy();
     expect(screen.queryByText('queued')).toBeNull();
     expect(screen.getByLabelText('User comment')).toBeTruthy();
+  });
+
+  it('submits comments with the current dispatch selection from the shared send controls', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ comments: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          comment: {
+            id: 'comment-1',
+            task_id: '1',
+            project_id: 'project-1',
+            parent_comment_id: null,
+            author_type: 'user',
+            author_name: 'Owner',
+            body: 'Use the selected target',
+            run_state: 'queued',
+            run_state_updated_at: '2026-05-05T00:00:00.000Z',
+            engine: 'gemini-cli',
+            dispatch_target: 'hermes-telegram',
+            error_message: null,
+            metadata: null,
+            created_at: '2026-05-05T00:00:00.000Z',
+            updated_at: '2026-05-05T00:00:00.000Z',
+          },
+          dispatch: {
+            objective: 'comment',
+            task_key: 'PROJ-187',
+            comment_id: 'comment-1',
+            dispatch_target: 'hermes-telegram',
+            engine: 'gemini-cli',
+          },
+        }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'Update OpenClaw feature UI',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: [],
+              labels: [],
+              taskPriority: 'none',
+              status: 'todo',
+              engine: 'codex',
+              dispatchTarget: 'telegram',
+              runState: null,
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
+            updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
+            telegramEnabled
+          />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(taskCopyActionsPropsMock).toHaveBeenCalled();
+    });
+    const taskCopyActionsProps = taskCopyActionsPropsMock.mock.calls[0]?.[0] as {
+      onDispatchSelectionChange?: (selection: {
+        engine: string | null;
+        dispatchTarget: 'telegram' | 'hermes-telegram' | null;
+      }) => void;
+    };
+    await act(async () => {
+      taskCopyActionsProps.onDispatchSelectionChange?.({
+        engine: 'gemini-cli',
+        dispatchTarget: 'hermes-telegram',
+      });
+    });
+
+    const commentInput = screen.getByLabelText('Add task comment');
+    fireEvent.change(commentInput, {
+      target: { value: 'Use the selected target' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add comment' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/todos/PROJ-187/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          body: 'Use the selected target',
+          engine: 'gemini-cli',
+          dispatchTarget: 'hermes-telegram',
+        }),
+      });
+    });
+  });
+
+  it('shows comment dispatch failures instead of announcing a queued comment', async () => {
+    const onTaskQueued = vi.fn();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ comments: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          comment: {
+            id: 'comment-1',
+            task_id: '1',
+            project_id: 'project-1',
+            parent_comment_id: null,
+            author_type: 'user',
+            author_name: 'Owner',
+            body: 'Please check this',
+            run_state: 'failed',
+            run_state_updated_at: '2026-05-05T00:00:00.000Z',
+            engine: 'codex',
+            dispatch_target: 'hermes-telegram',
+            error_message: 'Telegram bot token is invalid. Save Telegram settings again.',
+            metadata: null,
+            created_at: '2026-05-05T00:00:00.000Z',
+            updated_at: '2026-05-05T00:00:00.000Z',
+          },
+          dispatch: {
+            objective: 'comment',
+            task_key: 'PROJ-187',
+            comment_id: 'comment-1',
+            dispatch_target: 'hermes-telegram',
+            status: 'failed',
+            error: 'Telegram bot token is invalid. Save Telegram settings again.',
+          },
+        }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditForm
+            editableTodo={{
+              id: '1',
+              taskKey: 'PROJ-187',
+              title: 'Update OpenClaw feature UI',
+              note: 'Move the actions into the form meta header.',
+              projectId: 'project-1',
+              labelIds: [],
+              labels: [],
+              taskPriority: 'none',
+              status: 'todo',
+              engine: 'codex',
+              dispatchTarget: 'hermes-telegram',
+              runState: null,
+              runStateUpdatedAt: null,
+              workLogs: [],
+            }}
+            projects={[{ id: 'project-1', name: 'Project Manager' }]}
+            todoLabels={[]}
+            taskPriorityOptions={[{ value: 'none', label: 'None' }]}
+            updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
+            onTaskQueued={onTaskQueued}
+          />
+        </TerminologyProvider>
+      </MantineProvider>,
+    );
+
+    await screen.findAllByText('No comments yet.');
+    const commentInput = screen.getByLabelText('Add task comment');
+    fireEvent.change(commentInput, {
+      target: { value: 'Please check this' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add comment' }));
+
+    expect(
+      await screen.findAllByText('Telegram bot token is invalid. Save Telegram settings again.'),
+    ).toHaveLength(2);
+    expect(screen.queryByText('Comment queued.')).toBeNull();
+    expect(onTaskQueued).not.toHaveBeenCalled();
   });
 
   it('moves the Mod+Enter shortcut to Add comment as soon as the comment composer is focused', async () => {
@@ -1363,7 +1554,7 @@ describe('app/components/task-edit-form', () => {
       expect(fetchMock).toHaveBeenCalledWith('/api/todos/PROJ-187/comments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body: 'Keyboard follow-up' }),
+        body: JSON.stringify({ body: 'Keyboard follow-up', engine: 'codex' }),
       });
     });
 

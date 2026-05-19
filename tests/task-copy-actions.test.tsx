@@ -385,6 +385,32 @@ describe('app/components/task-copy-actions', () => {
     });
   });
 
+  it('reports the current dispatch selection when the target changes', async () => {
+    const onDispatchSelectionChange = vi.fn();
+
+    renderTaskCopyActionsClient({
+      placement: 'bottom',
+      onDispatchSelectionChange,
+    });
+
+    await waitFor(() => {
+      expect(onDispatchSelectionChange).toHaveBeenLastCalledWith({
+        engine: 'codex',
+        dispatchTarget: 'telegram',
+      });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Target: Telegram' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Hermes Telegram/, hidden: true }));
+
+    await waitFor(() => {
+      expect(onDispatchSelectionChange).toHaveBeenLastCalledWith({
+        engine: 'codex',
+        dispatchTarget: 'hermes-telegram',
+      });
+    });
+  });
+
   it('opens a bottom dropdown from the keyboard and focuses the selected option', async () => {
     renderTaskCopyActionsClient({ placement: 'bottom' });
 
