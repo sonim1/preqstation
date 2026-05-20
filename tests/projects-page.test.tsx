@@ -101,7 +101,9 @@ const mocked = vi.hoisted(() => {
         },
       },
       select: selectMock,
-      execute: vi.fn(() => Promise.resolve(state.projectActivityRows)),
+      execute: vi.fn((_query?: { queryChunks?: unknown[] }) =>
+        Promise.resolve(state.projectActivityRows),
+      ),
     },
   };
 });
@@ -249,6 +251,26 @@ const projectPortfolioCardSource = fs.readFileSync(
   'utf8',
 );
 
+function flattenQueryChunks(query: { queryChunks?: unknown[] } | undefined) {
+  return (query?.queryChunks ?? []).flatMap((chunk) => {
+    if (
+      chunk &&
+      typeof chunk === 'object' &&
+      'value' in chunk &&
+      Array.isArray((chunk as { value: unknown }).value)
+    ) {
+      return (chunk as { value: string[] }).value;
+    }
+    return [chunk];
+  });
+}
+
+function toSqlText(query: { queryChunks?: unknown[] } | undefined) {
+  return flattenQueryChunks(query)
+    .map((chunk) => (typeof chunk === 'string' ? chunk : String(chunk)))
+    .join(' ');
+}
+
 describe('app/(workspace)/(main)/projects/page', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -257,7 +279,9 @@ describe('app/(workspace)/(main)/projects/page', () => {
     mocked.state.groupedQueryIndex = 0;
     mocked.getOwnerUserOrNull.mockResolvedValue({ id: 'owner-1' });
     mocked.requireOwnerUser.mockResolvedValue({ id: 'owner-1' });
-    mocked.getUserSetting.mockResolvedValue('false');
+    mocked.getUserSetting.mockImplementation(async (_ownerId: string, key: string) =>
+      key === 'timezone' ? 'UTC' : 'false',
+    );
     mocked.state.projects = [
       {
         id: 'project-1',
@@ -290,10 +314,110 @@ describe('app/(workspace)/(main)/projects/page', () => {
       { project_id: 'project-1', worked_day: '2026-03-12', count: 2 },
       { project_id: 'project-1', worked_day: '2026-03-14', count: 3 },
     ];
+    mocked.db.execute.mockResolvedValue(mocked.state.projectActivityRows);
   });
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it('loads workspace activity from the project daily rollup table', async () => {
+    const page = await ProjectsPage();
+    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
+
+    expect(mocked.db.execute).toHaveBeenCalledOnce();
+    const [activityQuery] = mocked.db.execute.mock.calls[0] ?? [];
+    const sqlText = toSqlText(activityQuery);
+
+    expect(sqlText).toContain('dashboard_project_work_log_daily');
+    expect(sqlText).not.toContain('count(*)');
+    expect(sqlText).not.toContain('at time zone');
+    expect(flattenQueryChunks(activityQuery)).toContain('2026-02-13');
+    expect(html).toContain('<strong>5</strong> logs');
+  });
+
+  it('falls back to source work logs only when project activity rollups are missing', async () => {
+    mocked.db.execute.mockImplementation(async (query?: { queryChunks?: unknown[] }) => {
+      const sqlText = toSqlText(query);
+
+      if (sqlText.includes('dashboard_project_work_log_daily')) {
+        throw new Error('relation "dashboard_project_work_log_daily" does not exist');
+      }
+
+      if (sqlText.includes('from') && sqlText.includes('work_logs')) {
+        return [{ project_id: 'project-1', worked_day: '2026-03-14', count: 4 }];
+      }
+
+      return [];
+    });
+
+    const page = await ProjectsPage();
+    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
+
+    expect(mocked.db.execute).toHaveBeenCalledTimes(2);
+    const [fallbackQuery] = mocked.db.execute.mock.calls[1] ?? [];
+    const fallbackSqlText = toSqlText(fallbackQuery);
+
+    expect(fallbackSqlText).toContain('work_logs');
+    expect(fallbackSqlText).toContain('count(*)');
+    expect(fallbackSqlText).toContain('at time zone');
+    expect(flattenQueryChunks(fallbackQuery)).toContain('UTC');
+    expect(html).toContain('<strong>4</strong> logs');
+  });
+
+  it('does not hide missing-table errors for unrelated project activity query tables', async () => {
+    const error = new Error('relation "other_rollup_table" does not exist') as Error & {
+      code: string;
+    };
+    error.code = '42P01';
+    mocked.db.execute.mockRejectedValue(error);
+
+    await expect(ProjectsPage()).rejects.toThrow('relation "other_rollup_table" does not exist');
+  });
+
+  it('does not hide non-missing project activity rollup query failures', async () => {
+    mocked.db.execute.mockRejectedValue(
+      new Error('permission denied for relation dashboard_project_work_log_daily'),
+    );
+
+    await expect(ProjectsPage()).rejects.toThrow(
+      'permission denied for relation dashboard_project_work_log_daily',
+    );
+  });
+
+  it('uses timezone-aware source activity for non-UTC saved timezones', async () => {
+    vi.setSystemTime(new Date('2026-03-14T01:00:00Z'));
+    mocked.getUserSetting.mockImplementation(async (_ownerId: string, key: string) =>
+      key === 'timezone' ? 'America/Los_Angeles' : 'false',
+    );
+    mocked.db.execute.mockImplementation(async (query?: { queryChunks?: unknown[] }) => {
+      const sqlText = toSqlText(query);
+
+      if (sqlText.includes('dashboard_project_work_log_daily')) {
+        return [{ project_id: 'project-1', worked_day: '2026-03-14', count: 99 }];
+      }
+
+      if (sqlText.includes('from') && sqlText.includes('work_logs')) {
+        return [{ project_id: 'project-1', worked_day: '2026-03-13', count: 2 }];
+      }
+
+      return [];
+    });
+
+    const page = await ProjectsPage();
+    const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
+    const [activityQuery] = mocked.db.execute.mock.calls[0] ?? [];
+    const sqlText = toSqlText(activityQuery);
+
+    expect(mocked.db.execute).toHaveBeenCalledOnce();
+    expect(sqlText).toContain('work_logs');
+    expect(sqlText).toContain('at time zone');
+    expect(sqlText).not.toContain('dashboard_project_work_log_daily');
+    expect(flattenQueryChunks(activityQuery)).toContain('2026-02-12');
+    expect(flattenQueryChunks(activityQuery)).toContain('America/Los_Angeles');
+    expect(html).toContain('data-projects-activity-bar="2026-03-13"');
+    expect(html).toContain('aria-label="2026-03-13: 2 work logs"');
+    expect(html).not.toContain('data-projects-activity-bar="2026-03-14"');
   });
 
   it('renders the projects body as a reference-style roster with a 30 day bar chart', async () => {

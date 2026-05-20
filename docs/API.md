@@ -22,7 +22,7 @@ Endpoints:
 
 Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `archived`. Task payloads can also include execution fields `run_state` and `run_state_updated_at` so API clients can distinguish workflow position from live agent activity. Full task payloads include an `artifacts` array for persisted task outputs such as screenshots, videos, documents, and links; `POST /api/tasks`, `PATCH /api/tasks/:id`, and QA-run updates accept up to 50 artifact objects.
 
-Task `repo` fields and project `repoUrl` fields use GitHub repo IDs in `owner/repo` format, for example `sonim1/preqstation`. Write paths reject full GitHub URLs and SSH clone URLs such as `https://github.com/sonim1/preqstation` or `git@github.com:sonim1/preqstation.git`; legacy stored URLs are normalized on read for existing projects.
+Task `repo` fields and project `repoUrl` fields accept GitHub repo references as `owner/repo` IDs, HTTPS URLs, or SSH clone URLs, for example `sonim1/preqstation`, `https://github.com/sonim1/preqstation`, or `git@github.com:sonim1/preqstation.git`. Write paths normalize accepted references to `owner/repo` before storage, matching, and responses; invalid or non-GitHub values still fail validation.
 
 ### MCP over HTTP
 

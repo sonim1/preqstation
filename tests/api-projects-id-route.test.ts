@@ -157,7 +157,7 @@ describe('app/api/projects/[id]/route', () => {
     );
   });
 
-  it('PATCH rejects GitHub URLs for repoUrl', async () => {
+  it('PATCH normalizes GitHub URLs for repoUrl', async () => {
     const response = await PATCH(
       patchRequest({
         repoUrl: 'https://github.com/sonim1/preqstation',
@@ -167,14 +167,12 @@ describe('app/api/projects/[id]/route', () => {
       },
     );
 
-    expect(response.status).toBe(400);
-    expect(await response.json()).toEqual(
+    expect(response.status).toBe(200);
+    expect(mocked.setFn).toHaveBeenCalledWith(
       expect.objectContaining({
-        error: 'Invalid payload',
-        issues: expect.any(Array),
+        repoUrl: 'sonim1/preqstation',
       }),
     );
-    expect(mocked.db.update).not.toHaveBeenCalled();
   });
 
   it('PATCH returns 404 when project does not exist', async () => {

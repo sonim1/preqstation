@@ -6,6 +6,7 @@ import {
   normalizeGithubRepoIdInput,
   normalizeGithubRepoReference,
 } from '@/lib/github-repo';
+import { githubRepoIdSchema, optionalGithubRepoIdSchema } from '@/lib/github-repo-schema';
 
 describe('github repo helpers', () => {
   it('accepts canonical owner/repo input', () => {
@@ -44,5 +45,18 @@ describe('github repo helpers', () => {
 
   it('builds a public GitHub browser URL from a repo id', () => {
     expect(githubRepoIdToUrl('sonim1/preqstation')).toBe('https://github.com/sonim1/preqstation');
+  });
+
+  it('normalizes GitHub reference variants in the shared repo schemas', () => {
+    expect(githubRepoIdSchema.parse('https://github.com/sonim1/preqstation.git')).toBe(
+      'sonim1/preqstation',
+    );
+    expect(githubRepoIdSchema.parse('git@github.com:sonim1/preqstation.git')).toBe(
+      'sonim1/preqstation',
+    );
+    expect(optionalGithubRepoIdSchema.parse('')).toBe('');
+    expect(optionalGithubRepoIdSchema.parse('ssh://git@github.com/sonim1/preqstation.git')).toBe(
+      'sonim1/preqstation',
+    );
   });
 });

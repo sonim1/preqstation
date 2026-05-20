@@ -515,7 +515,7 @@ describe('app/api/tasks/route', () => {
       );
     });
 
-    it('returns 400 for GitHub URL repo payloads', async () => {
+    it('normalizes GitHub URL repo payloads before resolving projects', async () => {
       const response = await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
@@ -524,16 +524,15 @@ describe('app/api/tasks/route', () => {
       );
 
       expect(response.status).toBe(400);
-      expect(await response.json()).toEqual(
-        expect.objectContaining({
-          error: 'Invalid payload',
-          issues: expect.any(Array),
-        }),
+      expect(await response.json()).toEqual({ error: 'No project found for the given repo.' });
+      expect(mocked.resolveProjectByRepo).toHaveBeenCalledWith(
+        'owner-1',
+        'acme/app',
+        expect.anything(),
       );
-      expect(mocked.resolveProjectByRepo).not.toHaveBeenCalled();
     });
 
-    it('returns 400 for SSH repo payloads', async () => {
+    it('normalizes SSH repo payloads before resolving projects', async () => {
       const response = await POST(
         jsonRequest('POST', `${TEST_BASE_URL}/api/tasks`, {
           title: 'Task A',
@@ -542,13 +541,12 @@ describe('app/api/tasks/route', () => {
       );
 
       expect(response.status).toBe(400);
-      expect(await response.json()).toEqual(
-        expect.objectContaining({
-          error: 'Invalid payload',
-          issues: expect.any(Array),
-        }),
+      expect(await response.json()).toEqual({ error: 'No project found for the given repo.' });
+      expect(mocked.resolveProjectByRepo).toHaveBeenCalledWith(
+        'owner-1',
+        'acme/app',
+        expect.anything(),
       );
-      expect(mocked.resolveProjectByRepo).not.toHaveBeenCalled();
     });
 
     it('creates task with NONE prefix when repo does not match any project', async () => {
