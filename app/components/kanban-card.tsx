@@ -738,6 +738,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
                             className={styles.kanbanLabelSummary}
                             data-kanban-label-summary="true"
                             title={labelTooltipText}
+                            aria-label={labelTooltipText}
                           >
                             +{hiddenLabelCount}
                           </span>

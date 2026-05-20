@@ -118,6 +118,7 @@ export function KanbanCardLabelShortcut({
                     className={styles.kanbanLabelSummary}
                     data-kanban-label-summary="true"
                     title={labelTooltipText}
+                    aria-label={labelTooltipText}
                   >
                     +{hiddenLabelCount}
                   </span>

@@ -195,6 +195,7 @@ describe('app/components/kanban-card label tooltip behavior', () => {
     expect(html).toContain('data-tooltip-style-color="var(--ui-tooltip-text)"');
     expect(html).toContain('data-kanban-label="primary"');
     expect(html).toContain('data-kanban-label-summary="true"');
+    expect(html).toContain('aria-label="#Bug #UI #Manual"');
     expect(tooltipLabelHtml).toContain('>Bug</span>');
     expect(tooltipLabelHtml).toContain('>UI</span>');
     expect(tooltipLabelHtml).toContain('>Manual</span>');
@@ -244,6 +245,7 @@ describe('app/components/kanban-card label tooltip behavior', () => {
     expect(html).toContain('data-tooltip-open-delay="0"');
     expect(html).toContain('data-tooltip-style-bg="var(--ui-tooltip-surface)"');
     expect(html).toContain('data-tooltip-style-color="var(--ui-tooltip-text)"');
+    expect(html).toContain('aria-label="#Bug #UI #Manual"');
     expect(tooltipLabelHtml).toContain('>Bug</span>');
     expect(tooltipLabelHtml).toContain('>UI</span>');
     expect(tooltipLabelHtml).toContain('>Manual</span>');
