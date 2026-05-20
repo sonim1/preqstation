@@ -104,7 +104,7 @@ function formatRelativeActivity(value: Date, now: Date) {
 
 function getRecentDateKeys(now: Date, length: number, timeZone: string) {
   const today = Temporal.Instant.fromEpochMilliseconds(now.getTime())
-    .toZonedDateTimeISO(resolveDisplayTimeZone(timeZone))
+    .toZonedDateTimeISO(timeZone)
     .toPlainDate();
   const start = today.subtract({ days: length - 1 });
 
@@ -134,12 +134,9 @@ function isMissingProjectActivityRollupRelationError(error: unknown) {
   if (!error || typeof error !== 'object') return false;
   const maybeError = error as { code?: string; message?: string };
 
-  return (
-    maybeError.code === '42P01' ||
-    Boolean(
-      maybeError.message?.includes('does not exist') &&
-      maybeError.message.includes('dashboard_project_work_log_daily'),
-    )
+  return Boolean(
+    (maybeError.code === '42P01' || maybeError.message?.includes('does not exist')) &&
+    maybeError.message?.includes('dashboard_project_work_log_daily'),
   );
 }
 
@@ -154,17 +151,19 @@ async function loadProjectActivityRows({
   timeZone: string;
   client: DbClientOrTx;
 }) {
-  try {
-    return await client.execute<ProjectActivityRow>(sql`
-      select project_id, bucket_date as worked_day, count
-      from dashboard_project_work_log_daily
-      where owner_id = ${ownerId}::uuid
-        and bucket_date >= ${startDate}::date
-      order by project_id asc, bucket_date asc
-    `);
-  } catch (error) {
-    if (!isMissingProjectActivityRollupRelationError(error)) {
-      throw error;
+  if (timeZone === 'UTC') {
+    try {
+      return await client.execute<ProjectActivityRow>(sql`
+        select project_id, bucket_date as worked_day, count
+        from dashboard_project_work_log_daily
+        where owner_id = ${ownerId}::uuid
+          and bucket_date >= ${startDate}::date
+        order by project_id asc, bucket_date asc
+      `);
+    } catch (error) {
+      if (!isMissingProjectActivityRollupRelationError(error)) {
+        throw error;
+      }
     }
   }
 

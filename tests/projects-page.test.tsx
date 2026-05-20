@@ -365,6 +365,16 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('<strong>4</strong> logs');
   });
 
+  it('does not hide missing-table errors for unrelated project activity query tables', async () => {
+    const error = new Error('relation "other_rollup_table" does not exist') as Error & {
+      code: string;
+    };
+    error.code = '42P01';
+    mocked.db.execute.mockRejectedValue(error);
+
+    await expect(ProjectsPage()).rejects.toThrow('relation "other_rollup_table" does not exist');
+  });
+
   it('does not hide non-missing project activity rollup query failures', async () => {
     mocked.db.execute.mockRejectedValue(
       new Error('permission denied for relation dashboard_project_work_log_daily'),
@@ -375,21 +385,36 @@ describe('app/(workspace)/(main)/projects/page', () => {
     );
   });
 
-  it('builds workspace activity labels from the saved timezone', async () => {
+  it('uses timezone-aware source activity for non-UTC saved timezones', async () => {
     vi.setSystemTime(new Date('2026-03-14T01:00:00Z'));
     mocked.getUserSetting.mockImplementation(async (_ownerId: string, key: string) =>
       key === 'timezone' ? 'America/Los_Angeles' : 'false',
     );
-    mocked.state.projectActivityRows = [
-      { project_id: 'project-1', worked_day: '2026-03-13', count: 2 },
-    ];
-    mocked.db.execute.mockResolvedValue(mocked.state.projectActivityRows);
+    mocked.db.execute.mockImplementation(async (query?: { queryChunks?: unknown[] }) => {
+      const sqlText = toSqlText(query);
+
+      if (sqlText.includes('dashboard_project_work_log_daily')) {
+        return [{ project_id: 'project-1', worked_day: '2026-03-14', count: 99 }];
+      }
+
+      if (sqlText.includes('from') && sqlText.includes('work_logs')) {
+        return [{ project_id: 'project-1', worked_day: '2026-03-13', count: 2 }];
+      }
+
+      return [];
+    });
 
     const page = await ProjectsPage();
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
     const [activityQuery] = mocked.db.execute.mock.calls[0] ?? [];
+    const sqlText = toSqlText(activityQuery);
 
+    expect(mocked.db.execute).toHaveBeenCalledOnce();
+    expect(sqlText).toContain('work_logs');
+    expect(sqlText).toContain('at time zone');
+    expect(sqlText).not.toContain('dashboard_project_work_log_daily');
     expect(flattenQueryChunks(activityQuery)).toContain('2026-02-12');
+    expect(flattenQueryChunks(activityQuery)).toContain('America/Los_Angeles');
     expect(html).toContain('data-projects-activity-bar="2026-03-13"');
     expect(html).toContain('aria-label="2026-03-13: 2 work logs"');
     expect(html).not.toContain('data-projects-activity-bar="2026-03-14"');
