@@ -864,7 +864,7 @@ describe('app/components/kanban-card', () => {
     expect(html).toContain('>Bug</span>');
     expect(html).toContain('data-kanban-label-summary="true"');
     expect(html).toContain('>+1</span>');
-    expect(html).toContain('aria-label="#Frontend"');
+    expect(html).toContain('aria-label="#Bug #Frontend"');
     expect(html).not.toContain('data-kanban-lane="labels"');
     expect(html).not.toContain('data-kanban-chip="label"');
   });
@@ -907,7 +907,7 @@ describe('app/components/kanban-card', () => {
     expect(html).toContain('>Bugfix</span>');
     expect(html).toContain('data-kanban-label-summary="true"');
     expect(html).toContain('>+5</span>');
-    expect(html).toContain('aria-label="#Frontend #UI #Accessibility #Review Needed #Responsive"');
+    expect(html).toContain('aria-label="#Bugfix #Frontend #UI #Accessibility #Review Needed #Responsive"');
     expect(html).toContain('data-run-state-chip="queued"');
     expect(html).toContain('Due 2026-03-12');
     expect(html).toContain('data-kanban-chip="engine"');
