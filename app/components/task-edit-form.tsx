@@ -1223,12 +1223,8 @@ function TaskEditFormContent({
             {!isOffline ? (
               <TaskCommentsSection
                 taskKey={taskKey}
-                engine={effectiveCommentDispatchSelection.engine ?? engine ?? null}
-                dispatchTarget={
-                  effectiveCommentDispatchSelection.dispatchTarget ??
-                  editableTodo.dispatchTarget ??
-                  null
-                }
+                engine={effectiveCommentDispatchSelection.engine}
+                dispatchTarget={effectiveCommentDispatchSelection.dispatchTarget}
                 onTaskQueued={onTaskQueued}
                 onShortcutActiveChange={setCommentShortcutActive}
               />

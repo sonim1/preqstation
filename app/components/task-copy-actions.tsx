@@ -395,21 +395,36 @@ export function TaskCopyActions({
   const resolvedHermesTelegramEnabled = hermesTelegramEnabled ?? telegramEnabled;
   const preferenceStatus = normalizeTaskDispatchPreferenceStatus(status);
   const availableModes = getDispatchModesForStatus(status);
-  const [storedPreference] = useState(() =>
-    preferenceStatus ? readTaskDispatchPreference(preferenceStatus) : null,
+  const availableActions = resolveTaskEditDispatchActions(
+    telegramEnabled,
+    resolvedHermesTelegramEnabled,
   );
+  const storedPreference = preferenceStatus ? readTaskDispatchPreference(preferenceStatus) : null;
   const initialEngine =
     getEngineConfig(storedPreference?.engine) ?? getEngineConfig(engine) ?? ENGINE_CONFIGS.codex;
-  const [selectedEngine, setSelectedEngine] = useState<EngineConfig | null>(() => initialEngine);
-  const [selectedAction, setSelectedAction] = useState<TaskEditDispatchAction>(() =>
-    resolveInitialAction(
-      resolveTaskEditDispatchActions(telegramEnabled, resolvedHermesTelegramEnabled),
-      dispatchTarget,
-      storedPreference?.action,
-    ),
+  const initialAction = resolveInitialAction(
+    availableActions,
+    dispatchTarget,
+    storedPreference?.action,
   );
-  const [selectedObjective, setSelectedObjective] = useState<TaskDispatchMode>(() =>
-    resolveInitialMode(availableModes, storedPreference?.objective),
+  const initialObjective = resolveInitialMode(availableModes, storedPreference?.objective);
+  const selectionContextKey = [
+    taskKey,
+    status,
+    normalizeEngineKey(engine) ?? '',
+    dispatchTarget ?? '',
+    telegramEnabled ? 'telegram' : 'no-telegram',
+    resolvedHermesTelegramEnabled ? 'hermes' : 'no-hermes',
+  ].join(':');
+  const selectionContextKeyRef = useRef(selectionContextKey);
+  const [selectedEngineState, setSelectedEngine] = useState<EngineConfig | null>(
+    () => initialEngine,
+  );
+  const [selectedActionState, setSelectedAction] = useState<TaskEditDispatchAction>(
+    () => initialAction,
+  );
+  const [selectedObjectiveState, setSelectedObjective] = useState<TaskDispatchMode>(
+    () => initialObjective,
   );
   const sendDispatchRef = useRef<(() => Promise<void>) | null>(null);
   const suppressShortcutRef = useRef(suppressShortcut);
@@ -425,10 +440,30 @@ export function TaskCopyActions({
     clearTimeout(resetTimeoutRef.current);
     resetTimeoutRef.current = null;
   }, []);
-  const availableActions = resolveTaskEditDispatchActions(
-    telegramEnabled,
-    resolvedHermesTelegramEnabled,
-  );
+  const isSelectionContextCurrent = selectionContextKeyRef.current === selectionContextKey;
+  const selectedEngine = isSelectionContextCurrent ? selectedEngineState : initialEngine;
+  const selectedAction = isSelectionContextCurrent ? selectedActionState : initialAction;
+  const selectedObjective = isSelectionContextCurrent
+    ? selectedObjectiveState
+    : initialObjective;
+
+  useEffect(() => {
+    if (selectionContextKeyRef.current === selectionContextKey) return;
+
+    selectionContextKeyRef.current = selectionContextKey;
+    setSelectedEngine(initialEngine);
+    setSelectedAction(initialAction);
+    setSelectedObjective(initialObjective);
+    setDispatchState('idle');
+    clearDispatchResetTimeout();
+  }, [
+    clearDispatchResetTimeout,
+    initialAction,
+    initialEngine,
+    initialObjective,
+    selectionContextKey,
+  ]);
+
   const effectiveObjective = availableModes.includes(selectedObjective)
     ? selectedObjective
     : resolveInitialMode(availableModes, storedPreference?.objective);
