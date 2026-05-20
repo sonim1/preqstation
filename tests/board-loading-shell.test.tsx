@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -16,10 +18,22 @@ function render(element: React.ReactElement) {
   return renderToStaticMarkup(<MantineProvider>{element}</MantineProvider>);
 }
 
-function getCssRuleBody(source: string, selector: string) {
-  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const match = source.match(new RegExp(`${escapedSelector}\\s*\\{([\\s\\S]*?)\\}`));
-  return match?.[1] ?? '';
+function renderWithGlobalsCss(element: React.ReactElement) {
+  const style = document.createElement('style');
+  const fixture = document.createElement('div');
+
+  style.textContent = globalsCss;
+  fixture.innerHTML = render(element);
+  document.head.append(style);
+  document.body.append(fixture);
+
+  return {
+    fixture,
+    cleanup: () => {
+      fixture.remove();
+      style.remove();
+    },
+  };
 }
 
 describe('app/components/board-loading-shell', () => {
@@ -74,12 +88,22 @@ describe('app/components/board-loading-shell', () => {
   });
 
   it('keeps loading shell columns flat without kanban column shadows', () => {
-    const html = render(<BoardLoadingShell />);
-    const columnRule = getCssRuleBody(globalsCss, '.kanban-column');
+    const { fixture, cleanup } = renderWithGlobalsCss(<BoardLoadingShell />);
 
-    expect(html).toContain('data-board-loading-column="true"');
-    expect(html).toContain('kanban-column');
-    expect(columnRule).not.toContain('box-shadow:');
+    try {
+      const column = fixture.querySelector<HTMLElement>(
+        '[data-board-loading-column="true"].kanban-column',
+      );
+
+      expect(column).not.toBeNull();
+
+      const columnStyle = window.getComputedStyle(column!);
+
+      expect(['', 'none']).toContain(columnStyle.boxShadow.trim());
+      expect(columnStyle.transition).not.toContain('box-shadow');
+    } finally {
+      cleanup();
+    }
   });
 
   it('board route loading uses the board-specific loading shell', () => {
