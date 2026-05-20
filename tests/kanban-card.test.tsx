@@ -197,6 +197,32 @@ function getCardForTitle(title: string) {
   return card as HTMLElement;
 }
 
+function getGlobalComputedStyle(className: string, colorScheme: 'light' | 'dark' = 'light') {
+  document.documentElement.dataset.mantineColorScheme = colorScheme;
+
+  const styleElement = document.createElement('style');
+  styleElement.textContent = globalsCss;
+  document.head.append(styleElement);
+
+  const element = document.createElement('section');
+  element.className = className;
+  document.body.append(element);
+
+  const style = window.getComputedStyle(element);
+  const computedStyle = {
+    backgroundColor: style.backgroundColor,
+    borderTopStyle: style.borderTopStyle,
+    borderTopWidth: style.borderTopWidth,
+    boxShadow: style.boxShadow,
+  };
+
+  element.remove();
+  styleElement.remove();
+  document.documentElement.removeAttribute('data-mantine-color-scheme');
+
+  return computedStyle;
+}
+
 describe('app/components/kanban-card', () => {
   beforeEach(() => {
     vi.stubGlobal(
@@ -315,8 +341,24 @@ describe('app/components/kanban-card', () => {
   });
 
   it('defines stronger four-sided card shadows and a board-scoped stage surface', () => {
+    const lightTokens = getCssRuleBody(globalsCss, ':root');
+    const darkTokens = getCssRuleBody(globalsCss, "html[data-mantine-color-scheme='dark']");
+    const cardRule = getCssRuleBody(cardsCss, '.kanbanCard');
+    const darkCardRule = getCssRuleBody(
+      cardsCss,
+      ":global(html[data-mantine-color-scheme='dark']) .kanbanCard",
+    );
+
+    expect(lightTokens).toContain(
+      '--ui-border-strong: color-mix(in srgb, var(--ui-border), var(--ui-text) 10%);',
+    );
+    expect(darkTokens).toContain(
+      '--ui-border-strong: color-mix(in srgb, var(--ui-border), var(--ui-text) 14%);',
+    );
+    expect(cardRule).toContain('--kanban-card-outline: var(--ui-border-strong);');
+    expect(darkCardRule).not.toContain('--kanban-card-outline:');
     expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-outline:\s*color-mix\(in srgb,\s*var\(--ui-border\),\s*var\(--ui-text\) 10%\);[\s\S]*--kanban-card-shadow-rest:\s*0 0 0 1px var\(--kanban-card-outline\),\s*0 18px 34px -22px [^;]+,\s*0 6px 14px -10px [^;]+,\s*0 1px 3px [^;]+;/,
+      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-rest:\s*0 0 0 1px var\(--kanban-card-outline\),\s*0 18px 34px -22px [^;]+,\s*0 6px 14px -10px [^;]+,\s*0 1px 3px [^;]+;/,
     );
     expect(cardsCss).toMatch(
       /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-queued:\s*0 0 0 1px var\(--kanban-card-outline\),\s*0 20px 38px -24px [^;]+,\s*0 8px 18px -12px [^;]+,\s*0 1px 3px [^;]+;/,
@@ -324,18 +366,20 @@ describe('app/components/kanban-card', () => {
     expect(cardsCss).toMatch(
       /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-running:\s*0 0 0 1px var\(--kanban-card-outline\),\s*0 22px 42px -24px [^;]+,\s*0 10px 20px -14px [^;]+,\s*0 2px 6px [^;]+;/,
     );
-    expect(cardsCss).toMatch(
-      /:global\(html\[data-mantine-color-scheme='dark'\]\) \.kanbanCard\s*\{[\s\S]*--kanban-card-outline:\s*color-mix\(in srgb,\s*var\(--ui-border\),\s*var\(--ui-text\) 14%\);/,
-    );
     expect(globalsCss).toMatch(
       /\.kanban-stage\s*\{[\s\S]*background:\s*var\(--kanban-stage-surface\);/,
     );
   });
 
   it('renders boundary-free lanes with subtly rounded note cards carried by shadows', () => {
-    expect(globalsCss).toMatch(
-      /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;[\s\S]*border:\s*0;[\s\S]*border-color:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*box-shadow:\s*none;/,
-    );
+    for (const colorScheme of ['light', 'dark'] as const) {
+      const columnStyle = getGlobalComputedStyle('kanban-column', colorScheme);
+
+      expect(columnStyle.borderTopWidth).toBe('0px');
+      expect(columnStyle.borderTopStyle).toBe('none');
+      expect(['transparent', 'rgba(0, 0, 0, 0)']).toContain(columnStyle.backgroundColor);
+      expect(columnStyle.boxShadow).toBe('none');
+    }
     expect(globalsCss).toMatch(
       /\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*border-radius:\s*0;/,
     );

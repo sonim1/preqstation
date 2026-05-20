@@ -1,7 +1,7 @@
 /* Kanban card */
 .kanbanCard {
   --kanban-card-radius: 6px;
-  --kanban-card-outline: color-mix(in srgb, var(--ui-border), var(--ui-text) 10%);
+  --kanban-card-outline: var(--ui-border-strong);
   --kanban-card-focus-ring: inset 0 0 0 0 transparent;
   --kanban-card-shadow-rest:
     0 0 0 1px var(--kanban-card-outline), 0 18px 34px -22px rgba(24, 44, 84, 0.24),
@@ -871,7 +871,6 @@
 }
 
 :global(html[data-mantine-color-scheme='dark']) .kanbanCard {
-  --kanban-card-outline: color-mix(in srgb, var(--ui-border), var(--ui-text) 14%);
   --kanban-card-shadow-rest:
     0 0 0 1px var(--kanban-card-outline), 0 20px 38px -24px rgba(0, 0, 0, 0.72),
     0 10px 18px -14px rgba(0, 0, 0, 0.52), 0 2px 6px rgba(0, 0, 0, 0.36);
