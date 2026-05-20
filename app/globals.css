@@ -1849,11 +1849,9 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   overflow: hidden;
   border-color: var(--kanban-frame-column-border);
   background: var(--kanban-frame-column-surface);
-  box-shadow: inset -1px 0 0 var(--kanban-frame-column-border);
   transition:
     background-color 140ms ease,
-    border-color 140ms ease,
-    box-shadow 140ms ease;
+    border-color 140ms ease;
 }
 
 .kanban-column--hold .kanban-column-title {
@@ -2019,7 +2017,6 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .kanban-column.is-drag-over {
   border-color: var(--ui-status-running-border-strong);
-  box-shadow: inset 0 0 0 1px var(--ui-status-running-border);
 }
 
 .kanban-archive-drawer-list {

@@ -128,6 +128,12 @@ function expectComputedToken(selector: string, property: string, token: string) 
   expect(value).not.toContain('black');
 }
 
+function expectNoComputedShadow(selector: string) {
+  const value = window.getComputedStyle(getElement(selector)).getPropertyValue('box-shadow').trim();
+
+  expect(['', 'none']).toContain(value);
+}
+
 function expectWorkflowStatusToken(status: Exclude<KanbanStatus, 'todo'>) {
   const style = window.getComputedStyle(getElement(`.kanban-status-button.is-${status}`));
   const statusToken = style.getPropertyValue('--kanban-workflow-status-color');
@@ -310,7 +316,7 @@ describe('board frame token contract', () => {
     expectComputedToken('.kanban-action-island', 'box-shadow', '--kanban-frame-chrome-shadow');
     expectComputedToken('.kanban-action-island', 'box-shadow', '--kanban-frame-chrome-highlight');
     expectComputedToken('.kanban-column', 'background', '--kanban-frame-column-surface');
-    expectComputedToken('.kanban-column', 'box-shadow', '--kanban-frame-column-border');
+    expectNoComputedShadow('.kanban-column');
     expectComputedToken('.kanban-quickadd-panel', 'background', '--kanban-frame-chrome-surface');
   });
 
@@ -399,7 +405,7 @@ describe('board frame token contract', () => {
       'background',
       '--ui-status-running-soft',
     );
-    expectComputedToken('.kanban-column.is-drag-over', 'box-shadow', '--ui-status-running-border');
+    expectNoComputedShadow('.kanban-column.is-drag-over');
     expectComputedToken('.kanban-archive-error', 'color', '--ui-danger');
 
     for (const status of renderedWorkflowStatuses) {

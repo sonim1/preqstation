@@ -378,9 +378,14 @@ describe('app/components/kanban-card', () => {
   });
 
   it('renders tokenized board lanes with subtly rounded note cards carried by shadows', () => {
-    expect(globalsCss).toMatch(
-      /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*var\(--kanban-frame-column-surface\);[\s\S]*background:\s*var\(--kanban-frame-column-surface\);[\s\S]*box-shadow:\s*inset -1px 0 0 var\(--kanban-frame-column-border\);/,
+    const columnRule = getCssRuleBody(globalsCss, '.kanban-column');
+
+    expect(columnRule).toContain(
+      '--kanban-bottom-gradient-surface: var(--kanban-frame-column-surface);',
     );
+    expect(columnRule).toContain('background: var(--kanban-frame-column-surface);');
+    expect(columnRule).not.toContain('box-shadow:');
+    expect(columnRule).not.toContain('box-shadow 140ms ease');
     expect(globalsCss).toMatch(
       /\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*var\(--kanban-frame-column-surface\);[\s\S]*background:\s*var\(--kanban-frame-column-surface\);[\s\S]*border-radius:\s*0;/,
     );
