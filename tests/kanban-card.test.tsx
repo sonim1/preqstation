@@ -378,22 +378,36 @@ describe('app/components/kanban-card', () => {
   });
 
   it('renders tokenized board lanes with subtly rounded note cards carried by shadows', () => {
-    expect(globalsCss).toMatch(
-      /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*var\(--kanban-frame-column-surface\);[\s\S]*background:\s*var\(--kanban-frame-column-surface\);[\s\S]*box-shadow:\s*inset -1px 0 0 var\(--kanban-frame-column-border\);/,
+    const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
+      '<div class="kanban-column" data-testid="column"></div>',
+      true,
     );
-    expect(globalsCss).toMatch(
-      /\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*var\(--kanban-frame-column-surface\);[\s\S]*background:\s*var\(--kanban-frame-column-surface\);[\s\S]*border-radius:\s*0;/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-radius:\s*6px;[\s\S]*border:\s*0;[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*background:\s*var\(--kanban-note-surface\);/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCardFrame\s*\{[\s\S]*border-radius:\s*var\(--kanban-card-radius\);/,
-    );
-    expect(cardsCss).toMatch(
-      /\.itemCard\.kanbanCard\s*\{[\s\S]*border:\s*0;[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*box-shadow:\s*var\(--kanban-card-focus-ring\),\s*var\(--kanban-card-shadow-rest\);/,
-    );
-    expect(cardsCss).toMatch(/\.kanbanCard::after\s*\{[\s\S]*content:\s*none;/);
+
+    try {
+      const columnStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'column'));
+
+      expect(columnStyle.getPropertyValue('--kanban-bottom-gradient-surface').trim()).toBe(
+        'var(--kanban-frame-column-surface)',
+      );
+      expect(columnStyle.background).toBe('var(--kanban-frame-column-surface)');
+      expect(['', 'none']).toContain(columnStyle.boxShadow.trim());
+      expect(columnStyle.transition).not.toContain('box-shadow');
+      expect(globalsCss).toMatch(
+        /\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*var\(--kanban-frame-column-surface\);[\s\S]*background:\s*var\(--kanban-frame-column-surface\);[\s\S]*border-radius:\s*0;/,
+      );
+      expect(cardsCss).toMatch(
+        /\.kanbanCard\s*\{[\s\S]*--kanban-card-radius:\s*6px;[\s\S]*border:\s*0;[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*background:\s*var\(--kanban-note-surface\);/,
+      );
+      expect(cardsCss).toMatch(
+        /\.kanbanCardFrame\s*\{[\s\S]*border-radius:\s*var\(--kanban-card-radius\);/,
+      );
+      expect(cardsCss).toMatch(
+        /\.itemCard\.kanbanCard\s*\{[\s\S]*border:\s*0;[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*box-shadow:\s*var\(--kanban-card-focus-ring\),\s*var\(--kanban-card-shadow-rest\);/,
+      );
+      expect(cardsCss).toMatch(/\.kanbanCard::after\s*\{[\s\S]*content:\s*none;/);
+    } finally {
+      cleanupFixture();
+    }
   });
 
   it('keeps card state shadows on semantic local variables instead of raw shadow colors', () => {

@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -14,6 +16,24 @@ const globalsCss = fs.readFileSync(path.join(process.cwd(), 'app/globals.css'), 
 
 function render(element: React.ReactElement) {
   return renderToStaticMarkup(<MantineProvider>{element}</MantineProvider>);
+}
+
+function renderWithGlobalsCss(element: React.ReactElement) {
+  const style = document.createElement('style');
+  const fixture = document.createElement('div');
+
+  style.textContent = globalsCss;
+  fixture.innerHTML = render(element);
+  document.head.append(style);
+  document.body.append(fixture);
+
+  return {
+    fixture,
+    cleanup: () => {
+      fixture.remove();
+      style.remove();
+    },
+  };
 }
 
 describe('app/components/board-loading-shell', () => {
@@ -65,6 +85,25 @@ describe('app/components/board-loading-shell', () => {
     expect(globalsCss).toMatch(
       /@media \(min-width:\s*48em\)\s*\{[\s\S]*\.board-loading-shell-mobile\s*\{[\s\S]*display:\s*none;[\s\S]*\}[\s\S]*\.board-loading-shell-desktop\s*\{[\s\S]*display:\s*block;[\s\S]*\}/,
     );
+  });
+
+  it('keeps loading shell columns flat without kanban column shadows', () => {
+    const { fixture, cleanup } = renderWithGlobalsCss(<BoardLoadingShell />);
+
+    try {
+      const column = fixture.querySelector<HTMLElement>(
+        '[data-board-loading-column="true"].kanban-column',
+      );
+
+      expect(column).not.toBeNull();
+
+      const columnStyle = window.getComputedStyle(column!);
+
+      expect(['', 'none']).toContain(columnStyle.boxShadow.trim());
+      expect(columnStyle.transition).not.toContain('box-shadow');
+    } finally {
+      cleanup();
+    }
   });
 
   it('board route loading uses the board-specific loading shell', () => {
