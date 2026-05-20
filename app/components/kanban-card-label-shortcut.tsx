@@ -48,7 +48,7 @@ export function KanbanCardLabelShortcut({
   const primaryLabel = task.labels[0] ?? null;
   const additionalLabels = task.labels.slice(1);
   const hiddenLabelCount = additionalLabels.length;
-  const hiddenLabelTooltip = additionalLabels.map((label) => `# ${label.name}`).join(', ');
+  const hiddenLabelsAriaLabel = task.labels.map((label) => `#${label.name}`).join(' ');
 
   const updateLabels = async (nextLabelIds: string[]) => {
     if (isPending || isSaving) return;
@@ -96,47 +96,34 @@ export function KanbanCardLabelShortcut({
           data-kanban-label-shortcut={primaryLabel ? 'labels' : 'empty'}
         >
           {primaryLabel ? (
-            <span className={styles.kanbanLabelShortcutSurface}>
-              <Tooltip
-                classNames={{ tooltip: styles.kanbanLabelTooltipSurface }}
-                label={
-                  <div className={styles.kanbanLabelTooltip}>
-                    {renderLabelTooltipItem(primaryLabel)}
-                  </div>
-                }
-                styles={labelTooltipStyles}
-                withArrow
-                openDelay={0}
-              >
+            <Tooltip
+              classNames={{ tooltip: styles.kanbanLabelTooltipSurface }}
+              label={
+                <div className={styles.kanbanLabelTooltip}>
+                  {task.labels.map((label) => renderLabelTooltipItem(label))}
+                </div>
+              }
+              styles={labelTooltipStyles}
+              withArrow
+              openDelay={0}
+              multiline={hiddenLabelCount > 0}
+            >
+              <span className={styles.kanbanLabelShortcutSurface}>
                 <span className={styles.kanbanLabelText} data-kanban-label="primary">
                   {renderLabelInline(primaryLabel)}
                 </span>
-              </Tooltip>
 
-              {hiddenLabelCount > 0 ? (
-                <Tooltip
-                  classNames={{ tooltip: styles.kanbanLabelTooltipSurface }}
-                  label={
-                    <div className={styles.kanbanLabelTooltip}>
-                      {additionalLabels.map((label) => renderLabelTooltipItem(label))}
-                    </div>
-                  }
-                  styles={labelTooltipStyles}
-                  withArrow
-                  openDelay={0}
-                  multiline
-                >
+                {hiddenLabelCount > 0 ? (
                   <span
                     className={styles.kanbanLabelSummary}
                     data-kanban-label-summary="true"
-                    title={hiddenLabelTooltip}
-                    aria-label={hiddenLabelTooltip}
+                    aria-label={hiddenLabelsAriaLabel}
                   >
                     +{hiddenLabelCount}
                   </span>
-                </Tooltip>
-              ) : null}
-            </span>
+                ) : null}
+              </span>
+            </Tooltip>
           ) : (
             <span className={styles.kanbanLabelShortcutEmpty}>#</span>
           )}
