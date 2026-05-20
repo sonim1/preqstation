@@ -48,6 +48,7 @@ export function KanbanCardLabelShortcut({
   const primaryLabel = task.labels[0] ?? null;
   const additionalLabels = task.labels.slice(1);
   const hiddenLabelCount = additionalLabels.length;
+  const hiddenLabelsAriaLabel = task.labels.map((label) => `#${label.name}`).join(' ');
 
   const updateLabels = async (nextLabelIds: string[]) => {
     if (isPending || isSaving) return;
@@ -116,6 +117,7 @@ export function KanbanCardLabelShortcut({
                   <span
                     className={styles.kanbanLabelSummary}
                     data-kanban-label-summary="true"
+                    aria-label={hiddenLabelsAriaLabel}
                   >
                     +{hiddenLabelCount}
                   </span>

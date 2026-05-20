@@ -424,7 +424,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const primaryLabel = task.labels[0] ?? null;
   const additionalLabels = task.labels.slice(1);
   const hiddenLabelCount = additionalLabels.length;
-  const hiddenLabelsAriaLabel = additionalLabels.map((label) => `#${label.name}`).join(' ');
+  const hiddenLabelsAriaLabel = task.labels.map((label) => `#${label.name}`).join(' ');
   const displayEngine = resolveDisplayEngine(task.engine, task.status, enginePresets ?? null);
   const engineConfig = getEngineConfig(displayEngine);
   const checklistCounts = parseChecklistCounts(task.note);
