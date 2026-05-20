@@ -151,7 +151,7 @@ describe('app/api/tasks/[id]/route', () => {
     expect(mocked.db.update).not.toHaveBeenCalled();
   });
 
-  it('PATCH rejects GitHub URL repo payloads', async () => {
+  it('PATCH rejects GitHub URL repo payloads as unsupported project changes', async () => {
     const response = await PATCH(
       patchRequest({
         repo: 'https://github.com/acme/app',
@@ -160,16 +160,11 @@ describe('app/api/tasks/[id]/route', () => {
     );
 
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual(
-      expect.objectContaining({
-        error: 'Invalid payload',
-        issues: expect.any(Array),
-      }),
-    );
+    expect(await response.json()).toEqual({ error: 'Project changes are not supported.' });
     expect(mocked.db.update).not.toHaveBeenCalled();
   });
 
-  it('PATCH rejects SSH repo payloads', async () => {
+  it('PATCH rejects SSH repo payloads as unsupported project changes', async () => {
     const response = await PATCH(
       patchRequest({
         repo: 'git@github.com:acme/app.git',
@@ -178,12 +173,7 @@ describe('app/api/tasks/[id]/route', () => {
     );
 
     expect(response.status).toBe(400);
-    expect(await response.json()).toEqual(
-      expect.objectContaining({
-        error: 'Invalid payload',
-        issues: expect.any(Array),
-      }),
-    );
+    expect(await response.json()).toEqual({ error: 'Project changes are not supported.' });
     expect(mocked.db.update).not.toHaveBeenCalled();
   });
 
