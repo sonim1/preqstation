@@ -137,9 +137,17 @@ type TaskComment = {
   run_state?: 'queued' | 'working' | 'done' | 'failed' | null;
   run_state_updated_at?: string | null;
   dispatch_target?: KanbanTask['dispatchTarget'];
+  error_message?: string | null;
   engine?: string | null;
   parent_comment_id?: string | null;
   created_at: string;
+};
+
+type TaskCommentDispatchPayload = {
+  status?: string | null;
+  error?: string | null;
+  dispatch_target?: KanbanTask['dispatchTarget'];
+  engine?: string | null;
 };
 
 function formatTaskCommentTimestamp(value: string) {
@@ -619,11 +627,13 @@ function TaskCommentIdentity({ comment }: { comment: TaskComment }) {
 
 function TaskCommentsSection({
   taskKey,
+  engine,
   dispatchTarget,
   onTaskQueued,
   onShortcutActiveChange,
 }: {
   taskKey: string;
+  engine?: string | null;
   dispatchTarget?: KanbanTask['dispatchTarget'];
   onTaskQueued?: TaskEditFormProps['onTaskQueued'];
   onShortcutActiveChange?: (active: boolean) => void;
@@ -700,10 +710,15 @@ function TaskCommentsSection({
       const response = await fetch(`/api/todos/${encodeURIComponent(taskKey)}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body }),
+        body: JSON.stringify({
+          body,
+          ...(engine ? { engine } : null),
+          ...(dispatchTarget ? { dispatchTarget } : null),
+        }),
       });
       const payload = (await response.json().catch(() => null)) as {
         comment?: TaskComment;
+        dispatch?: TaskCommentDispatchPayload | null;
         error?: string;
       } | null;
       if (!response.ok || !payload?.comment) {
@@ -711,6 +726,16 @@ function TaskCommentsSection({
       }
       setDraft('');
       setComments((current) => [...current, payload.comment as TaskComment]);
+      if (payload.dispatch?.status === 'failed' || payload.comment.run_state === 'failed') {
+        const message =
+          payload.dispatch?.error ||
+          payload.comment.error_message ||
+          'Failed to send Telegram message.';
+        setError(message);
+        setStatusMessage(message);
+        showErrorNotification(message);
+        return;
+      }
       if (payload.comment.run_state === 'queued') {
         onTaskQueued?.(
           taskKey,
@@ -718,7 +743,9 @@ function TaskCommentsSection({
           payload.comment.dispatch_target ?? dispatchTarget ?? null,
         );
       }
-      setStatusMessage('Comment queued.');
+      setStatusMessage(
+        payload.comment.run_state === 'queued' ? 'Comment queued.' : 'Comment added.',
+      );
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : 'Failed to add comment.';
       setError(message);
@@ -968,6 +995,23 @@ function TaskEditFormContent({
   });
   const [noteMarkdown, setNoteMarkdown] = useState(draftNote);
   const [commentShortcutActive, setCommentShortcutActive] = useState(false);
+  const [commentDispatchSelection, setCommentDispatchSelection] = useState<{
+    taskKey: string;
+    engine: string | null;
+    dispatchTarget: KanbanTask['dispatchTarget'];
+  }>(() => ({
+    taskKey,
+    engine: engine ?? null,
+    dispatchTarget: editableTodo.dispatchTarget ?? null,
+  }));
+  const effectiveCommentDispatchSelection =
+    commentDispatchSelection.taskKey === taskKey
+      ? commentDispatchSelection
+      : {
+          taskKey,
+          engine: engine ?? null,
+          dispatchTarget: editableTodo.dispatchTarget ?? null,
+        };
   const draftWarningKey =
     noteConflict || (canRestoreNoteDraft && !autoSaveDraft)
       ? `${taskKey}:${noteConflict ? 'conflict' : 'restore'}:${canRestoreNoteDraft ? 'restorable' : 'no-restore'}:${activeNotesRevision}`
@@ -989,6 +1033,22 @@ function TaskEditFormContent({
     onTaskQueued?.(taskKey, queuedAt, dispatchTarget);
     onDispatchQueued?.();
   };
+  const handleDispatchSelectionChange = useCallback(
+    (selection: { engine: string | null; dispatchTarget: KanbanTask['dispatchTarget'] }) => {
+      setCommentDispatchSelection((current) => {
+        if (
+          current.taskKey === taskKey &&
+          current.engine === selection.engine &&
+          current.dispatchTarget === selection.dispatchTarget
+        ) {
+          return current;
+        }
+
+        return { taskKey, ...selection };
+      });
+    },
+    [taskKey],
+  );
   const handleRestoreDraft = () => {
     restoreNoteDraft();
     markDirty();
@@ -1163,7 +1223,8 @@ function TaskEditFormContent({
             {!isOffline ? (
               <TaskCommentsSection
                 taskKey={taskKey}
-                dispatchTarget={editableTodo.dispatchTarget ?? null}
+                engine={effectiveCommentDispatchSelection.engine}
+                dispatchTarget={effectiveCommentDispatchSelection.dispatchTarget}
                 onTaskQueued={onTaskQueued}
                 onShortcutActiveChange={setCommentShortcutActive}
               />
@@ -1315,6 +1376,7 @@ function TaskEditFormContent({
             hermesTelegramEnabled={hermesTelegramEnabled}
             suppressShortcut={commentShortcutActive}
             onTaskQueued={handleDispatchQueued}
+            onDispatchSelectionChange={handleDispatchSelectionChange}
           />
         </div>
       ) : null}

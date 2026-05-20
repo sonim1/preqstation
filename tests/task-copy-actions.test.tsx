@@ -385,6 +385,77 @@ describe('app/components/task-copy-actions', () => {
     });
   });
 
+  it('reports the current dispatch selection when the target changes', async () => {
+    const onDispatchSelectionChange = vi.fn();
+
+    renderTaskCopyActionsClient({
+      placement: 'bottom',
+      onDispatchSelectionChange,
+    });
+
+    await waitFor(() => {
+      expect(onDispatchSelectionChange).toHaveBeenLastCalledWith({
+        engine: 'codex',
+        dispatchTarget: 'telegram',
+      });
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Target: Telegram' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Hermes Telegram/, hidden: true }));
+
+    await waitFor(() => {
+      expect(onDispatchSelectionChange).toHaveBeenLastCalledWith({
+        engine: 'codex',
+        dispatchTarget: 'hermes-telegram',
+      });
+    });
+  });
+
+  it('reports the next task dispatch defaults when the task changes', async () => {
+    const firstTaskSelectionChange = vi.fn();
+    const secondTaskSelectionChange = vi.fn();
+    const { rerender } = renderTaskCopyActionsClient({
+      taskKey: 'PROJ-224',
+      engine: 'claude-code',
+      dispatchTarget: 'hermes-telegram',
+      placement: 'bottom',
+      onDispatchSelectionChange: firstTaskSelectionChange,
+    });
+
+    await waitFor(() => {
+      expect(firstTaskSelectionChange).toHaveBeenLastCalledWith({
+        engine: 'claude-code',
+        dispatchTarget: 'hermes-telegram',
+      });
+    });
+
+    rerender(
+      <MantineProvider>
+        <TaskCopyActions
+          taskKey="PROJ-225"
+          branchName="task/proj-225/update-comment-dispatch"
+          status="todo"
+          engine="codex"
+          dispatchTarget="telegram"
+          telegramEnabled
+          placement="bottom"
+          onDispatchSelectionChange={secondTaskSelectionChange}
+        />
+      </MantineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(secondTaskSelectionChange).toHaveBeenLastCalledWith({
+        engine: 'codex',
+        dispatchTarget: 'telegram',
+      });
+    });
+    expect(secondTaskSelectionChange).not.toHaveBeenCalledWith({
+      engine: 'claude-code',
+      dispatchTarget: 'hermes-telegram',
+    });
+  });
+
   it('opens a bottom dropdown from the keyboard and focuses the selected option', async () => {
     renderTaskCopyActionsClient({ placement: 'bottom' });
 

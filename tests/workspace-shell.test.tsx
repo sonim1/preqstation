@@ -4,10 +4,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { MantineProvider } from '@mantine/core';
-import { render, within } from '@testing-library/react';
+import { cleanup, render, within } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const useDisclosureMock = vi.hoisted(() => vi.fn());
 const usePathnameMock = vi.hoisted(() => vi.fn());
@@ -95,6 +95,10 @@ vi.mock('@/app/components/task-notification-center', () => ({
 
 import { resolveWorkspaceKanbanHref, WorkspaceShell } from '@/app/components/workspace-shell';
 import { type WorkspaceProjectOption } from '@/lib/workspace-project-picker';
+
+afterEach(() => {
+  cleanup();
+});
 
 const globalsCss = fs.readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
 const workspaceShellSource = fs.readFileSync(
