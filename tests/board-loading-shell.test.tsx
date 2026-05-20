@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import { MantineProvider } from '@mantine/core';
@@ -11,9 +12,24 @@ import BoardLoading from '@/app/(workspace)/(main)/board/loading';
 import { BoardLoadingShell } from '@/app/components/board-loading-shell';
 
 const globalsCss = fs.readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
+const require = createRequire(import.meta.url);
+const { JSDOM } = require('jsdom') as {
+  JSDOM: new (html?: string) => {
+    window: Window & typeof globalThis;
+  };
+};
 
 function render(element: React.ReactElement) {
   return renderToStaticMarkup(<MantineProvider>{element}</MantineProvider>);
+}
+
+function renderLoadingShellDom(colorScheme: 'light' | 'dark' = 'light') {
+  return new JSDOM(`
+    <html data-mantine-color-scheme="${colorScheme}">
+      <head><style>${globalsCss}</style></head>
+      <body>${render(<BoardLoadingShell />)}</body>
+    </html>
+  `);
 }
 
 describe('app/components/board-loading-shell', () => {
@@ -65,6 +81,25 @@ describe('app/components/board-loading-shell', () => {
     expect(globalsCss).toMatch(
       /@media \(min-width:\s*48em\)\s*\{[\s\S]*\.board-loading-shell-mobile\s*\{[\s\S]*display:\s*none;[\s\S]*\}[\s\S]*\.board-loading-shell-desktop\s*\{[\s\S]*display:\s*block;[\s\S]*\}/,
     );
+  });
+
+  it('keeps loading kanban columns boundary-free like the live board', () => {
+    for (const colorScheme of ['light', 'dark'] as const) {
+      const dom = renderLoadingShellDom(colorScheme);
+      const column = dom.window.document.querySelector<HTMLElement>(
+        '[data-board-loading-column="true"]',
+      );
+
+      expect(column).toBeTruthy();
+      expect(column?.classList.contains('kanban-column')).toBe(true);
+
+      const style = dom.window.getComputedStyle(column!);
+
+      expect(style.borderTopWidth).toBe('0px');
+      expect(style.borderTopStyle).toBe('none');
+      expect(['transparent', 'rgba(0, 0, 0, 0)']).toContain(style.backgroundColor);
+      expect(style.boxShadow).toBe('none');
+    }
   });
 
   it('board route loading uses the board-specific loading shell', () => {

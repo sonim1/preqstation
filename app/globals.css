@@ -3,6 +3,7 @@
   --ui-surface-soft: rgba(255, 255, 255, 0.95);
   --ui-surface-strong: rgba(255, 255, 255, 0.98);
   --ui-border: rgba(92, 121, 165, 0.34);
+  --ui-border-strong: color-mix(in srgb, var(--ui-border), var(--ui-text) 10%);
   --ui-reading-surface: linear-gradient(
     180deg,
     rgba(246, 244, 239, 0.96),
@@ -89,6 +90,7 @@ html[data-mantine-color-scheme='dark'] {
   --ui-surface-soft: rgba(20, 33, 54, 0.95);
   --ui-surface-strong: rgba(13, 24, 40, 0.98);
   --ui-border: rgba(132, 161, 202, 0.42);
+  --ui-border-strong: color-mix(in srgb, var(--ui-border), var(--ui-text) 14%);
   --ui-reading-surface: linear-gradient(180deg, rgba(24, 34, 48, 0.98), rgba(19, 29, 42, 0.96));
   --ui-reading-surface-soft: linear-gradient(
     180deg,
@@ -1352,7 +1354,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-color: transparent;
+  border: 0;
   background: transparent;
   box-shadow: none;
   transition: background-color 140ms ease;
@@ -2346,7 +2348,6 @@ html[data-mantine-color-scheme='dark'] select:-webkit-autofill {
   transition: background-color 9999s ease-out;
 }
 
-html[data-mantine-color-scheme='dark'] .kanban-column,
 html[data-mantine-color-scheme='dark'] .kanban-quickadd-panel,
 html[data-mantine-color-scheme='dark'] .workspace-header,
 html[data-mantine-color-scheme='dark'] .workspace-navbar {
