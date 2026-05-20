@@ -424,7 +424,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const primaryLabel = task.labels[0] ?? null;
   const additionalLabels = task.labels.slice(1);
   const hiddenLabelCount = additionalLabels.length;
-  const hiddenLabelTooltip = additionalLabels.map((label) => `# ${label.name}`).join(', ');
+  const labelTooltipText = task.labels.map((label) => `#${label.name}`).join(' ');
   const displayEngine = resolveDisplayEngine(task.engine, task.status, enginePresets ?? null);
   const engineConfig = getEngineConfig(displayEngine);
   const checklistCounts = parseChecklistCounts(task.note);
@@ -720,39 +720,28 @@ export const KanbanCardContent = memo(function KanbanCardContent({
                       classNames={{ tooltip: styles.kanbanLabelTooltipSurface }}
                       label={
                         <div className={styles.kanbanLabelTooltip}>
-                          {renderLabelTooltipItem(primaryLabel)}
+                          {task.labels.map((label) => renderLabelTooltipItem(label))}
                         </div>
                       }
                       styles={LABEL_TOOLTIP_STYLES}
                       withArrow
                       openDelay={0}
+                      multiline={hiddenLabelCount > 0}
                     >
-                      <span className={styles.kanbanLabelText} data-kanban-label="primary">
-                        {renderLabelInline(primaryLabel)}
-                      </span>
-                    </Tooltip>
-                  ) : null}
+                      <span className={styles.kanbanLabelShortcutSurface}>
+                        <span className={styles.kanbanLabelText} data-kanban-label="primary">
+                          {renderLabelInline(primaryLabel)}
+                        </span>
 
-                  {!canEditLabels && hiddenLabelCount > 0 ? (
-                    <Tooltip
-                      classNames={{ tooltip: styles.kanbanLabelTooltipSurface }}
-                      label={
-                        <div className={styles.kanbanLabelTooltip}>
-                          {additionalLabels.map((label) => renderLabelTooltipItem(label))}
-                        </div>
-                      }
-                      styles={LABEL_TOOLTIP_STYLES}
-                      withArrow
-                      openDelay={0}
-                      multiline
-                    >
-                      <span
-                        className={styles.kanbanLabelSummary}
-                        data-kanban-label-summary="true"
-                        title={hiddenLabelTooltip}
-                        aria-label={hiddenLabelTooltip}
-                      >
-                        +{hiddenLabelCount}
+                        {hiddenLabelCount > 0 ? (
+                          <span
+                            className={styles.kanbanLabelSummary}
+                            data-kanban-label-summary="true"
+                            title={labelTooltipText}
+                          >
+                            +{hiddenLabelCount}
+                          </span>
+                        ) : null}
                       </span>
                     </Tooltip>
                   ) : null}

@@ -72,6 +72,12 @@ const cardsCss = fs.readFileSync(
   'utf8',
 );
 
+function getLabelTooltipProps() {
+  return tooltipPropsMock.mock.calls
+    .map(([props]) => props)
+    .filter((props) => props.classNames?.tooltip);
+}
+
 const BASE_TASK: KanbanTask = {
   id: 'task-1',
   taskKey: 'PROJ-323',
@@ -167,7 +173,7 @@ describe('app/components/kanban-card label tooltip behavior', () => {
     expect(html).toContain('data-tooltip-style-color="var(--ui-tooltip-text)"');
   });
 
-  it('opens hidden-label tooltip immediately and uses the dedicated tooltip surface styling hook', () => {
+  it('uses one read-only label tooltip containing every task label in order', () => {
     const html = renderToStaticMarkup(
       <MantineProvider>
         <KanbanCardContent
@@ -180,13 +186,24 @@ describe('app/components/kanban-card label tooltip behavior', () => {
         />
       </MantineProvider>,
     );
+    const labelTooltipProps = getLabelTooltipProps();
+    const tooltipLabelHtml = renderToStaticMarkup(labelTooltipProps[0].label);
 
+    expect(labelTooltipProps).toHaveLength(1);
     expect(html).toContain('data-tooltip-open-delay="0"');
     expect(html).toContain('data-tooltip-style-bg="var(--ui-tooltip-surface)"');
     expect(html).toContain('data-tooltip-style-color="var(--ui-tooltip-text)"');
+    expect(html).toContain('data-kanban-label="primary"');
     expect(html).toContain('data-kanban-label-summary="true"');
-    expect(html).toContain('>UI</span>');
-    expect(html).toContain('>Manual</span>');
+    expect(tooltipLabelHtml).toContain('>Bug</span>');
+    expect(tooltipLabelHtml).toContain('>UI</span>');
+    expect(tooltipLabelHtml).toContain('>Manual</span>');
+    expect(tooltipLabelHtml.indexOf('>Bug</span>')).toBeLessThan(
+      tooltipLabelHtml.indexOf('>UI</span>'),
+    );
+    expect(tooltipLabelHtml.indexOf('>UI</span>')).toBeLessThan(
+      tooltipLabelHtml.indexOf('>Manual</span>'),
+    );
     expect(tooltipPropsMock).toHaveBeenCalledWith(
       expect.objectContaining({
         openDelay: 0,
@@ -200,7 +217,7 @@ describe('app/components/kanban-card label tooltip behavior', () => {
     );
   });
 
-  it('keeps the same tooltip styling when the footer labels become the editable shortcut', () => {
+  it('uses one editable shortcut label tooltip containing every task label in order', () => {
     const html = renderToStaticMarkup(
       <MantineProvider>
         <KanbanCardContent
@@ -219,11 +236,23 @@ describe('app/components/kanban-card label tooltip behavior', () => {
         />
       </MantineProvider>,
     );
+    const labelTooltipProps = getLabelTooltipProps();
+    const tooltipLabelHtml = renderToStaticMarkup(labelTooltipProps[0].label);
 
+    expect(labelTooltipProps).toHaveLength(1);
     expect(html).toContain('data-kanban-label-shortcut="labels"');
     expect(html).toContain('data-tooltip-open-delay="0"');
     expect(html).toContain('data-tooltip-style-bg="var(--ui-tooltip-surface)"');
     expect(html).toContain('data-tooltip-style-color="var(--ui-tooltip-text)"');
+    expect(tooltipLabelHtml).toContain('>Bug</span>');
+    expect(tooltipLabelHtml).toContain('>UI</span>');
+    expect(tooltipLabelHtml).toContain('>Manual</span>');
+    expect(tooltipLabelHtml.indexOf('>Bug</span>')).toBeLessThan(
+      tooltipLabelHtml.indexOf('>UI</span>'),
+    );
+    expect(tooltipLabelHtml.indexOf('>UI</span>')).toBeLessThan(
+      tooltipLabelHtml.indexOf('>Manual</span>'),
+    );
   });
 
   it('shows the telegram detail as separate rows in the desktop send tooltip', () => {
@@ -293,8 +322,8 @@ describe('app/components/kanban-card label tooltip behavior', () => {
     );
   });
 
-  it('uses an arrow cursor on the summary and explicit contrast rules inside the tooltip', () => {
-    expect(cardsCss).toMatch(/\.kanbanLabelSummary\s*\{[\s\S]*cursor:\s*default;/);
+  it('lets the summary inherit its wrapper cursor and keeps contrast rules inside the tooltip', () => {
+    expect(cardsCss).toMatch(/\.kanbanLabelSummary\s*\{[\s\S]*cursor:\s*inherit;/);
     expect(cardsCss).toMatch(
       /\.kanbanLabelTooltipSurface\s*\{[\s\S]*background:\s*var\(--kanban-card-tooltip-surface\);[\s\S]*color:\s*var\(--kanban-card-tooltip-text\);/,
     );
