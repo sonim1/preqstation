@@ -208,19 +208,19 @@ function getGlobalComputedStyle(className: string, colorScheme: 'light' | 'dark'
   element.className = className;
   document.body.append(element);
 
-  const style = window.getComputedStyle(element);
-  const computedStyle = {
-    backgroundColor: style.backgroundColor,
-    borderTopStyle: style.borderTopStyle,
-    borderTopWidth: style.borderTopWidth,
-    boxShadow: style.boxShadow,
-  };
-
-  element.remove();
-  styleElement.remove();
-  document.documentElement.removeAttribute('data-mantine-color-scheme');
-
-  return computedStyle;
+  try {
+    const style = window.getComputedStyle(element);
+    return {
+      backgroundColor: style.backgroundColor,
+      borderTopStyle: style.borderTopStyle,
+      borderTopWidth: style.borderTopWidth,
+      boxShadow: style.boxShadow,
+    };
+  } finally {
+    element.remove();
+    styleElement.remove();
+    document.documentElement.removeAttribute('data-mantine-color-scheme');
+  }
 }
 
 describe('app/components/kanban-card', () => {
@@ -393,6 +393,32 @@ describe('app/components/kanban-card', () => {
       /\.itemCard\.kanbanCard\s*\{[\s\S]*border:\s*0;[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*box-shadow:\s*var\(--kanban-card-focus-ring\),\s*var\(--kanban-card-shadow-rest\);/,
     );
     expect(cardsCss).toMatch(/\.kanbanCard::after\s*\{[\s\S]*content:\s*none;/);
+  });
+
+  it('cleans up global style fixtures when computed style lookup throws', () => {
+    const getComputedStyleSpy = vi.spyOn(window, 'getComputedStyle').mockImplementation(() => {
+      throw new Error('computed style failed');
+    });
+
+    try {
+      expect(() => getGlobalComputedStyle('kanban-column', 'dark')).toThrow('computed style failed');
+      expect(document.querySelector('section.kanban-column')).toBeNull();
+      expect(
+        Array.from(document.head.querySelectorAll('style')).some(
+          (styleElement) => styleElement.textContent === globalsCss,
+        ),
+      ).toBe(false);
+      expect(document.documentElement.getAttribute('data-mantine-color-scheme')).toBeNull();
+    } finally {
+      getComputedStyleSpy.mockRestore();
+      document.querySelector('section.kanban-column')?.remove();
+      for (const styleElement of document.head.querySelectorAll('style')) {
+        if (styleElement.textContent === globalsCss) {
+          styleElement.remove();
+        }
+      }
+      document.documentElement.removeAttribute('data-mantine-color-scheme');
+    }
   });
 
   it('marks hold cards with a left warning accent instead of coloring the whole lane', () => {
