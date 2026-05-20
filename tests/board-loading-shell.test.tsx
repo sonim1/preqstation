@@ -67,6 +67,15 @@ describe('app/components/board-loading-shell', () => {
     );
   });
 
+  it('keeps loading kanban columns boundary-free like the live board', () => {
+    expect(globalsCss).toMatch(
+      /\.kanban-column\s*\{[\s\S]*border:\s*0;[\s\S]*border-color:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*box-shadow:\s*none;/,
+    );
+    expect(globalsCss).not.toMatch(
+      /html\[data-mantine-color-scheme='dark'\]\s+\.kanban-column,\s*html\[data-mantine-color-scheme='dark'\]\s+\.kanban-quickadd-panel[\s\S]*?border-color:\s*var\(--ui-border\);/,
+    );
+  });
+
   it('board route loading uses the board-specific loading shell', () => {
     const html = render(<BoardLoading />);
 

@@ -1352,6 +1352,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  border: 0;
   border-color: transparent;
   background: transparent;
   box-shadow: none;
@@ -2346,7 +2347,6 @@ html[data-mantine-color-scheme='dark'] select:-webkit-autofill {
   transition: background-color 9999s ease-out;
 }
 
-html[data-mantine-color-scheme='dark'] .kanban-column,
 html[data-mantine-color-scheme='dark'] .kanban-quickadd-panel,
 html[data-mantine-color-scheme='dark'] .workspace-header,
 html[data-mantine-color-scheme='dark'] .workspace-navbar {

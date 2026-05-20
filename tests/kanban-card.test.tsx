@@ -316,13 +316,16 @@ describe('app/components/kanban-card', () => {
 
   it('defines stronger four-sided card shadows and a board-scoped stage surface', () => {
     expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-rest:\s*0 0 0 1px [^;]+,\s*0 18px 34px -22px [^;]+,\s*0 6px 14px -10px [^;]+,\s*0 1px 3px [^;]+;/,
+      /\.kanbanCard\s*\{[\s\S]*--kanban-card-outline:\s*color-mix\(in srgb,\s*var\(--ui-border\),\s*var\(--ui-text\) 10%\);[\s\S]*--kanban-card-shadow-rest:\s*0 0 0 1px var\(--kanban-card-outline\),\s*0 18px 34px -22px [^;]+,\s*0 6px 14px -10px [^;]+,\s*0 1px 3px [^;]+;/,
     );
     expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-queued:\s*0 0 0 1px [^;]+,\s*0 20px 38px -24px [^;]+,\s*0 8px 18px -12px [^;]+,\s*0 1px 3px [^;]+;/,
+      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-queued:\s*0 0 0 1px var\(--kanban-card-outline\),\s*0 20px 38px -24px [^;]+,\s*0 8px 18px -12px [^;]+,\s*0 1px 3px [^;]+;/,
     );
     expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-running:\s*0 0 0 1px [^;]+,\s*0 22px 42px -24px [^;]+,\s*0 10px 20px -14px [^;]+,\s*0 2px 6px [^;]+;/,
+      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-running:\s*0 0 0 1px var\(--kanban-card-outline\),\s*0 22px 42px -24px [^;]+,\s*0 10px 20px -14px [^;]+,\s*0 2px 6px [^;]+;/,
+    );
+    expect(cardsCss).toMatch(
+      /:global\(html\[data-mantine-color-scheme='dark'\]\) \.kanbanCard\s*\{[\s\S]*--kanban-card-outline:\s*color-mix\(in srgb,\s*var\(--ui-border\),\s*var\(--ui-text\) 14%\);/,
     );
     expect(globalsCss).toMatch(
       /\.kanban-stage\s*\{[\s\S]*background:\s*var\(--kanban-stage-surface\);/,
@@ -331,7 +334,7 @@ describe('app/components/kanban-card', () => {
 
   it('renders boundary-free lanes with subtly rounded note cards carried by shadows', () => {
     expect(globalsCss).toMatch(
-      /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*box-shadow:\s*none;/,
+      /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;[\s\S]*border:\s*0;[\s\S]*border-color:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*box-shadow:\s*none;/,
     );
     expect(globalsCss).toMatch(
       /\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*border-radius:\s*0;/,

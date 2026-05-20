@@ -1,16 +1,17 @@
 /* Kanban card */
 .kanbanCard {
   --kanban-card-radius: 6px;
+  --kanban-card-outline: color-mix(in srgb, var(--ui-border), var(--ui-text) 10%);
   --kanban-card-focus-ring: inset 0 0 0 0 transparent;
   --kanban-card-shadow-rest:
-    0 0 0 1px rgba(255, 255, 255, 0.56), 0 18px 34px -22px rgba(24, 44, 84, 0.24),
+    0 0 0 1px var(--kanban-card-outline), 0 18px 34px -22px rgba(24, 44, 84, 0.24),
     0 6px 14px -10px rgba(24, 44, 84, 0.16), 0 1px 3px rgba(24, 44, 84, 0.08);
   --kanban-card-shadow-queued:
-    0 0 0 1px rgba(255, 255, 255, 0.52),
+    0 0 0 1px var(--kanban-card-outline),
     0 20px 38px -24px color-mix(in srgb, var(--ui-accent), transparent 74%),
     0 8px 18px -12px rgba(33, 56, 97, 0.2), 0 1px 3px rgba(33, 56, 97, 0.1);
   --kanban-card-shadow-running:
-    0 0 0 1px rgba(255, 255, 255, 0.5), 0 22px 42px -24px rgba(8, 23, 40, 0.48),
+    0 0 0 1px var(--kanban-card-outline), 0 22px 42px -24px rgba(8, 23, 40, 0.48),
     0 10px 20px -14px var(--ui-status-running-glow), 0 2px 6px rgba(8, 23, 40, 0.16);
   --kanban-note-surface: linear-gradient(
     180deg,
@@ -870,15 +871,16 @@
 }
 
 :global(html[data-mantine-color-scheme='dark']) .kanbanCard {
+  --kanban-card-outline: color-mix(in srgb, var(--ui-border), var(--ui-text) 14%);
   --kanban-card-shadow-rest:
-    0 0 0 1px rgba(120, 148, 190, 0.08), 0 20px 38px -24px rgba(0, 0, 0, 0.72),
+    0 0 0 1px var(--kanban-card-outline), 0 20px 38px -24px rgba(0, 0, 0, 0.72),
     0 10px 18px -14px rgba(0, 0, 0, 0.52), 0 2px 6px rgba(0, 0, 0, 0.36);
   --kanban-card-shadow-queued:
-    0 0 0 1px rgba(120, 148, 190, 0.08), 0 22px 42px -26px rgba(0, 0, 0, 0.78),
+    0 0 0 1px var(--kanban-card-outline), 0 22px 42px -26px rgba(0, 0, 0, 0.78),
     0 10px 18px -14px color-mix(in srgb, var(--ui-accent), transparent 80%),
     0 2px 6px rgba(0, 0, 0, 0.38);
   --kanban-card-shadow-running:
-    0 0 0 1px rgba(120, 148, 190, 0.08), 0 24px 44px -26px rgba(0, 0, 0, 0.82),
+    0 0 0 1px var(--kanban-card-outline), 0 24px 44px -26px rgba(0, 0, 0, 0.82),
     0 12px 20px -14px var(--ui-status-running-glow), 0 2px 6px rgba(0, 0, 0, 0.4);
   box-shadow: var(--kanban-card-focus-ring), var(--kanban-card-shadow-rest);
 }
