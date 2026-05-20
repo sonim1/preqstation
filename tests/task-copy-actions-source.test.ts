@@ -22,7 +22,9 @@ describe('task-copy-actions source', () => {
 
   it('keeps the Mod+Enter listener independent of dispatch state changes', () => {
     const keyboardEffectStart = source.indexOf('useEffect(() => {\n    const handleKeyDown');
-    const keyboardEffectEnd = source.indexOf('  if (availableModes.length');
+    const keyboardEffectEnd = source.indexOf('  if (!hasDispatchControls)', keyboardEffectStart);
+    expect(keyboardEffectStart).toBeGreaterThanOrEqual(0);
+    expect(keyboardEffectEnd).toBeGreaterThan(keyboardEffectStart);
     const keyboardEffect = source.slice(keyboardEffectStart, keyboardEffectEnd);
 
     expect(keyboardEffect).not.toContain('isSending');
