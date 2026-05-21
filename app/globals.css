@@ -1185,7 +1185,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   content: '';
   position: absolute;
   inset: -8%;
-  z-index: 0;
+  z-index: -1;
   pointer-events: none;
   background: var(--kanban-stage-ambient-layer);
   background-size:
