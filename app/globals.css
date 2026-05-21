@@ -56,10 +56,14 @@
   --ui-elevation-1: 0 1px 3px rgba(21, 45, 89, 0.08);
   --ui-elevation-2: 0 4px 12px rgba(21, 45, 89, 0.12);
   --ui-elevation-3: 0 12px 28px rgba(21, 45, 89, 0.16);
+  --kanban-stage-surface-start: var(--ui-surface-muted);
+  --kanban-stage-surface-mid: var(--ui-surface-soft);
+  --kanban-stage-surface-end: var(--ui-surface-muted-strong);
   --kanban-stage-surface: linear-gradient(
     180deg,
-    rgba(236, 243, 252, 0.9),
-    rgba(226, 236, 248, 0.96)
+    var(--kanban-stage-surface-start),
+    var(--kanban-stage-surface-mid) 52%,
+    var(--kanban-stage-surface-end)
   );
 }
 
@@ -129,11 +133,14 @@ html[data-mantine-color-scheme='dark'] {
   --ui-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.2);
   --ui-elevation-2: 0 4px 12px rgba(0, 0, 0, 0.3);
   --ui-elevation-3: 0 12px 28px rgba(0, 0, 0, 0.4);
+  --kanban-stage-surface-start: var(--mantine-color-body);
+  --kanban-stage-surface-mid: var(--ui-surface);
+  --kanban-stage-surface-end: var(--mantine-color-body);
   --kanban-stage-surface: linear-gradient(
     160deg,
-    rgba(8, 16, 29, 0.99),
-    rgba(5, 11, 21, 1) 48%,
-    rgba(3, 8, 16, 1)
+    var(--kanban-stage-surface-start),
+    var(--kanban-stage-surface-mid) 48%,
+    var(--kanban-stage-surface-end)
   );
 }
 
@@ -1155,6 +1162,21 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   overflow: hidden;
   gap: 10px;
   background: var(--kanban-stage-surface);
+  --kanban-stage-ambient-accent: var(--ui-accent-soft);
+  --kanban-stage-ambient-running: var(--ui-status-running-soft);
+  --kanban-stage-ambient-layer:
+    linear-gradient(
+      124deg,
+      transparent 8%,
+      var(--kanban-stage-ambient-accent) 25%,
+      transparent 43%
+    ),
+    linear-gradient(
+      218deg,
+      transparent 12%,
+      var(--kanban-stage-ambient-running) 35%,
+      transparent 56%
+    );
   --kanban-action-island-clearance: 96px;
   --kanban-mobile-tab-bar-height: 0px;
 }
@@ -1165,13 +1187,11 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   inset: -8%;
   z-index: 0;
   pointer-events: none;
-  background:
-    linear-gradient(124deg, transparent 8%, rgba(62, 106, 225, 0.1) 25%, transparent 43%),
-    linear-gradient(218deg, transparent 12%, rgba(56, 189, 248, 0.07) 35%, transparent 56%);
+  background: var(--kanban-stage-ambient-layer);
   background-size:
     160% 160%,
     145% 145%;
-  opacity: 0.72;
+  opacity: 0.4;
   transform: translate3d(-2%, -1%, 0);
   animation: kanbanStageAmbientDrift 24s ease-in-out infinite alternate;
 }

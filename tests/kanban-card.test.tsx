@@ -125,6 +125,91 @@ function getCssRuleBody(source: string, selector: string) {
   return match?.[1] ?? '';
 }
 
+function snapshotProperties(style: CSSStyleDeclaration, propertyNames: readonly string[]) {
+  return Object.fromEntries(
+    propertyNames.map((propertyName) => [
+      propertyName,
+      style.getPropertyValue(propertyName).trim(),
+    ]),
+  );
+}
+
+function collectStyleRuleSnapshots(
+  ruleList: CSSRuleList,
+  selectorText: string,
+  propertyNames: readonly string[],
+  mediaText: string | null = null,
+): Array<{ mediaText: string | null; properties: Record<string, string> }> {
+  return Array.from(ruleList).flatMap((rule) => {
+    const groupingRule = rule as CSSGroupingRule;
+    const mediaRule = rule as CSSMediaRule;
+    const styleRule = rule as CSSStyleRule;
+    const nextMediaText =
+      'conditionText' in rule && typeof mediaRule.conditionText === 'string'
+        ? mediaRule.conditionText
+        : mediaText;
+    const matches =
+      'selectorText' in rule && styleRule.selectorText === selectorText
+        ? [{ mediaText, properties: snapshotProperties(styleRule.style, propertyNames) }]
+        : [];
+    const nestedMatches =
+      'cssRules' in rule
+        ? collectStyleRuleSnapshots(
+            groupingRule.cssRules,
+            selectorText,
+            propertyNames,
+            nextMediaText,
+          )
+        : [];
+
+    return [...matches, ...nestedMatches];
+  });
+}
+
+function getCssRuleSnapshots(
+  cssSource: string,
+  selectorText: string,
+  propertyNames: readonly string[],
+) {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = cssSource;
+  document.head.append(styleElement);
+
+  try {
+    expect(styleElement.sheet).not.toBeNull();
+    return collectStyleRuleSnapshots(styleElement.sheet!.cssRules, selectorText, propertyNames);
+  } finally {
+    styleElement.remove();
+  }
+}
+
+function getKeyframeTransforms(cssSource: string, animationName: string) {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = cssSource;
+  document.head.append(styleElement);
+
+  try {
+    expect(styleElement.sheet).not.toBeNull();
+    for (const rule of Array.from(styleElement.sheet!.cssRules)) {
+      const keyframesRule = rule as CSSKeyframesRule;
+      if ('name' in rule && keyframesRule.name === animationName && 'cssRules' in rule) {
+        return Object.fromEntries(
+          Array.from(keyframesRule.cssRules).map((keyframeRule) => [
+            'keyText' in keyframeRule ? (keyframeRule as CSSKeyframeRule).keyText : '',
+            'style' in keyframeRule
+              ? (keyframeRule as CSSKeyframeRule).style.getPropertyValue('transform').trim()
+              : '',
+          ]),
+        );
+      }
+    }
+
+    return {};
+  } finally {
+    styleElement.remove();
+  }
+}
+
 function resolveWaveTopHeadroom(runState: 'queued' | 'running') {
   const { paths, waveHeight, waveShiftPercent, bandTopClearance } = getRunStateWaveConfig(runState);
   const highestCrest = Math.min(
@@ -197,12 +282,20 @@ function getCardForTitle(title: string) {
   return card as HTMLElement;
 }
 
-function getGlobalComputedStyle(className: string, colorScheme: 'light' | 'dark' = 'light') {
+function getGlobalComputedStyle(
+  className: string,
+  colorScheme: 'light' | 'dark' = 'light',
+  customProperties: readonly string[] = [],
+  cssSources: readonly string[] = [globalsCss],
+) {
   document.documentElement.dataset.mantineColorScheme = colorScheme;
 
-  const styleElement = document.createElement('style');
-  styleElement.textContent = globalsCss;
-  document.head.append(styleElement);
+  const styleElements = cssSources.map((cssSource) => {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = cssSource;
+    document.head.append(styleElement);
+    return styleElement;
+  });
 
   const element = document.createElement('section');
   element.className = className;
@@ -212,13 +305,19 @@ function getGlobalComputedStyle(className: string, colorScheme: 'light' | 'dark'
     const style = window.getComputedStyle(element);
     return {
       backgroundColor: style.backgroundColor,
+      background: style.background,
       borderTopStyle: style.borderTopStyle,
       borderTopWidth: style.borderTopWidth,
       boxShadow: style.boxShadow,
+      customProperties: snapshotProperties(style, customProperties),
+      isolation: style.isolation,
+      position: style.position,
     };
   } finally {
     element.remove();
-    styleElement.remove();
+    for (const styleElement of styleElements) {
+      styleElement.remove();
+    }
     document.documentElement.removeAttribute('data-mantine-color-scheme');
   }
 }
@@ -341,59 +440,108 @@ describe('app/components/kanban-card', () => {
   });
 
   it('defines stronger four-sided card shadows and a board-scoped stage surface', () => {
-    const lightTokens = getCssRuleBody(globalsCss, ':root');
-    const darkTokens = getCssRuleBody(globalsCss, "html[data-mantine-color-scheme='dark']");
-    const cardRule = getCssRuleBody(cardsCss, '.kanbanCard');
-    const darkCardRule = getCssRuleBody(
-      cardsCss,
-      ":global(html[data-mantine-color-scheme='dark']) .kanbanCard",
+    const lightCardStyle = getGlobalComputedStyle(
+      'kanbanCard',
+      'light',
+      [
+        '--ui-border-strong',
+        '--kanban-card-outline',
+        '--kanban-card-shadow-rest',
+        '--kanban-card-shadow-queued',
+        '--kanban-card-shadow-running',
+      ],
+      [globalsCss, cardsCss],
     );
+    const darkCardStyle = getGlobalComputedStyle(
+      'kanbanCard',
+      'dark',
+      ['--ui-border-strong', '--kanban-card-outline'],
+      [globalsCss, cardsCss],
+    );
+    const stageStyle = getGlobalComputedStyle('kanban-stage', 'light');
 
-    expect(lightTokens).toContain(
-      '--ui-border-strong: color-mix(in srgb, var(--ui-border), var(--ui-text) 10%);',
+    expect(lightCardStyle.customProperties['--ui-border-strong']).toBe(
+      'color-mix(in srgb,var(--ui-border),var(--ui-text) 10%)',
     );
-    expect(darkTokens).toContain(
-      '--ui-border-strong: color-mix(in srgb, var(--ui-border), var(--ui-text) 14%);',
+    expect(darkCardStyle.customProperties['--ui-border-strong']).toBe(
+      'color-mix(in srgb,var(--ui-border),var(--ui-text) 14%)',
     );
-    expect(cardRule).toContain('--kanban-card-outline: var(--ui-border-strong);');
-    expect(darkCardRule).not.toContain('--kanban-card-outline:');
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-rest:\s*0 0 0 1px var\(--kanban-card-outline\),\s*0 18px 34px -22px [^;]+,\s*0 6px 14px -10px [^;]+,\s*0 1px 3px [^;]+;/,
+    expect(lightCardStyle.customProperties['--kanban-card-outline']).toBe(
+      'var(--ui-border-strong)',
     );
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-queued:\s*0 0 0 1px var\(--kanban-card-outline\),\s*0 20px 38px -24px [^;]+,\s*0 8px 18px -12px [^;]+,\s*0 1px 3px [^;]+;/,
+    expect(darkCardStyle.customProperties['--kanban-card-outline']).toBe('var(--ui-border-strong)');
+    expect(lightCardStyle.customProperties['--kanban-card-shadow-rest']).toContain(
+      '0 0 0 1px var(--kanban-card-outline)',
     );
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-running:\s*0 0 0 1px var\(--kanban-card-outline\),\s*0 22px 42px -24px [^;]+,\s*0 10px 20px -14px [^;]+,\s*0 2px 6px [^;]+;/,
+    expect(lightCardStyle.customProperties['--kanban-card-shadow-queued']).toContain(
+      '0 0 0 1px var(--kanban-card-outline)',
     );
-    expect(globalsCss).toMatch(
-      /\.kanban-stage\s*\{[\s\S]*background:\s*var\(--kanban-stage-surface\);/,
+    expect(lightCardStyle.customProperties['--kanban-card-shadow-running']).toContain(
+      '0 0 0 1px var(--kanban-card-outline)',
     );
+    expect(stageStyle.background).toBe('var(--kanban-stage-surface)');
   });
 
   it('darkens the board stage behind cards with a subtle ambient light layer', () => {
-    const darkTokens = getCssRuleBody(globalsCss, "html[data-mantine-color-scheme='dark']");
-    const stageRule = getCssRuleBody(globalsCss, '.kanban-stage');
-    const ambientRule = getCssRuleBody(globalsCss, '.kanban-stage::after');
+    const darkStageStyle = getGlobalComputedStyle('kanban-stage', 'dark', [
+      '--kanban-stage-surface',
+      '--kanban-stage-surface-start',
+      '--kanban-stage-surface-mid',
+      '--kanban-stage-surface-end',
+      '--kanban-stage-ambient-accent',
+      '--kanban-stage-ambient-running',
+      '--kanban-stage-ambient-layer',
+    ]);
+    const ambientRules = getCssRuleSnapshots(globalsCss, '.kanban-stage::after', [
+      'animation',
+      'background',
+      'content',
+      'opacity',
+      'pointer-events',
+    ]);
+    const ambientRule = ambientRules.find((rule) => rule.mediaText === null);
+    const reducedMotionRule = ambientRules.find(
+      (rule) => rule.mediaText === '(prefers-reduced-motion: reduce)',
+    );
+    const keyframeTransforms = getKeyframeTransforms(globalsCss, 'kanbanStageAmbientDrift');
 
-    expect(darkTokens).toMatch(
-      /--kanban-stage-surface:\s*linear-gradient\(\s*160deg,\s*rgba\(8,\s*16,\s*29,\s*0\.99\),\s*rgba\(5,\s*11,\s*21,\s*1\) 48%,\s*rgba\(3,\s*8,\s*16,\s*1\)\s*\);/,
+    expect(darkStageStyle.position).toBe('relative');
+    expect(darkStageStyle.isolation).toBe('isolate');
+    expect(darkStageStyle.background).toBe('var(--kanban-stage-surface)');
+    expect(darkStageStyle.customProperties['--kanban-stage-surface']).toContain(
+      'var(--kanban-stage-surface-start)',
     );
-    expect(stageRule).toContain('position: relative;');
-    expect(stageRule).toContain('isolation: isolate;');
-    expect(stageRule).toContain('background: var(--kanban-stage-surface);');
-    expect(ambientRule).toContain("content: '';");
-    expect(ambientRule).toContain('pointer-events: none;');
-    expect(ambientRule).toContain(
-      'animation: kanbanStageAmbientDrift 24s ease-in-out infinite alternate;',
+    expect(darkStageStyle.customProperties['--kanban-stage-surface']).not.toContain('rgba(');
+    expect(darkStageStyle.customProperties['--kanban-stage-surface-start']).toBe(
+      'var(--mantine-color-body)',
     );
-    expect(ambientRule).not.toContain('radial-gradient');
-    expect(globalsCss).toMatch(
-      /@keyframes kanbanStageAmbientDrift\s*\{[\s\S]*0%\s*\{[\s\S]*transform:\s*translate3d\(-2%,\s*-1%,\s*0\);[\s\S]*100%\s*\{[\s\S]*transform:\s*translate3d\(2%,\s*1%,\s*0\);/,
+    expect(darkStageStyle.customProperties['--kanban-stage-surface-mid']).toBe('var(--ui-surface)');
+    expect(darkStageStyle.customProperties['--kanban-stage-surface-end']).toBe(
+      'var(--mantine-color-body)',
     );
-    expect(globalsCss).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.kanban-stage::after\s*\{[\s\S]*animation:\s*none;/,
+    expect(darkStageStyle.customProperties['--kanban-stage-ambient-accent']).toBe(
+      'var(--ui-accent-soft)',
     );
+    expect(darkStageStyle.customProperties['--kanban-stage-ambient-running']).toBe(
+      'var(--ui-status-running-soft)',
+    );
+    expect(darkStageStyle.customProperties['--kanban-stage-ambient-layer']).toContain(
+      'var(--kanban-stage-ambient-accent)',
+    );
+    expect(darkStageStyle.customProperties['--kanban-stage-ambient-layer']).toContain(
+      'var(--kanban-stage-ambient-running)',
+    );
+    expect(darkStageStyle.customProperties['--kanban-stage-ambient-layer']).not.toContain('rgba(');
+    expect(["''", '""']).toContain(ambientRule?.properties.content);
+    expect(ambientRule?.properties['pointer-events']).toBe('none');
+    expect(ambientRule?.properties.background).toBe('var(--kanban-stage-ambient-layer)');
+    expect(ambientRule?.properties.opacity).toBe('0.4');
+    expect(ambientRule?.properties.animation).toBe(
+      'kanbanStageAmbientDrift 24s ease-in-out infinite alternate',
+    );
+    expect(reducedMotionRule?.properties.animation).toBe('none');
+    expect(keyframeTransforms['0%']).toBe('translate3d(-2%, -1%, 0)');
+    expect(keyframeTransforms['100%']).toBe('translate3d(2%, 1%, 0)');
   });
 
   it('renders boundary-free lanes with subtly rounded note cards carried by shadows', () => {
