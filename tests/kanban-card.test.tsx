@@ -379,7 +379,7 @@ describe('app/components/kanban-card', () => {
     const darkCardStyle = getGlobalComputedStyle(
       'kanbanCard',
       'dark',
-      ['--ui-border-strong', '--kanban-card-outline'],
+      ['--ui-border-strong'],
       [globalsCss, cardsCss],
     );
     const stageStyle = getGlobalComputedStyle('kanban-stage', 'light');
@@ -393,7 +393,6 @@ describe('app/components/kanban-card', () => {
     expect(lightCardStyle.customProperties['--kanban-card-outline']).toBe(
       'var(--ui-border-strong)',
     );
-    expect(darkCardStyle.customProperties['--kanban-card-outline']).toBe('var(--ui-border-strong)');
     expect(lightCardStyle.customProperties['--kanban-card-shadow-rest']).toContain(
       '0 0 0 1px var(--kanban-card-outline)',
     );
@@ -446,7 +445,7 @@ describe('app/components/kanban-card', () => {
     expect(darkStageStyle.customProperties['--kanban-stage-ambient-layer']).not.toContain('rgba(');
   });
 
-  it('lifts the dark kanban card surface above the darker stage without changing the outline contract', () => {
+  it('lifts the dark kanban card surface while softening the repeated outline', () => {
     const darkCardSurfaceRule = getCssRuleBody(
       cardsCss,
       ":global(html[data-mantine-color-scheme='dark']) .kanbanCard,\n:global(html[data-mantine-color-scheme='dark']) .itemCard.kanbanCard",
@@ -460,8 +459,10 @@ describe('app/components/kanban-card', () => {
       '--kanban-note-surface: linear-gradient(180deg, rgba(32, 48, 74, 0.98), rgba(22, 34, 54, 0.96));',
     );
     expect(darkCardSurfaceRule).toContain('background: var(--kanban-note-surface);');
+    expect(darkCardShadowRule).toContain(
+      '--kanban-card-outline: color-mix(in srgb, var(--ui-border), transparent 28%);',
+    );
     expect(darkCardShadowRule).toContain('0 0 0 1px var(--kanban-card-outline)');
-    expect(darkCardShadowRule).not.toContain('--kanban-card-outline:');
   });
 
   it('renders boundary-free lanes with subtly rounded note cards carried by shadows', () => {
