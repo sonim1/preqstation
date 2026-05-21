@@ -126,7 +126,7 @@ describe('app/components/project-insight-modal', () => {
 
     expect(html).toContain('aria-label="Selected target: H Telegram"');
     expect(html).not.toContain('🦞 Telegram');
-    expect(html).toContain('/preqstation dispatch');
+    expect(html).toContain('/preqstation_dispatch@PreqHermesBot');
   });
 
   it('shows the resolved primary action label on first render for Claude Code', () => {

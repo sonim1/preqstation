@@ -134,7 +134,7 @@ describe('app/api/tasks/[id]/comments/route', () => {
     expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
       'bot-token',
       '12345',
-      expect.stringContaining('/preqstation dispatch'),
+      expect.stringContaining('/preqstation_dispatch@PreqHermesBot'),
       { normalizeCommand: false },
     );
     expect(await response.json()).toEqual(

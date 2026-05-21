@@ -16,7 +16,7 @@ function renderOpenClawGuide(
 }
 
 describe('app/components/openclaw-guide', () => {
-  it('builds a /preqstation setup auto payload from linked project repos', () => {
+  it('builds a shell-executable dispatcher setup command from linked project repos', () => {
     expect(
       buildPrompt([
         {
@@ -30,7 +30,7 @@ describe('app/components/openclaw-guide', () => {
           repoUrl: null,
         },
       ]),
-    ).toBe('/preqstation setup auto PROJ=sonim1/preqstation');
+    ).toBe('preqstation-dispatcher setup auto PROJ=sonim1/preqstation');
   });
 
   it('renders a labeled copy control when projects are available', () => {
@@ -45,13 +45,13 @@ describe('app/components/openclaw-guide', () => {
     expect(html).toContain('data-openclaw-guide="true"');
     expect(html).toContain('Show setup prompt');
     expect(html).toContain(
-      'Preview the exact command before copying it into the dispatcher host.',
+      'Preview the exact command before copying it into the dispatcher host shell.',
     );
     expect(html).toContain('Copy dispatcher auto-setup command');
     expect(html).toContain(
       'Copy a dispatcher setup command to auto-match local repos for Hermes execution',
     );
-    expect(html).toContain('/preqstation setup auto PROJ=sonim1/preqstation');
+    expect(html).toContain('preqstation-dispatcher setup auto PROJ=sonim1/preqstation');
   });
 
   it('stays hidden when there are no projects to map', () => {

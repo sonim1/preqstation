@@ -242,7 +242,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
       'bot-token',
       '7654321',
       [
-        '/preqstation dispatch',
+        '/preqstation_dispatch@PreqHermesBot',
         'project_key=PROJ',
         'objective=qa',
         'engine=codex',

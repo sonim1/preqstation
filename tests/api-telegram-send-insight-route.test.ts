@@ -94,7 +94,7 @@ describe('app/api/telegram/send/insight/route', () => {
     const response = await POST(
       postRequest({
         projectKey: 'PROJ',
-        message: '/preqstation dispatch',
+        message: '/preqstation_dispatch@PreqHermesBot',
         dispatchTarget: 'hermes-telegram',
       }),
     );
@@ -103,7 +103,7 @@ describe('app/api/telegram/send/insight/route', () => {
     expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
       '123:bot-token',
       '7654321',
-      '/preqstation dispatch',
+      '/preqstation_dispatch@PreqHermesBot',
       { normalizeCommand: false },
     );
   });

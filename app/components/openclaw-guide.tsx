@@ -27,7 +27,7 @@ export function buildPrompt(
 
   if (pairs.length === 0) return '';
 
-  return ['/preqstation setup auto', ...pairs].join(' ');
+  return ['preqstation-dispatcher setup auto', ...pairs].join(' ');
 }
 
 export function OpenClawGuide({ projects }: OpenClawGuideProps) {
@@ -55,7 +55,7 @@ export function OpenClawGuide({ projects }: OpenClawGuideProps) {
       <Paper withBorder radius="md" p="xs" className={cardStyles.guideBar}>
         <div className={cardStyles.guideContent}>
           <Text size="xs" c="dimmed">
-            Preview the exact command before copying it into the dispatcher host.
+            Preview the exact command before copying it into the dispatcher host shell.
           </Text>
           <Text
             component="pre"
