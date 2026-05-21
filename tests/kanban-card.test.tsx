@@ -371,6 +371,31 @@ describe('app/components/kanban-card', () => {
     );
   });
 
+  it('darkens the board stage behind cards with a subtle ambient light layer', () => {
+    const darkTokens = getCssRuleBody(globalsCss, "html[data-mantine-color-scheme='dark']");
+    const stageRule = getCssRuleBody(globalsCss, '.kanban-stage');
+    const ambientRule = getCssRuleBody(globalsCss, '.kanban-stage::after');
+
+    expect(darkTokens).toMatch(
+      /--kanban-stage-surface:\s*linear-gradient\(\s*160deg,\s*rgba\(8,\s*16,\s*29,\s*0\.99\),\s*rgba\(5,\s*11,\s*21,\s*1\) 48%,\s*rgba\(3,\s*8,\s*16,\s*1\)\s*\);/,
+    );
+    expect(stageRule).toContain('position: relative;');
+    expect(stageRule).toContain('isolation: isolate;');
+    expect(stageRule).toContain('background: var(--kanban-stage-surface);');
+    expect(ambientRule).toContain("content: '';");
+    expect(ambientRule).toContain('pointer-events: none;');
+    expect(ambientRule).toContain(
+      'animation: kanbanStageAmbientDrift 24s ease-in-out infinite alternate;',
+    );
+    expect(ambientRule).not.toContain('radial-gradient');
+    expect(globalsCss).toMatch(
+      /@keyframes kanbanStageAmbientDrift\s*\{[\s\S]*0%\s*\{[\s\S]*transform:\s*translate3d\(-2%,\s*-1%,\s*0\);[\s\S]*100%\s*\{[\s\S]*transform:\s*translate3d\(2%,\s*1%,\s*0\);/,
+    );
+    expect(globalsCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.kanban-stage::after\s*\{[\s\S]*animation:\s*none;/,
+    );
+  });
+
   it('renders boundary-free lanes with subtly rounded note cards carried by shadows', () => {
     for (const colorScheme of ['light', 'dark'] as const) {
       const columnStyle = getGlobalComputedStyle('kanban-column', colorScheme);
@@ -401,7 +426,9 @@ describe('app/components/kanban-card', () => {
     });
 
     try {
-      expect(() => getGlobalComputedStyle('kanban-column', 'dark')).toThrow('computed style failed');
+      expect(() => getGlobalComputedStyle('kanban-column', 'dark')).toThrow(
+        'computed style failed',
+      );
       expect(document.querySelector('section.kanban-column')).toBeNull();
       expect(
         Array.from(document.head.querySelectorAll('style')).some(
