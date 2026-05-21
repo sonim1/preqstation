@@ -446,6 +446,24 @@ describe('app/components/kanban-card', () => {
     expect(darkStageStyle.customProperties['--kanban-stage-ambient-layer']).not.toContain('rgba(');
   });
 
+  it('lifts the dark kanban card surface above the darker stage without changing the outline contract', () => {
+    const darkCardSurfaceRule = getCssRuleBody(
+      cardsCss,
+      ":global(html[data-mantine-color-scheme='dark']) .kanbanCard,\n:global(html[data-mantine-color-scheme='dark']) .itemCard.kanbanCard",
+    );
+    const darkCardShadowRule = getCssRuleBody(
+      cardsCss,
+      ":global(html[data-mantine-color-scheme='dark']) .kanbanCard",
+    );
+
+    expect(darkCardSurfaceRule).toContain(
+      '--kanban-note-surface: linear-gradient(180deg, rgba(32, 48, 74, 0.98), rgba(22, 34, 54, 0.96));',
+    );
+    expect(darkCardSurfaceRule).toContain('background: var(--kanban-note-surface);');
+    expect(darkCardShadowRule).toContain('0 0 0 1px var(--kanban-card-outline)');
+    expect(darkCardShadowRule).not.toContain('--kanban-card-outline:');
+  });
+
   it('renders boundary-free lanes with subtly rounded note cards carried by shadows', () => {
     for (const colorScheme of ['light', 'dark'] as const) {
       const columnStyle = getGlobalComputedStyle('kanban-column', colorScheme);

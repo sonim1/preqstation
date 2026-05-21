@@ -866,7 +866,7 @@
 /* Dark mode */
 :global(html[data-mantine-color-scheme='dark']) .kanbanCard,
 :global(html[data-mantine-color-scheme='dark']) .itemCard.kanbanCard {
-  --kanban-note-surface: linear-gradient(180deg, rgba(28, 42, 66, 0.98), rgba(18, 29, 47, 0.96));
+  --kanban-note-surface: linear-gradient(180deg, rgba(32, 48, 74, 0.98), rgba(22, 34, 54, 0.96));
   background: var(--kanban-note-surface);
 }
 
