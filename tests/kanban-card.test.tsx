@@ -125,6 +125,15 @@ function getCssRuleBody(source: string, selector: string) {
   return match?.[1] ?? '';
 }
 
+function snapshotProperties(style: CSSStyleDeclaration, propertyNames: readonly string[]) {
+  return Object.fromEntries(
+    propertyNames.map((propertyName) => [
+      propertyName,
+      style.getPropertyValue(propertyName).trim(),
+    ]),
+  );
+}
+
 function resolveWaveTopHeadroom(runState: 'queued' | 'running') {
   const { paths, waveHeight, waveShiftPercent, bandTopClearance } = getRunStateWaveConfig(runState);
   const highestCrest = Math.min(
@@ -197,12 +206,20 @@ function getCardForTitle(title: string) {
   return card as HTMLElement;
 }
 
-function getGlobalComputedStyle(className: string, colorScheme: 'light' | 'dark' = 'light') {
+function getGlobalComputedStyle(
+  className: string,
+  colorScheme: 'light' | 'dark' = 'light',
+  customProperties: readonly string[] = [],
+  cssSources: readonly string[] = [globalsCss],
+) {
   document.documentElement.dataset.mantineColorScheme = colorScheme;
 
-  const styleElement = document.createElement('style');
-  styleElement.textContent = globalsCss;
-  document.head.append(styleElement);
+  const styleElements = cssSources.map((cssSource) => {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = cssSource;
+    document.head.append(styleElement);
+    return styleElement;
+  });
 
   const element = document.createElement('section');
   element.className = className;
@@ -212,13 +229,19 @@ function getGlobalComputedStyle(className: string, colorScheme: 'light' | 'dark'
     const style = window.getComputedStyle(element);
     return {
       backgroundColor: style.backgroundColor,
+      background: style.background,
       borderTopStyle: style.borderTopStyle,
       borderTopWidth: style.borderTopWidth,
       boxShadow: style.boxShadow,
+      customProperties: snapshotProperties(style, customProperties),
+      isolation: style.isolation,
+      position: style.position,
     };
   } finally {
     element.remove();
-    styleElement.remove();
+    for (const styleElement of styleElements) {
+      styleElement.remove();
+    }
     document.documentElement.removeAttribute('data-mantine-color-scheme');
   }
 }
@@ -341,34 +364,105 @@ describe('app/components/kanban-card', () => {
   });
 
   it('defines stronger four-sided card shadows and a board-scoped stage surface', () => {
-    const lightTokens = getCssRuleBody(globalsCss, ':root');
-    const darkTokens = getCssRuleBody(globalsCss, "html[data-mantine-color-scheme='dark']");
-    const cardRule = getCssRuleBody(cardsCss, '.kanbanCard');
-    const darkCardRule = getCssRuleBody(
+    const lightCardStyle = getGlobalComputedStyle(
+      'kanbanCard',
+      'light',
+      [
+        '--ui-border-strong',
+        '--kanban-card-outline',
+        '--kanban-card-shadow-rest',
+        '--kanban-card-shadow-queued',
+        '--kanban-card-shadow-running',
+      ],
+      [globalsCss, cardsCss],
+    );
+    const darkCardStyle = getGlobalComputedStyle(
+      'kanbanCard',
+      'dark',
+      ['--ui-border-strong'],
+      [globalsCss, cardsCss],
+    );
+    const stageStyle = getGlobalComputedStyle('kanban-stage', 'light');
+
+    expect(lightCardStyle.customProperties['--ui-border-strong']).toBe(
+      'color-mix(in srgb,var(--ui-border),var(--ui-text) 10%)',
+    );
+    expect(darkCardStyle.customProperties['--ui-border-strong']).toBe(
+      'color-mix(in srgb,var(--ui-border),var(--ui-text) 14%)',
+    );
+    expect(lightCardStyle.customProperties['--kanban-card-outline']).toBe(
+      'var(--ui-border-strong)',
+    );
+    expect(lightCardStyle.customProperties['--kanban-card-shadow-rest']).toContain(
+      '0 0 0 1px var(--kanban-card-outline)',
+    );
+    expect(lightCardStyle.customProperties['--kanban-card-shadow-queued']).toContain(
+      '0 0 0 1px var(--kanban-card-outline)',
+    );
+    expect(lightCardStyle.customProperties['--kanban-card-shadow-running']).toContain(
+      '0 0 0 1px var(--kanban-card-outline)',
+    );
+    expect(stageStyle.background).toBe('var(--kanban-stage-surface)');
+  });
+
+  it('darkens the board stage behind cards with semantic surface and ambient tokens', () => {
+    const darkStageStyle = getGlobalComputedStyle('kanban-stage', 'dark', [
+      '--kanban-stage-surface',
+      '--kanban-stage-surface-start',
+      '--kanban-stage-surface-mid',
+      '--kanban-stage-surface-end',
+      '--kanban-stage-ambient-accent',
+      '--kanban-stage-ambient-running',
+      '--kanban-stage-ambient-layer',
+    ]);
+
+    expect(darkStageStyle.position).toBe('relative');
+    expect(darkStageStyle.isolation).toBe('isolate');
+    expect(darkStageStyle.background).toBe('var(--kanban-stage-surface)');
+    expect(darkStageStyle.customProperties['--kanban-stage-surface']).toContain(
+      'var(--kanban-stage-surface-start)',
+    );
+    expect(darkStageStyle.customProperties['--kanban-stage-surface']).not.toContain('rgba(');
+    expect(darkStageStyle.customProperties['--kanban-stage-surface-start']).toBe(
+      'var(--ui-surface-strong)',
+    );
+    expect(darkStageStyle.customProperties['--kanban-stage-surface-mid']).toBe('var(--ui-surface)');
+    expect(darkStageStyle.customProperties['--kanban-stage-surface-end']).toBe(
+      'var(--ui-surface-strong)',
+    );
+    expect(darkStageStyle.customProperties['--kanban-stage-ambient-accent']).toBe(
+      'var(--ui-accent-soft)',
+    );
+    expect(darkStageStyle.customProperties['--kanban-stage-ambient-running']).toBe(
+      'var(--ui-status-running-soft)',
+    );
+    expect(darkStageStyle.customProperties['--kanban-stage-ambient-layer']).toContain(
+      'var(--kanban-stage-ambient-accent)',
+    );
+    expect(darkStageStyle.customProperties['--kanban-stage-ambient-layer']).toContain(
+      'var(--kanban-stage-ambient-running)',
+    );
+    expect(darkStageStyle.customProperties['--kanban-stage-ambient-layer']).not.toContain('rgba(');
+  });
+
+  it('lifts the dark kanban card surface while softening the repeated outline', () => {
+    const darkCardSurfaceRule = getCssRuleBody(
+      cardsCss,
+      ":global(html[data-mantine-color-scheme='dark']) .kanbanCard,\n:global(html[data-mantine-color-scheme='dark']) .itemCard.kanbanCard",
+    );
+    const darkCardShadowRule = getCssRuleBody(
       cardsCss,
       ":global(html[data-mantine-color-scheme='dark']) .kanbanCard",
     );
 
-    expect(lightTokens).toContain(
-      '--ui-border-strong: color-mix(in srgb, var(--ui-border), var(--ui-text) 10%);',
+    expect(darkCardSurfaceRule).toContain(
+      '--kanban-note-surface: linear-gradient(180deg, rgba(32, 48, 74, 0.98), rgba(22, 34, 54, 0.96));',
     );
-    expect(darkTokens).toContain(
-      '--ui-border-strong: color-mix(in srgb, var(--ui-border), var(--ui-text) 14%);',
+    expect(darkCardSurfaceRule).toContain('background: var(--kanban-note-surface);');
+    expect(darkCardShadowRule).toContain(
+      '--kanban-card-outline: color-mix(in srgb, var(--ui-border), transparent 28%);',
     );
-    expect(cardRule).toContain('--kanban-card-outline: var(--ui-border-strong);');
-    expect(darkCardRule).not.toContain('--kanban-card-outline:');
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-rest:\s*0 0 0 1px var\(--kanban-card-outline\),\s*0 18px 34px -22px [^;]+,\s*0 6px 14px -10px [^;]+,\s*0 1px 3px [^;]+;/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-queued:\s*0 0 0 1px var\(--kanban-card-outline\),\s*0 20px 38px -24px [^;]+,\s*0 8px 18px -12px [^;]+,\s*0 1px 3px [^;]+;/,
-    );
-    expect(cardsCss).toMatch(
-      /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-running:\s*0 0 0 1px var\(--kanban-card-outline\),\s*0 22px 42px -24px [^;]+,\s*0 10px 20px -14px [^;]+,\s*0 2px 6px [^;]+;/,
-    );
-    expect(globalsCss).toMatch(
-      /\.kanban-stage\s*\{[\s\S]*background:\s*var\(--kanban-stage-surface\);/,
-    );
+    expect(darkCardShadowRule).toContain('0 0 0 1px var(--kanban-card-outline)');
   });
 
   it('renders boundary-free lanes with subtly rounded note cards carried by shadows', () => {
@@ -401,7 +495,9 @@ describe('app/components/kanban-card', () => {
     });
 
     try {
-      expect(() => getGlobalComputedStyle('kanban-column', 'dark')).toThrow('computed style failed');
+      expect(() => getGlobalComputedStyle('kanban-column', 'dark')).toThrow(
+        'computed style failed',
+      );
       expect(document.querySelector('section.kanban-column')).toBeNull();
       expect(
         Array.from(document.head.querySelectorAll('style')).some(
