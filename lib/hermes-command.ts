@@ -34,7 +34,6 @@ export function buildHermesTaskCommand(params: {
   objective?: TaskDispatchObjective | null;
   askHint?: string | null;
   commentId?: string | null;
-  botUsername?: string | null;
 }) {
   const taskKey = params.taskKey.trim();
   const objective = params.objective ?? 'default';
@@ -64,7 +63,6 @@ export function buildHermesProjectInsightCommand(params: {
   engineKey?: string | null;
   branchName?: string | null;
   insightPrompt?: string | null;
-  botUsername?: string | null;
 }) {
   const projectKey = normalizeProjectKey(params.projectKey);
   const engineKey = normalizeEngineKey(params.engineKey) ?? 'codex';
@@ -91,7 +89,6 @@ export function buildHermesQaCommand(params: {
   branchName?: string | null;
   qaRunId?: string | null;
   qaTaskKeys?: string[] | null;
-  botUsername?: string | null;
 }) {
   const projectKey = normalizeProjectKey(params.projectKey);
   const engineKey = normalizeEngineKey(params.engineKey) ?? 'codex';
