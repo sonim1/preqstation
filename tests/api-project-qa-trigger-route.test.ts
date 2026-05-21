@@ -177,7 +177,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
     expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
       'bot-token',
       '123456',
-      '!/skill preqstation-dispatch qa PROJ using claude-code branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-2"',
+      '!/preqstation dispatch qa PROJ using claude-code branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-2"',
       { normalizeCommand: true },
     );
     expect(mocked.writeAuditLog).toHaveBeenCalledWith(
@@ -210,7 +210,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
     expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
       'bot-token',
       '123456',
-      '!/skill preqstation-dispatch qa PROJ using gemini-cli branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
+      '!/preqstation dispatch qa PROJ using gemini-cli branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
       { normalizeCommand: true },
     );
   });
@@ -242,7 +242,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
       'bot-token',
       '7654321',
       [
-        '/preqstation_dispatch@PreqHermesBot',
+        '/preqstation dispatch',
         'project_key=PROJ',
         'objective=qa',
         'engine=codex',
@@ -284,7 +284,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
     expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
       'bot-token',
       '123456',
-      '!/skill preqstation-dispatch qa PROJ using claude-code branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
+      '!/preqstation dispatch qa PROJ using claude-code branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
       { normalizeCommand: true },
     );
   });

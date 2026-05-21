@@ -148,7 +148,7 @@ describe('copy feedback icons', () => {
   });
 
   it('toggles a single-line dispatch prompt without toggling on copy', async () => {
-    const promptValue = '/preq_dispatch@PreqHermesBot\nproject_key=PQST\nobjective=plan';
+    const promptValue = '/preqstation dispatch\nproject_key=PQST\nobjective=plan';
     const view = renderWithMantine(
       <DispatchPromptPreview prompt={promptValue} collapseMode="single-line" />,
     );
@@ -174,7 +174,7 @@ describe('copy feedback icons', () => {
   });
 
   it('preserves multiline prompt text when clipboard copy falls back', async () => {
-    const promptValue = '/preq_dispatch@PreqHermesBot\nproject_key=PQST\nobjective=plan';
+    const promptValue = '/preqstation dispatch\nproject_key=PQST\nobjective=plan';
     const originalExecCommand = document.execCommand;
     clipboardWriteTextMock.mockRejectedValueOnce(new Error('clipboard unavailable'));
     let copiedValue: string | undefined;

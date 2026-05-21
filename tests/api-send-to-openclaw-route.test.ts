@@ -126,7 +126,7 @@ describe('app/api/send-to-openclaw/route', () => {
 
     const response = await POST(
       jsonRequest({
-        message: '/skill preqstation-dispatch implement PROJ-1 using codex',
+        message: '/preqstation dispatch implement PROJ-1 using codex',
         branch_name: 'task/proj-1/implement-auth',
       }),
     );
@@ -140,7 +140,7 @@ describe('app/api/send-to-openclaw/route', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           chat_id: '@test-channel',
-          text: '!/skill preqstation-dispatch implement PROJ-1 using codex branch_name="task/proj-1/implement-auth"',
+          text: '!/preqstation dispatch implement PROJ-1 using codex branch_name="task/proj-1/implement-auth"',
         }),
       },
     );

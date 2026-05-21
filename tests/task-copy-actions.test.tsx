@@ -276,7 +276,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Channels');
     expect(html).not.toContain('aria-label="Select target: Channels"');
     expect(html).toContain(
-      '!/skill preqstation-dispatch implement PROJ-224 using codex branch_name=&quot;task/proj-224/move-status-test-button&quot;',
+      '!/preqstation dispatch implement PROJ-224 using codex branch_name=&quot;task/proj-224/move-status-test-button&quot;',
     );
 
     expect(html).not.toContain('data-menu');
@@ -342,7 +342,7 @@ describe('app/components/task-copy-actions', () => {
     expect(JSON.parse(String(options?.body))).toEqual({
       taskKey: 'PROJ-224',
       message:
-        '!/skill preqstation-dispatch implement PROJ-224 using codex branch_name="task/proj-224/move-status-test-button"',
+        '!/preqstation dispatch implement PROJ-224 using codex branch_name="task/proj-224/move-status-test-button"',
     });
     expect(String(options?.body)).not.toContain('ask_hint');
   });
@@ -615,7 +615,7 @@ describe('app/components/task-copy-actions', () => {
     expect(JSON.parse(String(options?.body))).toEqual({
       taskKey: 'PROJ-224',
       message:
-        '!/skill preqstation-dispatch implement PROJ-224 using codex branch_name="task/proj-224/move-status-test-button"',
+        '!/preqstation dispatch implement PROJ-224 using codex branch_name="task/proj-224/move-status-test-button"',
     });
 
     resolveResponse();
@@ -860,7 +860,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
     expect(html).not.toContain('aria-label="Select mode: Review"');
     expect(html).toContain(
-      '!/skill preqstation-dispatch implement PROJ-224 using gemini-cli branch_name=&quot;task/proj-224/move-status-test-button&quot;',
+      '!/preqstation dispatch implement PROJ-224 using gemini-cli branch_name=&quot;task/proj-224/move-status-test-button&quot;',
     );
   });
 
@@ -897,13 +897,13 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('class="task-dispatch-target-logo"');
     expect(html).toContain('data-next-image="/icons/hermes-agent.png"');
     expect(html).not.toContain('>H<');
-    expect(html).toContain('/preqstation_dispatch@PreqHermesBot');
+    expect(html).toContain('/preqstation dispatch');
     expect(html).toContain('project_key=PROJ');
     expect(html).toContain('task_key=PROJ-224');
     expect(html).toContain('objective=implement');
     expect(html).toContain('engine=codex');
     expect(html).toContain('branch_name=task/proj-224/move-status-test-button');
-    expect(html).not.toContain('!/skill preqstation-dispatch');
+    expect(html).not.toContain('!/preqstation dispatch');
   });
 
   it('shows only OpenClaw Telegram while hiding Hermes', () => {
@@ -932,7 +932,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('🦞 Telegram');
     expect(html).toContain('H Telegram');
     expect(html).toContain('aria-label="Selected target: H Telegram"');
-    expect(html).toContain('/preqstation_dispatch@PreqHermesBot');
+    expect(html).toContain('/preqstation dispatch');
     expect(html).not.toContain('Channels');
   });
 
@@ -943,7 +943,7 @@ describe('app/components/task-copy-actions', () => {
     });
 
     expect(html).toContain('aria-label="Selected target: H Telegram"');
-    expect(html).toContain('/preqstation_dispatch@PreqHermesBot');
+    expect(html).toContain('/preqstation dispatch');
   });
 
   it('falls back to OpenClaw Telegram when the stored target is a legacy Claude action', () => {
@@ -1007,7 +1007,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Review');
     expect(html).not.toContain('QA');
     expect(html).toContain(
-      '!/skill preqstation-dispatch plan PROJ-224 using codex branch_name=&quot;task/proj-224/move-status-test-button&quot;',
+      '!/preqstation dispatch plan PROJ-224 using codex branch_name=&quot;task/proj-224/move-status-test-button&quot;',
     );
   });
 
@@ -1021,7 +1021,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Implement');
     expect(html).not.toContain('Plan');
     expect(html).toContain(
-      '!/skill preqstation-dispatch review PROJ-224 using codex branch_name=&quot;task/proj-224/move-status-test-button&quot;',
+      '!/preqstation dispatch review PROJ-224 using codex branch_name=&quot;task/proj-224/move-status-test-button&quot;',
     );
   });
 
@@ -1034,7 +1034,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Implement');
     expect(html).not.toContain('Plan');
     expect(html).toContain(
-      '!/skill preqstation-dispatch qa PROJ-224 using codex branch_name=&quot;task/proj-224/move-status-test-button&quot;',
+      '!/preqstation dispatch qa PROJ-224 using codex branch_name=&quot;task/proj-224/move-status-test-button&quot;',
     );
   });
 
@@ -1063,7 +1063,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('aria-label="Selected mode: Implement"');
     expect(html).toContain('aria-label="Selected target: 🦞 Telegram"');
     expect(html).toContain(
-      '!/skill preqstation-dispatch implement PROJ-224 using claude-code branch_name=&quot;task/proj-224/move-status-test-button&quot;',
+      '!/preqstation dispatch implement PROJ-224 using claude-code branch_name=&quot;task/proj-224/move-status-test-button&quot;',
     );
     expect(html).not.toContain('ask_hint');
   });

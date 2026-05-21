@@ -93,7 +93,7 @@ export function buildOpenClawTaskCommand(params: {
   const status = params.status.trim();
   const engineKey = normalizeEngineKey(params.engineKey) ?? 'codex';
   const objective = params.objective ?? 'default';
-  const command = `/skill preqstation-dispatch ${resolveTaskDispatchVerb(status, objective)} ${taskKey} using ${engineKey}`;
+  const command = `/preqstation dispatch ${resolveTaskDispatchVerb(status, objective)} ${taskKey} using ${engineKey}`;
   return appendCommandMetadata(command, {
     branch_name: params.branchName,
     ask_hint: objective === 'ask' ? params.askHint : null,
@@ -110,7 +110,7 @@ export function buildOpenClawQaCommand(params: {
 }) {
   const projectKey = params.projectKey.trim();
   const engineKey = normalizeEngineKey(params.engineKey) ?? 'codex';
-  const command = `/skill preqstation-dispatch qa ${projectKey} using ${engineKey}`;
+  const command = `/preqstation dispatch qa ${projectKey} using ${engineKey}`;
   const qaTaskKeys = Array.isArray(params.qaTaskKeys)
     ? params.qaTaskKeys
         .map((taskKey) => taskKey.trim())
@@ -134,7 +134,7 @@ export function buildOpenClawProjectCommand(params: {
   const projectKey = params.projectKey.trim().toUpperCase();
   const objective = params.objective ?? 'insight';
   const engineKey = normalizeEngineKey(params.engineKey) ?? 'codex';
-  const command = `/skill preqstation-dispatch ${objective} ${projectKey} using ${engineKey}`;
+  const command = `/preqstation dispatch ${objective} ${projectKey} using ${engineKey}`;
 
   return appendCommandMetadata(command, {
     branch_name: params.branchName,

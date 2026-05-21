@@ -5,8 +5,7 @@ import {
   type TaskDispatchObjective,
 } from '@/lib/openclaw-command';
 
-const DEFAULT_HERMES_BOT_USERNAME = 'PreqHermesBot';
-const HERMES_DISPATCH_COMMAND = 'preqstation_dispatch';
+const HERMES_DISPATCH_COMMAND = '/preqstation dispatch';
 
 function normalizeFieldValue(value: string | null | undefined) {
   return value?.replace(/\r?\n/g, ' ').trim() ?? '';
@@ -38,12 +37,11 @@ export function buildHermesTaskCommand(params: {
   botUsername?: string | null;
 }) {
   const taskKey = params.taskKey.trim();
-  const botUsername = normalizeFieldValue(params.botUsername) || DEFAULT_HERMES_BOT_USERNAME;
   const objective = params.objective ?? 'default';
   const resolvedObjective = resolveTaskDispatchVerb(params.status.trim(), objective);
   const engineKey = normalizeEngineKey(params.engineKey) ?? 'codex';
   const lines = [
-    `/${HERMES_DISPATCH_COMMAND}@${botUsername}`,
+    HERMES_DISPATCH_COMMAND,
     `project_key=${getProjectKeyFromTaskKey(taskKey)}`,
     `task_key=${taskKey}`,
     `objective=${resolvedObjective}`,
@@ -69,10 +67,9 @@ export function buildHermesProjectInsightCommand(params: {
   botUsername?: string | null;
 }) {
   const projectKey = normalizeProjectKey(params.projectKey);
-  const botUsername = normalizeFieldValue(params.botUsername) || DEFAULT_HERMES_BOT_USERNAME;
   const engineKey = normalizeEngineKey(params.engineKey) ?? 'codex';
   const lines = [
-    `/${HERMES_DISPATCH_COMMAND}@${botUsername}`,
+    HERMES_DISPATCH_COMMAND,
     `project_key=${projectKey}`,
     'objective=insight',
     `engine=${engineKey}`,
@@ -97,7 +94,6 @@ export function buildHermesQaCommand(params: {
   botUsername?: string | null;
 }) {
   const projectKey = normalizeProjectKey(params.projectKey);
-  const botUsername = normalizeFieldValue(params.botUsername) || DEFAULT_HERMES_BOT_USERNAME;
   const engineKey = normalizeEngineKey(params.engineKey) ?? 'codex';
   const qaTaskKeys = Array.isArray(params.qaTaskKeys)
     ? params.qaTaskKeys
@@ -106,7 +102,7 @@ export function buildHermesQaCommand(params: {
         .join(',')
     : '';
   const lines = [
-    `/${HERMES_DISPATCH_COMMAND}@${botUsername}`,
+    HERMES_DISPATCH_COMMAND,
     `project_key=${projectKey}`,
     'objective=qa',
     `engine=${engineKey}`,

@@ -31,7 +31,7 @@ describe('lib/task-telegram-client', () => {
         askHint: 'Summarize around acceptance criteria',
       }),
     ).toContain(
-      '!/skill preqstation-dispatch ask PROJ-328 using claude-code branch_name="task/proj-328/edit-note" ask_hint="Summarize around acceptance criteria"',
+      '!/preqstation dispatch ask PROJ-328 using claude-code branch_name="task/proj-328/edit-note" ask_hint="Summarize around acceptance criteria"',
     );
   });
 
@@ -44,7 +44,7 @@ describe('lib/task-telegram-client', () => {
         commentId: 'comment-123',
         dispatchTarget: 'telegram',
       }),
-    ).toBe('!/skill preqstation-dispatch comment PROJ-328 using codex comment_id="comment-123"');
+    ).toBe('!/preqstation dispatch comment PROJ-328 using codex comment_id="comment-123"');
   });
 
   it('builds Hermes comment dispatch messages with comment metadata', () => {
@@ -57,7 +57,7 @@ describe('lib/task-telegram-client', () => {
         dispatchTarget: 'hermes-telegram',
       }),
     ).toBe(
-      '/preqstation_dispatch@PreqHermesBot\nproject_key=PROJ\ntask_key=PROJ-328\nobjective=comment\nengine=claude-code\ncomment_id=comment-123',
+      '/preqstation dispatch\nproject_key=PROJ\ntask_key=PROJ-328\nobjective=comment\nengine=claude-code\ncomment_id=comment-123',
     );
   });
 
@@ -87,7 +87,7 @@ describe('lib/task-telegram-client', () => {
 
     await sendTaskTelegramMessage(
       'PROJ-328',
-      '/preqstation_dispatch@PreqHermesBot',
+      '/preqstation dispatch',
       'hermes-telegram',
     );
 
@@ -98,7 +98,7 @@ describe('lib/task-telegram-client', () => {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           taskKey: 'PROJ-328',
-          message: '/preqstation_dispatch@PreqHermesBot',
+          message: '/preqstation dispatch',
           dispatchTarget: 'hermes-telegram',
         }),
       }),
@@ -113,7 +113,7 @@ describe('lib/task-telegram-client', () => {
         dispatchTarget: 'hermes-telegram',
         insightPrompt: 'Break down the Connections page redesign',
       }),
-    ).toContain('/preqstation_dispatch@PreqHermesBot');
+    ).toContain('/preqstation dispatch');
     expect(
       buildProjectInsightDispatchMessage({
         projectKey: 'PROJ',
@@ -135,7 +135,7 @@ describe('lib/task-telegram-client', () => {
         qaTaskKeys: ['PROJ-1', 'PROJ-2'],
       }),
     ).toBe(
-      '!/skill preqstation-dispatch qa PROJ using gemini-cli branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
+      '!/preqstation dispatch qa PROJ using gemini-cli branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
     );
   });
 
@@ -147,7 +147,7 @@ describe('lib/task-telegram-client', () => {
 
     await sendProjectInsightTelegramMessage(
       'PROJ',
-      '/preqstation_dispatch@PreqHermesBot',
+      '/preqstation dispatch',
       'hermes-telegram',
     );
 
@@ -158,7 +158,7 @@ describe('lib/task-telegram-client', () => {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           projectKey: 'PROJ',
-          message: '/preqstation_dispatch@PreqHermesBot',
+          message: '/preqstation dispatch',
           dispatchTarget: 'hermes-telegram',
         }),
       }),

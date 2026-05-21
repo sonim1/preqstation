@@ -104,7 +104,7 @@ describe('app/components/project-insight-modal', () => {
     expect(html).not.toContain('aria-label="Insight action"');
     expect(html).not.toContain('Copy Telegram');
     expect(html).not.toContain('Channels');
-    expect(html).toContain('!/skill preqstation-dispatch insight PROJ using claude-code');
+    expect(html).toContain('!/preqstation dispatch insight PROJ using claude-code');
   });
 
   it('defaults non-Claude insight dispatch to Telegram when it is available', () => {
@@ -126,7 +126,7 @@ describe('app/components/project-insight-modal', () => {
 
     expect(html).toContain('aria-label="Selected target: H Telegram"');
     expect(html).not.toContain('🦞 Telegram');
-    expect(html).toContain('/preqstation_dispatch@PreqHermesBot');
+    expect(html).toContain('/preqstation dispatch');
   });
 
   it('shows the resolved primary action label on first render for Claude Code', () => {
