@@ -34,7 +34,7 @@
     "@mantine/hooks": "^9.2.1",
     "@mantine/notifications": "^9.2.1",
     "@mantine/spotlight": "^9.2.1",
-    "@modelcontextprotocol/sdk": "^1.28.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@tabler/icons-react": "^3.38.0",
     "any-ascii": "^0.3.3",
     "bcryptjs": "^3.0.3",
