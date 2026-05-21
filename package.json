@@ -32,7 +32,7 @@
     "@mantine/charts": "^9.2.0",
     "@mantine/core": "^9.2.0",
     "@mantine/hooks": "^9.2.0",
-    "@mantine/notifications": "^9.2.0",
+    "@mantine/notifications": "^9.2.1",
     "@mantine/spotlight": "^9.2.0",
     "@modelcontextprotocol/sdk": "^1.28.0",
     "@tabler/icons-react": "^3.38.0",
