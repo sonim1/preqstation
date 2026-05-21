@@ -903,7 +903,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('objective=implement');
     expect(html).toContain('engine=codex');
     expect(html).toContain('branch_name=task/proj-224/move-status-test-button');
-    expect(html).not.toContain('!/preqstation_dispatch@PreqHermesBot');
+    expect(html).not.toContain('!/preqstation dispatch');
   });
 
   it('shows only OpenClaw Telegram while hiding Hermes', () => {
