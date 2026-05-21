@@ -133,9 +133,9 @@ html[data-mantine-color-scheme='dark'] {
   --ui-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.2);
   --ui-elevation-2: 0 4px 12px rgba(0, 0, 0, 0.3);
   --ui-elevation-3: 0 12px 28px rgba(0, 0, 0, 0.4);
-  --kanban-stage-surface-start: var(--mantine-color-body);
+  --kanban-stage-surface-start: var(--ui-surface-strong);
   --kanban-stage-surface-mid: var(--ui-surface);
-  --kanban-stage-surface-end: var(--mantine-color-body);
+  --kanban-stage-surface-end: var(--ui-surface-strong);
   --kanban-stage-surface: linear-gradient(
     160deg,
     var(--kanban-stage-surface-start),

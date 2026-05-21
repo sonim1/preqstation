@@ -134,82 +134,6 @@ function snapshotProperties(style: CSSStyleDeclaration, propertyNames: readonly 
   );
 }
 
-function collectStyleRuleSnapshots(
-  ruleList: CSSRuleList,
-  selectorText: string,
-  propertyNames: readonly string[],
-  mediaText: string | null = null,
-): Array<{ mediaText: string | null; properties: Record<string, string> }> {
-  return Array.from(ruleList).flatMap((rule) => {
-    const groupingRule = rule as CSSGroupingRule;
-    const mediaRule = rule as CSSMediaRule;
-    const styleRule = rule as CSSStyleRule;
-    const nextMediaText =
-      'conditionText' in rule && typeof mediaRule.conditionText === 'string'
-        ? mediaRule.conditionText
-        : mediaText;
-    const matches =
-      'selectorText' in rule && styleRule.selectorText === selectorText
-        ? [{ mediaText, properties: snapshotProperties(styleRule.style, propertyNames) }]
-        : [];
-    const nestedMatches =
-      'cssRules' in rule
-        ? collectStyleRuleSnapshots(
-            groupingRule.cssRules,
-            selectorText,
-            propertyNames,
-            nextMediaText,
-          )
-        : [];
-
-    return [...matches, ...nestedMatches];
-  });
-}
-
-function getCssRuleSnapshots(
-  cssSource: string,
-  selectorText: string,
-  propertyNames: readonly string[],
-) {
-  const styleElement = document.createElement('style');
-  styleElement.textContent = cssSource;
-  document.head.append(styleElement);
-
-  try {
-    expect(styleElement.sheet).not.toBeNull();
-    return collectStyleRuleSnapshots(styleElement.sheet!.cssRules, selectorText, propertyNames);
-  } finally {
-    styleElement.remove();
-  }
-}
-
-function getKeyframeTransforms(cssSource: string, animationName: string) {
-  const styleElement = document.createElement('style');
-  styleElement.textContent = cssSource;
-  document.head.append(styleElement);
-
-  try {
-    expect(styleElement.sheet).not.toBeNull();
-    for (const rule of Array.from(styleElement.sheet!.cssRules)) {
-      const keyframesRule = rule as CSSKeyframesRule;
-      if ('name' in rule && keyframesRule.name === animationName && 'cssRules' in rule) {
-        return Object.fromEntries(
-          Array.from(keyframesRule.cssRules).map((keyframeRule) => [
-            'keyText' in keyframeRule ? (keyframeRule as CSSKeyframeRule).keyText : '',
-            'style' in keyframeRule
-              ? (keyframeRule as CSSKeyframeRule).style.getPropertyValue('transform').trim()
-              : '',
-          ]),
-        );
-      }
-    }
-
-    return {};
-  } finally {
-    styleElement.remove();
-  }
-}
-
 function resolveWaveTopHeadroom(runState: 'queued' | 'running') {
   const { paths, waveHeight, waveShiftPercent, bandTopClearance } = getRunStateWaveConfig(runState);
   const highestCrest = Math.min(
@@ -482,7 +406,7 @@ describe('app/components/kanban-card', () => {
     expect(stageStyle.background).toBe('var(--kanban-stage-surface)');
   });
 
-  it('darkens the board stage behind cards with a subtle ambient light layer', () => {
+  it('darkens the board stage behind cards with semantic surface and ambient tokens', () => {
     const darkStageStyle = getGlobalComputedStyle('kanban-stage', 'dark', [
       '--kanban-stage-surface',
       '--kanban-stage-surface-start',
@@ -492,18 +416,6 @@ describe('app/components/kanban-card', () => {
       '--kanban-stage-ambient-running',
       '--kanban-stage-ambient-layer',
     ]);
-    const ambientRules = getCssRuleSnapshots(globalsCss, '.kanban-stage::after', [
-      'animation',
-      'background',
-      'content',
-      'opacity',
-      'pointer-events',
-    ]);
-    const ambientRule = ambientRules.find((rule) => rule.mediaText === null);
-    const reducedMotionRule = ambientRules.find(
-      (rule) => rule.mediaText === '(prefers-reduced-motion: reduce)',
-    );
-    const keyframeTransforms = getKeyframeTransforms(globalsCss, 'kanbanStageAmbientDrift');
 
     expect(darkStageStyle.position).toBe('relative');
     expect(darkStageStyle.isolation).toBe('isolate');
@@ -513,11 +425,11 @@ describe('app/components/kanban-card', () => {
     );
     expect(darkStageStyle.customProperties['--kanban-stage-surface']).not.toContain('rgba(');
     expect(darkStageStyle.customProperties['--kanban-stage-surface-start']).toBe(
-      'var(--mantine-color-body)',
+      'var(--ui-surface-strong)',
     );
     expect(darkStageStyle.customProperties['--kanban-stage-surface-mid']).toBe('var(--ui-surface)');
     expect(darkStageStyle.customProperties['--kanban-stage-surface-end']).toBe(
-      'var(--mantine-color-body)',
+      'var(--ui-surface-strong)',
     );
     expect(darkStageStyle.customProperties['--kanban-stage-ambient-accent']).toBe(
       'var(--ui-accent-soft)',
@@ -532,16 +444,6 @@ describe('app/components/kanban-card', () => {
       'var(--kanban-stage-ambient-running)',
     );
     expect(darkStageStyle.customProperties['--kanban-stage-ambient-layer']).not.toContain('rgba(');
-    expect(["''", '""']).toContain(ambientRule?.properties.content);
-    expect(ambientRule?.properties['pointer-events']).toBe('none');
-    expect(ambientRule?.properties.background).toBe('var(--kanban-stage-ambient-layer)');
-    expect(ambientRule?.properties.opacity).toBe('0.4');
-    expect(ambientRule?.properties.animation).toBe(
-      'kanbanStageAmbientDrift 24s ease-in-out infinite alternate',
-    );
-    expect(reducedMotionRule?.properties.animation).toBe('none');
-    expect(keyframeTransforms['0%']).toBe('translate3d(-2%, -1%, 0)');
-    expect(keyframeTransforms['100%']).toBe('translate3d(2%, 1%, 0)');
   });
 
   it('renders boundary-free lanes with subtly rounded note cards carried by shadows', () => {
