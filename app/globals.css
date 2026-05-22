@@ -223,6 +223,41 @@
     rgba(236, 243, 252, 0.9),
     rgba(226, 236, 248, 0.96)
   );
+  --kanban-card-surface: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-surface-strong), var(--ui-on-accent) 18%),
+    color-mix(in srgb, var(--ui-surface-soft), var(--ui-on-accent) 8%)
+  );
+  --kanban-card-shadow-outline-transparency: 44%;
+  --kanban-card-shadow-queued-outline-transparency: 48%;
+  --kanban-card-shadow-running-outline-transparency: 50%;
+  --kanban-card-shadow-outline: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    transparent var(--kanban-card-shadow-outline-transparency)
+  );
+  --kanban-card-shadow-ambient: color-mix(in srgb, var(--ui-neutral-strong), transparent 76%);
+  --kanban-card-shadow-ambient-soft: color-mix(in srgb, var(--ui-neutral-strong), transparent 84%);
+  --kanban-card-shadow-ambient-faint: color-mix(in srgb, var(--ui-neutral-strong), transparent 92%);
+  --kanban-card-shadow-queued-outline: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    transparent var(--kanban-card-shadow-queued-outline-transparency)
+  );
+  --kanban-card-shadow-queued-glow: color-mix(in srgb, var(--ui-status-queued), transparent 74%);
+  --kanban-card-shadow-queued-ambient: color-mix(
+    in srgb,
+    var(--ui-neutral-strong),
+    transparent 80%
+  );
+  --kanban-card-shadow-queued-faint: color-mix(in srgb, var(--ui-neutral-strong), transparent 90%);
+  --kanban-card-shadow-running-outline: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    transparent var(--kanban-card-shadow-running-outline-transparency)
+  );
+  --kanban-card-shadow-running-ambient: color-mix(in srgb, var(--ui-text), transparent 52%);
+  --kanban-card-shadow-running-faint: color-mix(in srgb, var(--ui-text), transparent 84%);
   --kanban-frame-stage-surface: linear-gradient(
     180deg,
     color-mix(in srgb, var(--ui-surface-soft), var(--ui-accent-soft) 18%),
@@ -341,6 +376,39 @@ html[data-mantine-color-scheme='dark'] {
   --kanban-frame-chrome-shadow: var(--ui-elevation-3);
   --kanban-frame-mobile-tab-shadow: 0px -18px 30px -28px rgba(0, 0, 0, 0.82);
   --kanban-stage-surface: var(--kanban-frame-stage-surface);
+  --kanban-card-surface: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-surface-strong), var(--ui-accent-soft) 18%),
+    color-mix(in srgb, var(--ui-surface-soft), var(--ui-surface) 24%)
+  );
+  --kanban-card-shadow-outline-transparency: 28%;
+  --kanban-card-shadow-outline: color-mix(
+    in srgb,
+    var(--ui-border),
+    transparent var(--kanban-card-shadow-outline-transparency)
+  );
+  --kanban-card-shadow-ambient: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    transparent var(--kanban-card-shadow-outline-transparency)
+  );
+  --kanban-card-shadow-ambient-soft: color-mix(in srgb, var(--ui-surface-strong), transparent 48%);
+  --kanban-card-shadow-ambient-faint: color-mix(in srgb, var(--ui-surface-strong), transparent 64%);
+  --kanban-card-shadow-queued-outline: var(--kanban-card-shadow-outline);
+  --kanban-card-shadow-queued-glow: color-mix(in srgb, var(--ui-accent), transparent 80%);
+  --kanban-card-shadow-queued-ambient: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    transparent 22%
+  );
+  --kanban-card-shadow-queued-faint: color-mix(in srgb, var(--ui-surface-strong), transparent 62%);
+  --kanban-card-shadow-running-outline: var(--kanban-card-shadow-outline);
+  --kanban-card-shadow-running-ambient: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    transparent 18%
+  );
+  --kanban-card-shadow-running-faint: color-mix(in srgb, var(--ui-surface-strong), transparent 60%);
 }
 
 body {

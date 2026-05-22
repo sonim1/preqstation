@@ -197,9 +197,18 @@ function getCardForTitle(title: string) {
   return card as HTMLElement;
 }
 
-function renderCardsCssFixture(markup: string, includeGlobals = false) {
+function renderCardsCssFixture(
+  markup: string,
+  includeGlobals = false,
+  colorScheme?: 'dark' | 'light',
+) {
   const style = document.createElement('style');
   const fixture = document.createElement('div');
+  const previousColorScheme = document.documentElement.getAttribute('data-mantine-color-scheme');
+
+  if (colorScheme) {
+    document.documentElement.setAttribute('data-mantine-color-scheme', colorScheme);
+  }
 
   style.textContent = `${includeGlobals ? `${globalsCss}\n` : ''}${cardsCss}`;
   fixture.innerHTML = markup;
@@ -211,6 +220,11 @@ function renderCardsCssFixture(markup: string, includeGlobals = false) {
     cleanup: () => {
       fixture.remove();
       style.remove();
+      if (previousColorScheme === null) {
+        document.documentElement.removeAttribute('data-mantine-color-scheme');
+      } else {
+        document.documentElement.setAttribute('data-mantine-color-scheme', previousColorScheme);
+      }
     },
   };
 }
@@ -378,28 +392,43 @@ describe('app/components/kanban-card', () => {
   });
 
   it('lifts the dark kanban card surface while softening the repeated outline', () => {
-    const darkCardSurfaceRule = getCssRuleBody(
-      cardsCss,
-      ":global(html[data-mantine-color-scheme='dark']) .kanbanCard,\n:global(html[data-mantine-color-scheme='dark']) .itemCard.kanbanCard",
-    );
-    const darkCardShadowRule = getCssRuleBody(
-      cardsCss,
-      ":global(html[data-mantine-color-scheme='dark']) .kanbanCard",
+    const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
+      `
+        <article class="itemCard kanbanCard" data-testid="card">
+          <div class="kanbanCardFrame" data-testid="frame"></div>
+        </article>
+      `,
+      true,
+      'dark',
     );
 
-    expect(darkCardSurfaceRule).toContain(
-      '--kanban-note-surface: linear-gradient(180deg, rgba(32, 48, 74, 0.98), rgba(22, 34, 54, 0.96));',
-    );
-    expect(darkCardSurfaceRule).toContain('background: var(--kanban-note-surface);');
-    expect(darkCardShadowRule).toContain(
-      '--kanban-card-shadow-outline: color-mix(in srgb, var(--ui-border), transparent 28%);',
-    );
-    expect(darkCardShadowRule).toContain(
-      '--kanban-card-shadow-queued-outline: color-mix(in srgb, var(--ui-border), transparent 28%);',
-    );
-    expect(darkCardShadowRule).toContain(
-      '--kanban-card-shadow-running-outline: color-mix(in srgb, var(--ui-border), transparent 28%);',
-    );
+    try {
+      const cardStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'card'));
+      const frameStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'frame'));
+      const darkSurface = cardStyle.getPropertyValue('--kanban-card-surface');
+
+      expect(cardStyle.getPropertyValue('--kanban-note-surface').trim()).toBe(
+        'var(--kanban-card-surface)',
+      );
+      expect(darkSurface).toContain('var(--ui-surface-strong)');
+      expect(darkSurface).not.toMatch(/rgba\(/);
+      expect(cardStyle.background).toBe('var(--kanban-note-surface)');
+      expect(frameStyle.background).toBe('var(--kanban-note-surface)');
+      expect(cardStyle.getPropertyValue('--kanban-card-shadow-outline-transparency').trim()).toBe(
+        '28%',
+      );
+      expect(cardStyle.getPropertyValue('--kanban-card-shadow-outline')).toContain(
+        'transparent var(--kanban-card-shadow-outline-transparency)',
+      );
+      expect(cardStyle.getPropertyValue('--kanban-card-shadow-queued-outline').trim()).toBe(
+        'var(--kanban-card-shadow-outline)',
+      );
+      expect(cardStyle.getPropertyValue('--kanban-card-shadow-running-outline').trim()).toBe(
+        'var(--kanban-card-shadow-outline)',
+      );
+    } finally {
+      cleanupFixture();
+    }
   });
 
   it('derives run-state wave chrome from execution tokens and local mechanics variables', () => {
@@ -459,9 +488,10 @@ describe('app/components/kanban-card', () => {
     }
   });
 
-  it('keeps card state shadows on semantic local variables instead of raw shadow colors', () => {
+  it('keeps card state shadows on semantic theme variables instead of raw shadow colors', () => {
     const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
       '<article class="kanbanCard" data-testid="card"></article>',
+      true,
     );
 
     try {
