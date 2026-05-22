@@ -405,12 +405,15 @@ describe('app/components/kanban-card', () => {
     try {
       const cardStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'card'));
       const frameStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'frame'));
-      const darkSurface = cardStyle.getPropertyValue('--kanban-card-surface');
+      const darkSurface = cardStyle.getPropertyValue('--kanban-card-surface').trim();
+      const liftedSurface = cardStyle.getPropertyValue('--ui-surface-lifted');
 
       expect(cardStyle.getPropertyValue('--kanban-note-surface').trim()).toBe(
         'var(--kanban-card-surface)',
       );
-      expect(darkSurface).toBe('linear-gradient(180deg,rgba(32,48,74,0.98),rgba(22,34,54,0.96))');
+      expect(darkSurface).toBe('var(--ui-surface-lifted)');
+      expect(liftedSurface).toContain('var(--ui-surface-');
+      expect(liftedSurface).not.toContain('rgba(');
       expect(cardStyle.background).toBe('var(--kanban-note-surface)');
       expect(frameStyle.background).toBe('var(--kanban-note-surface)');
       expect(cardStyle.getPropertyValue('--kanban-card-shadow-outline-transparency').trim()).toBe(
