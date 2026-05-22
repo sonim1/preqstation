@@ -387,10 +387,11 @@ html[data-mantine-color-scheme='dark'] {
     var(--ui-border),
     transparent var(--kanban-card-shadow-outline-transparency)
   );
+  --kanban-card-shadow-ambient-transparency: 28%;
   --kanban-card-shadow-ambient: color-mix(
     in srgb,
     var(--ui-surface-strong),
-    transparent var(--kanban-card-shadow-outline-transparency)
+    transparent var(--kanban-card-shadow-ambient-transparency)
   );
   --kanban-card-shadow-ambient-soft: color-mix(in srgb, var(--ui-surface-strong), transparent 48%);
   --kanban-card-shadow-ambient-faint: color-mix(in srgb, var(--ui-surface-strong), transparent 64%);
