@@ -376,11 +376,7 @@ html[data-mantine-color-scheme='dark'] {
   --kanban-frame-chrome-shadow: var(--ui-elevation-3);
   --kanban-frame-mobile-tab-shadow: 0px -18px 30px -28px rgba(0, 0, 0, 0.82);
   --kanban-stage-surface: var(--kanban-frame-stage-surface);
-  --kanban-card-surface: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--ui-surface-strong), var(--ui-accent-soft) 18%),
-    color-mix(in srgb, var(--ui-surface-soft), var(--ui-surface) 24%)
-  );
+  --kanban-card-surface: linear-gradient(180deg, rgba(32, 48, 74, 0.98), rgba(22, 34, 54, 0.96));
   --kanban-card-shadow-outline-transparency: 28%;
   --kanban-card-shadow-outline: color-mix(
     in srgb,

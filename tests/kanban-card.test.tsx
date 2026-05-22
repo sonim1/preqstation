@@ -410,8 +410,7 @@ describe('app/components/kanban-card', () => {
       expect(cardStyle.getPropertyValue('--kanban-note-surface').trim()).toBe(
         'var(--kanban-card-surface)',
       );
-      expect(darkSurface).toContain('var(--ui-surface-strong)');
-      expect(darkSurface).not.toMatch(/rgba\(/);
+      expect(darkSurface).toBe('linear-gradient(180deg,rgba(32,48,74,0.98),rgba(22,34,54,0.96))');
       expect(cardStyle.background).toBe('var(--kanban-note-surface)');
       expect(frameStyle.background).toBe('var(--kanban-note-surface)');
       expect(cardStyle.getPropertyValue('--kanban-card-shadow-outline-transparency').trim()).toBe(
