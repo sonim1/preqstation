@@ -315,7 +315,9 @@ describe('board frame token contract', () => {
     expectComputedToken('.kanban-action-island', 'background', '--kanban-frame-chrome-surface');
     expectComputedToken('.kanban-action-island', 'box-shadow', '--kanban-frame-chrome-shadow');
     expectComputedToken('.kanban-action-island', 'box-shadow', '--kanban-frame-chrome-highlight');
-    expectComputedToken('.kanban-column', 'background', '--kanban-frame-column-surface');
+    expect(['transparent', 'rgba(0, 0, 0, 0)']).toContain(
+      window.getComputedStyle(getElement('.kanban-column')).backgroundColor,
+    );
     expectNoComputedShadow('.kanban-column');
     expectComputedToken('.kanban-quickadd-panel', 'background', '--kanban-frame-chrome-surface');
   });

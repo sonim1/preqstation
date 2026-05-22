@@ -99,6 +99,9 @@ describe('app/components/board-loading-shell', () => {
 
       const columnStyle = window.getComputedStyle(column!);
 
+      expect(columnStyle.borderTopWidth).toBe('0px');
+      expect(columnStyle.borderTopStyle).toBe('none');
+      expect(['transparent', 'rgba(0, 0, 0, 0)']).toContain(columnStyle.backgroundColor);
       expect(['', 'none']).toContain(columnStyle.boxShadow.trim());
       expect(columnStyle.transition).not.toContain('box-shadow');
     } finally {
