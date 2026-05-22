@@ -77,7 +77,7 @@ describe('app/api/telegram/send/insight/route', () => {
     const response = await POST(
       postRequest({
         projectKey: 'PROJ',
-        message: '!/skill preqstation-dispatch insight PROJ using codex',
+        message: '!/preqstation dispatch insight PROJ using codex',
       }),
     );
 
@@ -85,7 +85,7 @@ describe('app/api/telegram/send/insight/route', () => {
     expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
       '123:bot-token',
       '1234567',
-      '!/skill preqstation-dispatch insight PROJ using codex',
+      '!/preqstation dispatch insight PROJ using codex',
       { normalizeCommand: true },
     );
   });

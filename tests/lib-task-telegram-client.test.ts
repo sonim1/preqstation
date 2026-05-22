@@ -31,7 +31,7 @@ describe('lib/task-telegram-client', () => {
         askHint: 'Summarize around acceptance criteria',
       }),
     ).toContain(
-      '!/skill preqstation-dispatch ask PROJ-328 using claude-code branch_name="task/proj-328/edit-note" ask_hint="Summarize around acceptance criteria"',
+      '!/preqstation dispatch ask PROJ-328 using claude-code branch_name="task/proj-328/edit-note" ask_hint="Summarize around acceptance criteria"',
     );
   });
 
@@ -44,7 +44,7 @@ describe('lib/task-telegram-client', () => {
         commentId: 'comment-123',
         dispatchTarget: 'telegram',
       }),
-    ).toBe('!/skill preqstation-dispatch comment PROJ-328 using codex comment_id="comment-123"');
+    ).toBe('!/preqstation dispatch comment PROJ-328 using codex comment_id="comment-123"');
   });
 
   it('builds Hermes comment dispatch messages with comment metadata', () => {
@@ -135,7 +135,7 @@ describe('lib/task-telegram-client', () => {
         qaTaskKeys: ['PROJ-1', 'PROJ-2'],
       }),
     ).toBe(
-      '!/skill preqstation-dispatch qa PROJ using gemini-cli branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
+      '!/preqstation dispatch qa PROJ using gemini-cli branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
     );
   });
 

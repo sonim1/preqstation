@@ -11,11 +11,11 @@ import {
 describe('lib/openclaw-command', () => {
   it('normalizes telegram commands with leading bang', () => {
     expect(
-      normalizeTelegramCommandMessage('/skill preqstation-dispatch status PROJ-1 using codex'),
-    ).toBe('!/skill preqstation-dispatch status PROJ-1 using codex');
+      normalizeTelegramCommandMessage('/preqstation dispatch status PROJ-1 using codex'),
+    ).toBe('!/preqstation dispatch status PROJ-1 using codex');
   });
 
-  it('builds todo command with preqstation-dispatch and branch metadata', () => {
+  it('builds todo command with unified preqstation dispatch syntax and branch metadata', () => {
     expect(
       buildOpenClawTaskCommand({
         taskKey: 'PROJ-1',
@@ -24,7 +24,7 @@ describe('lib/openclaw-command', () => {
         branchName: 'task/proj-1/implement-auth',
       }),
     ).toBe(
-      '!/skill preqstation-dispatch implement PROJ-1 using codex branch_name="task/proj-1/implement-auth"',
+      '!/preqstation dispatch implement PROJ-1 using codex branch_name="task/proj-1/implement-auth"',
     );
   });
 
@@ -35,7 +35,7 @@ describe('lib/openclaw-command', () => {
         status: 'ready',
         engineKey: 'claude-code',
       }),
-    ).toBe('!/skill preqstation-dispatch review PROJ-1 using claude-code');
+    ).toBe('!/preqstation dispatch review PROJ-1 using claude-code');
   });
 
   it('maps hold tasks back to implement command', () => {
@@ -45,7 +45,7 @@ describe('lib/openclaw-command', () => {
         status: 'hold',
         engineKey: 'codex',
       }),
-    ).toBe('!/skill preqstation-dispatch implement PROJ-1 using codex');
+    ).toBe('!/preqstation dispatch implement PROJ-1 using codex');
   });
 
   it('maps done tasks to status command', () => {
@@ -55,7 +55,7 @@ describe('lib/openclaw-command', () => {
         status: 'done',
         engineKey: 'gemini-cli',
       }),
-    ).toBe('!/skill preqstation-dispatch status PROJ-1 using gemini-cli');
+    ).toBe('!/preqstation dispatch status PROJ-1 using gemini-cli');
   });
 
   it('builds ask command without deriving objective from workflow status', () => {
@@ -68,7 +68,7 @@ describe('lib/openclaw-command', () => {
         askHint: 'Summarize around acceptance criteria',
       }),
     ).toBe(
-      '!/skill preqstation-dispatch ask PROJ-328 using codex ask_hint="Summarize around acceptance criteria"',
+      '!/preqstation dispatch ask PROJ-328 using codex ask_hint="Summarize around acceptance criteria"',
     );
   });
 
@@ -80,7 +80,7 @@ describe('lib/openclaw-command', () => {
         engineKey: 'codex',
         objective: 'plan',
       }),
-    ).toBe('!/skill preqstation-dispatch plan PROJ-328 using codex');
+    ).toBe('!/preqstation dispatch plan PROJ-328 using codex');
 
     expect(
       buildOpenClawTaskCommand({
@@ -89,7 +89,7 @@ describe('lib/openclaw-command', () => {
         engineKey: 'gemini-cli',
         objective: 'qa',
       }),
-    ).toBe('!/skill preqstation-dispatch qa PROJ-328 using gemini-cli');
+    ).toBe('!/preqstation dispatch qa PROJ-328 using gemini-cli');
   });
 
   it('allows explicit implement and review modes without deriving from workflow status', () => {
@@ -100,7 +100,7 @@ describe('lib/openclaw-command', () => {
         engineKey: 'codex',
         objective: 'implement',
       }),
-    ).toBe('!/skill preqstation-dispatch implement PROJ-328 using codex');
+    ).toBe('!/preqstation dispatch implement PROJ-328 using codex');
 
     expect(
       buildOpenClawTaskCommand({
@@ -109,7 +109,7 @@ describe('lib/openclaw-command', () => {
         engineKey: 'gemini-cli',
         objective: 'review',
       }),
-    ).toBe('!/skill preqstation-dispatch review PROJ-328 using gemini-cli');
+    ).toBe('!/preqstation dispatch review PROJ-328 using gemini-cli');
   });
 
   it('builds QA command with branch and run metadata', () => {
@@ -122,7 +122,7 @@ describe('lib/openclaw-command', () => {
         qaTaskKeys: ['PROJ-1', 'PROJ-2'],
       }),
     ).toBe(
-      '!/skill preqstation-dispatch qa PROJ using codex branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
+      '!/preqstation dispatch qa PROJ using codex branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
     );
   });
 
@@ -144,7 +144,7 @@ describe('lib/openclaw-command', () => {
         insightPrompt: 'Break down the Connections page redesign\nAlso review the mobile flow',
       }),
     ).toBe(
-      '!/skill preqstation-dispatch insight PROJ using codex insight_prompt_b64="QnJlYWsgZG93biB0aGUgQ29ubmVjdGlvbnMgcGFnZSByZWRlc2lnbgpBbHNvIHJldmlldyB0aGUgbW9iaWxlIGZsb3c="',
+      '!/preqstation dispatch insight PROJ using codex insight_prompt_b64="QnJlYWsgZG93biB0aGUgQ29ubmVjdGlvbnMgcGFnZSByZWRlc2lnbgpBbHNvIHJldmlldyB0aGUgbW9iaWxlIGZsb3c="',
     );
   });
 });

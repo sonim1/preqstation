@@ -55,7 +55,7 @@ export function OpenClawGuide({ projects }: OpenClawGuideProps) {
       <Paper withBorder radius="md" p="xs" className={cardStyles.guideBar}>
         <div className={cardStyles.guideContent}>
           <Text size="xs" c="dimmed">
-            Preview the exact command before copying it into the Hermes host shell.
+            Preview the exact command before copying it into the dispatcher host shell.
           </Text>
           <Text
             component="pre"

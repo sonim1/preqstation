@@ -16,7 +16,7 @@ function renderOpenClawGuide(
 }
 
 describe('app/components/openclaw-guide', () => {
-  it('builds a preqstation-dispatcher setup auto payload from linked project repos', () => {
+  it('builds a shell-executable dispatcher setup command from linked project repos', () => {
     expect(
       buildPrompt([
         {
@@ -45,7 +45,7 @@ describe('app/components/openclaw-guide', () => {
     expect(html).toContain('data-openclaw-guide="true"');
     expect(html).toContain('Show setup prompt');
     expect(html).toContain(
-      'Preview the exact command before copying it into the Hermes host shell.',
+      'Preview the exact command before copying it into the dispatcher host shell.',
     );
     expect(html).toContain('Copy dispatcher auto-setup command');
     expect(html).toContain(

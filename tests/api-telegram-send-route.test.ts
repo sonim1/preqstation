@@ -149,7 +149,7 @@ describe('app/api/telegram/send/route', () => {
     const response = await POST(
       postRequest({
         taskKey: 'PROJ-404',
-        message: '/skill preqstation-dispatch implement PROJ-404 using codex',
+        message: '/preqstation dispatch implement PROJ-404 using codex',
       }),
     );
 
@@ -167,7 +167,7 @@ describe('app/api/telegram/send/route', () => {
     const response = await POST(
       postRequest({
         taskKey: 'PROJ-1',
-        message: '/skill preqstation-dispatch implement PROJ-1 using codex',
+        message: '/preqstation dispatch implement PROJ-1 using codex',
       }),
     );
 
@@ -181,7 +181,7 @@ describe('app/api/telegram/send/route', () => {
     expect(options.headers).toEqual({ 'content-type': 'application/json' });
     expect(JSON.parse(String(options.body))).toEqual({
       chat_id: '1234567',
-      text: '!/skill preqstation-dispatch implement PROJ-1 using codex',
+      text: '!/preqstation dispatch implement PROJ-1 using codex',
     });
 
     expect(mocked.writeAuditLog).toHaveBeenCalledWith(

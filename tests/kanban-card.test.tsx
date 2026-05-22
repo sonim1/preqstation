@@ -1175,6 +1175,6 @@ describe('app/components/kanban-card', () => {
     expect(dispatch.message).toContain('task_key=PROJ-211');
     expect(dispatch.message).toContain('engine=codex');
     expect(dispatch.message).toContain('branch_name=task/proj-211/label-color-update');
-    expect(dispatch.message).not.toContain('!/skill preqstation-dispatch');
+    expect(dispatch.message).not.toContain('!/preqstation dispatch');
   });
 });

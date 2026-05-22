@@ -45,7 +45,7 @@ Important naming note:
                           │           │      OpenClaw (Runtime)         │
                           │           │                                 │
                           │           │  Receives message, triggers     │
-                          │           │  preqstation-dispatch skill      │
+                          │           │  /preqstation dispatch command   │
                           │           └────────────────┬────────────────┘
                           │                            │
                           │                   Parses intent, creates
@@ -351,7 +351,7 @@ Projects can also store an `agent_instructions` setting. When present, task payl
   for older installs until the split settings are saved
 - `/api/telegram/send` defaults to the OpenClaw channel and can target the Hermes channel when
   `dispatchTarget=hermes-telegram`
-- OpenClaw-targeted task, QA, and insight sends use the `!/skill preqstation-dispatch ...`
+- OpenClaw-targeted task, QA, and insight sends use the `!/preqstation dispatch ...`
   command format
 - Hermes-targeted task, QA, and insight sends use the `/preqstation_dispatch@PreqHermesBot` command
   format
