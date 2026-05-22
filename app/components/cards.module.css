@@ -922,20 +922,16 @@
 /* Dark mode */
 :global(html[data-mantine-color-scheme='dark']) .kanbanCard,
 :global(html[data-mantine-color-scheme='dark']) .itemCard.kanbanCard {
-  --kanban-note-surface: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--ui-surface-soft), var(--ui-surface-strong) 34%),
-    color-mix(in srgb, var(--ui-surface), var(--ui-surface-strong) 28%)
-  );
+  --kanban-note-surface: linear-gradient(180deg, rgba(32, 48, 74, 0.98), rgba(22, 34, 54, 0.96));
   background: var(--kanban-note-surface);
 }
 
 :global(html[data-mantine-color-scheme='dark']) .kanbanCard {
-  --kanban-card-shadow-outline: color-mix(in srgb, var(--ui-border), transparent 82%);
+  --kanban-card-shadow-outline: color-mix(in srgb, var(--ui-border), transparent 28%);
   --kanban-card-shadow-ambient: color-mix(in srgb, var(--ui-surface-strong), transparent 28%);
   --kanban-card-shadow-ambient-soft: color-mix(in srgb, var(--ui-surface-strong), transparent 48%);
   --kanban-card-shadow-ambient-faint: color-mix(in srgb, var(--ui-surface-strong), transparent 64%);
-  --kanban-card-shadow-queued-outline: color-mix(in srgb, var(--ui-border), transparent 82%);
+  --kanban-card-shadow-queued-outline: color-mix(in srgb, var(--ui-border), transparent 28%);
   --kanban-card-shadow-queued-glow: color-mix(in srgb, var(--ui-accent), transparent 80%);
   --kanban-card-shadow-queued-ambient: color-mix(
     in srgb,
@@ -943,7 +939,7 @@
     transparent 22%
   );
   --kanban-card-shadow-queued-faint: color-mix(in srgb, var(--ui-surface-strong), transparent 62%);
-  --kanban-card-shadow-running-outline: color-mix(in srgb, var(--ui-border), transparent 82%);
+  --kanban-card-shadow-running-outline: color-mix(in srgb, var(--ui-border), transparent 28%);
   --kanban-card-shadow-running-ambient: color-mix(
     in srgb,
     var(--ui-surface-strong),

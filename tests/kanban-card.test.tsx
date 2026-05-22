@@ -355,6 +355,53 @@ describe('app/components/kanban-card', () => {
     );
   });
 
+  it('darkens the board stage with ambient tokens behind boundary-free lanes', () => {
+    const stageRule = getCssRuleBody(globalsCss, '.kanban-stage');
+    const stageAmbientRule = getCssRuleBody(globalsCss, '.kanban-stage::after');
+
+    expect(stageRule).toContain('position: relative;');
+    expect(stageRule).toContain('isolation: isolate;');
+    expect(stageRule).toContain('--kanban-stage-ambient-accent: var(--ui-accent-soft);');
+    expect(stageRule).toContain('--kanban-stage-ambient-running: var(--ui-status-running-soft);');
+    expect(stageRule).toContain('--kanban-stage-ambient-layer:');
+    expect(stageAmbientRule).toContain('z-index: -1;');
+    expect(stageAmbientRule).toContain('background: var(--kanban-stage-ambient-layer);');
+    expect(stageAmbientRule).toContain(
+      'animation: kanbanStageAmbientDrift 24s ease-in-out infinite alternate;',
+    );
+    expect(globalsCss).toMatch(
+      /html\[data-mantine-color-scheme='dark'\]\s*\{[\s\S]*--kanban-frame-stage-surface:\s*linear-gradient\(\s*160deg,\s*var\(--ui-surface-strong\),\s*var\(--ui-surface\) 48%,\s*var\(--ui-surface-strong\)\s*\);/,
+    );
+    expect(globalsCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.kanban-stage::after\s*\{[\s\S]*animation:\s*none;/,
+    );
+  });
+
+  it('lifts the dark kanban card surface while softening the repeated outline', () => {
+    const darkCardSurfaceRule = getCssRuleBody(
+      cardsCss,
+      ":global(html[data-mantine-color-scheme='dark']) .kanbanCard,\n:global(html[data-mantine-color-scheme='dark']) .itemCard.kanbanCard",
+    );
+    const darkCardShadowRule = getCssRuleBody(
+      cardsCss,
+      ":global(html[data-mantine-color-scheme='dark']) .kanbanCard",
+    );
+
+    expect(darkCardSurfaceRule).toContain(
+      '--kanban-note-surface: linear-gradient(180deg, rgba(32, 48, 74, 0.98), rgba(22, 34, 54, 0.96));',
+    );
+    expect(darkCardSurfaceRule).toContain('background: var(--kanban-note-surface);');
+    expect(darkCardShadowRule).toContain(
+      '--kanban-card-shadow-outline: color-mix(in srgb, var(--ui-border), transparent 28%);',
+    );
+    expect(darkCardShadowRule).toContain(
+      '--kanban-card-shadow-queued-outline: color-mix(in srgb, var(--ui-border), transparent 28%);',
+    );
+    expect(darkCardShadowRule).toContain(
+      '--kanban-card-shadow-running-outline: color-mix(in srgb, var(--ui-border), transparent 28%);',
+    );
+  });
+
   it('derives run-state wave chrome from execution tokens and local mechanics variables', () => {
     const frameRule = getCssRuleBody(cardsCss, '.kanbanCardFrame');
     const queuedRule = getCssRuleBody(cardsCss, ".kanbanCardFrame[data-run-state='queued']");
@@ -387,13 +434,15 @@ describe('app/components/kanban-card', () => {
       const columnStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'column'));
 
       expect(columnStyle.getPropertyValue('--kanban-bottom-gradient-surface').trim()).toBe(
-        'var(--kanban-frame-column-surface)',
+        'transparent',
       );
-      expect(columnStyle.background).toBe('var(--kanban-frame-column-surface)');
+      expect(columnStyle.borderTopWidth).toBe('0px');
+      expect(columnStyle.borderTopStyle).toBe('none');
+      expect(['transparent', 'rgba(0, 0, 0, 0)']).toContain(columnStyle.backgroundColor);
       expect(['', 'none']).toContain(columnStyle.boxShadow.trim());
       expect(columnStyle.transition).not.toContain('box-shadow');
       expect(globalsCss).toMatch(
-        /\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*var\(--kanban-frame-column-surface\);[\s\S]*background:\s*var\(--kanban-frame-column-surface\);[\s\S]*border-radius:\s*0;/,
+        /\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;[\s\S]*background:\s*transparent;[\s\S]*border-radius:\s*0;/,
       );
       expect(cardsCss).toMatch(
         /\.kanbanCard\s*\{[\s\S]*--kanban-card-radius:\s*6px;[\s\S]*border:\s*0;[\s\S]*border-radius:\s*var\(--kanban-card-radius\);[\s\S]*background:\s*var\(--kanban-note-surface\);/,
@@ -921,7 +970,9 @@ describe('app/components/kanban-card', () => {
     expect(html).toContain('>Bugfix</span>');
     expect(html).toContain('data-kanban-label-summary="true"');
     expect(html).toContain('>+5</span>');
-    expect(html).toContain('aria-label="#Bugfix #Frontend #UI #Accessibility #Review Needed #Responsive"');
+    expect(html).toContain(
+      'aria-label="#Bugfix #Frontend #UI #Accessibility #Review Needed #Responsive"',
+    );
     expect(html).toContain('data-run-state-chip="queued"');
     expect(html).toContain('Due 2026-03-12');
     expect(html).toContain('data-kanban-chip="engine"');
