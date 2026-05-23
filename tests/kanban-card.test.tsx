@@ -404,14 +404,14 @@ describe('app/components/kanban-card', () => {
       expect(stageStyle.getPropertyValue('--kanban-stage-ambient-animation').trim()).toBe(
         'kanbanStageAmbientDrift 24s ease-in-out infinite alternate',
       );
-      expect(stageStyle.getPropertyValue('--kanban-stage-depth-start').trim()).toBe(
-        'oklch(15%0.018 255/0.98)',
+      expect(stageStyle.getPropertyValue('--kanban-stage-depth-start').trim()).toMatch(
+        /^oklch\(\s*15%\s*0\.018\s+255\s*\/\s*0\.98\s*\)$/,
       );
-      expect(stageStyle.getPropertyValue('--kanban-stage-depth-mid').trim()).toBe(
-        'oklch(18%0.02 255/0.94)',
+      expect(stageStyle.getPropertyValue('--kanban-stage-depth-mid').trim()).toMatch(
+        /^oklch\(\s*18%\s*0\.02\s+255\s*\/\s*0\.94\s*\)$/,
       );
-      expect(stageStyle.getPropertyValue('--kanban-stage-depth-end').trim()).toBe(
-        'oklch(14%0.016 255/0.98)',
+      expect(stageStyle.getPropertyValue('--kanban-stage-depth-end').trim()).toMatch(
+        /^oklch\(\s*14%\s*0\.016\s+255\s*\/\s*0\.98\s*\)$/,
       );
       expect(stageStyle.getPropertyValue('--kanban-frame-stage-surface').trim()).toBe(
         'linear-gradient(160deg,var(--kanban-stage-depth-start),var(--kanban-stage-depth-mid) 48%,var(--kanban-stage-depth-end))',
@@ -440,11 +440,11 @@ describe('app/components/kanban-card', () => {
       expect(cardStyle.getPropertyValue('--kanban-note-surface').trim()).toBe(
         'var(--kanban-card-surface)',
       );
-      expect(cardStyle.getPropertyValue('--kanban-card-depth-start').trim()).toBe(
-        'oklch(23%0.04 255/0.98)',
+      expect(cardStyle.getPropertyValue('--kanban-card-depth-start').trim()).toMatch(
+        /^oklch\(\s*23%\s*0\.04\s+255\s*\/\s*0\.98\s*\)$/,
       );
-      expect(cardStyle.getPropertyValue('--kanban-card-depth-end').trim()).toBe(
-        'oklch(19%0.03 255/0.96)',
+      expect(cardStyle.getPropertyValue('--kanban-card-depth-end').trim()).toMatch(
+        /^oklch\(\s*19%\s*0\.03\s+255\s*\/\s*0\.96\s*\)$/,
       );
       expect(darkSurface).toBe(
         'linear-gradient(180deg,var(--kanban-card-depth-start),var(--kanban-card-depth-end))',
@@ -467,6 +467,12 @@ describe('app/components/kanban-card', () => {
     } finally {
       cleanupFixture();
     }
+  });
+
+  it('disables stage ambient animation for reduced motion', () => {
+    expect(globalsCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.kanban-stage::after\s*\{[\s\S]*animation:\s*none;/,
+    );
   });
 
   it('applies --ui-surface-lifted to the light kanban card surface', () => {
