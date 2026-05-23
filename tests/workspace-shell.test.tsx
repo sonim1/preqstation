@@ -290,6 +290,39 @@ function getCssRuleProperties(selector: string, properties: string[]) {
   }
 }
 
+function getCssRulePropertiesInMedia(
+  mediaCondition: string,
+  selector: string,
+  properties: string[],
+) {
+  const style = document.createElement('style');
+
+  style.textContent = globalsCss;
+  document.head.append(style);
+
+  try {
+    const mediaRules = Array.from(style.sheet?.cssRules ?? []).filter(
+      (rule) => 'conditionText' in rule && rule.conditionText === mediaCondition,
+    );
+    const rule =
+      mediaRules
+        .map((mediaRule) =>
+          findCssStyleRule((mediaRule as CSSRule & { cssRules?: CSSRuleList }).cssRules, selector),
+        )
+        .find(Boolean) ?? null;
+
+    if (!rule) {
+      return null;
+    }
+
+    return Object.fromEntries(
+      properties.map((property) => [property, rule.style.getPropertyValue(property)]),
+    );
+  } finally {
+    style.remove();
+  }
+}
+
 function findCssStyleRule(rules: CSSRuleList | undefined, selector: string): CSSStyleRule | null {
   if (!rules) {
     return null;
@@ -318,6 +351,66 @@ describe('app/components/workspace-shell', () => {
     expect(globalsCss).toContain('grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);');
     expect(globalsCss).toContain('justify-self: start;');
     expect(globalsCss).toContain('justify-self: end;');
+  });
+
+  it('uses a two-row AppShell header height on mobile and the existing height above mobile', () => {
+    expect(workspaceShellSource).toMatch(
+      /header=\{\{\s*height:\s*\{\s*base:\s*104,\s*sm:\s*56\s*\}\s*\}\}/,
+    );
+  });
+
+  it('places the mobile brand and picker on separate centered header rows', () => {
+    expect(
+      getCssRulePropertiesInMedia('(max-width: 48em)', '.workspace-header-inner', [
+        'min-height',
+        'grid-template-columns',
+        'grid-template-rows',
+        'gap',
+        'padding-inline',
+        'position',
+      ]),
+    ).toEqual({
+      'min-height': '104px',
+      'grid-template-columns': 'auto minmax(0, 1fr) auto',
+      'grid-template-rows': '52px 52px',
+      gap: '0 8px',
+      'padding-inline': '0px',
+      position: 'relative',
+    });
+    expect(
+      getCssRulePropertiesInMedia('(max-width: 48em)', '.workspace-header-brand', [
+        'position',
+        'top',
+        'left',
+        'transform',
+        'padding',
+        'z-index',
+      ]),
+    ).toEqual({
+      position: 'absolute',
+      top: '26px',
+      left: '50%',
+      transform: 'translate(-50%, -50%)',
+      padding: '0px',
+      'z-index': '1',
+    });
+    expect(
+      getCssRulePropertiesInMedia('(max-width: 48em)', '.workspace-header-middle', [
+        'box-sizing',
+        'grid-column',
+        'grid-row',
+        'width',
+        'justify-content',
+        'padding-inline',
+      ]),
+    ).toEqual({
+      'box-sizing': 'border-box',
+      'grid-column': '1 / -1',
+      'grid-row': '2',
+      width: '100%',
+      'justify-content': 'center',
+      'padding-inline': '12px',
+    });
   });
 
   it('prefers the remembered project board href when the project still exists', () => {
@@ -434,7 +527,7 @@ describe('app/components/workspace-shell', () => {
     expect(endHtml).not.toContain('data-command-palette-trigger="full"');
   });
 
-  it('keeps the mobile project picker in the middle slot and places the compact search trigger before the avatar', () => {
+  it('keeps the mobile project picker in the header middle slot and places the compact search trigger before the avatar', () => {
     const html = renderWorkspaceShell({
       desktopOpened: true,
       pathname: '/board/ALPHA',

@@ -3264,10 +3264,12 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 
 @media (max-width: 48em) {
   .workspace-header-inner {
-    min-height: 52px;
+    min-height: 104px;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 8px;
+    grid-template-rows: 52px 52px;
+    gap: 0 8px;
     padding-inline: 0;
+    position: relative;
   }
 
   .workspace-header,
@@ -3277,6 +3279,8 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 
   .workspace-header-start {
     gap: 4px;
+    grid-row: 1;
+    z-index: 2;
   }
 
   .workspace-header-start .mantine-Burger-root {
@@ -3284,8 +3288,12 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
   }
 
   .workspace-header-brand {
-    padding-left: 0;
-    padding-block: 0;
+    position: absolute;
+    top: 26px;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 0;
+    z-index: 1;
   }
 
   .workspace-brand-copy {
@@ -3293,8 +3301,12 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
   }
 
   .workspace-header-middle {
+    box-sizing: border-box;
+    grid-column: 1 / -1;
+    grid-row: 2;
     width: 100%;
     justify-content: center;
+    padding-inline: 12px;
   }
 
   .workspace-mobile-project-picker {
@@ -3305,7 +3317,9 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 
   .workspace-header-end {
     gap: 6px;
+    grid-row: 1;
     margin-right: 4px;
+    z-index: 2;
   }
 
   .workspace-navbar {
