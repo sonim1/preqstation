@@ -231,6 +231,9 @@ export function WorkspaceShell({
     transform: `translateY(${Math.max(currentBoardIndex, 0) * (BOARD_SUBNAV_ROW_HEIGHT + BOARD_SUBNAV_ROW_GAP)}px)`,
     opacity: currentBoardIndex === -1 ? 0 : 1,
   };
+  const headerInnerClassName = desktopOpened
+    ? 'workspace-header-inner'
+    : 'workspace-header-inner workspace-header-inner--sidebar-collapsed';
   const handleBoardSelect = useCallback(
     (projectKey: string) => {
       writeRememberedProjectKey(projectKey);
@@ -359,7 +362,7 @@ export function WorkspaceShell({
       className="workspace-shell"
     >
       <AppShell.Header className="workspace-header">
-        <Group justify="space-between" h="100%" wrap="nowrap" className="workspace-header-inner">
+        <Group justify="space-between" h="100%" wrap="nowrap" className={headerInnerClassName}>
           <Group gap="sm" wrap="nowrap" className="workspace-header-start">
             <Burger
               opened={mobileOpened}
@@ -381,36 +384,37 @@ export function WorkspaceShell({
                 <IconChevronRight size={16} />
               </ActionIcon>
             ) : null}
-            <Link
-              href={dashboardHref}
-              prefetch={false}
-              className="workspace-brand-link workspace-header-brand"
-              aria-label="Go to dashboard"
-              onClick={closeMobile}
-            >
-              <Group gap="sm" wrap="nowrap">
-                <Image
-                  src="/brand/preqstation-app-icon.svg"
-                  alt=""
-                  width={32}
-                  height={28}
-                  className="workspace-brand-mark"
-                  priority
-                />
-                <Stack gap={1} className="workspace-brand-copy">
-                  <Text
-                    className={`brand-wordmark workspace-brand-title ${outfit.className}`}
-                    fw={800}
-                  >
-                    PREQSTATION
-                  </Text>
-                  <Text size="xs" c="dimmed" className="workspace-brand-subtitle" visibleFrom="sm">
-                    {workspaceSubtitle}
-                  </Text>
-                </Stack>
-              </Group>
-            </Link>
           </Group>
+
+          <Link
+            href={dashboardHref}
+            prefetch={false}
+            className="workspace-brand-link workspace-header-brand"
+            aria-label="Go to dashboard"
+            onClick={closeMobile}
+          >
+            <Group gap="sm" wrap="nowrap">
+              <Image
+                src="/brand/preqstation-app-icon.svg"
+                alt=""
+                width={32}
+                height={28}
+                className="workspace-brand-mark"
+                priority
+              />
+              <Stack gap={1} className="workspace-brand-copy">
+                <Text
+                  className={`brand-wordmark workspace-brand-title ${outfit.className}`}
+                  fw={800}
+                >
+                  PREQSTATION
+                </Text>
+                <Text size="xs" c="dimmed" className="workspace-brand-subtitle" visibleFrom="sm">
+                  {workspaceSubtitle}
+                </Text>
+              </Stack>
+            </Group>
+          </Link>
 
           <Box className="workspace-header-middle">
             <Box visibleFrom="md">
