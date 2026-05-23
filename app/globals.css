@@ -3310,6 +3310,10 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
     z-index: 1;
   }
 
+  .workspace-header-inner--sidebar-collapsed .workspace-header-brand {
+    margin-left: 0;
+  }
+
   .workspace-brand-copy {
     display: none;
   }

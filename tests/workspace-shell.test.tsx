@@ -269,6 +269,13 @@ function expectComputedStyleProperties(
   }
 }
 
+function normalizeCssZeroTokens(value: string) {
+  return value
+    .split(/\s+/)
+    .map((part) => (part === '0' ? '0px' : part))
+    .join(' ');
+}
+
 function getCssRuleProperties(selector: string, properties: string[]) {
   const style = document.createElement('style');
 
@@ -277,6 +284,30 @@ function getCssRuleProperties(selector: string, properties: string[]) {
 
   try {
     const rule = findCssStyleRule(style.sheet?.cssRules, selector);
+
+    if (!rule) {
+      return null;
+    }
+
+    return Object.fromEntries(
+      properties.map((property) => [property, rule.style.getPropertyValue(property)]),
+    );
+  } finally {
+    style.remove();
+  }
+}
+
+function getCssMediaRuleProperties(conditionText: string, selector: string, properties: string[]) {
+  const style = document.createElement('style');
+
+  style.textContent = globalsCss;
+  document.head.append(style);
+
+  try {
+    const mediaRule = Array.from(style.sheet?.cssRules ?? [])
+      .filter((rule): rule is CSSMediaRule => 'conditionText' in rule)
+      .find((rule) => rule.conditionText === conditionText);
+    const rule = findCssStyleRule(mediaRule?.cssRules, selector);
 
     if (!rule) {
       return null;
@@ -350,6 +381,25 @@ describe('app/components/workspace-shell', () => {
 
     expect(mediaConditions).toContain('(max-width: 47.999em)');
     expect(mediaConditions).not.toContain('(max-width: 48em)');
+  });
+
+  it('keeps collapsed desktop sidebar offset from shifting the mobile brand', () => {
+    const mobileHeaderRule = getCssMediaRuleProperties(
+      '(max-width: 47.999em)',
+      '.workspace-header-inner',
+      ['gap'],
+    );
+
+    expect(normalizeCssZeroTokens(mobileHeaderRule?.gap ?? '')).toBe('0px 8px');
+    expect(
+      getCssMediaRuleProperties(
+        '(max-width: 47.999em)',
+        '.workspace-header-inner--sidebar-collapsed .workspace-header-brand',
+        ['margin-left'],
+      ),
+    ).toEqual({
+      'margin-left': '0px',
+    });
   });
 
   it('renders header slots as direct grid children with explicit end placement', () => {
