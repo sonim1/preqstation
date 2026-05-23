@@ -383,8 +383,12 @@ describe('app/components/kanban-card', () => {
     expect(stageAmbientRule).toContain(
       'animation: kanbanStageAmbientDrift 24s ease-in-out infinite alternate;',
     );
+    expect(stageAmbientRule).toContain('opacity: 0.22;');
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\]\s*\{[\s\S]*--kanban-frame-stage-surface:\s*linear-gradient\(\s*160deg,\s*var\(--ui-surface-strong\),\s*var\(--ui-surface\) 48%,\s*var\(--ui-surface-strong\)\s*\);/,
+      /html\[data-mantine-color-scheme='dark'\]\s*\{[\s\S]*--kanban-stage-depth-start:\s*oklch\(15% 0\.018 255 \/ 0\.98\);[\s\S]*--kanban-stage-depth-mid:\s*oklch\(18% 0\.02 255 \/ 0\.94\);[\s\S]*--kanban-stage-depth-end:\s*oklch\(14% 0\.016 255 \/ 0\.98\);/,
+    );
+    expect(globalsCss).toMatch(
+      /html\[data-mantine-color-scheme='dark'\]\s*\{[\s\S]*--kanban-frame-stage-surface:\s*linear-gradient\(\s*160deg,\s*var\(--kanban-stage-depth-start\),\s*var\(--kanban-stage-depth-mid\) 48%,\s*var\(--kanban-stage-depth-end\)\s*\);/,
     );
     expect(globalsCss).toMatch(
       /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.kanban-stage::after\s*\{[\s\S]*animation:\s*none;/,
@@ -406,18 +410,15 @@ describe('app/components/kanban-card', () => {
       const cardStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'card'));
       const frameStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'frame'));
       const darkSurface = cardStyle.getPropertyValue('--kanban-card-surface').trim();
-      const liftedSurface = cardStyle.getPropertyValue('--ui-surface-lifted').trim();
 
       expect(cardStyle.getPropertyValue('--kanban-note-surface').trim()).toBe(
         'var(--kanban-card-surface)',
       );
-      expect(darkSurface).toBe('var(--ui-surface-lifted)');
-      expect(liftedSurface).toContain('var(--ui-surface-');
-      expect(liftedSurface).not.toContain('rgba(');
+      expect(darkSurface).toBe('linear-gradient(180deg,rgba(34,49,72,0.98),rgba(27,40,60,0.96))');
       expect(cardStyle.background).toBe('var(--kanban-note-surface)');
       expect(frameStyle.background).toBe('var(--kanban-note-surface)');
       expect(cardStyle.getPropertyValue('--kanban-card-shadow-outline-transparency').trim()).toBe(
-        '28%',
+        '52%',
       );
       expect(cardStyle.getPropertyValue('--kanban-card-shadow-outline')).toContain(
         'transparent var(--kanban-card-shadow-outline-transparency)',

@@ -363,11 +363,14 @@ html[data-mantine-color-scheme='dark'] {
   --ui-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.2);
   --ui-elevation-2: 0 4px 12px rgba(0, 0, 0, 0.3);
   --ui-elevation-3: 0 12px 28px rgba(0, 0, 0, 0.4);
+  --kanban-stage-depth-start: oklch(15% 0.018 255 / 0.98);
+  --kanban-stage-depth-mid: oklch(18% 0.02 255 / 0.94);
+  --kanban-stage-depth-end: oklch(14% 0.016 255 / 0.98);
   --kanban-frame-stage-surface: linear-gradient(
     160deg,
-    var(--ui-surface-strong),
-    var(--ui-surface) 48%,
-    var(--ui-surface-strong)
+    var(--kanban-stage-depth-start),
+    var(--kanban-stage-depth-mid) 48%,
+    var(--kanban-stage-depth-end)
   );
   --kanban-frame-column-surface: color-mix(in srgb, var(--ui-surface), transparent 76%);
   --kanban-frame-column-border: color-mix(in srgb, var(--ui-border), transparent 36%);
@@ -382,14 +385,14 @@ html[data-mantine-color-scheme='dark'] {
   --kanban-frame-chrome-shadow: var(--ui-elevation-3);
   --kanban-frame-mobile-tab-shadow: 0px -18px 30px -28px rgba(0, 0, 0, 0.82);
   --kanban-stage-surface: var(--kanban-frame-stage-surface);
-  --kanban-card-surface: var(--ui-surface-lifted);
-  --kanban-card-shadow-outline-transparency: 28%;
+  --kanban-card-surface: linear-gradient(180deg, rgba(34, 49, 72, 0.98), rgba(27, 40, 60, 0.96));
+  --kanban-card-shadow-outline-transparency: 52%;
   --kanban-card-shadow-outline: color-mix(
     in srgb,
     var(--ui-border),
     transparent var(--kanban-card-shadow-outline-transparency)
   );
-  --kanban-card-shadow-ambient-transparency: 28%;
+  --kanban-card-shadow-ambient-transparency: 42%;
   --kanban-card-shadow-ambient: color-mix(
     in srgb,
     var(--ui-surface-strong),
@@ -1745,7 +1748,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   background-size:
     160% 160%,
     145% 145%;
-  opacity: 0.4;
+  opacity: 0.22;
   transform: translate3d(-2%, -1%, 0);
   animation: kanbanStageAmbientDrift 24s ease-in-out infinite alternate;
 }
