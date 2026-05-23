@@ -364,31 +364,61 @@ describe('app/components/kanban-card', () => {
     expect(cardsCss).toMatch(
       /\.kanbanCard\s*\{[\s\S]*--kanban-card-shadow-running:\s*0 0 0 1px [^;]+,\s*0 22px 42px -24px [^;]+,\s*0 10px 20px -14px [^;]+,\s*0 2px 6px [^;]+;/,
     );
-    expect(globalsCss).toMatch(
-      /\.kanban-stage\s*\{[\s\S]*background:\s*var\(--kanban-stage-surface\);/,
+    const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
+      '<section class="kanban-stage" data-testid="stage"></section>',
+      true,
     );
+
+    try {
+      const stageStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'stage'));
+
+      expect(stageStyle.background).toBe('var(--kanban-stage-surface)');
+    } finally {
+      cleanupFixture();
+    }
   });
 
   it('darkens the board stage with ambient tokens behind boundary-free lanes', () => {
-    const stageRule = getCssRuleBody(globalsCss, '.kanban-stage');
-    const stageAmbientRule = getCssRuleBody(globalsCss, '.kanban-stage::after');
+    const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
+      '<section class="kanban-stage" data-testid="stage"></section>',
+      true,
+      'dark',
+    );
 
-    expect(stageRule).toContain('position: relative;');
-    expect(stageRule).toContain('isolation: isolate;');
-    expect(stageRule).toContain('--kanban-stage-ambient-accent: var(--ui-accent-soft);');
-    expect(stageRule).toContain('--kanban-stage-ambient-running: var(--ui-status-running-soft);');
-    expect(stageRule).toContain('--kanban-stage-ambient-layer:');
-    expect(stageAmbientRule).toContain('z-index: -1;');
-    expect(stageAmbientRule).toContain('background: var(--kanban-stage-ambient-layer);');
-    expect(stageAmbientRule).toContain(
-      'animation: kanbanStageAmbientDrift 24s ease-in-out infinite alternate;',
-    );
-    expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\]\s*\{[\s\S]*--kanban-frame-stage-surface:\s*linear-gradient\(\s*160deg,\s*var\(--ui-surface-strong\),\s*var\(--ui-surface\) 48%,\s*var\(--ui-surface-strong\)\s*\);/,
-    );
-    expect(globalsCss).toMatch(
-      /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.kanban-stage::after\s*\{[\s\S]*animation:\s*none;/,
-    );
+    try {
+      const stageStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'stage'));
+
+      expect(stageStyle.position).toBe('relative');
+      expect(stageStyle.isolation).toBe('isolate');
+      expect(stageStyle.getPropertyValue('--kanban-stage-ambient-accent').trim()).toBe(
+        'var(--ui-accent-soft)',
+      );
+      expect(stageStyle.getPropertyValue('--kanban-stage-ambient-running').trim()).toBe(
+        'var(--ui-status-running-soft)',
+      );
+      expect(stageStyle.getPropertyValue('--kanban-stage-ambient-layer').trim()).toBe(
+        'linear-gradient(124deg,transparent 8%,var(--kanban-stage-ambient-accent) 25%,transparent 43%),linear-gradient(218deg,transparent 12%,var(--kanban-stage-ambient-running) 35%,transparent 56%)',
+      );
+      expect(stageStyle.getPropertyValue('--kanban-stage-ambient-z-index').trim()).toBe('-1');
+      expect(stageStyle.getPropertyValue('--kanban-stage-ambient-opacity').trim()).toBe('0.22');
+      expect(stageStyle.getPropertyValue('--kanban-stage-ambient-animation').trim()).toBe(
+        'kanbanStageAmbientDrift 24s ease-in-out infinite alternate',
+      );
+      expect(stageStyle.getPropertyValue('--kanban-stage-depth-start').trim()).toMatch(
+        /^oklch\(\s*15%\s*0\.018\s+255\s*\/\s*0\.98\s*\)$/,
+      );
+      expect(stageStyle.getPropertyValue('--kanban-stage-depth-mid').trim()).toMatch(
+        /^oklch\(\s*18%\s*0\.02\s+255\s*\/\s*0\.94\s*\)$/,
+      );
+      expect(stageStyle.getPropertyValue('--kanban-stage-depth-end').trim()).toMatch(
+        /^oklch\(\s*14%\s*0\.016\s+255\s*\/\s*0\.98\s*\)$/,
+      );
+      expect(stageStyle.getPropertyValue('--kanban-frame-stage-surface').trim()).toBe(
+        'linear-gradient(160deg,var(--kanban-stage-depth-start),var(--kanban-stage-depth-mid) 48%,var(--kanban-stage-depth-end))',
+      );
+    } finally {
+      cleanupFixture();
+    }
   });
 
   it('lifts the dark kanban card surface while softening the repeated outline', () => {
@@ -406,18 +436,24 @@ describe('app/components/kanban-card', () => {
       const cardStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'card'));
       const frameStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'frame'));
       const darkSurface = cardStyle.getPropertyValue('--kanban-card-surface').trim();
-      const liftedSurface = cardStyle.getPropertyValue('--ui-surface-lifted').trim();
 
       expect(cardStyle.getPropertyValue('--kanban-note-surface').trim()).toBe(
         'var(--kanban-card-surface)',
       );
-      expect(darkSurface).toBe('var(--ui-surface-lifted)');
-      expect(liftedSurface).toContain('var(--ui-surface-');
-      expect(liftedSurface).not.toContain('rgba(');
+      expect(cardStyle.getPropertyValue('--kanban-card-depth-start').trim()).toMatch(
+        /^oklch\(\s*23%\s*0\.04\s+255\s*\/\s*0\.98\s*\)$/,
+      );
+      expect(cardStyle.getPropertyValue('--kanban-card-depth-end').trim()).toMatch(
+        /^oklch\(\s*19%\s*0\.03\s+255\s*\/\s*0\.96\s*\)$/,
+      );
+      expect(darkSurface).toBe(
+        'linear-gradient(180deg,var(--kanban-card-depth-start),var(--kanban-card-depth-end))',
+      );
+      expect(darkSurface).not.toContain('rgba(');
       expect(cardStyle.background).toBe('var(--kanban-note-surface)');
       expect(frameStyle.background).toBe('var(--kanban-note-surface)');
       expect(cardStyle.getPropertyValue('--kanban-card-shadow-outline-transparency').trim()).toBe(
-        '28%',
+        '52%',
       );
       expect(cardStyle.getPropertyValue('--kanban-card-shadow-outline')).toContain(
         'transparent var(--kanban-card-shadow-outline-transparency)',
@@ -431,6 +467,12 @@ describe('app/components/kanban-card', () => {
     } finally {
       cleanupFixture();
     }
+  });
+
+  it('disables stage ambient animation for reduced motion', () => {
+    expect(globalsCss).toMatch(
+      /@media \(prefers-reduced-motion: reduce\)\s*\{[\s\S]*\.kanban-stage::after\s*\{[\s\S]*animation:\s*none;/,
+    );
   });
 
   it('applies --ui-surface-lifted to the light kanban card surface', () => {
