@@ -269,6 +269,13 @@ function expectComputedStyleProperties(
   }
 }
 
+function normalizeCssZeroTokens(value: string) {
+  return value
+    .split(/\s+/)
+    .map((part) => (part === '0' ? '0px' : part))
+    .join(' ');
+}
+
 function getCssRuleProperties(selector: string, properties: string[]) {
   const style = document.createElement('style');
 
@@ -285,6 +292,46 @@ function getCssRuleProperties(selector: string, properties: string[]) {
     return Object.fromEntries(
       properties.map((property) => [property, rule.style.getPropertyValue(property)]),
     );
+  } finally {
+    style.remove();
+  }
+}
+
+function getCssMediaRuleProperties(conditionText: string, selector: string, properties: string[]) {
+  const style = document.createElement('style');
+
+  style.textContent = globalsCss;
+  document.head.append(style);
+
+  try {
+    const mediaRule = Array.from(style.sheet?.cssRules ?? [])
+      .filter((rule): rule is CSSMediaRule => 'conditionText' in rule)
+      .find((rule) => rule.conditionText === conditionText);
+    const rule = findCssStyleRule(mediaRule?.cssRules, selector);
+
+    if (!rule) {
+      return null;
+    }
+
+    return Object.fromEntries(
+      properties.map((property) => [property, rule.style.getPropertyValue(property)]),
+    );
+  } finally {
+    style.remove();
+  }
+}
+
+function getCssMediaConditionsForSelector(selector: string) {
+  const style = document.createElement('style');
+
+  style.textContent = globalsCss;
+  document.head.append(style);
+
+  try {
+    return Array.from(style.sheet?.cssRules ?? [])
+      .filter((rule): rule is CSSMediaRule => 'conditionText' in rule)
+      .filter((rule) => findCssStyleRule(rule.cssRules, selector))
+      .map((rule) => rule.conditionText);
   } finally {
     style.remove();
   }
@@ -318,6 +365,87 @@ describe('app/components/workspace-shell', () => {
     expect(globalsCss).toContain('grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);');
     expect(globalsCss).toContain('justify-self: start;');
     expect(globalsCss).toContain('justify-self: end;');
+  });
+
+  it('uses a two-row AppShell header height on mobile and the existing height above mobile', () => {
+    const html = renderWorkspaceShell(true);
+
+    expect(html).toContain('--app-shell-header-height:calc(6.5rem * var(--mantine-scale));');
+    expect(html).toContain(
+      '@media(min-width: 48em){:root{--app-shell-header-height:calc(3.5rem * var(--mantine-scale));',
+    );
+  });
+
+  it('keeps the mobile header CSS below Mantine sm where AppShell switches to 56px', () => {
+    const mediaConditions = getCssMediaConditionsForSelector('.workspace-header-inner');
+
+    expect(mediaConditions).toContain('(max-width: 47.999em)');
+    expect(mediaConditions).not.toContain('(max-width: 48em)');
+  });
+
+  it('keeps collapsed desktop sidebar offset from shifting the mobile brand', () => {
+    const mobileHeaderRule = getCssMediaRuleProperties(
+      '(max-width: 47.999em)',
+      '.workspace-header-inner',
+      ['gap'],
+    );
+
+    expect(normalizeCssZeroTokens(mobileHeaderRule?.gap ?? '')).toBe('0px 8px');
+    expect(
+      getCssMediaRuleProperties(
+        '(max-width: 47.999em)',
+        '.workspace-header-inner--sidebar-collapsed .workspace-header-brand',
+        ['margin-left'],
+      ),
+    ).toEqual({
+      'margin-left': '0px',
+    });
+  });
+
+  it('renders header slots as direct grid children with explicit end placement', () => {
+    const { container } = renderWorkspaceShellDom(true);
+    const headerInner = container.querySelector<HTMLElement>('.workspace-header-inner');
+
+    expect(headerInner).not.toBeNull();
+
+    const start = headerInner?.querySelector<HTMLElement>(':scope > .workspace-header-start');
+    const brand = headerInner?.querySelector<HTMLElement>(':scope > .workspace-header-brand');
+    const middle = headerInner?.querySelector<HTMLElement>(':scope > .workspace-header-middle');
+    const end = headerInner?.querySelector<HTMLElement>(':scope > .workspace-header-end');
+
+    expect(start).not.toBeNull();
+    expect(brand).not.toBeNull();
+    expect(middle).not.toBeNull();
+    expect(end).not.toBeNull();
+    expectBefore(start as HTMLElement, brand as HTMLElement);
+    expectBefore(brand as HTMLElement, middle as HTMLElement);
+    expectBefore(middle as HTMLElement, end as HTMLElement);
+
+    const fixture = renderWorkspaceCssFixture(`
+      <div class="workspace-header-inner">
+        <div class="workspace-header-start"></div>
+        <a class="workspace-brand-link workspace-header-brand" data-testid="brand"></a>
+        <div class="workspace-header-middle" data-testid="middle"></div>
+        <div class="workspace-header-end" data-testid="end"></div>
+      </div>
+    `);
+
+    try {
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture.fixture, 'brand'), {
+        'grid-column': '1',
+        'grid-row': '1',
+      });
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture.fixture, 'middle'), {
+        'grid-column': '2',
+        'grid-row': '1',
+      });
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture.fixture, 'end'), {
+        'grid-column': '3',
+        'grid-row': '1',
+      });
+    } finally {
+      fixture.cleanup();
+    }
   });
 
   it('prefers the remembered project board href when the project still exists', () => {
@@ -434,7 +562,7 @@ describe('app/components/workspace-shell', () => {
     expect(endHtml).not.toContain('data-command-palette-trigger="full"');
   });
 
-  it('keeps the mobile project picker in the middle slot and places the compact search trigger before the avatar', () => {
+  it('keeps the mobile project picker in the header middle slot and places the compact search trigger before the avatar', () => {
     const html = renderWorkspaceShell({
       desktopOpened: true,
       pathname: '/board/ALPHA',
@@ -854,7 +982,7 @@ describe('app/components/workspace-shell', () => {
       /\.workspace-header-inner\s*\{[^}]*padding-inline:\s*var\(--mantine-spacing-md\);/,
     );
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-header-inner\s*\{[\s\S]*padding-inline:\s*0;/,
+      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-header-inner\s*\{[\s\S]*padding-inline:\s*0;/,
     );
   });
 
@@ -902,10 +1030,10 @@ describe('app/components/workspace-shell', () => {
 
   it('makes the mobile header and navbar opaque and styles the drawer account block for touch', () => {
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-header,\s*[\s\S]*\.workspace-navbar\s*\{[\s\S]*background:\s*var\(--ui-surface-strong\);/,
+      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-header,\s*[\s\S]*\.workspace-navbar\s*\{[\s\S]*background:\s*var\(--ui-surface-strong\);/,
     );
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-navbar\s*\{[\s\S]*box-shadow:\s*var\(--ui-elevation-3\);/,
+      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-navbar\s*\{[\s\S]*box-shadow:\s*var\(--ui-elevation-3\);/,
     );
     expect(globalsCss).toMatch(
       /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*html\[data-mantine-color-scheme='dark'\] \.workspace-header,\s*[\s\S]*html\[data-mantine-color-scheme='dark'\] \.workspace-navbar\s*\{[\s\S]*background:\s*var\(--ui-surface-strong\);/,
@@ -929,16 +1057,16 @@ describe('app/components/workspace-shell', () => {
 
   it('centers the compact project picker and keeps the compact trigger styling scoped to its modifier', () => {
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-brand-copy\s*\{[\s\S]*display:\s*none;/,
+      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-brand-copy\s*\{[\s\S]*display:\s*none;/,
     );
     expect(globalsCss).toMatch(
       /\.command-palette-trigger--compact\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*center;[^}]*width:\s*var\(--ui-hit-touch-min\);[^}]*min-width:\s*var\(--ui-hit-touch-min\);[^}]*justify-content:\s*center;/,
     );
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-header-middle\s*\{[\s\S]*justify-content:\s*center;/,
+      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-header-middle\s*\{[\s\S]*justify-content:\s*center;/,
     );
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*margin:\s*0 auto;/,
+      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*margin:\s*0 auto;/,
     );
     expect(globalsCss).toMatch(
       /\.workspace-mobile-project-picker\s*\{[^}]*min-height:\s*var\(--ui-hit-touch-min\);/,
@@ -947,10 +1075,10 @@ describe('app/components/workspace-shell', () => {
 
   it('lets the mobile picker shrink between fixed header controls', () => {
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-header-inner\s*\{[\s\S]*grid-template-columns:\s*auto minmax\(0,\s*1fr\) auto;/,
+      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-header-inner\s*\{[\s\S]*grid-template-columns:\s*auto minmax\(0,\s*1fr\) auto;/,
     );
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-header-middle\s*\{[\s\S]*width:\s*100%;/,
+      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-header-middle\s*\{[\s\S]*width:\s*100%;/,
     );
   });
 
@@ -962,7 +1090,7 @@ describe('app/components/workspace-shell', () => {
       /\.workspace-mobile-project-picker-label\s*\{[^}]*max-width:\s*min\(38vw, 168px\);/,
     );
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*width:\s*min\(100%,\s*260px\);[\s\S]*max-width:\s*100%;/,
+      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*width:\s*min\(100%,\s*260px\);[\s\S]*max-width:\s*100%;/,
     );
   });
 });

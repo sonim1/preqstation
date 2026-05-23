@@ -536,6 +536,8 @@ html[data-mantine-color-scheme='dark'] .workspace-main {
 
 .workspace-header-start {
   min-width: 0;
+  grid-column: 1;
+  grid-row: 1;
   justify-self: start;
 }
 
@@ -554,6 +556,8 @@ html[data-mantine-color-scheme='dark'] .workspace-main {
   display: flex;
   align-items: center;
   gap: 8px;
+  grid-column: 3;
+  grid-row: 1;
   justify-self: end;
 }
 
@@ -562,6 +566,8 @@ html[data-mantine-color-scheme='dark'] .workspace-main {
   display: flex;
   align-items: center;
   justify-content: center;
+  grid-column: 2;
+  grid-row: 1;
   justify-self: center;
 }
 
@@ -768,6 +774,13 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .workspace-header-brand {
   background: transparent;
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+}
+
+.workspace-header-inner--sidebar-collapsed .workspace-header-brand {
+  margin-left: calc(var(--ui-hit-touch-min) + 8px);
 }
 
 .workspace-brand-mark {
@@ -3262,12 +3275,14 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
   }
 }
 
-@media (max-width: 48em) {
+@media (max-width: 47.999em) {
   .workspace-header-inner {
-    min-height: 52px;
+    min-height: 104px;
     grid-template-columns: auto minmax(0, 1fr) auto;
-    gap: 8px;
+    grid-template-rows: 52px 52px;
+    gap: 0 8px;
     padding-inline: 0;
+    position: relative;
   }
 
   .workspace-header,
@@ -3277,6 +3292,9 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 
   .workspace-header-start {
     gap: 4px;
+    grid-column: 1;
+    grid-row: 1;
+    z-index: 2;
   }
 
   .workspace-header-start .mantine-Burger-root {
@@ -3284,8 +3302,16 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
   }
 
   .workspace-header-brand {
-    padding-left: 0;
-    padding-block: 0;
+    grid-column: 1 / -1;
+    grid-row: 1;
+    justify-self: center;
+    margin-left: 0;
+    padding: 0;
+    z-index: 1;
+  }
+
+  .workspace-header-inner--sidebar-collapsed .workspace-header-brand {
+    margin-left: 0;
   }
 
   .workspace-brand-copy {
@@ -3293,8 +3319,12 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
   }
 
   .workspace-header-middle {
+    box-sizing: border-box;
+    grid-column: 1 / -1;
+    grid-row: 2;
     width: 100%;
     justify-content: center;
+    padding-inline: 12px;
   }
 
   .workspace-mobile-project-picker {
@@ -3305,7 +3335,10 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 
   .workspace-header-end {
     gap: 6px;
+    grid-column: 3;
+    grid-row: 1;
     margin-right: 4px;
+    z-index: 2;
   }
 
   .workspace-navbar {
