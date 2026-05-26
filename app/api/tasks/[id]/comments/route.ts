@@ -2,6 +2,7 @@ import { and, asc, eq, isNull, or, sql } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import { normalizeAgentModel } from '@/lib/agent-model-catalog';
 import { authenticateApiToken } from '@/lib/api-tokens';
 import { writeAuditLog } from '@/lib/audit';
 import { TODO_NOTE_MAX_LENGTH } from '@/lib/content-limits';
@@ -39,6 +40,7 @@ const createTaskCommentSchema = z.object({
   body: z.string().trim().min(1).max(TODO_NOTE_MAX_LENGTH),
   dispatch: z.boolean().optional(),
   engine: z.enum(ENGINE_KEYS).optional().or(z.literal('')),
+  model: z.string().trim().optional().or(z.literal('')),
   dispatchTarget: z.string().trim().optional().or(z.literal('')),
   dispatch_target: z.string().trim().optional().or(z.literal('')),
 });
@@ -71,6 +73,7 @@ async function buildTaskCommentDispatchFailureResponse({
   task,
   comment,
   engine,
+  model,
   dispatchTarget,
   errorMessage,
 }: {
@@ -78,6 +81,7 @@ async function buildTaskCommentDispatchFailureResponse({
   task: { taskPrefix: string; taskKey: string };
   comment: typeof taskComments.$inferSelect;
   engine: string | null;
+  model: string | null;
   dispatchTarget: string | null;
   errorMessage: string;
 }) {
@@ -92,6 +96,7 @@ async function buildTaskCommentDispatchFailureResponse({
         task_key: task.taskKey,
         comment_id: comment.id,
         engine,
+        model,
         dispatch_target: dispatchTarget,
         status: 'failed',
         error: errorMessage,
@@ -172,6 +177,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       if (!task) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
       const engine = normalizeEngineKey(parsed.data.engine) ?? normalizeEngineKey(task.engine);
+      const model = normalizeAgentModel(parsed.data.model);
       const dispatchTarget =
         normalizeTaskDispatchTarget(parsed.data.dispatch_target || parsed.data.dispatchTarget) ??
         normalizeTaskDispatchTarget(task.dispatchTarget) ??
@@ -197,7 +203,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         await syncTaskRunStateFromComments({ client, ownerId: auth.ownerId, taskId: task.id });
       }
 
-      return { task, comment, engine, dispatchTarget, runState };
+      return { task, comment, engine, model, dispatchTarget, runState };
     });
 
     if (created instanceof NextResponse) return created;
@@ -214,6 +220,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           task: created.task,
           comment: created.comment,
           engine: created.engine,
+          model: created.model,
           dispatchTarget: created.dispatchTarget,
           errorMessage,
         });
@@ -230,6 +237,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           task: created.task,
           comment: created.comment,
           engine: created.engine,
+          model: created.model,
           dispatchTarget: created.dispatchTarget,
           errorMessage,
         });
@@ -239,6 +247,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         taskKey: created.task.taskKey,
         status: created.task.status,
         engine: created.engine,
+        model: created.model,
         branchName: created.task.branch,
         commentId: created.comment.id,
         dispatchTarget: created.dispatchTarget,
@@ -254,6 +263,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           task: created.task,
           comment: created.comment,
           engine: created.engine,
+          model: created.model,
           dispatchTarget: created.dispatchTarget,
           errorMessage,
         });
@@ -273,6 +283,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         task_key: created.task.taskKey,
         comment_id: created.comment.id,
         engine: created.engine,
+        model: created.model,
         dispatch_target: created.dispatchTarget,
         message,
       };

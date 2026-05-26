@@ -397,6 +397,7 @@ describe('app/components/task-copy-actions', () => {
       expect(onDispatchSelectionChange).toHaveBeenLastCalledWith({
         engine: 'codex',
         dispatchTarget: 'telegram',
+        model: null,
       });
     });
 
@@ -407,6 +408,7 @@ describe('app/components/task-copy-actions', () => {
       expect(onDispatchSelectionChange).toHaveBeenLastCalledWith({
         engine: 'codex',
         dispatchTarget: 'hermes-telegram',
+        model: null,
       });
     });
   });
@@ -426,6 +428,7 @@ describe('app/components/task-copy-actions', () => {
       expect(firstTaskSelectionChange).toHaveBeenLastCalledWith({
         engine: 'claude-code',
         dispatchTarget: 'hermes-telegram',
+        model: null,
       });
     });
 
@@ -448,6 +451,7 @@ describe('app/components/task-copy-actions', () => {
       expect(secondTaskSelectionChange).toHaveBeenLastCalledWith({
         engine: 'codex',
         dispatchTarget: 'telegram',
+        model: null,
       });
     });
     expect(secondTaskSelectionChange).not.toHaveBeenCalledWith({

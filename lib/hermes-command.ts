@@ -1,3 +1,4 @@
+import { normalizeAgentModel } from '@/lib/agent-model-catalog';
 import { normalizeEngineKey } from '@/lib/engine-icons';
 import {
   encodeDispatchPromptMetadata,
@@ -36,6 +37,7 @@ export function buildHermesTaskCommand(params: {
   askHint?: string | null;
   commentId?: string | null;
   botUsername?: string | null;
+  model?: string | null;
 }) {
   const taskKey = params.taskKey.trim();
   const botUsername = normalizeFieldValue(params.botUsername) || DEFAULT_HERMES_BOT_USERNAME;
@@ -50,6 +52,7 @@ export function buildHermesTaskCommand(params: {
     `engine=${engineKey}`,
   ];
 
+  appendField(lines, 'model', normalizeAgentModel(params.model));
   appendField(lines, 'branch_name', params.branchName);
   if (resolvedObjective === 'ask') {
     appendField(lines, 'ask_hint', params.askHint);
@@ -67,6 +70,7 @@ export function buildHermesProjectInsightCommand(params: {
   branchName?: string | null;
   insightPrompt?: string | null;
   botUsername?: string | null;
+  model?: string | null;
 }) {
   const projectKey = normalizeProjectKey(params.projectKey);
   const botUsername = normalizeFieldValue(params.botUsername) || DEFAULT_HERMES_BOT_USERNAME;
@@ -78,6 +82,7 @@ export function buildHermesProjectInsightCommand(params: {
     `engine=${engineKey}`,
   ];
 
+  appendField(lines, 'model', normalizeAgentModel(params.model));
   appendField(lines, 'branch_name', params.branchName);
   appendField(
     lines,
@@ -95,6 +100,7 @@ export function buildHermesQaCommand(params: {
   qaRunId?: string | null;
   qaTaskKeys?: string[] | null;
   botUsername?: string | null;
+  model?: string | null;
 }) {
   const projectKey = normalizeProjectKey(params.projectKey);
   const botUsername = normalizeFieldValue(params.botUsername) || DEFAULT_HERMES_BOT_USERNAME;
@@ -112,6 +118,7 @@ export function buildHermesQaCommand(params: {
     `engine=${engineKey}`,
   ];
 
+  appendField(lines, 'model', normalizeAgentModel(params.model));
   appendField(lines, 'branch_name', params.branchName);
   appendField(lines, 'qa_run_id', params.qaRunId);
   appendField(lines, 'qa_task_keys', qaTaskKeys);

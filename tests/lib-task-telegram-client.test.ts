@@ -61,6 +61,32 @@ describe('lib/task-telegram-client', () => {
     );
   });
 
+  it('propagates model overrides through comment dispatch messages', () => {
+    expect(
+      buildTaskCommentDispatchMessage({
+        taskKey: 'PROJ-328',
+        status: 'todo',
+        engine: 'codex',
+        model: 'gpt-5-codex',
+        commentId: 'comment-123',
+        dispatchTarget: 'telegram',
+      }),
+    ).toBe(
+      '!/preqstation dispatch comment PROJ-328 using codex comment_id="comment-123" model="gpt-5-codex"',
+    );
+
+    expect(
+      buildTaskCommentDispatchMessage({
+        taskKey: 'PROJ-328',
+        status: 'todo',
+        engine: 'claude-code',
+        model: 'sonnet',
+        commentId: 'comment-123',
+        dispatchTarget: 'hermes-telegram',
+      }),
+    ).toContain('model=sonnet');
+  });
+
   it('posts task telegram sends to the telegram API route', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
@@ -137,6 +163,26 @@ describe('lib/task-telegram-client', () => {
     ).toBe(
       '!/preqstation dispatch qa PROJ using gemini-cli branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2"',
     );
+  });
+
+  it('propagates model overrides through project insight and QA dispatch messages', () => {
+    expect(
+      buildProjectInsightDispatchMessage({
+        projectKey: 'PROJ',
+        engine: 'codex',
+        model: 'gpt-5-codex',
+        dispatchTarget: 'telegram',
+      }),
+    ).toBe('!/preqstation dispatch insight PROJ using codex model="gpt-5-codex"');
+
+    expect(
+      buildProjectQaDispatchMessage({
+        projectKey: 'PROJ',
+        engine: 'gemini-cli',
+        model: 'gemini-2.5-pro',
+        dispatchTarget: 'hermes-telegram',
+      }),
+    ).toContain('model=gemini-2.5-pro');
   });
 
   it('posts Hermes project insight sends with the Hermes dispatch target', async () => {

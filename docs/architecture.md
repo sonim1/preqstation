@@ -85,7 +85,7 @@ preqstation  →  dispatch target selected
                            that target `telegram`
                         →  Hermes chat receives task, QA, and project insight sends that target
                            `hermes-telegram`
-                           →  receiving bot/runtime parses: engine, task ID, project key
+                           →  receiving bot/runtime parses: engine, optional model, task ID, project key
                               →  Resolves project path from explicit path, plugin config, shared mapping file, or MEMORY.md
                               →  Creates git worktree (isolated env)
                               →  Launches coding agent (claude/codex/gemini CLI)
@@ -243,9 +243,12 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 | `PATCH`  | `/api/projects/:id/labels/:labelId` | Update one project label                                              |
 | `DELETE` | `/api/projects/:id/labels/:labelId` | Delete one project label                                              |
 | `POST`   | `/api/events/cleanup`               | Clean up old outbox entries                                           |
-| `GET`    | `/api/settings`                     | Get/update user settings                                              |
+| `GET`    | `/api/settings`                     | Get user settings                                                     |
+| `PATCH`  | `/api/settings`                     | Update user settings                                                  |
 | `GET`    | `/api/notifications`                | List unread or read notification drawer items                         |
 | `PATCH`  | `/api/notifications`                | Mark selected or all notification drawer items as read                |
+| `GET`    | `/api/tasks/:id/comments`           | List comments for one task                                            |
+| `POST`   | `/api/tasks/:id/comments`           | Add a task comment and optionally dispatch an agent follow-up         |
 | `POST`   | `/api/projects/:id/qa-runs/trigger` | Queue selected ready task keys for QA via OpenClaw or Hermes Telegram |
 | `POST`   | `/api/telegram/send`                | Send task Telegram message to OpenClaw or Hermes                      |
 | `POST`   | `/api/telegram/send/insight`        | Send project insight to the OpenClaw or Hermes Telegram channel       |
@@ -358,14 +361,32 @@ Projects can also store an `agent_instructions` setting. When present, task payl
 - `/api/telegram/send/insight` defaults to the OpenClaw channel and can target Hermes when
   `dispatchTarget=hermes-telegram`
 - `POST /api/projects/:id/qa-runs/trigger` requires a non-empty `taskKeys` array. It accepts
-  `telegram` and `hermes-telegram`, validates every selected key is a ready task in the project,
-  creates the queued QA run record for only those selected ready tasks in ready board order, and
-  sends the selected Telegram dispatch message.
+  `telegram` and `hermes-telegram`, an optional `model`, validates every selected key is a ready
+  task in the project, creates the queued QA run record for only those selected ready tasks in
+  ready board order, and sends the selected Telegram dispatch message.
+- `POST /api/tasks/:id/comments` accepts optional `model` metadata when a comment queues an agent
+  follow-up. `dispatch=false` keeps the comment local and skips Telegram dispatch.
 - Project insight dispatch follows the same target vocabulary and always sends through
   `/api/telegram/send/insight`
 - There is no in-app `Channels` / `claude-code-channel` fallback for QA or project insight dispatch
 - OpenClaw `/status` checks remain OpenClaw-only
 - Messages are audit logged and used to notify users of task events and trigger downstream runtime workflows
+
+### Agent Model Catalog
+
+- `agent_model_catalog` is stored in `user_settings` and can be saved through **Settings -> Agent
+  Models** or `PATCH /api/settings`.
+- A blank value resolves to the built-in catalog. Saved JSON is normalized into this shape:
+  `{ "claude-code": AgentModelOption[], "codex": AgentModelOption[], "gemini-cli": AgentModelOption[] }`.
+- Each `AgentModelOption` is `{ "label": string, "value": string }`. String entries are accepted
+  and normalized into label/value pairs; unsupported engine keys, duplicates, and invalid model IDs
+  are dropped.
+- Dispatch model selection is message metadata. Blank, `default`, `__default__`, overlong, or
+  invalid model IDs normalize to no override.
+- Valid model overrides are appended as `model` metadata to OpenClaw
+  `!/preqstation dispatch ...` commands and Hermes `/preqstation_dispatch@PreqHermesBot`
+  commands for task dispatch, dispatched comments, QA dispatch, and project insight dispatch.
+- Model overrides do not update `tasks.engine`, workflow status, or the persisted QA run record.
 
 ### Event System
 

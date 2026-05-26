@@ -10,9 +10,9 @@ import {
 
 describe('lib/openclaw-command', () => {
   it('normalizes telegram commands with leading bang', () => {
-    expect(
-      normalizeTelegramCommandMessage('/preqstation dispatch status PROJ-1 using codex'),
-    ).toBe('!/preqstation dispatch status PROJ-1 using codex');
+    expect(normalizeTelegramCommandMessage('/preqstation dispatch status PROJ-1 using codex')).toBe(
+      '!/preqstation dispatch status PROJ-1 using codex',
+    );
   });
 
   it('builds todo command with unified preqstation dispatch syntax and branch metadata', () => {
@@ -26,6 +26,26 @@ describe('lib/openclaw-command', () => {
     ).toBe(
       '!/preqstation dispatch implement PROJ-1 using codex branch_name="task/proj-1/implement-auth"',
     );
+  });
+
+  it('adds model metadata only when a task model override is selected', () => {
+    expect(
+      buildOpenClawTaskCommand({
+        taskKey: 'PROJ-1',
+        status: 'todo',
+        engineKey: 'codex',
+        model: 'gpt-5-codex',
+      }),
+    ).toBe('!/preqstation dispatch implement PROJ-1 using codex model="gpt-5-codex"');
+
+    expect(
+      buildOpenClawTaskCommand({
+        taskKey: 'PROJ-1',
+        status: 'todo',
+        engineKey: 'codex',
+        model: '',
+      }),
+    ).toBe('!/preqstation dispatch implement PROJ-1 using codex');
   });
 
   it('maps ready tasks to review command', () => {
@@ -126,6 +146,16 @@ describe('lib/openclaw-command', () => {
     );
   });
 
+  it('adds model metadata to QA commands when selected', () => {
+    expect(
+      buildOpenClawQaCommand({
+        projectKey: 'PROJ',
+        engineKey: 'gemini-cli',
+        model: 'gemini-2.5-pro',
+      }),
+    ).toBe('!/preqstation dispatch qa PROJ using gemini-cli model="gemini-2.5-pro"');
+  });
+
   it('encodes multiline dispatch prompt metadata safely', () => {
     expect(
       encodeDispatchPromptMetadata(
@@ -146,5 +176,15 @@ describe('lib/openclaw-command', () => {
     ).toBe(
       '!/preqstation dispatch insight PROJ using codex insight_prompt_b64="QnJlYWsgZG93biB0aGUgQ29ubmVjdGlvbnMgcGFnZSByZWRlc2lnbgpBbHNvIHJldmlldyB0aGUgbW9iaWxlIGZsb3c="',
     );
+  });
+
+  it('adds model metadata to project insight commands when selected', () => {
+    expect(
+      buildOpenClawProjectCommand({
+        projectKey: 'proj',
+        engineKey: 'claude-code',
+        model: 'sonnet',
+      }),
+    ).toBe('!/preqstation dispatch insight PROJ using claude-code model="sonnet"');
   });
 });

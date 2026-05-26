@@ -24,6 +24,33 @@ Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `a
 
 Task `repo` fields and project `repoUrl` fields accept GitHub repo references as `owner/repo` IDs, HTTPS URLs, or SSH clone URLs, for example `sonim1/preqstation`, `https://github.com/sonim1/preqstation`, or `git@github.com:sonim1/preqstation.git`. Write paths normalize accepted references to `owner/repo` before storage, matching, and responses; invalid or non-GitHub values still fail validation.
 
+### Session Settings and Dispatch Payloads
+
+Session-authenticated settings clients can update the global agent model catalog with
+`PATCH /api/settings`:
+
+```json
+{
+  "key": "agent_model_catalog",
+  "value": "{\"claude-code\":[{\"label\":\"Claude Sonnet 4.6\",\"value\":\"claude-sonnet-4-6\"}],\"codex\":[{\"label\":\"GPT-5.3 Codex\",\"value\":\"gpt-5.3-codex\"}],\"gemini-cli\":[]}"
+}
+```
+
+`value` must be a JSON object keyed by `claude-code`, `codex`, and/or `gemini-cli`. Each engine
+array may contain model ID strings or `{ "label": "...", "value": "..." }` objects. The API rejects
+invalid JSON and normalizes accepted values before saving them in `user_settings.agent_model_catalog`.
+
+Dispatch-related session APIs accept optional per-request `model` metadata:
+
+| Endpoint                                 | Optional `model` behavior                                                                 |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `POST /api/tasks/:id/comments`           | Included in the outbound comment follow-up dispatch when the comment queues an agent run. |
+| `POST /api/projects/:id/qa-runs/trigger` | Included in the outbound QA dispatch command for the selected ready task keys.            |
+
+Blank, `default`, `__default__`, overlong, or invalid model values are omitted. Valid values are
+added to the OpenClaw or Hermes dispatch command only for that dispatch request; they do not update
+the task's saved engine or persist on the QA run record.
+
 ### MCP over HTTP
 
 - Endpoint: `/mcp`

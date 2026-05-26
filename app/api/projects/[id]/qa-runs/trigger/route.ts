@@ -2,6 +2,7 @@ import { and, asc, eq, isNull } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import { normalizeAgentModel } from '@/lib/agent-model-catalog';
 import { writeAuditLog } from '@/lib/audit';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, tasks } from '@/lib/db/schema';
@@ -25,6 +26,7 @@ import { getUserSettings } from '@/lib/user-settings';
 const triggerQaRunSchema = z
   .object({
     engine: z.enum(ENGINE_KEYS).optional(),
+    model: z.string().trim().optional().or(z.literal('')),
     dispatchTarget: z.enum(['telegram', 'hermes-telegram']).optional().default('telegram'),
     taskKeys: z
       .array(z.string().min(1), { error: 'Select at least one ready task for QA' })
@@ -85,6 +87,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       const projectSettings = await getProjectSettings(project.id, client);
       const branchName = projectSettings[PROJECT_SETTING_KEYS.DEPLOY_DEFAULT_BRANCH] || 'main';
       const qaEngine = payload.engine ?? DEFAULT_ENGINE_KEY;
+      const qaModel = normalizeAgentModel(payload.model);
       const dispatchTarget = payload.dispatchTarget ?? 'telegram';
       const settings = await getUserSettings(owner.id, client);
       const target = dispatchTarget === 'hermes-telegram' ? 'hermes' : 'openclaw';
@@ -128,6 +131,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         dispatchTarget,
         qaRunId: run.id,
         qaTaskKeys: run.taskKeys,
+        model: qaModel,
       });
 
       const sendResult = await sendTelegramMessage(botToken, chatId, message, {

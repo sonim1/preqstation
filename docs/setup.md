@@ -161,7 +161,40 @@ Recommended validation from the settings screen:
   enabled channels
 - Open **QA Runs** and confirm it can queue through `🦞 Telegram` and/or `H Telegram` as expected
 
-## 7) Post-Deploy Validation
+## 7) Configure Agent Model Catalog
+
+Open **Settings -> Agent Models** after the owner account is provisioned. The model catalog is a
+global `agent_model_catalog` user setting for model choices in supported dispatch engines.
+
+The saved value is JSON with one key per supported engine:
+
+```json
+{
+  "claude-code": [{ "label": "Claude Sonnet 4.6", "value": "claude-sonnet-4-6" }],
+  "codex": [{ "label": "GPT-5.3 Codex", "value": "gpt-5.3-codex" }],
+  "gemini-cli": [{ "label": "Gemini 2.5 Pro", "value": "gemini-2.5-pro" }]
+}
+```
+
+Catalog notes:
+
+- A blank setting uses the built-in catalog.
+- Each engine value can contain strings or `{ "label": "...", "value": "..." }` objects. Saving
+  normalizes strings into label/value objects.
+- Unsupported engine keys, duplicate model IDs, and invalid model IDs are dropped. Model IDs may
+  contain letters, numbers, `.`, `_`, `:`, `/`, `@`, `+`, or `-`, up to 120 characters.
+- The model selector's **Default** option sends no `model` override.
+
+Dispatch notes:
+
+- Task dispatches append `model` metadata only when a non-default model is selected.
+- Session API clients can send optional `model` values when queuing QA runs or dispatched task
+  comments. The model value is normalized and included in the outbound OpenClaw/Hermes dispatch
+  command when valid.
+- Model overrides are per-dispatch metadata; they do not change the task's saved engine, workflow
+  status, or the persisted QA run record.
+
+## 8) Post-Deploy Validation
 
 - `/api/health` returns `200`
 - Owner email + password login succeeds using the `users` table row
@@ -179,12 +212,14 @@ Recommended validation from the settings screen:
 - OpenClaw Telegram test, OpenClaw `/status`, and Hermes Telegram test succeed for the channels you enabled
 - Tasks dispatched to Telegram can surface `Requested` / `Running` execution badges
 - Hermes-targeted task sends plus Hermes-targeted project insight sends land in the Hermes chat
+- **Settings -> Agent Models** saves valid catalog JSON and rejects invalid JSON
+- Task dispatch previews include model metadata only after a non-default model is selected
 - QA runs can queue only the selected ready tasks through `🦞 Telegram` and/or `H Telegram`, and
   project insight dispatch uses the enabled Telegram target chips shown in the modal
 - `claude mcp add --transport http .../mcp` or `codex mcp add ... --url .../mcp` completes browser login successfully
 - Dispatcher setup is optional and can wait until the project/task/worker path is already working
 
-## 8) Offline Workspace Validation
+## 9) Offline Workspace Validation
 
 Run this after any deploy that changes board shell code, `/sw.js`, or the offline mutation flow.
 
@@ -220,12 +255,12 @@ Run this after any deploy that changes board shell code, `/sw.js`, or the offlin
   queued mutations continue syncing, and the user still sees the returned error message. Transient
   failures should still halt replay with the remaining queue left in place for retry.
 
-## 9) Least-Privilege DB Access
+## 10) Least-Privilege DB Access
 
 - Create a dedicated DB user for the app.
 - Grant only required schema/table privileges.
 
-## 10) PREQSTATION Agent Setup
+## 11) PREQSTATION Agent Setup
 
 Recommended MCP setup:
 
@@ -257,7 +292,7 @@ Install the skill package:
 npx skills add sonim1/preqstation-skill -g
 ```
 
-## 11) Operational Recommendations
+## 12) Operational Recommendations
 
 - Rotate the stored owner `password_hash` regularly.
 - Keep `AUTH_SECRET` stable for encrypted settings. If it must be rotated, re-save encrypted

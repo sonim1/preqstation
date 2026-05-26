@@ -14,8 +14,10 @@ import {
   useState,
 } from 'react';
 
+import { AgentModelSelect } from '@/app/components/agent-model-select';
 import { DispatchPromptPreview } from '@/app/components/dispatch-prompt-preview';
 import { DispatchSegmentedControl } from '@/app/components/dispatch-segmented-control';
+import { type AgentModelCatalog, normalizeAgentModel } from '@/lib/agent-model-catalog';
 import {
   readTaskDispatchPreference,
   type TaskDispatchPreferenceAction,
@@ -79,6 +81,7 @@ type TaskCopyActionsProps = {
   status: string;
   engine?: string | null;
   dispatchTarget?: TaskDispatchTarget | null;
+  agentModelCatalog?: AgentModelCatalog | null;
   telegramEnabled?: boolean;
   hermesTelegramEnabled?: boolean;
   suppressShortcut?: boolean;
@@ -86,6 +89,7 @@ type TaskCopyActionsProps = {
   onTaskQueued?: (taskKey: string, queuedAt: string, dispatchTarget: TaskDispatchTarget) => void;
   onDispatchSelectionChange?: (selection: {
     engine: string | null;
+    model: string | null;
     dispatchTarget: TaskDispatchTarget | null;
   }) => void;
 };
@@ -385,6 +389,7 @@ export function TaskCopyActions({
   status,
   engine,
   dispatchTarget,
+  agentModelCatalog,
   telegramEnabled = false,
   hermesTelegramEnabled,
   suppressShortcut = false,
@@ -420,6 +425,7 @@ export function TaskCopyActions({
   const [selectedEngineState, setSelectedEngine] = useState<EngineConfig | null>(
     () => initialEngine,
   );
+  const [selectedModelState, setSelectedModel] = useState<string | null>(null);
   const [selectedActionState, setSelectedAction] = useState<TaskEditDispatchAction>(
     () => initialAction,
   );
@@ -442,16 +448,16 @@ export function TaskCopyActions({
   }, []);
   const isSelectionContextCurrent = selectionContextKeyRef.current === selectionContextKey;
   const selectedEngine = isSelectionContextCurrent ? selectedEngineState : initialEngine;
+  const selectedModel = isSelectionContextCurrent ? selectedModelState : null;
   const selectedAction = isSelectionContextCurrent ? selectedActionState : initialAction;
-  const selectedObjective = isSelectionContextCurrent
-    ? selectedObjectiveState
-    : initialObjective;
+  const selectedObjective = isSelectionContextCurrent ? selectedObjectiveState : initialObjective;
 
   useEffect(() => {
     if (selectionContextKeyRef.current === selectionContextKey) return;
 
     selectionContextKeyRef.current = selectionContextKey;
     setSelectedEngine(initialEngine);
+    setSelectedModel(null);
     setSelectedAction(initialAction);
     setSelectedObjective(initialObjective);
     setDispatchState('idle');
@@ -482,6 +488,7 @@ export function TaskCopyActions({
           taskKey,
           status,
           engine: selectedEngine?.key,
+          model: selectedModel,
           branchName,
           objective: effectiveObjective,
         })
@@ -489,6 +496,7 @@ export function TaskCopyActions({
           taskKey,
           status,
           engine: selectedEngine?.key,
+          model: selectedModel,
           branchName,
           objective: effectiveObjective,
         });
@@ -515,6 +523,7 @@ export function TaskCopyActions({
 
     onDispatchSelectionChange?.({
       engine: normalizeEngineKey(selectedEngine?.key),
+      model: normalizeAgentModel(selectedModel),
       dispatchTarget: effectiveDispatchTarget,
     });
   }, [
@@ -522,6 +531,7 @@ export function TaskCopyActions({
     hasDispatchControls,
     onDispatchSelectionChange,
     selectedEngine?.key,
+    selectedModel,
   ]);
 
   const selectEngine = (nextEngine: EngineConfig) => {
@@ -531,9 +541,15 @@ export function TaskCopyActions({
       effectiveAction,
     );
     setSelectedEngine(nextEngine);
+    setSelectedModel(null);
     setSelectedAction(nextAction);
     setDispatchState('idle');
     persistDispatchPreference(nextEngine, effectiveObjective, nextAction);
+  };
+
+  const selectModel = (nextModel: string | null) => {
+    setSelectedModel(nextModel);
+    setDispatchState('idle');
   };
 
   const selectAction = (nextAction: TaskEditDispatchAction) => {
@@ -566,6 +582,7 @@ export function TaskCopyActions({
               taskKey,
               status,
               engine: selectedEngine?.key,
+              model: selectedModel,
               branchName,
               objective: effectiveObjective,
             })
@@ -573,6 +590,7 @@ export function TaskCopyActions({
               taskKey,
               status,
               engine: selectedEngine?.key,
+              model: selectedModel,
               branchName,
               objective: effectiveObjective,
             }),
@@ -698,6 +716,16 @@ export function TaskCopyActions({
                   selectEngine(nextEngine);
                 }
               }}
+            />
+          </div>
+
+          <div className="task-dispatch-bottom-model-field">
+            <AgentModelSelect
+              engineKey={selectedEngine?.key}
+              catalog={agentModelCatalog}
+              value={selectedModel}
+              disabled={isSending}
+              onChange={selectModel}
             />
           </div>
 
@@ -841,6 +869,14 @@ export function TaskCopyActions({
                 ),
               };
             })}
+          />
+
+          <AgentModelSelect
+            engineKey={selectedEngine?.key}
+            catalog={agentModelCatalog}
+            value={selectedModel}
+            disabled={isSending}
+            onChange={selectModel}
           />
 
           <DispatchSegmentedControl

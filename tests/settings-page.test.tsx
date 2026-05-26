@@ -26,6 +26,12 @@ vi.mock('@/app/components/kitchen-mode-settings', () => ({
   KitchenModeSettings: () => <div>Kitchen mode</div>,
 }));
 
+vi.mock('@/app/components/agent-model-catalog-settings', () => ({
+  AgentModelCatalogSettings: ({ defaultValue }: { defaultValue: unknown }) => (
+    <div data-slot="agent-model-catalog-settings">{JSON.stringify(defaultValue)}</div>
+  ),
+}));
+
 vi.mock('@/app/components/link-button', () => ({
   LinkButton: ({ children, href }: { children: React.ReactNode; href: string }) => (
     <a href={href}>{children}</a>
@@ -111,6 +117,7 @@ vi.mock('@/lib/user-settings', () => ({
     HERMES_TELEGRAM_CHAT_ID: 'hermes_telegram_chat_id',
     HERMES_TELEGRAM_ENABLED: 'hermes_telegram_enabled',
     TIMEZONE: 'timezone',
+    AGENT_MODEL_CATALOG: 'agent_model_catalog',
   },
   getUserSettings: mocked.getUserSettings,
   setUserSetting: mocked.setUserSetting,
@@ -141,6 +148,7 @@ describe('app/(workspace)/(main)/settings/page', () => {
       hermes_telegram_chat_id: '',
       hermes_telegram_enabled: '',
       timezone: 'America/Toronto',
+      agent_model_catalog: '',
     });
   });
 
@@ -169,6 +177,14 @@ describe('app/(workspace)/(main)/settings/page', () => {
     expect(html).toContain('data-settings-group="workspace-preferences"');
     expect(html).toContain('data-settings-item="kitchen-mode"');
     expect(html).toContain('data-settings-item="timezone"');
+    expect(html).toContain('data-settings-item="agent-model-catalog"');
+  });
+
+  it('renders global agent model catalog settings in workspace preferences', async () => {
+    const html = await renderSettingsPage();
+
+    expect(html).toContain('Agent Models');
+    expect(html).toContain('data-slot="agent-model-catalog-settings"');
   });
 
   it('renders two-factor settings between workspace preferences and Telegram', async () => {

@@ -14,6 +14,7 @@ export const SETTING_KEYS = {
   HERMES_TELEGRAM_CHAT_ID: 'hermes_telegram_chat_id',
   HERMES_TELEGRAM_ENABLED: 'hermes_telegram_enabled',
   TIMEZONE: 'timezone',
+  AGENT_MODEL_CATALOG: 'agent_model_catalog',
 } as const;
 
 export const SETTING_DEFAULTS: Record<string, string> = {
@@ -26,6 +27,7 @@ export const SETTING_DEFAULTS: Record<string, string> = {
   [SETTING_KEYS.HERMES_TELEGRAM_CHAT_ID]: '',
   [SETTING_KEYS.HERMES_TELEGRAM_ENABLED]: '',
   [SETTING_KEYS.TIMEZONE]: '',
+  [SETTING_KEYS.AGENT_MODEL_CATALOG]: '',
 };
 
 export async function getUserSetting(

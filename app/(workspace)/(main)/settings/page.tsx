@@ -15,6 +15,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import classes from '@/app/(workspace)/(main)/settings/settings-page.module.css';
+import { AgentModelCatalogSettings } from '@/app/components/agent-model-catalog-settings';
 import { KitchenModeSettings } from '@/app/components/kitchen-mode-settings';
 import panelStyles from '@/app/components/panels.module.css';
 import { TaskPriorityIcon } from '@/app/components/task-priority-icon';
@@ -22,6 +23,7 @@ import { TelegramSettings } from '@/app/components/telegram-settings';
 import { TimezoneSettings } from '@/app/components/timezone-settings';
 import { TwoFactorSettings } from '@/app/components/two-factor-settings';
 import { WorkspacePageHeader } from '@/app/components/workspace-page-header';
+import { resolveAgentModelCatalog } from '@/lib/agent-model-catalog';
 import { writeAuditLog } from '@/lib/audit';
 import { withOwnerDb } from '@/lib/db/rls';
 import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
@@ -45,6 +47,7 @@ export default async function SettingsPage() {
   const terminology = resolveTerminology(settings.kitchen_mode === 'true');
   const openClawTelegramSettings = resolveTelegramDispatchConfig(settings, 'openclaw');
   const hermesTelegramSettings = resolveTelegramDispatchConfig(settings, 'hermes');
+  const agentModelCatalog = resolveAgentModelCatalog(settings.agent_model_catalog);
 
   async function updateTelegramSettings(_prevState: unknown, formData: FormData) {
     'use server';
@@ -234,6 +237,20 @@ export default async function SettingsPage() {
               </div>
               <div className={classes.preferenceBody}>
                 <TimezoneSettings defaultValue={settings.timezone} />
+              </div>
+            </section>
+
+            <section className={classes.preferenceItem} data-settings-item="agent-model-catalog">
+              <div className={classes.preferenceHeader}>
+                <Text fw={600} className={classes.preferenceTitle}>
+                  Agent Models
+                </Text>
+                <Text className={classes.preferenceDescription} size="sm">
+                  Configure global model options for Codex, Claude Code, and Gemini dispatches.
+                </Text>
+              </div>
+              <div className={classes.preferenceBody}>
+                <AgentModelCatalogSettings defaultValue={agentModelCatalog} />
               </div>
             </section>
           </div>
