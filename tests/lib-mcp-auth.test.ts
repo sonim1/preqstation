@@ -49,6 +49,7 @@ vi.mock('@/lib/mcp/connections', () => ({
 import {
   exchangeMcpAuthorizationCode,
   issueMcpAuthorizationCode,
+  redirectUrisMatch,
   verifyMcpAccessToken,
 } from '@/lib/mcp/auth';
 
@@ -176,5 +177,36 @@ describe('lib/mcp/auth', () => {
     expect(mocked.withAdminDb).toHaveBeenCalledOnce();
     expect(mocked.adminClient.query.oauthCodes.findFirst).toHaveBeenCalledOnce();
     expect(mocked.deleteWhere).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    'http://127.0.0.1',
+    'http://localhost',
+    'http://[::1]',
+  ])('allows native loopback redirect ports to rotate for %s on the same callback path', (origin) => {
+    expect(
+      redirectUrisMatch(
+        `${origin}:50877/callback`,
+        `${origin}:59993/callback`,
+      ),
+    ).toBe(true);
+  });
+
+  it('allows native loopback redirects to rotate both identifier and port for the same callback path', () => {
+    expect(
+      redirectUrisMatch(
+        'http://localhost:50877/callback',
+        'http://127.0.0.1:59993/callback',
+      ),
+    ).toBe(true);
+  });
+
+  it('keeps non-loopback redirect URI ports exact', () => {
+    expect(
+      redirectUrisMatch(
+        'https://client.example:50877/callback',
+        'https://client.example:59993/callback',
+      ),
+    ).toBe(false);
   });
 });

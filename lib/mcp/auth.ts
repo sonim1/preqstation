@@ -84,10 +84,12 @@ export function redirectUrisMatch(expected: string, actual: string) {
   try {
     const expectedUrl = new URL(expected);
     const actualUrl = new URL(actual);
+    const bothLoopback =
+      isLoopbackHostname(expectedUrl.hostname) && isLoopbackHostname(actualUrl.hostname);
 
     const sameLocation =
       expectedUrl.protocol === actualUrl.protocol &&
-      expectedUrl.port === actualUrl.port &&
+      (bothLoopback || expectedUrl.port === actualUrl.port) &&
       expectedUrl.pathname === actualUrl.pathname &&
       expectedUrl.search === actualUrl.search &&
       expectedUrl.hash === actualUrl.hash;
