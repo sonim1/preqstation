@@ -1,3 +1,4 @@
+import { normalizeAgentModel } from '@/lib/agent-model-catalog';
 import { normalizeEngineKey } from '@/lib/engine-icons';
 
 export const TASK_DISPATCH_OBJECTIVES = [
@@ -88,6 +89,7 @@ export function buildOpenClawTaskCommand(params: {
   objective?: TaskDispatchObjective | null;
   askHint?: string | null;
   commentId?: string | null;
+  model?: string | null;
 }) {
   const taskKey = params.taskKey.trim();
   const status = params.status.trim();
@@ -98,6 +100,7 @@ export function buildOpenClawTaskCommand(params: {
     branch_name: params.branchName,
     ask_hint: objective === 'ask' ? params.askHint : null,
     comment_id: objective === 'comment' ? params.commentId : null,
+    model: normalizeAgentModel(params.model),
   });
 }
 
@@ -107,6 +110,7 @@ export function buildOpenClawQaCommand(params: {
   branchName?: string | null;
   qaRunId?: string | null;
   qaTaskKeys?: string[] | null;
+  model?: string | null;
 }) {
   const projectKey = params.projectKey.trim();
   const engineKey = normalizeEngineKey(params.engineKey) ?? 'codex';
@@ -121,6 +125,7 @@ export function buildOpenClawQaCommand(params: {
     branch_name: params.branchName,
     qa_run_id: params.qaRunId,
     qa_task_keys: qaTaskKeys,
+    model: normalizeAgentModel(params.model),
   });
 }
 
@@ -130,6 +135,7 @@ export function buildOpenClawProjectCommand(params: {
   engineKey?: string | null;
   branchName?: string | null;
   insightPrompt?: string | null;
+  model?: string | null;
 }) {
   const projectKey = params.projectKey.trim().toUpperCase();
   const objective = params.objective ?? 'insight';
@@ -141,5 +147,6 @@ export function buildOpenClawProjectCommand(params: {
     insight_prompt_b64: params.insightPrompt
       ? encodeDispatchPromptMetadata(params.insightPrompt)
       : null,
+    model: normalizeAgentModel(params.model),
   });
 }

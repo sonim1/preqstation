@@ -215,6 +215,30 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
     );
   });
 
+  it('adds a model override to the QA dispatch command without storing it on the run', async () => {
+    await POST(
+      postRequest({
+        engine: 'codex',
+        model: 'gpt-5-codex',
+        taskKeys: ['PROJ-1', 'PROJ-2'],
+      }),
+      {
+        params: Promise.resolve({ id: 'project-1' }),
+      },
+    );
+
+    expect(mocked.createQueuedQaRun).toHaveBeenCalledWith(
+      expect.not.objectContaining({ model: expect.anything() }),
+      expect.anything(),
+    );
+    expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
+      'bot-token',
+      '123456',
+      '!/preqstation dispatch qa PROJ using codex branch_name="main" qa_run_id="run-123" qa_task_keys="PROJ-1,PROJ-2" model="gpt-5-codex"',
+      { normalizeCommand: true },
+    );
+  });
+
   it('sends Hermes QA commands through the Hermes Telegram channel when requested', async () => {
     mocked.getUserSettings.mockResolvedValueOnce({
       engine_default: 'codex',

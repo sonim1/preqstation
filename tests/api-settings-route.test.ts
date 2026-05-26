@@ -130,6 +130,38 @@ describe('app/api/settings/route', () => {
     );
   });
 
+  it('accepts a normalized global agent model catalog', async () => {
+    const response = await PATCH(
+      patchRequest({
+        key: 'agent_model_catalog',
+        value: JSON.stringify({
+          codex: ['gpt-5-codex'],
+          'claude-code': [{ label: 'Sonnet', value: 'sonnet' }],
+          'gemini-cli': [],
+          unsupported: ['ignored'],
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocked.setUserSetting).toHaveBeenCalledWith(
+      'owner-1',
+      'agent_model_catalog',
+      '{"claude-code":[{"label":"Sonnet","value":"sonnet"}],"codex":[{"label":"gpt-5-codex","value":"gpt-5-codex"}],"gemini-cli":[]}',
+      mocked.client,
+    );
+  });
+
+  it('rejects invalid agent model catalog JSON', async () => {
+    const response = await PATCH(patchRequest({ key: 'agent_model_catalog', value: 'not-json' }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: 'Agent model catalog must be valid JSON.',
+    });
+    expect(mocked.setUserSetting).not.toHaveBeenCalled();
+  });
+
   it('rejects invalid timezone values', async () => {
     const response = await PATCH(patchRequest({ key: 'timezone', value: 'Mars/Olympus' }));
 

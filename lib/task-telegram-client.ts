@@ -24,6 +24,7 @@ type BuildTaskTelegramMessageParams = {
   objective?: TaskDispatchObjective | null;
   askHint?: string | null;
   commentId?: string | null;
+  model?: string | null;
 };
 
 export function buildTaskTelegramMessage({
@@ -34,6 +35,7 @@ export function buildTaskTelegramMessage({
   objective,
   askHint,
   commentId,
+  model,
 }: BuildTaskTelegramMessageParams) {
   return buildOpenClawTaskCommand({
     taskKey,
@@ -43,6 +45,7 @@ export function buildTaskTelegramMessage({
     objective,
     askHint,
     commentId,
+    model,
   });
 }
 
@@ -54,6 +57,7 @@ export function buildHermesTaskTelegramMessage({
   objective,
   askHint,
   commentId,
+  model,
 }: BuildTaskTelegramMessageParams) {
   return buildHermesTaskCommand({
     taskKey,
@@ -63,6 +67,7 @@ export function buildHermesTaskTelegramMessage({
     objective,
     askHint,
     commentId,
+    model,
   });
 }
 
@@ -81,6 +86,7 @@ export function buildTaskCommentDispatchMessage(
     branchName: params.branchName,
     objective: 'comment',
     commentId: params.commentId,
+    model: params.model,
   });
 }
 
@@ -117,6 +123,7 @@ type BuildProjectInsightTelegramMessageParams = {
   engine?: string | null;
   branchName?: string | null;
   insightPrompt?: string | null;
+  model?: string | null;
 };
 
 export function buildProjectInsightTelegramMessage({
@@ -124,12 +131,14 @@ export function buildProjectInsightTelegramMessage({
   engine,
   branchName,
   insightPrompt,
+  model,
 }: BuildProjectInsightTelegramMessageParams) {
   return buildProjectInsightDispatchMessage({
     projectKey,
     engine,
     branchName,
     insightPrompt,
+    model,
     dispatchTarget: 'telegram',
   });
 }
@@ -139,6 +148,7 @@ export function buildProjectInsightDispatchMessage({
   engine,
   branchName,
   insightPrompt,
+  model,
   dispatchTarget = 'telegram',
 }: BuildProjectInsightTelegramMessageParams & {
   dispatchTarget?: ProjectDispatchTarget | null;
@@ -149,6 +159,7 @@ export function buildProjectInsightDispatchMessage({
       engineKey: normalizeEngineKey(engine) ?? 'codex',
       branchName,
       insightPrompt,
+      model,
     });
   }
 
@@ -157,6 +168,7 @@ export function buildProjectInsightDispatchMessage({
     engineKey: normalizeEngineKey(engine) ?? 'codex',
     branchName,
     insightPrompt,
+    model,
   });
 }
 
@@ -167,6 +179,7 @@ export function buildProjectQaDispatchMessage(params: {
   qaRunId?: string | null;
   qaTaskKeys?: string[] | null;
   dispatchTarget?: ProjectDispatchTarget | null;
+  model?: string | null;
 }) {
   if (params.dispatchTarget === 'hermes-telegram') {
     return buildHermesQaCommand({
@@ -175,6 +188,7 @@ export function buildProjectQaDispatchMessage(params: {
       branchName: params.branchName,
       qaRunId: params.qaRunId,
       qaTaskKeys: params.qaTaskKeys,
+      model: params.model,
     });
   }
 
@@ -184,6 +198,7 @@ export function buildProjectQaDispatchMessage(params: {
     branchName: params.branchName,
     qaRunId: params.qaRunId,
     qaTaskKeys: params.qaTaskKeys,
+    model: params.model,
   });
 }
 

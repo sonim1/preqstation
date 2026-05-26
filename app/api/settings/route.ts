@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import { parseAgentModelCatalogSetting } from '@/lib/agent-model-catalog';
 import { rebuildDashboardWorkLogRollups } from '@/lib/dashboard-rollups';
 import { isSupportedTimeZone } from '@/lib/date-time';
 import { withOwnerDb } from '@/lib/db/rls';
@@ -49,9 +50,16 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'Invalid setting key' }, { status: 400 });
     }
 
-    const nextValue = body.value.trim();
+    let nextValue = body.value.trim();
     if (body.key === SETTING_KEYS.TIMEZONE && nextValue && !isSupportedTimeZone(nextValue)) {
       return NextResponse.json({ error: 'Invalid timezone' }, { status: 400 });
+    }
+    if (body.key === SETTING_KEYS.AGENT_MODEL_CATALOG) {
+      const parsed = parseAgentModelCatalogSetting(nextValue);
+      if (!parsed.ok) {
+        return NextResponse.json({ error: parsed.error }, { status: 400 });
+      }
+      nextValue = parsed.value;
     }
 
     await withOwnerDb(owner.id, async (client) => {

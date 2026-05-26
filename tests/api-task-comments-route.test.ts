@@ -190,6 +190,35 @@ describe('app/api/tasks/[id]/comments/route', () => {
     );
   });
 
+  it('passes model overrides into dispatched comment messages', async () => {
+    const response = await POST(
+      postRequest({
+        body: 'Please review this comment',
+        engine: 'codex',
+        model: 'gpt-5-codex',
+        dispatchTarget: 'hermes-telegram',
+      }),
+      {
+        params: Promise.resolve({ id: 'PQST-74' }),
+      },
+    );
+
+    expect(response.status).toBe(201);
+    expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
+      'bot-token',
+      '12345',
+      expect.stringContaining('model=gpt-5-codex'),
+      { normalizeCommand: false },
+    );
+    expect(await response.json()).toEqual(
+      expect.objectContaining({
+        dispatch: expect.objectContaining({
+          model: 'gpt-5-codex',
+        }),
+      }),
+    );
+  });
+
   it('keeps explicit non-dispatch comments local only', async () => {
     mocked.returningFn.mockResolvedValueOnce([
       {

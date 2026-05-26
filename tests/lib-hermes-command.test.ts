@@ -28,6 +28,26 @@ describe('lib/hermes-command', () => {
     );
   });
 
+  it('adds a model field to Hermes task dispatches when selected', () => {
+    expect(
+      buildHermesTaskCommand({
+        taskKey: 'PROJ-316',
+        status: 'todo',
+        engineKey: 'codex',
+        model: 'gpt-5-codex',
+      }),
+    ).toBe(
+      [
+        '/preqstation_dispatch@PreqHermesBot',
+        'project_key=PROJ',
+        'task_key=PROJ-316',
+        'objective=implement',
+        'engine=codex',
+        'model=gpt-5-codex',
+      ].join('\n'),
+    );
+  });
+
   it('includes ask_hint only for ask dispatches', () => {
     expect(
       buildHermesTaskCommand({
@@ -74,6 +94,16 @@ describe('lib/hermes-command', () => {
     ).toContain('insight_prompt_b64=');
   });
 
+  it('adds a model field to Hermes project insight dispatches when selected', () => {
+    expect(
+      buildHermesProjectInsightCommand({
+        projectKey: 'proj',
+        engineKey: 'claude-code',
+        model: 'sonnet',
+      }),
+    ).toContain('model=sonnet');
+  });
+
   it('builds Hermes QA dispatch messages with run metadata', () => {
     expect(
       buildHermesQaCommand({
@@ -94,5 +124,15 @@ describe('lib/hermes-command', () => {
         'qa_task_keys=PROJ-1,PROJ-2',
       ].join('\n'),
     );
+  });
+
+  it('adds a model field to Hermes QA dispatches when selected', () => {
+    expect(
+      buildHermesQaCommand({
+        projectKey: 'PROJ',
+        engineKey: 'gemini-cli',
+        model: 'gemini-2.5-pro',
+      }),
+    ).toContain('model=gemini-2.5-pro');
   });
 });
