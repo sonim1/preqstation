@@ -179,10 +179,23 @@ describe('lib/mcp/auth', () => {
     expect(mocked.deleteWhere).toHaveBeenCalledOnce();
   });
 
-  it('allows native loopback redirect ports to rotate for the same callback path', () => {
+  it.each([
+    'http://127.0.0.1',
+    'http://localhost',
+    'http://[::1]',
+  ])('allows native loopback redirect ports to rotate for %s on the same callback path', (origin) => {
     expect(
       redirectUrisMatch(
-        'http://127.0.0.1:50877/callback',
+        `${origin}:50877/callback`,
+        `${origin}:59993/callback`,
+      ),
+    ).toBe(true);
+  });
+
+  it('allows native loopback redirects to rotate both identifier and port for the same callback path', () => {
+    expect(
+      redirectUrisMatch(
+        'http://localhost:50877/callback',
         'http://127.0.0.1:59993/callback',
       ),
     ).toBe(true);
