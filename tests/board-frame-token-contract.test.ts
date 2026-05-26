@@ -185,6 +185,18 @@ function expectTokenContrast(token: string, backgroundHex: string, minimumRatio:
   expect(contrastRatio(foreground, background)).toBeGreaterThanOrEqual(minimumRatio);
 }
 
+function expectOpaquePositionIndependentSurface(value: string) {
+  expect(value).toMatch(/^(#[0-9a-f]{6}|oklch\([^/]+\)|rgb\(\s*\d+\s+\d+\s+\d+\s*\))$/i);
+  expect(value).not.toMatch(/gradient|transparent|rgba|var\(|\/\s*0?\.\d/i);
+}
+
+function resolveCssVariable(style: CSSStyleDeclaration, name: string): string {
+  const value = style.getPropertyValue(name).trim();
+  const match = value.match(/^var\((--[^,)]+)(?:,\s*[^)]+)?\)$/);
+
+  return match ? resolveCssVariable(style, match[1]) : value;
+}
+
 describe('board frame token contract', () => {
   beforeAll(() => {
     Object.defineProperty(window, 'matchMedia', {
@@ -240,6 +252,21 @@ describe('board frame token contract', () => {
     ]) {
       expect(rootStyle.getPropertyValue(token).trim().length).toBeGreaterThan(0);
     }
+  });
+
+  it('keeps kanban card base surfaces opaque and position-independent', () => {
+    const lightStyle = window.getComputedStyle(document.documentElement);
+
+    expectOpaquePositionIndependentSurface(
+      resolveCssVariable(lightStyle, '--kanban-card-surface'),
+    );
+
+    document.documentElement.setAttribute('data-mantine-color-scheme', 'dark');
+    const darkStyle = window.getComputedStyle(document.documentElement);
+
+    expectOpaquePositionIndependentSurface(
+      resolveCssVariable(darkStyle, '--kanban-card-surface'),
+    );
   });
 
   it('keeps the mobile tab bar separator shadow pointed upward', () => {
