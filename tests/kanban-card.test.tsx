@@ -421,7 +421,7 @@ describe('app/components/kanban-card', () => {
     }
   });
 
-  it('lifts the dark kanban card surface while softening the repeated outline', () => {
+  it('keeps the dark kanban card surface opaque while softening the repeated outline', () => {
     const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
       `
         <article class="itemCard kanbanCard" data-testid="card">
@@ -440,15 +440,11 @@ describe('app/components/kanban-card', () => {
       expect(cardStyle.getPropertyValue('--kanban-note-surface').trim()).toBe(
         'var(--kanban-card-surface)',
       );
-      expect(cardStyle.getPropertyValue('--kanban-card-depth-start').trim()).toMatch(
-        /^oklch\(\s*23%\s*0\.04\s+255\s*\/\s*0\.98\s*\)$/,
-      );
-      expect(cardStyle.getPropertyValue('--kanban-card-depth-end').trim()).toMatch(
-        /^oklch\(\s*19%\s*0\.03\s+255\s*\/\s*0\.96\s*\)$/,
-      );
-      expect(darkSurface).toBe(
-        'linear-gradient(180deg,var(--kanban-card-depth-start),var(--kanban-card-depth-end))',
-      );
+      expect(cardStyle.getPropertyValue('--kanban-card-depth-start').trim()).toBe('');
+      expect(cardStyle.getPropertyValue('--kanban-card-depth-end').trim()).toBe('');
+      expect(darkSurface).toBe('#17243a');
+      expect(darkSurface).not.toContain('gradient');
+      expect(darkSurface).not.toContain('var(');
       expect(darkSurface).not.toContain('rgba(');
       expect(cardStyle.background).toBe('var(--kanban-note-surface)');
       expect(frameStyle.background).toBe('var(--kanban-note-surface)');
@@ -475,7 +471,7 @@ describe('app/components/kanban-card', () => {
     );
   });
 
-  it('applies --ui-surface-lifted to the light kanban card surface', () => {
+  it('keeps the light kanban card surface opaque and position-independent', () => {
     const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
       `
         <article class="itemCard kanbanCard" data-testid="card">
@@ -489,14 +485,14 @@ describe('app/components/kanban-card', () => {
     try {
       const cardStyle = window.getComputedStyle(getRequiredFixtureElement(fixture, 'card'));
       const lightSurface = cardStyle.getPropertyValue('--kanban-card-surface').trim();
-      const liftedSurface = cardStyle.getPropertyValue('--ui-surface-lifted').trim();
 
       expect(cardStyle.getPropertyValue('--kanban-note-surface').trim()).toBe(
         'var(--kanban-card-surface)',
       );
-      expect(lightSurface).toBe('var(--ui-surface-lifted)');
-      expect(liftedSurface).toContain('var(--ui-surface-');
-      expect(liftedSurface).not.toContain('rgba(');
+      expect(lightSurface).toBe('#f8fbff');
+      expect(lightSurface).not.toContain('gradient');
+      expect(lightSurface).not.toContain('var(');
+      expect(lightSurface).not.toContain('rgba(');
     } finally {
       cleanupFixture();
     }

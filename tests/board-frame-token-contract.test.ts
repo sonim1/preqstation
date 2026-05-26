@@ -185,6 +185,39 @@ function expectTokenContrast(token: string, backgroundHex: string, minimumRatio:
   expect(contrastRatio(foreground, background)).toBeGreaterThanOrEqual(minimumRatio);
 }
 
+function getCssBlock(source: string, selector: string) {
+  const selectorIndex = source.indexOf(`${selector} {`);
+
+  expect(selectorIndex, `Expected CSS block for ${selector}`).toBeGreaterThanOrEqual(0);
+
+  const blockStart = source.indexOf('{', selectorIndex);
+  let depth = 0;
+
+  for (let index = blockStart; index < source.length; index += 1) {
+    const char = source[index];
+
+    if (char === '{') depth += 1;
+    if (char === '}') depth -= 1;
+    if (depth === 0) return source.slice(blockStart + 1, index);
+  }
+
+  throw new Error(`Could not parse CSS block for ${selector}`);
+}
+
+function getCssCustomProperty(source: string, selector: string, property: string) {
+  const block = getCssBlock(source, selector);
+  const match = block.match(new RegExp(`${property}:\\s*([^;]+);`));
+
+  expect(match, `Expected ${property} in ${selector}`).not.toBeNull();
+
+  return match![1].trim();
+}
+
+function expectOpaquePositionIndependentSurface(value: string) {
+  expect(value).toMatch(/^(#[0-9a-f]{6}|oklch\([^/]+\)|rgb\(\s*\d+\s+\d+\s+\d+\s*\))$/i);
+  expect(value).not.toMatch(/gradient|transparent|rgba|var\(|\/\s*0?\.\d/i);
+}
+
 describe('board frame token contract', () => {
   beforeAll(() => {
     Object.defineProperty(window, 'matchMedia', {
@@ -240,6 +273,19 @@ describe('board frame token contract', () => {
     ]) {
       expect(rootStyle.getPropertyValue(token).trim().length).toBeGreaterThan(0);
     }
+  });
+
+  it('keeps kanban card base surfaces opaque and position-independent', () => {
+    expectOpaquePositionIndependentSurface(
+      getCssCustomProperty(globalsCss, ':root', '--kanban-card-surface'),
+    );
+    expectOpaquePositionIndependentSurface(
+      getCssCustomProperty(
+        globalsCss,
+        "html[data-mantine-color-scheme='dark']",
+        '--kanban-card-surface',
+      ),
+    );
   });
 
   it('keeps the mobile tab bar separator shadow pointed upward', () => {

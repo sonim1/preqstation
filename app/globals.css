@@ -228,7 +228,7 @@
     rgba(236, 243, 252, 0.9),
     rgba(226, 236, 248, 0.96)
   );
-  --kanban-card-surface: var(--ui-surface-lifted);
+  --kanban-card-surface: #f8fbff;
   --kanban-card-shadow-outline-transparency: 44%;
   --kanban-card-shadow-queued-outline-transparency: 48%;
   --kanban-card-shadow-running-outline-transparency: 50%;
@@ -385,13 +385,7 @@ html[data-mantine-color-scheme='dark'] {
   --kanban-frame-chrome-shadow: var(--ui-elevation-3);
   --kanban-frame-mobile-tab-shadow: 0px -18px 30px -28px rgba(0, 0, 0, 0.82);
   --kanban-stage-surface: var(--kanban-frame-stage-surface);
-  --kanban-card-depth-start: oklch(23% 0.04 255 / 0.98);
-  --kanban-card-depth-end: oklch(19% 0.03 255 / 0.96);
-  --kanban-card-surface: linear-gradient(
-    180deg,
-    var(--kanban-card-depth-start),
-    var(--kanban-card-depth-end)
-  );
+  --kanban-card-surface: #17243a;
   --kanban-card-shadow-outline-transparency: 52%;
   --kanban-card-shadow-outline: color-mix(
     in srgb,
