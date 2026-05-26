@@ -185,37 +185,16 @@ function expectTokenContrast(token: string, backgroundHex: string, minimumRatio:
   expect(contrastRatio(foreground, background)).toBeGreaterThanOrEqual(minimumRatio);
 }
 
-function getCssBlock(source: string, selector: string) {
-  const selectorIndex = source.indexOf(`${selector} {`);
-
-  expect(selectorIndex, `Expected CSS block for ${selector}`).toBeGreaterThanOrEqual(0);
-
-  const blockStart = source.indexOf('{', selectorIndex);
-  let depth = 0;
-
-  for (let index = blockStart; index < source.length; index += 1) {
-    const char = source[index];
-
-    if (char === '{') depth += 1;
-    if (char === '}') depth -= 1;
-    if (depth === 0) return source.slice(blockStart + 1, index);
-  }
-
-  throw new Error(`Could not parse CSS block for ${selector}`);
-}
-
-function getCssCustomProperty(source: string, selector: string, property: string) {
-  const block = getCssBlock(source, selector);
-  const match = block.match(new RegExp(`${property}:\\s*([^;]+);`));
-
-  expect(match, `Expected ${property} in ${selector}`).not.toBeNull();
-
-  return match![1].trim();
-}
-
 function expectOpaquePositionIndependentSurface(value: string) {
   expect(value).toMatch(/^(#[0-9a-f]{6}|oklch\([^/]+\)|rgb\(\s*\d+\s+\d+\s+\d+\s*\))$/i);
   expect(value).not.toMatch(/gradient|transparent|rgba|var\(|\/\s*0?\.\d/i);
+}
+
+function resolveCssVariable(style: CSSStyleDeclaration, name: string): string {
+  const value = style.getPropertyValue(name).trim();
+  const match = value.match(/^var\((--[^,)]+)(?:,\s*[^)]+)?\)$/);
+
+  return match ? resolveCssVariable(style, match[1]) : value;
 }
 
 describe('board frame token contract', () => {
@@ -276,15 +255,17 @@ describe('board frame token contract', () => {
   });
 
   it('keeps kanban card base surfaces opaque and position-independent', () => {
+    const lightStyle = window.getComputedStyle(document.documentElement);
+
     expectOpaquePositionIndependentSurface(
-      getCssCustomProperty(globalsCss, ':root', '--kanban-card-surface'),
+      resolveCssVariable(lightStyle, '--kanban-card-surface'),
     );
+
+    document.documentElement.setAttribute('data-mantine-color-scheme', 'dark');
+    const darkStyle = window.getComputedStyle(document.documentElement);
+
     expectOpaquePositionIndependentSurface(
-      getCssCustomProperty(
-        globalsCss,
-        "html[data-mantine-color-scheme='dark']",
-        '--kanban-card-surface',
-      ),
+      resolveCssVariable(darkStyle, '--kanban-card-surface'),
     );
   });
 

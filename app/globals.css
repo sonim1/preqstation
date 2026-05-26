@@ -77,6 +77,7 @@
   --ui-glow: radial-gradient(circle at 82% 16%, rgba(14, 165, 233, 0.18), transparent 54%);
   --ui-hero-bg: linear-gradient(164deg, rgba(255, 255, 255, 0.9), rgba(245, 250, 255, 0.8));
   --ui-card-bg: linear-gradient(170deg, rgba(255, 255, 255, 0.92), rgba(245, 250, 255, 0.86));
+  --ui-surface-card: #f8fbff;
   --ui-surface-lifted: linear-gradient(
     180deg,
     color-mix(in srgb, var(--ui-surface-strong), var(--ui-on-accent) 18%),
@@ -228,7 +229,7 @@
     rgba(236, 243, 252, 0.9),
     rgba(226, 236, 248, 0.96)
   );
-  --kanban-card-surface: #f8fbff;
+  --kanban-card-surface: var(--ui-surface-card);
   --kanban-card-shadow-outline-transparency: 44%;
   --kanban-card-shadow-queued-outline-transparency: 48%;
   --kanban-card-shadow-running-outline-transparency: 50%;
@@ -341,6 +342,7 @@ html[data-mantine-color-scheme='dark'] {
   --ui-glow: radial-gradient(circle at 78% 12%, rgba(56, 189, 248, 0.12), transparent 58%);
   --ui-hero-bg: linear-gradient(170deg, rgba(14, 25, 42, 0.96), rgba(20, 35, 57, 0.92));
   --ui-card-bg: linear-gradient(180deg, rgba(22, 35, 57, 0.96), rgba(16, 26, 43, 0.95));
+  --ui-surface-card: #17243a;
   --ui-surface-lifted: linear-gradient(
     180deg,
     color-mix(in srgb, var(--ui-surface-soft), var(--ui-accent-soft) 18%),
@@ -385,7 +387,7 @@ html[data-mantine-color-scheme='dark'] {
   --kanban-frame-chrome-shadow: var(--ui-elevation-3);
   --kanban-frame-mobile-tab-shadow: 0px -18px 30px -28px rgba(0, 0, 0, 0.82);
   --kanban-stage-surface: var(--kanban-frame-stage-surface);
-  --kanban-card-surface: #17243a;
+  --kanban-card-surface: var(--ui-surface-card);
   --kanban-card-shadow-outline-transparency: 52%;
   --kanban-card-shadow-outline: color-mix(
     in srgb,
