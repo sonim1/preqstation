@@ -136,6 +136,42 @@ describe('theme token usage audit fixes', () => {
     expect(menuRule?.[1]).toContain('var(--ui-surface-elevated)');
   });
 
+  it('keeps task dispatch bottom controls on shared layout and color aliases', () => {
+    const innerRule = globalsCss.match(/\.task-dispatch-bottom-inner\s*\{([^}]*)\}/);
+    const pickerRule = globalsCss.match(/\.task-dispatch-bottom-picker\s*\{([^}]*)\}/);
+    const promptTriggerRule = globalsCss.match(
+      /\.task-dispatch-bottom-prompt-trigger\s*\{([^}]*)\}/,
+    );
+    const promptPopoverRule = globalsCss.match(
+      /\.task-dispatch-bottom-prompt-popover\s*\{([^}]*)\}/,
+    );
+    const mobileInnerRule = globalsCss.match(
+      /\.task-dispatch-bottom-inner\s*\{\s*grid-template-areas:\s*'engine model target mode'\s*'prompt send send send';([^}]*)\}/,
+    );
+
+    expect(innerRule?.[1]).toContain(
+      '--task-dispatch-control-border: color-mix(in srgb, var(--ui-border), transparent 14%);',
+    );
+    expect(innerRule?.[1]).toContain(
+      '--task-dispatch-control-bg: color-mix(in srgb, var(--ui-surface-strong), transparent 16%);',
+    );
+    expect(innerRule?.[1]).toContain(
+      '--task-dispatch-popover-border: color-mix(in srgb, var(--ui-border), transparent 12%);',
+    );
+    expect(pickerRule?.[1]).toMatch(/border:\s*1px solid\s*var\(--task-dispatch-control-border/);
+    expect(pickerRule?.[1]).toMatch(/background:\s*var\(\s*--task-dispatch-control-bg/);
+    expect(promptTriggerRule?.[1]).toContain('width: 2.75rem;');
+    expect(promptTriggerRule?.[1]).toMatch(
+      /border:\s*1px solid\s*var\(--task-dispatch-control-border/,
+    );
+    expect(promptTriggerRule?.[1]).toMatch(/background:\s*var\(\s*--task-dispatch-control-bg/);
+    expect(promptPopoverRule?.[1]).toMatch(
+      /border:\s*1px solid\s*var\(--task-dispatch-popover-border/,
+    );
+    expect(mobileInnerRule?.[1]).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
+    expect(mobileInnerRule?.[1]).not.toContain('2.75rem repeat');
+  });
+
   it('keeps task dispatch send shortcut overlays on accent foreground tokens', () => {
     const shortcutRule = globalsCss.match(/\.task-dispatch-send-shortcut\s*\{([^}]*)\}/);
 
