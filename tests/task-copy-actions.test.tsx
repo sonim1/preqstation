@@ -16,6 +16,7 @@ vi.mock('@tabler/icons-react', () => {
     IconCheck: icon('check'),
     IconChevronDown: icon('chevron-down'),
     IconCopy: icon('copy'),
+    IconFileText: icon('file-text'),
     IconInfoCircle: icon('info-circle'),
     IconLoader2: icon('loader'),
     IconSend: icon('send'),
@@ -299,7 +300,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('aria-label="Target: Hermes Telegram"');
     expect(html).toContain('aria-label="Mode: Implement"');
     expect(html).toContain('Prompt');
-    expect(html).toContain('data-task-dispatch-prompt');
+    expect(html).toContain('aria-label="Preview dispatch prompt"');
     expect(html).not.toContain('aria-label="Message"');
     expect(html).not.toContain('task-dispatch-bottom-message-field');
     expect(html).not.toContain('>Ask<');
@@ -314,6 +315,37 @@ describe('app/components/task-copy-actions', () => {
 
     expect(html).toContain('task-dispatch-bottom-title');
     expect(html).not.toContain('<h2');
+  });
+
+  it('persists bottom dispatch preference only after copying the prompt preview', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    renderTaskCopyActionsClient({ placement: 'bottom' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preview dispatch prompt' }));
+
+    expect(window.localStorage.getItem(TASK_DISPATCH_PREFERENCES_STORAGE)).toBeNull();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Copy dispatch prompt' }));
+
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        '!/preqstation dispatch implement PROJ-224 using codex branch_name="task/proj-224/move-status-test-button"',
+      ),
+    );
+    expect(
+      JSON.parse(window.localStorage.getItem(TASK_DISPATCH_PREFERENCES_STORAGE) ?? '{}'),
+    ).toEqual({
+      todo: {
+        engine: 'codex',
+        action: 'send-telegram',
+        objective: 'implement',
+      },
+    });
   });
 
   it('omits bottom message ask_hint from dispatch payloads', async () => {
@@ -360,7 +392,8 @@ describe('app/components/task-copy-actions', () => {
     ).toBe('true');
     fireEvent.click(screen.getByRole('menuitem', { name: /Gemini/, hidden: true }));
     expect(screen.getByRole('button', { name: 'Engine: Gemini' })).toBeTruthy();
-    expect(screen.getByText(/using gemini-cli/)).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Preview dispatch prompt' }));
+    expect(await screen.findByText(/using gemini-cli/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Target: Telegram' }));
     expect(
