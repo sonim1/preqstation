@@ -118,6 +118,8 @@ export function serializeAgentModelCatalog(catalog: AgentModelCatalog) {
 }
 
 export function parseAgentModelCatalogSetting(value: string) {
+  if (!value.trim()) return { ok: true as const, value: '' };
+
   try {
     const parsed = JSON.parse(value);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -137,7 +139,7 @@ export function getAgentModelSelectOptions(
   engine: string | null | undefined,
 ) {
   const engineKey = normalizeEngineKey(engine);
-  const options = engineKey ? catalog[engineKey] : [];
+  const options = engineKey ? (catalog[engineKey] ?? []) : [];
   return [{ label: 'Default', value: DEFAULT_AGENT_MODEL_SELECT_VALUE }, ...options];
 }
 
@@ -150,5 +152,5 @@ export function isAgentModelInCatalog(
   if (!normalized) return true;
   const engineKey = normalizeEngineKey(engine);
   if (!engineKey) return false;
-  return catalog[engineKey].some((option) => option.value === normalized);
+  return (catalog[engineKey] ?? []).some((option) => option.value === normalized);
 }

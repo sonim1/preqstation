@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Group, Stack, Textarea } from '@mantine/core';
-import { useEffect, useRef, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 import { SettingStatusMessage } from '@/app/components/setting-status-message';
 import controlClasses from '@/app/components/settings-controls.module.css';
@@ -12,7 +12,7 @@ type AgentModelCatalogSettingsProps = {
 };
 
 export function AgentModelCatalogSettings({ defaultValue }: AgentModelCatalogSettingsProps) {
-  const initialValue = serializeAgentModelCatalog(defaultValue);
+  const initialValue = useMemo(() => serializeAgentModelCatalog(defaultValue), [defaultValue]);
   const [savedValue, setSavedValue] = useState(initialValue);
   const [value, setValue] = useState(initialValue);
   const [status, setStatus] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
@@ -33,7 +33,6 @@ export function AgentModelCatalogSettings({ defaultValue }: AgentModelCatalogSet
 
   function saveCatalog() {
     const nextValue = value.trim();
-    const previousValue = savedValue;
 
     startTransition(async () => {
       if (statusTimeoutRef.current) clearTimeout(statusTimeoutRef.current);
@@ -50,7 +49,6 @@ export function AgentModelCatalogSettings({ defaultValue }: AgentModelCatalogSet
         } | null;
 
         if (!response.ok) {
-          setValue(previousValue);
           setStatus({ tone: 'error', message: body?.error || 'Failed to save model catalog.' });
           return;
         }
@@ -66,7 +64,6 @@ export function AgentModelCatalogSettings({ defaultValue }: AgentModelCatalogSet
           );
         }, 2000);
       } catch {
-        setValue(previousValue);
         setStatus({ tone: 'error', message: 'Failed to save model catalog.' });
       }
     });
