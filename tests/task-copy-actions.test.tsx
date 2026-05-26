@@ -317,6 +317,37 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('<h2');
   });
 
+  it('persists bottom dispatch preference only after copying the prompt preview', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    renderTaskCopyActionsClient({ placement: 'bottom' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preview dispatch prompt' }));
+
+    expect(window.localStorage.getItem(TASK_DISPATCH_PREFERENCES_STORAGE)).toBeNull();
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Copy dispatch prompt' }));
+
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        '!/preqstation dispatch implement PROJ-224 using codex branch_name="task/proj-224/move-status-test-button"',
+      ),
+    );
+    expect(
+      JSON.parse(window.localStorage.getItem(TASK_DISPATCH_PREFERENCES_STORAGE) ?? '{}'),
+    ).toEqual({
+      todo: {
+        engine: 'codex',
+        action: 'send-telegram',
+        objective: 'implement',
+      },
+    });
+  });
+
   it('omits bottom message ask_hint from dispatch payloads', async () => {
     const pendingSend = createTelegramSendResponse();
     const fetchMock = vi.fn<typeof fetch>(() => pendingSend.response);

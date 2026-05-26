@@ -768,7 +768,7 @@ export function TaskCopyActions({
             <Text component="span" size="xs" fw={700} className="task-dispatch-bottom-label">
               Prompt
             </Text>
-            <Popover position="top-end" width={420} shadow="md" withArrow withinPortal>
+            <Popover position="top-end" shadow="md" withArrow withinPortal>
               <Popover.Target>
                 <ActionIcon
                   type="button"
@@ -778,7 +778,6 @@ export function TaskCopyActions({
                   size="lg"
                   aria-label="Preview dispatch prompt"
                   className="task-dispatch-bottom-prompt-trigger"
-                  onClick={() => persistDispatchPreference()}
                 >
                   <IconFileText size={18} />
                 </ActionIcon>
