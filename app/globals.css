@@ -4279,8 +4279,8 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 .task-dispatch-bottom-inner {
   display: grid;
   grid-template-columns:
-    auto minmax(7.75rem, 0.8fr) minmax(9rem, 0.9fr) minmax(7rem, 0.7fr)
-    minmax(14rem, 1.4fr) minmax(8.5rem, 0.8fr);
+    auto minmax(7.5rem, 0.75fr) minmax(10rem, 1.05fr) minmax(8rem, 0.8fr)
+    minmax(7rem, 0.65fr) 2.75rem minmax(8.5rem, 0.75fr);
   gap: 0.5rem;
   align-items: end;
   width: min(100rem, 100%);
@@ -4427,6 +4427,31 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 }
 
 .task-dispatch-bottom-prompt-field {
+  justify-items: center;
+  min-width: 0;
+}
+
+.task-dispatch-bottom-prompt-trigger {
+  width: 100%;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 14%);
+  background: color-mix(in srgb, var(--ui-surface-strong), transparent 16%);
+  color: var(--ui-muted-text);
+}
+
+.task-dispatch-bottom-prompt-trigger:hover {
+  color: var(--ui-text);
+  background: color-mix(in srgb, var(--ui-accent-soft), transparent 58%);
+}
+
+.task-dispatch-bottom-prompt-popover {
+  width: min(26rem, calc(100vw - 2rem));
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 12%);
+  background: var(--ui-surface-elevated);
+}
+
+.task-dispatch-bottom-prompt-field .task-dispatch-prompt-shell {
   min-width: 0;
 }
 
@@ -4453,11 +4478,11 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 @media (max-width: 72em) {
   .task-dispatch-bottom-inner {
     grid-template-columns:
-      auto minmax(7rem, 0.8fr) minmax(8rem, 0.9fr) minmax(6.5rem, 0.7fr)
-      minmax(7.75rem, auto);
+      auto minmax(7rem, 0.75fr) minmax(9rem, 1fr) minmax(7.5rem, 0.8fr)
+      minmax(6.5rem, 0.65fr) 2.75rem minmax(7.75rem, auto);
   }
 
-  .task-dispatch-bottom-prompt-field {
+  .task-dispatch-bottom-prompt-field .task-dispatch-bottom-label {
     display: none;
   }
 }
@@ -4506,19 +4531,22 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 
   .task-dispatch-bottom-inner {
     grid-template-areas:
-      'engine target mode'
-      'send send send';
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+      'engine model target mode'
+      'prompt send send send';
+    grid-template-columns: 2.75rem repeat(3, minmax(0, 1fr));
     gap: 0.45rem;
   }
 
-  .task-dispatch-bottom-title,
-  .task-dispatch-bottom-prompt-field {
+  .task-dispatch-bottom-title {
     display: none;
   }
 
   .task-dispatch-bottom-engine-field {
     grid-area: engine;
+  }
+
+  .task-dispatch-bottom-model-field {
+    grid-area: model;
   }
 
   .task-dispatch-bottom-target-field {
@@ -4527,6 +4555,10 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 
   .task-dispatch-bottom-mode-field {
     grid-area: mode;
+  }
+
+  .task-dispatch-bottom-prompt-field {
+    grid-area: prompt;
   }
 
   .task-dispatch-bottom-send {

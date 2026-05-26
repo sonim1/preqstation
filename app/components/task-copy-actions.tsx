@@ -1,7 +1,7 @@
 'use client';
 
-import { ActionIcon, Kbd, Menu, Text, Tooltip, UnstyledButton } from '@mantine/core';
-import { IconCheck, IconChevronDown, IconInfoCircle } from '@tabler/icons-react';
+import { ActionIcon, Kbd, Menu, Popover, Text, Tooltip, UnstyledButton } from '@mantine/core';
+import { IconCheck, IconChevronDown, IconFileText, IconInfoCircle } from '@tabler/icons-react';
 import Image from 'next/image';
 import {
   type CSSProperties,
@@ -768,15 +768,34 @@ export function TaskCopyActions({
             <Text component="span" size="xs" fw={700} className="task-dispatch-bottom-label">
               Prompt
             </Text>
-            <DispatchPromptPreview
-              prompt={dispatchPrompt}
-              promptProps={{
-                'data-task-dispatch-prompt': true,
-                className: 'task-dispatch-bottom-prompt',
-              }}
-              collapseMode="single-line"
-              onCopy={() => persistDispatchPreference()}
-            />
+            <Popover position="top-end" width={420} shadow="md" withArrow withinPortal>
+              <Popover.Target>
+                <ActionIcon
+                  type="button"
+                  variant="subtle"
+                  color="gray"
+                  radius="md"
+                  size="lg"
+                  aria-label="Preview dispatch prompt"
+                  className="task-dispatch-bottom-prompt-trigger"
+                  onClick={() => persistDispatchPreference()}
+                >
+                  <IconFileText size={18} />
+                </ActionIcon>
+              </Popover.Target>
+              <Popover.Dropdown className="task-dispatch-bottom-prompt-popover">
+                <DispatchPromptPreview
+                  prompt={dispatchPrompt}
+                  promptProps={{
+                    'data-task-dispatch-prompt': true,
+                    className: 'task-dispatch-bottom-prompt',
+                  }}
+                  collapseMode="single-line"
+                  defaultExpanded
+                  onCopy={() => persistDispatchPreference()}
+                />
+              </Popover.Dropdown>
+            </Popover>
           </div>
 
           <UnstyledButton
