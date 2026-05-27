@@ -61,7 +61,7 @@ export function buildHermesTaskCommand(params: {
     appendField(lines, 'comment_id', params.commentId);
   }
 
-  return lines.join('\n');
+  return lines.join(' ');
 }
 
 export function buildHermesProjectInsightCommand(params: {
@@ -90,7 +90,7 @@ export function buildHermesProjectInsightCommand(params: {
     params.insightPrompt ? encodeDispatchPromptMetadata(params.insightPrompt) : null,
   );
 
-  return lines.join('\n');
+  return lines.join(' ');
 }
 
 export function buildHermesQaCommand(params: {
@@ -123,5 +123,5 @@ export function buildHermesQaCommand(params: {
   appendField(lines, 'qa_run_id', params.qaRunId);
   appendField(lines, 'qa_task_keys', qaTaskKeys);
 
-  return lines.join('\n');
+  return lines.join(' ');
 }

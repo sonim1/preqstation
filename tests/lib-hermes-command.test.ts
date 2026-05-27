@@ -24,7 +24,7 @@ describe('lib/hermes-command', () => {
         'objective=plan',
         'engine=codex',
         'branch_name=task/proj-316/dashboard-choejongbeojeoneulo-hwagjang',
-      ].join('\n'),
+      ].join(' '),
     );
   });
 
@@ -44,7 +44,7 @@ describe('lib/hermes-command', () => {
         'objective=implement',
         'engine=codex',
         'model=gpt-5-codex',
-      ].join('\n'),
+      ].join(' '),
     );
   });
 
@@ -122,7 +122,7 @@ describe('lib/hermes-command', () => {
         'branch_name=main',
         'qa_run_id=run-123',
         'qa_task_keys=PROJ-1,PROJ-2',
-      ].join('\n'),
+      ].join(' '),
     );
   });
 
