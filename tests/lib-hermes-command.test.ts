@@ -70,6 +70,28 @@ describe('lib/hermes-command', () => {
     ).not.toContain('ask_hint=');
   });
 
+  it('quotes ask hints that contain quote or backslash characters without whitespace', () => {
+    expect(
+      buildHermesTaskCommand({
+        taskKey: 'PROJ-328',
+        status: 'todo',
+        engineKey: 'claude-code',
+        objective: 'ask',
+        askHint: 'check"this',
+      }),
+    ).toContain('ask_hint="check\\"this"');
+
+    expect(
+      buildHermesTaskCommand({
+        taskKey: 'PROJ-328',
+        status: 'todo',
+        engineKey: 'claude-code',
+        objective: 'ask',
+        askHint: 'check\\this',
+      }),
+    ).toContain('ask_hint="check\\\\this"');
+  });
+
   it('builds a structured Hermes project insight dispatch message', () => {
     expect(
       buildHermesProjectInsightCommand({

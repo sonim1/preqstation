@@ -14,7 +14,7 @@ function normalizeFieldValue(value: string | null | undefined) {
 }
 
 function formatFieldValue(value: string) {
-  if (!/\s/.test(value)) return value;
+  if (!/[\s"\\]/.test(value)) return value;
   return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
