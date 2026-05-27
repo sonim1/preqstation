@@ -8,7 +8,6 @@ export type AgentModelOption = {
 export type AgentModelCatalog = Record<EngineKey, AgentModelOption[]>;
 
 export const DEFAULT_AGENT_MODEL_SELECT_VALUE = '__default__';
-const DEFAULT_CODEX_MODEL = 'gpt-5.5';
 
 export const DEFAULT_AGENT_MODEL_CATALOG: AgentModelCatalog = {
   'claude-code': [
@@ -143,7 +142,9 @@ export function getAgentModelSelectOptions(
 ) {
   const engineKey = normalizeEngineKey(engine);
   const options = engineKey ? (catalog[engineKey] ?? []) : [];
-  const defaultLabel = engineKey === 'codex' ? `Default (${DEFAULT_CODEX_MODEL})` : 'Default';
+  const defaultCodexModel = DEFAULT_AGENT_MODEL_CATALOG.codex[0]?.value;
+  const defaultLabel =
+    engineKey === 'codex' && defaultCodexModel ? `Default (${defaultCodexModel})` : 'Default';
   return [{ label: defaultLabel, value: DEFAULT_AGENT_MODEL_SELECT_VALUE }, ...options];
 }
 

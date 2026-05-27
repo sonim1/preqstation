@@ -50,14 +50,15 @@ describe('lib/agent-model-catalog', () => {
   });
 
   it('includes a Codex default select option with the current default model label', () => {
+    const defaultCodexModel = DEFAULT_AGENT_MODEL_CATALOG.codex[0]?.value;
     const options = getAgentModelSelectOptions(
-      { ...DEFAULT_AGENT_MODEL_CATALOG, codex: [{ label: 'gpt-5.5', value: 'gpt-5.5' }] },
+      { ...DEFAULT_AGENT_MODEL_CATALOG, codex: [{ label: 'Custom Codex', value: 'custom-codex' }] },
       'codex',
     );
 
     expect(options).toEqual([
-      { label: 'Default (gpt-5.5)', value: '__default__' },
-      { label: 'gpt-5.5', value: 'gpt-5.5' },
+      { label: `Default (${defaultCodexModel})`, value: '__default__' },
+      { label: 'Custom Codex', value: 'custom-codex' },
     ]);
     expect(normalizeAgentModel(options[0].value)).toBeNull();
   });
