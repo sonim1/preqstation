@@ -13,10 +13,15 @@ function normalizeFieldValue(value: string | null | undefined) {
   return value?.replace(/\r?\n/g, ' ').trim() ?? '';
 }
 
+function formatFieldValue(value: string) {
+  if (!/\s/.test(value)) return value;
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
 function appendField(lines: string[], key: string, value: string | null | undefined) {
   const normalized = normalizeFieldValue(value);
   if (normalized) {
-    lines.push(`${key}=${normalized}`);
+    lines.push(`${key}=${formatFieldValue(normalized)}`);
   }
 }
 

@@ -55,9 +55,9 @@ describe('lib/hermes-command', () => {
         status: 'todo',
         engineKey: 'claude-code',
         objective: 'ask',
-        askHint: 'Summarize around acceptance criteria',
+        askHint: 'Summarize around "acceptance criteria"',
       }),
-    ).toContain('ask_hint=Summarize around acceptance criteria');
+    ).toContain('ask_hint="Summarize around \\"acceptance criteria\\""');
 
     expect(
       buildHermesTaskCommand({
