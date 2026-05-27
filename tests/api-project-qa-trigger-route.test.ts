@@ -273,7 +273,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
         'branch_name=main',
         'qa_run_id=run-123',
         'qa_task_keys=PROJ-1,PROJ-2',
-      ].join('\n'),
+      ].join(' '),
       { normalizeCommand: false },
     );
   });

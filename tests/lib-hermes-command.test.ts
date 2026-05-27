@@ -24,7 +24,7 @@ describe('lib/hermes-command', () => {
         'objective=plan',
         'engine=codex',
         'branch_name=task/proj-316/dashboard-choejongbeojeoneulo-hwagjang',
-      ].join('\n'),
+      ].join(' '),
     );
   });
 
@@ -44,7 +44,7 @@ describe('lib/hermes-command', () => {
         'objective=implement',
         'engine=codex',
         'model=gpt-5-codex',
-      ].join('\n'),
+      ].join(' '),
     );
   });
 
@@ -55,9 +55,9 @@ describe('lib/hermes-command', () => {
         status: 'todo',
         engineKey: 'claude-code',
         objective: 'ask',
-        askHint: 'Summarize around acceptance criteria',
+        askHint: 'Summarize around "acceptance criteria"',
       }),
-    ).toContain('ask_hint=Summarize around acceptance criteria');
+    ).toContain('ask_hint="Summarize around \\"acceptance criteria\\""');
 
     expect(
       buildHermesTaskCommand({
@@ -68,6 +68,28 @@ describe('lib/hermes-command', () => {
         askHint: 'Summarize around acceptance criteria',
       }),
     ).not.toContain('ask_hint=');
+  });
+
+  it('quotes ask hints that contain quote or backslash characters without whitespace', () => {
+    expect(
+      buildHermesTaskCommand({
+        taskKey: 'PROJ-328',
+        status: 'todo',
+        engineKey: 'claude-code',
+        objective: 'ask',
+        askHint: 'check"this',
+      }),
+    ).toContain('ask_hint="check\\"this"');
+
+    expect(
+      buildHermesTaskCommand({
+        taskKey: 'PROJ-328',
+        status: 'todo',
+        engineKey: 'claude-code',
+        objective: 'ask',
+        askHint: 'check\\this',
+      }),
+    ).toContain('ask_hint="check\\\\this"');
   });
 
   it('builds a structured Hermes project insight dispatch message', () => {
@@ -122,7 +144,7 @@ describe('lib/hermes-command', () => {
         'branch_name=main',
         'qa_run_id=run-123',
         'qa_task_keys=PROJ-1,PROJ-2',
-      ].join('\n'),
+      ].join(' '),
     );
   });
 
