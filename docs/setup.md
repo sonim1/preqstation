@@ -171,19 +171,28 @@ The saved value is JSON with one key per supported engine:
 ```json
 {
   "claude-code": [{ "label": "Claude Sonnet 4.6", "value": "claude-sonnet-4-6" }],
-  "codex": [{ "label": "GPT-5.3 Codex", "value": "gpt-5.3-codex" }],
+  "codex": [
+    { "label": "gpt-5.5", "value": "gpt-5.5" },
+    { "label": "gpt-5.4", "value": "gpt-5.4" },
+    { "label": "gpt-5.4-mini", "value": "gpt-5.4-mini" },
+    { "label": "gpt-5.3-codex", "value": "gpt-5.3-codex" },
+    { "label": "gpt-5.3-codex-spark", "value": "gpt-5.3-codex-spark" },
+    { "label": "gpt-5.2", "value": "gpt-5.2" }
+  ],
   "gemini-cli": [{ "label": "Gemini 2.5 Pro", "value": "gemini-2.5-pro" }]
 }
 ```
 
 Catalog notes:
 
-- A blank setting uses the built-in catalog.
+- A blank setting uses the built-in catalog. The built-in Codex choices are `gpt-5.5`, `gpt-5.4`,
+  `gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.3-codex-spark`, and `gpt-5.2`.
 - Each engine value can contain strings or `{ "label": "...", "value": "..." }` objects. Saving
   normalizes strings into label/value objects.
 - Unsupported engine keys, duplicate model IDs, and invalid model IDs are dropped. Model IDs may
   contain letters, numbers, `.`, `_`, `:`, `/`, `@`, `+`, or `-`, up to 120 characters.
-- The model selector's **Default** option sends no `model` override.
+- The Codex selector shows **Default (gpt-5.5)** for the no-override option. Other engines show
+  **Default**. Choosing either default sends no `model` override.
 
 Dispatch notes:
 

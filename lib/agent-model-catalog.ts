@@ -16,10 +16,12 @@ export const DEFAULT_AGENT_MODEL_CATALOG: AgentModelCatalog = {
     { label: 'Claude Haiku 4.5', value: 'claude-haiku-4-5' },
   ],
   codex: [
-    { label: 'GPT-5.5 Codex', value: 'gpt-5.5-codex' },
-    { label: 'GPT-5.3 Codex', value: 'gpt-5.3-codex' },
-    { label: 'GPT-5.3 Codex Mini', value: 'gpt-5.3-codex-mini' },
-    { label: 'GPT-5.3 Codex Nano', value: 'gpt-5.3-codex-nano' },
+    { label: 'gpt-5.5', value: 'gpt-5.5' },
+    { label: 'gpt-5.4', value: 'gpt-5.4' },
+    { label: 'gpt-5.4-mini', value: 'gpt-5.4-mini' },
+    { label: 'gpt-5.3-codex', value: 'gpt-5.3-codex' },
+    { label: 'gpt-5.3-codex-spark', value: 'gpt-5.3-codex-spark' },
+    { label: 'gpt-5.2', value: 'gpt-5.2' },
   ],
   'gemini-cli': [
     { label: 'Gemini 3.5 Flash', value: 'gemini-3.5-flash' },
@@ -140,7 +142,10 @@ export function getAgentModelSelectOptions(
 ) {
   const engineKey = normalizeEngineKey(engine);
   const options = engineKey ? (catalog[engineKey] ?? []) : [];
-  return [{ label: 'Default', value: DEFAULT_AGENT_MODEL_SELECT_VALUE }, ...options];
+  const defaultCodexModel = DEFAULT_AGENT_MODEL_CATALOG.codex[0]?.value;
+  const defaultLabel =
+    engineKey === 'codex' && defaultCodexModel ? `Default (${defaultCodexModel})` : 'Default';
+  return [{ label: defaultLabel, value: DEFAULT_AGENT_MODEL_SELECT_VALUE }, ...options];
 }
 
 export function isAgentModelInCatalog(
