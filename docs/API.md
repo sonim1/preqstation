@@ -32,13 +32,16 @@ Session-authenticated settings clients can update the global agent model catalog
 ```json
 {
   "key": "agent_model_catalog",
-  "value": "{\"claude-code\":[{\"label\":\"Claude Sonnet 4.6\",\"value\":\"claude-sonnet-4-6\"}],\"codex\":[{\"label\":\"GPT-5.3 Codex\",\"value\":\"gpt-5.3-codex\"}],\"gemini-cli\":[]}"
+  "value": "{\"claude-code\":[{\"label\":\"Claude Sonnet 4.6\",\"value\":\"claude-sonnet-4-6\"}],\"codex\":[{\"label\":\"gpt-5.5\",\"value\":\"gpt-5.5\"},{\"label\":\"gpt-5.4\",\"value\":\"gpt-5.4\"},{\"label\":\"gpt-5.4-mini\",\"value\":\"gpt-5.4-mini\"},{\"label\":\"gpt-5.3-codex\",\"value\":\"gpt-5.3-codex\"},{\"label\":\"gpt-5.3-codex-spark\",\"value\":\"gpt-5.3-codex-spark\"},{\"label\":\"gpt-5.2\",\"value\":\"gpt-5.2\"}],\"gemini-cli\":[]}"
 }
 ```
 
 `value` must be a JSON object keyed by `claude-code`, `codex`, and/or `gemini-cli`. Each engine
 array may contain model ID strings or `{ "label": "...", "value": "..." }` objects. The API rejects
 invalid JSON and normalizes accepted values before saving them in `user_settings.agent_model_catalog`.
+When the setting is blank, the built-in Codex catalog includes `gpt-5.5`, `gpt-5.4`,
+`gpt-5.4-mini`, `gpt-5.3-codex`, `gpt-5.3-codex-spark`, and `gpt-5.2`. Codex model selectors show
+the no-override option as `Default (gpt-5.5)`; other engines show `Default`.
 
 Dispatch-related session APIs accept optional per-request `model` metadata:
 
