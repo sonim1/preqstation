@@ -68,7 +68,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.10",
-    "eslint": "^10.4.0",
+    "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.5",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-simple-import-sort": "^12.1.1",
