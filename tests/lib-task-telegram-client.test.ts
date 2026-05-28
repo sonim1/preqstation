@@ -57,7 +57,7 @@ describe('lib/task-telegram-client', () => {
         dispatchTarget: 'hermes-telegram',
       }),
     ).toBe(
-      '/preqstation_dispatch@PreqHermesBot project_key=PROJ task_key=PROJ-328 objective=comment engine=claude-code comment_id=comment-123',
+      '/preqstation dispatch project_key=PROJ task_key=PROJ-328 objective=comment engine=claude-code comment_id=comment-123',
     );
   });
 
@@ -113,7 +113,7 @@ describe('lib/task-telegram-client', () => {
 
     await sendTaskTelegramMessage(
       'PROJ-328',
-      '/preqstation_dispatch@PreqHermesBot',
+      '/preqstation dispatch',
       'hermes-telegram',
     );
 
@@ -124,7 +124,7 @@ describe('lib/task-telegram-client', () => {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           taskKey: 'PROJ-328',
-          message: '/preqstation_dispatch@PreqHermesBot',
+          message: '/preqstation dispatch',
           dispatchTarget: 'hermes-telegram',
         }),
       }),
@@ -139,7 +139,7 @@ describe('lib/task-telegram-client', () => {
         dispatchTarget: 'hermes-telegram',
         insightPrompt: 'Break down the Connections page redesign',
       }),
-    ).toContain('/preqstation_dispatch@PreqHermesBot');
+    ).toContain('/preqstation dispatch');
     expect(
       buildProjectInsightDispatchMessage({
         projectKey: 'PROJ',
@@ -193,7 +193,7 @@ describe('lib/task-telegram-client', () => {
 
     await sendProjectInsightTelegramMessage(
       'PROJ',
-      '/preqstation_dispatch@PreqHermesBot',
+      '/preqstation dispatch',
       'hermes-telegram',
     );
 
@@ -204,7 +204,7 @@ describe('lib/task-telegram-client', () => {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           projectKey: 'PROJ',
-          message: '/preqstation_dispatch@PreqHermesBot',
+          message: '/preqstation dispatch',
           dispatchTarget: 'hermes-telegram',
         }),
       }),
