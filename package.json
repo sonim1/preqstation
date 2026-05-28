@@ -35,7 +35,7 @@
     "@mantine/notifications": "^9.2.2",
     "@mantine/spotlight": "^9.2.2",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@tabler/icons-react": "^3.38.0",
+    "@tabler/icons-react": "^3.44.0",
     "any-ascii": "^0.3.3",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",
