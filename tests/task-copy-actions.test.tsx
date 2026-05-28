@@ -934,7 +934,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('class="task-dispatch-target-logo"');
     expect(html).toContain('data-next-image="/icons/hermes-agent.png"');
     expect(html).not.toContain('>H<');
-    expect(html).toContain('/preqstation_dispatch@PreqHermesBot');
+    expect(html).toContain('/preqstation dispatch');
     expect(html).toContain('project_key=PROJ');
     expect(html).toContain('task_key=PROJ-224');
     expect(html).toContain('objective=implement');
@@ -969,7 +969,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('🦞 Telegram');
     expect(html).toContain('H Telegram');
     expect(html).toContain('aria-label="Selected target: H Telegram"');
-    expect(html).toContain('/preqstation_dispatch@PreqHermesBot');
+    expect(html).toContain('/preqstation dispatch');
     expect(html).not.toContain('Channels');
   });
 
@@ -980,7 +980,7 @@ describe('app/components/task-copy-actions', () => {
     });
 
     expect(html).toContain('aria-label="Selected target: H Telegram"');
-    expect(html).toContain('/preqstation_dispatch@PreqHermesBot');
+    expect(html).toContain('/preqstation dispatch');
   });
 
   it('falls back to OpenClaw Telegram when the stored target is a legacy Claude action', () => {

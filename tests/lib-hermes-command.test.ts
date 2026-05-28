@@ -18,7 +18,7 @@ describe('lib/hermes-command', () => {
       }),
     ).toBe(
       [
-        '/preqstation_dispatch@PreqHermesBot',
+        '/preqstation dispatch',
         'project_key=PROJ',
         'task_key=PROJ-316',
         'objective=plan',
@@ -38,7 +38,7 @@ describe('lib/hermes-command', () => {
       }),
     ).toBe(
       [
-        '/preqstation_dispatch@PreqHermesBot',
+        '/preqstation dispatch',
         'project_key=PROJ',
         'task_key=PROJ-316',
         'objective=implement',
@@ -99,7 +99,7 @@ describe('lib/hermes-command', () => {
         engineKey: 'codex',
         insightPrompt: 'Break down the Connections page redesign',
       }),
-    ).toContain('/preqstation_dispatch@PreqHermesBot');
+    ).toContain('/preqstation dispatch');
     expect(
       buildHermesProjectInsightCommand({
         projectKey: 'proj',
@@ -137,7 +137,7 @@ describe('lib/hermes-command', () => {
       }),
     ).toBe(
       [
-        '/preqstation_dispatch@PreqHermesBot',
+        '/preqstation dispatch',
         'project_key=PROJ',
         'objective=qa',
         'engine=claude-code',
