@@ -267,16 +267,15 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
       'bot-token',
       '7654321',
       [
-        '/preqstation_dispatch@custom_hermes_bot',
-        [
-          'project_key=PROJ',
-          'objective=qa',
-          'engine=codex',
-          'branch_name=main',
-          'qa_run_id=run-123',
-          'qa_task_keys=PROJ-1,PROJ-2',
-        ].join(' '),
-      ].join('\n'),
+        '@custom_hermes_bot',
+        '/preqstation_dispatch',
+        'project_key=PROJ',
+        'objective=qa',
+        'engine=codex',
+        'branch_name=main',
+        'qa_run_id=run-123',
+        'qa_task_keys=PROJ-1,PROJ-2',
+      ].join(' '),
       { normalizeCommand: false },
     );
   });

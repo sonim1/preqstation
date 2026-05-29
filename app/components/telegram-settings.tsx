@@ -15,7 +15,7 @@ import { useActionState, useEffect, useState } from 'react';
 import { SettingStatusMessage } from '@/app/components/setting-status-message';
 import controlClasses from '@/app/components/settings-controls.module.css';
 import { SubmitButton } from '@/app/components/submit-button';
-import { formatHermesBotUsername } from '@/lib/hermes-command';
+import { buildHermesDispatchTrigger, formatHermesBotUsername } from '@/lib/hermes-command';
 
 import classes from './telegram-settings.module.css';
 
@@ -257,9 +257,7 @@ export function TelegramSettings({
     }
 
     const resolvedMessage =
-      channel === 'hermes' && !message
-        ? `/preqstation_dispatch${formatHermesBotUsername(hermesBotUsername)}`
-        : message;
+      channel === 'hermes' && !message ? buildHermesDispatchTrigger(hermesBotUsername) : message;
     const action = resolvedMessage === '/status' ? 'status' : 'message';
     setTestState({ status: 'loading', channel, action });
 

@@ -60,7 +60,7 @@ describe('lib/task-telegram-client', () => {
       [
         '/preqstation_dispatch',
         'project_key=PROJ task_key=PROJ-328 objective=comment engine=claude-code comment_id=comment-123',
-      ].join('\n'),
+      ].join(' '),
     );
   });
 
@@ -74,7 +74,7 @@ describe('lib/task-telegram-client', () => {
         dispatchTarget: 'hermes-telegram',
         hermesBotUsername: '@custom_hermes_bot',
       }),
-    ).toContain('/preqstation_dispatch@custom_hermes_bot');
+    ).toContain('@custom_hermes_bot /preqstation_dispatch');
   });
 
   it('propagates model overrides through comment dispatch messages', () => {
