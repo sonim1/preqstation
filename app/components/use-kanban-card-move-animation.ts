@@ -70,29 +70,45 @@ export function playKanbanCardMoveAnimations(
       continue;
     }
 
-    const currentRect = element.getBoundingClientRect();
-    if (currentRect.width === 0 && currentRect.height === 0) {
+    const moveAnimations =
+      typeof element.getAnimations === 'function'
+        ? element.getAnimations().filter((animation) => animation.id === MOVE_ANIMATION_ID)
+        : [];
+    const liveRect = element.getBoundingClientRect();
+    if (liveRect.width === 0 && liveRect.height === 0) {
       continue;
     }
 
-    const deltaX = previousRect.left - currentRect.left;
-    const deltaY = previousRect.top - currentRect.top;
+    const deltaX = previousRect.left - liveRect.left;
+    const deltaY = previousRect.top - liveRect.top;
     if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5) {
       continue;
     }
 
-    if (typeof element.getAnimations === 'function') {
-      for (const animation of element.getAnimations()) {
-        if (animation.id === MOVE_ANIMATION_ID) {
-          animation.cancel();
-        }
+    let animationStartRect = previousRect;
+    let animationEndRect = liveRect;
+    if (moveAnimations.length > 0) {
+      for (const animation of moveAnimations) {
+        animation.cancel();
       }
+
+      animationStartRect = liveRect;
+      animationEndRect = element.getBoundingClientRect();
+      if (animationEndRect.width === 0 && animationEndRect.height === 0) {
+        continue;
+      }
+    }
+
+    const animationDeltaX = animationStartRect.left - animationEndRect.left;
+    const animationDeltaY = animationStartRect.top - animationEndRect.top;
+    if (Math.abs(animationDeltaX) < 0.5 && Math.abs(animationDeltaY) < 0.5) {
+      continue;
     }
 
     element.animate(
       [
         {
-          transform: `translate(${formatTranslateValue(deltaX)}, ${formatTranslateValue(deltaY)})`,
+          transform: `translate(${formatTranslateValue(animationDeltaX)}, ${formatTranslateValue(animationDeltaY)})`,
         },
         { transform: 'translate(0, 0)' },
       ],

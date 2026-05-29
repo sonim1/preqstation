@@ -97,7 +97,10 @@ describe('kanban card move animation helper', () => {
     document.body.appendChild(container);
 
     const previousRects = captureKanbanCardRects(container);
-    card.getBoundingClientRect = vi.fn(() => makeRect(90, 140));
+    card.getBoundingClientRect = vi
+      .fn()
+      .mockReturnValueOnce(makeRect(90, 140))
+      .mockReturnValueOnce(makeRect(120, 180));
 
     playKanbanCardMoveAnimations(container, previousRects);
 
@@ -105,6 +108,30 @@ describe('kanban card move animation helper', () => {
     expect(cancelOtherAnimation).not.toHaveBeenCalled();
     expect(card.animate).toHaveBeenCalledWith(
       expect.any(Array),
+      expect.objectContaining({ id: 'kanban-card-move' }),
+    );
+  });
+
+  it('starts replacement move animations from the live in-flight rect', () => {
+    const container = document.createElement('div');
+    const card = appendCard(container, 'PROJ-1', { left: 10, top: 20 });
+    const cancelMoveAnimation = vi.fn();
+    card.getAnimations = vi.fn(
+      () => [{ id: 'kanban-card-move', cancel: cancelMoveAnimation }] as unknown as Animation[],
+    );
+    document.body.appendChild(container);
+
+    const previousRects = captureKanbanCardRects(container);
+    card.getBoundingClientRect = vi
+      .fn()
+      .mockReturnValueOnce(makeRect(90, 140))
+      .mockReturnValueOnce(makeRect(150, 220));
+
+    playKanbanCardMoveAnimations(container, previousRects);
+
+    expect(cancelMoveAnimation).toHaveBeenCalledTimes(1);
+    expect(card.animate).toHaveBeenCalledWith(
+      [{ transform: 'translate(-60px, -80px)' }, { transform: 'translate(0, 0)' }],
       expect.objectContaining({ id: 'kanban-card-move' }),
     );
   });
