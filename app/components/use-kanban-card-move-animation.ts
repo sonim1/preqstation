@@ -8,6 +8,7 @@ const CARD_SELECTOR = '[data-kanban-task-key]';
 const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 const DEFAULT_DURATION_MS = 220;
 const DEFAULT_EASING = 'cubic-bezier(0.2, 0.8, 0.2, 1)';
+const MOVE_ANIMATION_ID = 'kanban-card-move';
 
 function prefersReducedMotion() {
   return (
@@ -39,7 +40,12 @@ export function captureKanbanCardRects(container: HTMLElement | null): CardRectM
       continue;
     }
 
-    rects.set(taskKey, element.getBoundingClientRect());
+    const rect = element.getBoundingClientRect();
+    if (rect.width === 0 && rect.height === 0) {
+      continue;
+    }
+
+    rects.set(taskKey, rect);
   }
 
   return rects;
@@ -65,10 +71,22 @@ export function playKanbanCardMoveAnimations(
     }
 
     const currentRect = element.getBoundingClientRect();
+    if (currentRect.width === 0 && currentRect.height === 0) {
+      continue;
+    }
+
     const deltaX = previousRect.left - currentRect.left;
     const deltaY = previousRect.top - currentRect.top;
     if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5) {
       continue;
+    }
+
+    if (typeof element.getAnimations === 'function') {
+      for (const animation of element.getAnimations()) {
+        if (animation.id === MOVE_ANIMATION_ID) {
+          animation.cancel();
+        }
+      }
     }
 
     element.animate(
@@ -81,6 +99,7 @@ export function playKanbanCardMoveAnimations(
       {
         duration: DEFAULT_DURATION_MS,
         easing: DEFAULT_EASING,
+        id: MOVE_ANIMATION_ID,
       },
     );
   }
