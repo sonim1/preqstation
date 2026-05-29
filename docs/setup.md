@@ -138,7 +138,7 @@ Operational notes:
 - If you enable Hermes, task sends plus QA and project insight actions that target
   `hermes-telegram` use the Hermes chat instead of the OpenClaw chat.
 - If you set a Hermes Bot ID, Hermes task, QA, project insight, and test commands use
-  `/preqstation_dispatch@botid`. Leave it blank to send `/preqstation_dispatch`.
+  `@botid /preqstation_dispatch`. Leave it blank to send `/preqstation_dispatch`.
 - QA runs and project insight actions dispatch only through the enabled Telegram targets shown in
   their modals; there is no in-app `Channels` fallback for those flows.
 - Older installs can still fall back to the legacy single-channel settings
