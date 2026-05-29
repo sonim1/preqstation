@@ -57,7 +57,10 @@ describe('lib/task-telegram-client', () => {
         dispatchTarget: 'hermes-telegram',
       }),
     ).toBe(
-      '/preqstation_dispatch project_key=PROJ task_key=PROJ-328 objective=comment engine=claude-code comment_id=comment-123',
+      [
+        '/preqstation_dispatch',
+        'project_key=PROJ task_key=PROJ-328 objective=comment engine=claude-code comment_id=comment-123',
+      ].join('\n'),
     );
   });
 

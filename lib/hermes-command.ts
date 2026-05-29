@@ -37,6 +37,10 @@ function appendField(lines: string[], key: string, value: string | null | undefi
   }
 }
 
+function buildHermesCommand(botUsername: string | null | undefined, fields: string[]) {
+  return [buildHermesDispatchPrefix(botUsername), fields.join(' ')].join('\n');
+}
+
 function getProjectKeyFromTaskKey(taskKey: string) {
   return taskKey.split('-', 1)[0]?.trim().toUpperCase() || taskKey.trim().toUpperCase();
 }
@@ -60,24 +64,23 @@ export function buildHermesTaskCommand(params: {
   const objective = params.objective ?? 'default';
   const resolvedObjective = resolveTaskDispatchVerb(params.status.trim(), objective);
   const engineKey = normalizeEngineKey(params.engineKey) ?? 'codex';
-  const lines = [
-    buildHermesDispatchPrefix(params.botUsername),
+  const fields = [
     `project_key=${getProjectKeyFromTaskKey(taskKey)}`,
     `task_key=${taskKey}`,
     `objective=${resolvedObjective}`,
     `engine=${engineKey}`,
   ];
 
-  appendField(lines, 'model', normalizeAgentModel(params.model));
-  appendField(lines, 'branch_name', params.branchName);
+  appendField(fields, 'model', normalizeAgentModel(params.model));
+  appendField(fields, 'branch_name', params.branchName);
   if (resolvedObjective === 'ask') {
-    appendField(lines, 'ask_hint', params.askHint);
+    appendField(fields, 'ask_hint', params.askHint);
   }
   if (resolvedObjective === 'comment') {
-    appendField(lines, 'comment_id', params.commentId);
+    appendField(fields, 'comment_id', params.commentId);
   }
 
-  return lines.join(' ');
+  return buildHermesCommand(params.botUsername, fields);
 }
 
 export function buildHermesProjectInsightCommand(params: {
@@ -90,22 +93,17 @@ export function buildHermesProjectInsightCommand(params: {
 }) {
   const projectKey = normalizeProjectKey(params.projectKey);
   const engineKey = normalizeEngineKey(params.engineKey) ?? 'codex';
-  const lines = [
-    buildHermesDispatchPrefix(params.botUsername),
-    `project_key=${projectKey}`,
-    'objective=insight',
-    `engine=${engineKey}`,
-  ];
+  const fields = [`project_key=${projectKey}`, 'objective=insight', `engine=${engineKey}`];
 
-  appendField(lines, 'model', normalizeAgentModel(params.model));
-  appendField(lines, 'branch_name', params.branchName);
+  appendField(fields, 'model', normalizeAgentModel(params.model));
+  appendField(fields, 'branch_name', params.branchName);
   appendField(
-    lines,
+    fields,
     'insight_prompt_b64',
     params.insightPrompt ? encodeDispatchPromptMetadata(params.insightPrompt) : null,
   );
 
-  return lines.join(' ');
+  return buildHermesCommand(params.botUsername, fields);
 }
 
 export function buildHermesQaCommand(params: {
@@ -125,17 +123,12 @@ export function buildHermesQaCommand(params: {
         .filter(Boolean)
         .join(',')
     : '';
-  const lines = [
-    buildHermesDispatchPrefix(params.botUsername),
-    `project_key=${projectKey}`,
-    'objective=qa',
-    `engine=${engineKey}`,
-  ];
+  const fields = [`project_key=${projectKey}`, 'objective=qa', `engine=${engineKey}`];
 
-  appendField(lines, 'model', normalizeAgentModel(params.model));
-  appendField(lines, 'branch_name', params.branchName);
-  appendField(lines, 'qa_run_id', params.qaRunId);
-  appendField(lines, 'qa_task_keys', qaTaskKeys);
+  appendField(fields, 'model', normalizeAgentModel(params.model));
+  appendField(fields, 'branch_name', params.branchName);
+  appendField(fields, 'qa_run_id', params.qaRunId);
+  appendField(fields, 'qa_task_keys', qaTaskKeys);
 
-  return lines.join(' ');
+  return buildHermesCommand(params.botUsername, fields);
 }
