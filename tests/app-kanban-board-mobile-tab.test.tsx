@@ -228,6 +228,7 @@ function mockBoardState(params: {
       current: {
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
+        querySelectorAll: vi.fn(() => []),
         clientWidth: 0,
         scrollLeft: 0,
         scrollWidth: 0,
@@ -446,6 +447,7 @@ describe('app/components/kanban-board mobile tab selection', () => {
         current: {
           addEventListener: vi.fn(),
           removeEventListener: vi.fn(),
+          querySelectorAll: vi.fn(() => []),
           clientWidth: 0,
           scrollLeft: 0,
           scrollWidth: 0,
@@ -531,6 +533,7 @@ describe('app/components/kanban-board mobile tab selection', () => {
           current: {
             addEventListener: vi.fn(),
             removeEventListener: vi.fn(),
+            querySelectorAll: vi.fn(() => []),
             clientWidth: 0,
             scrollLeft: 0,
             scrollWidth: 0,
