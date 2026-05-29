@@ -74,7 +74,7 @@ describe('lib/task-telegram-client', () => {
         dispatchTarget: 'hermes-telegram',
         hermesBotUsername: '@custom_hermes_bot',
       }),
-    ).toContain('@custom_hermes_bot /preqstation_dispatch');
+    ).toContain('/preqstation_dispatch@custom_hermes_bot');
   });
 
   it('propagates model overrides through comment dispatch messages', () => {

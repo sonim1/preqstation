@@ -204,7 +204,7 @@ describe('app/components/telegram-settings', () => {
         expect.objectContaining({
           body: JSON.stringify({
             chatId: '5678',
-            message: '@custom_hermes_bot /preqstation_dispatch',
+            message: '/preqstation_dispatch@custom_hermes_bot',
             normalizeCommand: false,
           }),
         }),

@@ -19,7 +19,7 @@ export function formatHermesBotUsername(value: string | null | undefined) {
 
 export function buildHermesDispatchTrigger(botUsername: string | null | undefined) {
   const botMention = formatHermesBotUsername(botUsername);
-  return botMention ? `${botMention} /preqstation_dispatch` : '/preqstation_dispatch';
+  return botMention ? `/preqstation_dispatch${botMention}` : '/preqstation_dispatch';
 }
 
 function normalizeFieldValue(value: string | null | undefined) {

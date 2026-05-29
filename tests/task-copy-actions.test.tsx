@@ -981,8 +981,8 @@ describe('app/components/task-copy-actions', () => {
       hermesBotUsername: '@custom_hermes_bot',
     });
 
-    expect(html).toContain('@custom_hermes_bot /preqstation_dispatch');
-    expect(html).not.toContain('@custom_hermes_bot_extra /preqstation_dispatch');
+    expect(html).toContain('/preqstation_dispatch@custom_hermes_bot');
+    expect(html).not.toContain('/preqstation_dispatch@custom_hermes_bot_extra');
   });
 
   it('initializes the selected target from the task dispatch target when it is available', () => {
