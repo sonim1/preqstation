@@ -20,6 +20,17 @@ describe('lib/agent-model-catalog', () => {
     expect(catalog['gemini-cli'].length).toBeGreaterThan(0);
   });
 
+  it('uses the documented Codex models in order with labels matching values', () => {
+    expect(DEFAULT_AGENT_MODEL_CATALOG.codex).toEqual([
+      { label: 'gpt-5.5', value: 'gpt-5.5' },
+      { label: 'gpt-5.4', value: 'gpt-5.4' },
+      { label: 'gpt-5.4-mini', value: 'gpt-5.4-mini' },
+      { label: 'gpt-5.3-codex', value: 'gpt-5.3-codex' },
+      { label: 'gpt-5.3-codex-spark', value: 'gpt-5.3-codex-spark' },
+      { label: 'gpt-5.2', value: 'gpt-5.2' },
+    ]);
+  });
+
   it('normalizes saved catalog options and drops unsupported engines', () => {
     const catalog = resolveAgentModelCatalog(
       JSON.stringify({
@@ -38,15 +49,32 @@ describe('lib/agent-model-catalog', () => {
     expect('unsupported' in catalog).toBe(false);
   });
 
-  it('includes a default select option that maps to no model override', () => {
+  it('includes a Codex default select option with the current default model label', () => {
+    const defaultCodexModel = DEFAULT_AGENT_MODEL_CATALOG.codex[0]?.value;
     const options = getAgentModelSelectOptions(
-      { ...DEFAULT_AGENT_MODEL_CATALOG, codex: [{ label: 'GPT-5 Codex', value: 'gpt-5-codex' }] },
+      { ...DEFAULT_AGENT_MODEL_CATALOG, codex: [{ label: 'Custom Codex', value: 'custom-codex' }] },
       'codex',
     );
 
     expect(options).toEqual([
+      { label: `Default (${defaultCodexModel})`, value: '__default__' },
+      { label: 'Custom Codex', value: 'custom-codex' },
+    ]);
+    expect(normalizeAgentModel(options[0].value)).toBeNull();
+  });
+
+  it('keeps the generic default select option for non-Codex engines', () => {
+    const options = getAgentModelSelectOptions(
+      {
+        ...DEFAULT_AGENT_MODEL_CATALOG,
+        'claude-code': [{ label: 'Claude Sonnet 4.6', value: 'claude-sonnet-4-6' }],
+      },
+      'claude-code',
+    );
+
+    expect(options).toEqual([
       { label: 'Default', value: '__default__' },
-      { label: 'GPT-5 Codex', value: 'gpt-5-codex' },
+      { label: 'Claude Sonnet 4.6', value: 'claude-sonnet-4-6' },
     ]);
   });
 
