@@ -24,6 +24,7 @@ type BuildTaskTelegramMessageParams = {
   objective?: TaskDispatchObjective | null;
   askHint?: string | null;
   commentId?: string | null;
+  hermesBotUsername?: string | null;
   model?: string | null;
 };
 
@@ -57,6 +58,7 @@ export function buildHermesTaskTelegramMessage({
   objective,
   askHint,
   commentId,
+  hermesBotUsername,
   model,
 }: BuildTaskTelegramMessageParams) {
   return buildHermesTaskCommand({
@@ -67,6 +69,7 @@ export function buildHermesTaskTelegramMessage({
     objective,
     askHint,
     commentId,
+    botUsername: hermesBotUsername,
     model,
   });
 }
@@ -86,6 +89,7 @@ export function buildTaskCommentDispatchMessage(
     branchName: params.branchName,
     objective: 'comment',
     commentId: params.commentId,
+    hermesBotUsername: params.hermesBotUsername,
     model: params.model,
   });
 }
@@ -123,6 +127,7 @@ type BuildProjectInsightTelegramMessageParams = {
   engine?: string | null;
   branchName?: string | null;
   insightPrompt?: string | null;
+  hermesBotUsername?: string | null;
   model?: string | null;
 };
 
@@ -148,6 +153,7 @@ export function buildProjectInsightDispatchMessage({
   engine,
   branchName,
   insightPrompt,
+  hermesBotUsername,
   model,
   dispatchTarget = 'telegram',
 }: BuildProjectInsightTelegramMessageParams & {
@@ -159,6 +165,7 @@ export function buildProjectInsightDispatchMessage({
       engineKey: normalizeEngineKey(engine) ?? 'codex',
       branchName,
       insightPrompt,
+      botUsername: hermesBotUsername,
       model,
     });
   }
@@ -179,6 +186,7 @@ export function buildProjectQaDispatchMessage(params: {
   qaRunId?: string | null;
   qaTaskKeys?: string[] | null;
   dispatchTarget?: ProjectDispatchTarget | null;
+  hermesBotUsername?: string | null;
   model?: string | null;
 }) {
   if (params.dispatchTarget === 'hermes-telegram') {
@@ -188,6 +196,7 @@ export function buildProjectQaDispatchMessage(params: {
       branchName: params.branchName,
       qaRunId: params.qaRunId,
       qaTaskKeys: params.qaTaskKeys,
+      botUsername: params.hermesBotUsername,
       model: params.model,
     });
   }

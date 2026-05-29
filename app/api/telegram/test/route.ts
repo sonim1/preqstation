@@ -13,6 +13,7 @@ const testSchema = z.object({
   botToken: z.string().trim().optional().default(''),
   chatId: z.string().trim().min(1),
   message: z.string().trim().min(1).max(1000).optional(),
+  normalizeCommand: z.boolean().optional().default(true),
 });
 
 const DEFAULT_TEST_MESSAGE = 'OpenClaw test message';
@@ -51,6 +52,7 @@ export async function POST(req: Request) {
       botToken,
       payload.chatId,
       payload.message || DEFAULT_TEST_MESSAGE,
+      { normalizeCommand: payload.normalizeCommand },
     );
 
     if (!result.ok) {

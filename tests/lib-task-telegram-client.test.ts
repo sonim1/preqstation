@@ -57,8 +57,21 @@ describe('lib/task-telegram-client', () => {
         dispatchTarget: 'hermes-telegram',
       }),
     ).toBe(
-      '/preqstation_dispatch@PreqHermesBot project_key=PROJ task_key=PROJ-328 objective=comment engine=claude-code comment_id=comment-123',
+      '/preqstation_dispatch project_key=PROJ task_key=PROJ-328 objective=comment engine=claude-code comment_id=comment-123',
     );
+  });
+
+  it('uses the configured Hermes bot id for Hermes comment dispatches', () => {
+    expect(
+      buildTaskCommentDispatchMessage({
+        taskKey: 'PROJ-328',
+        status: 'todo',
+        engine: 'claude-code',
+        commentId: 'comment-123',
+        dispatchTarget: 'hermes-telegram',
+        hermesBotUsername: '@custom_hermes_bot',
+      }),
+    ).toContain('/preqstation_dispatch@custom_hermes_bot');
   });
 
   it('propagates model overrides through comment dispatch messages', () => {
@@ -111,11 +124,7 @@ describe('lib/task-telegram-client', () => {
       json: async () => ({ ok: true }),
     });
 
-    await sendTaskTelegramMessage(
-      'PROJ-328',
-      '/preqstation_dispatch@PreqHermesBot',
-      'hermes-telegram',
-    );
+    await sendTaskTelegramMessage('PROJ-328', '/preqstation_dispatch', 'hermes-telegram');
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/telegram/send',
@@ -124,7 +133,7 @@ describe('lib/task-telegram-client', () => {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           taskKey: 'PROJ-328',
-          message: '/preqstation_dispatch@PreqHermesBot',
+          message: '/preqstation_dispatch',
           dispatchTarget: 'hermes-telegram',
         }),
       }),
@@ -139,7 +148,7 @@ describe('lib/task-telegram-client', () => {
         dispatchTarget: 'hermes-telegram',
         insightPrompt: 'Break down the Connections page redesign',
       }),
-    ).toContain('/preqstation_dispatch@PreqHermesBot');
+    ).toContain('/preqstation_dispatch');
     expect(
       buildProjectInsightDispatchMessage({
         projectKey: 'PROJ',
@@ -191,11 +200,7 @@ describe('lib/task-telegram-client', () => {
       json: async () => ({ ok: true }),
     });
 
-    await sendProjectInsightTelegramMessage(
-      'PROJ',
-      '/preqstation_dispatch@PreqHermesBot',
-      'hermes-telegram',
-    );
+    await sendProjectInsightTelegramMessage('PROJ', '/preqstation_dispatch', 'hermes-telegram');
 
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/telegram/send/insight',
@@ -204,7 +209,7 @@ describe('lib/task-telegram-client', () => {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           projectKey: 'PROJ',
-          message: '/preqstation_dispatch@PreqHermesBot',
+          message: '/preqstation_dispatch',
           dispatchTarget: 'hermes-telegram',
         }),
       }),

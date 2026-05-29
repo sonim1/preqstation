@@ -58,6 +58,7 @@ export default async function SettingsPage() {
     const openClawEnabled = String(formData.get('telegram_openclaw_enabled') || '') === 'true';
     const hermesChatId = String(formData.get('telegram_hermes_chat_id') || '').trim();
     const hermesEnabled = String(formData.get('telegram_hermes_enabled') || '') === 'true';
+    const hermesBotUsername = String(formData.get('telegram_hermes_bot_username') || '').trim();
 
     const result = await withOwnerDb(ownerUser.id, async (client) => {
       const currentSettings = await getUserSettings(ownerUser.id, client);
@@ -79,6 +80,14 @@ export default async function SettingsPage() {
           ok: false as const,
           field: 'hermesChatId' as const,
           message: 'Hermes Chat ID is required to enable Telegram.',
+        };
+      }
+
+      if (hermesBotUsername && !/^@[A-Za-z0-9_]{3,}$/.test(hermesBotUsername)) {
+        return {
+          ok: false as const,
+          field: 'hermesBotUsername' as const,
+          message: 'Hermes Bot ID must use @botid format.',
         };
       }
 
@@ -114,6 +123,12 @@ export default async function SettingsPage() {
         setUserSetting(ownerUser.id, SETTING_KEYS.HERMES_TELEGRAM_CHAT_ID, hermesChatId, client),
         setUserSetting(
           ownerUser.id,
+          SETTING_KEYS.HERMES_TELEGRAM_BOT_USERNAME,
+          hermesBotUsername,
+          client,
+        ),
+        setUserSetting(
+          ownerUser.id,
           SETTING_KEYS.HERMES_TELEGRAM_ENABLED,
           hermesEnabled ? 'true' : 'false',
           client,
@@ -130,6 +145,7 @@ export default async function SettingsPage() {
             openClawChatId,
             hermesEnabled,
             hermesChatId,
+            hermesBotUsername,
             tokenUpdated: Boolean(botTokenInput),
           },
         },
@@ -305,6 +321,7 @@ export default async function SettingsPage() {
               defaultOpenClawEnabled={openClawTelegramSettings.enabled}
               defaultHermesChatId={hermesTelegramSettings.chatId}
               defaultHermesEnabled={hermesTelegramSettings.enabled}
+              defaultHermesBotUsername={settings[SETTING_KEYS.HERMES_TELEGRAM_BOT_USERNAME]}
               hasSavedBotToken={Boolean(settings.telegram_bot_token)}
             />
           </div>

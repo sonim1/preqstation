@@ -45,7 +45,12 @@ vi.mock('@/lib/telegram-crypto', () => ({ decryptTelegramToken: mocked.decryptTe
 vi.mock('@/lib/telegram-dispatch-settings', () => ({
   resolveTelegramDispatchConfig: mocked.resolveTelegramDispatchConfig,
 }));
-vi.mock('@/lib/user-settings', () => ({ getUserSettings: mocked.getUserSettings }));
+vi.mock('@/lib/user-settings', () => ({
+  SETTING_KEYS: {
+    HERMES_TELEGRAM_BOT_USERNAME: 'hermes_telegram_bot_username',
+  },
+  getUserSettings: mocked.getUserSettings,
+}));
 
 import { POST } from '@/app/api/tasks/[id]/comments/route';
 
@@ -96,7 +101,9 @@ describe('app/api/tasks/[id]/comments/route', () => {
         updatedAt: new Date('2026-05-06T15:00:00.000Z'),
       },
     ]);
-    mocked.getUserSettings.mockResolvedValue({});
+    mocked.getUserSettings.mockResolvedValue({
+      hermes_telegram_bot_username: '@custom_hermes_bot',
+    });
     mocked.resolveTelegramDispatchConfig.mockReturnValue({
       enabled: true,
       encryptedToken: 'encrypted-token',
@@ -130,11 +137,14 @@ describe('app/api/tasks/[id]/comments/route', () => {
         runStateUpdatedAt: expect.any(Date),
       }),
     );
-    expect(mocked.resolveTelegramDispatchConfig).toHaveBeenCalledWith({}, 'hermes');
+    expect(mocked.resolveTelegramDispatchConfig).toHaveBeenCalledWith(
+      expect.objectContaining({ hermes_telegram_bot_username: '@custom_hermes_bot' }),
+      'hermes',
+    );
     expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
       'bot-token',
       '12345',
-      expect.stringContaining('/preqstation_dispatch@PreqHermesBot'),
+      expect.stringContaining('/preqstation_dispatch@custom_hermes_bot'),
       { normalizeCommand: false },
     );
     expect(await response.json()).toEqual(
@@ -181,7 +191,16 @@ describe('app/api/tasks/[id]/comments/route', () => {
         dispatchTarget: 'hermes-telegram',
       }),
     );
-    expect(mocked.resolveTelegramDispatchConfig).toHaveBeenCalledWith({}, 'hermes');
+    expect(mocked.resolveTelegramDispatchConfig).toHaveBeenCalledWith(
+      expect.objectContaining({ hermes_telegram_bot_username: '@custom_hermes_bot' }),
+      'hermes',
+    );
+    expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
+      'bot-token',
+      '12345',
+      expect.stringContaining('/preqstation_dispatch@custom_hermes_bot'),
+      { normalizeCommand: false },
+    );
     expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
       'bot-token',
       '12345',

@@ -43,6 +43,7 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
     editableTodo,
     telegramEnabledSetting,
     hermesTelegramEnabledSetting,
+    hermesTelegramBotUsername,
   ] = await withOwnerDb(owner.id, async (client) =>
     Promise.all([
       client.query.tasks.findMany({
@@ -118,6 +119,7 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
         : Promise.resolve(undefined),
       getUserSetting(owner.id, SETTING_KEYS.TELEGRAM_ENABLED, client),
       getUserSetting(owner.id, SETTING_KEYS.HERMES_TELEGRAM_ENABLED, client),
+      getUserSetting(owner.id, SETTING_KEYS.HERMES_TELEGRAM_BOT_USERNAME, client),
     ]),
   );
 
@@ -159,6 +161,7 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
       boardHref={boardHref}
       telegramEnabled={telegramEnabled}
       hermesTelegramEnabled={hermesTelegramEnabled}
+      hermesBotUsername={hermesTelegramBotUsername}
       projects={allProjects}
       todoLabels={[]}
       projectLabelOptionsByProjectId={projectLabelOptionsByProjectId}

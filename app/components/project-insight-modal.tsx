@@ -35,6 +35,7 @@ type ProjectInsightModalProps = {
   selectedProject: SelectedProject | null;
   telegramEnabled?: boolean;
   hermesTelegramEnabled?: boolean;
+  hermesBotUsername?: string | null;
   defaultEngine?: string | null;
 };
 
@@ -117,6 +118,7 @@ export function ProjectInsightModal({
   selectedProject,
   telegramEnabled = false,
   hermesTelegramEnabled = false,
+  hermesBotUsername,
   defaultEngine = null,
 }: ProjectInsightModalProps) {
   const initialEngineKey = normalizeEngineKey(defaultEngine) ?? 'codex';
@@ -179,6 +181,7 @@ export function ProjectInsightModal({
         engine: resolvedEngine.key,
         insightPrompt: trimmedPrompt || null,
         dispatchTarget: previewTarget,
+        hermesBotUsername,
       })
     : '';
 
