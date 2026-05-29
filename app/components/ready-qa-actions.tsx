@@ -51,6 +51,7 @@ type ReadyQaActionsProps = {
   readyTasks: ReadyQaTask[];
   telegramEnabled: boolean;
   hermesTelegramEnabled?: boolean;
+  hermesBotUsername?: string | null;
   initialRuns: QaRunView[];
   defaultEngine?: string | null;
   size?: number | string;
@@ -175,6 +176,7 @@ export function ReadyQaActions({
   readyTasks = [],
   telegramEnabled,
   hermesTelegramEnabled = false,
+  hermesBotUsername,
   initialRuns,
   defaultEngine = DEFAULT_ENGINE_KEY,
   size = 'lg',
@@ -270,6 +272,7 @@ export function ReadyQaActions({
           dispatchTarget: effectiveTarget,
           qaRunId: queuedRun.id,
           qaTaskKeys: queuedRun.taskKeys,
+          hermesBotUsername,
         }),
       );
       setRuns((current) => [queuedRun, ...current.filter((run) => run.id !== queuedRun.id)]);

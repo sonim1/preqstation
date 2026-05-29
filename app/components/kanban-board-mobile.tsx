@@ -70,6 +70,7 @@ type KanbanBoardMobileProps = {
   editHrefBase: string;
   editHrefJoiner: string;
   telegramEnabled?: boolean;
+  hermesBotUsername?: string | null;
   router: AppRouterInstance;
   onRefresh?: () => void;
   onTaskQueued?: (
@@ -101,6 +102,7 @@ type KanbanBoardMobileTaskCardProps = {
   editHref: string;
   isPending: boolean;
   telegramEnabled: boolean;
+  hermesBotUsername?: string | null;
   router: AppRouterInstance;
   onTaskQueued?: (
     taskKey: string,
@@ -129,6 +131,7 @@ function KanbanBoardMobileTaskCard({
   editHref,
   isPending,
   telegramEnabled,
+  hermesBotUsername,
   router,
   onTaskQueued,
   onOpenTaskEditor,
@@ -198,6 +201,7 @@ function KanbanBoardMobileTaskCard({
         isMobile
         editHref={editHref}
         telegramEnabled={telegramEnabled}
+        hermesBotUsername={hermesBotUsername}
         onTaskQueued={onTaskQueued}
         onQuickMoveTask={onQuickMoveTask}
         onDeleteTask={onDeleteTask}
@@ -218,6 +222,7 @@ export function KanbanBoardMobile({
   editHrefBase,
   editHrefJoiner,
   telegramEnabled = false,
+  hermesBotUsername,
   router,
   onRefresh = NOOP_REFRESH,
   onTaskQueued,
@@ -395,6 +400,7 @@ export function KanbanBoardMobile({
                             editHref={editHref}
                             isPending={isPending}
                             telegramEnabled={telegramEnabled}
+                            hermesBotUsername={hermesBotUsername}
                             router={router}
                             onTaskQueued={onTaskQueued}
                             onOpenTaskEditor={onOpenTaskEditor}

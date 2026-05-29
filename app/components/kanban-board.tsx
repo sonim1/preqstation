@@ -131,6 +131,7 @@ type KanbanBoardProps = {
   editHrefBase: string;
   telegramEnabled?: boolean;
   hermesTelegramEnabled?: boolean;
+  hermesBotUsername?: string | null;
   projectOptions: ProjectOption[];
   labelOptions: LabelOption[];
   projectLabelOptionsByProjectId?: Record<string, LabelOption[]>;
@@ -415,6 +416,7 @@ export function KanbanBoard({
   editHrefBase,
   telegramEnabled = false,
   hermesTelegramEnabled = false,
+  hermesBotUsername,
   projectOptions,
   labelOptions,
   projectLabelOptionsByProjectId = {},
@@ -950,6 +952,7 @@ export function KanbanBoard({
             readyTasks={readyQaTasks}
             telegramEnabled={telegramEnabled}
             hermesTelegramEnabled={hermesTelegramEnabled}
+            hermesBotUsername={hermesBotUsername}
             initialRuns={readyQaConfig.runs}
             defaultEngine={enginePresets?.defaultEngine}
             size={actionIslandControlSize}
@@ -1432,6 +1435,7 @@ export function KanbanBoard({
             editHrefBase={editHrefBase}
             editHrefJoiner={editHrefJoiner}
             telegramEnabled={telegramEnabled}
+            hermesBotUsername={hermesBotUsername}
             router={router}
             onRefresh={handleMobileRefresh}
             onTaskQueued={applyOptimisticQueuedTask}
@@ -1489,6 +1493,7 @@ export function KanbanBoard({
                       editHrefBase={editHrefBase}
                       editHrefJoiner={editHrefJoiner}
                       telegramEnabled={telegramEnabled}
+                      hermesBotUsername={hermesBotUsername}
                       router={router}
                       onTaskQueued={applyOptimisticQueuedTask}
                       onQuickMoveTask={quickMoveTask}
@@ -1546,6 +1551,7 @@ export function KanbanBoard({
         selectedProject={selectedProject}
         telegramEnabled={telegramEnabled}
         hermesTelegramEnabled={hermesTelegramEnabled}
+        hermesBotUsername={hermesBotUsername}
         defaultEngine={enginePresets?.defaultEngine ?? 'codex'}
       />
 

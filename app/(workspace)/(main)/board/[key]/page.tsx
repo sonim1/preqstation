@@ -82,6 +82,7 @@ export default async function ProjectBoardPage({ params, searchParams }: Project
     editableTodo,
     telegramEnabledSetting,
     hermesTelegramEnabledSetting,
+    hermesTelegramBotUsername,
     qaRuns,
     projectSettings,
   ] = await withOwnerDb(owner.id, async (client) =>
@@ -172,6 +173,7 @@ export default async function ProjectBoardPage({ params, searchParams }: Project
         : Promise.resolve(undefined),
       getUserSetting(owner.id, SETTING_KEYS.TELEGRAM_ENABLED, client),
       getUserSetting(owner.id, SETTING_KEYS.HERMES_TELEGRAM_ENABLED, client),
+      getUserSetting(owner.id, SETTING_KEYS.HERMES_TELEGRAM_BOT_USERNAME, client),
       withBoardAuxFallback(listProjectQaRuns(projectId, 10, client), [], 'project QA runs'),
       withBoardAuxFallback(
         getProjectSettings(projectId, client),
@@ -216,6 +218,7 @@ export default async function ProjectBoardPage({ params, searchParams }: Project
       boardHref={boardHref}
       telegramEnabled={telegramEnabled}
       hermesTelegramEnabled={hermesTelegramEnabled}
+      hermesBotUsername={hermesTelegramBotUsername}
       projects={allProjects}
       todoLabels={projectLabelOptions}
       projectLabelOptionsByProjectId={{ [projectId]: projectLabelOptions }}

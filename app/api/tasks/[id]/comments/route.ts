@@ -18,7 +18,7 @@ import { buildTaskCommentDispatchMessage } from '@/lib/task-telegram-client';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { decryptTelegramToken } from '@/lib/telegram-crypto';
 import { resolveTelegramDispatchConfig } from '@/lib/telegram-dispatch-settings';
-import { getUserSettings } from '@/lib/user-settings';
+import { getUserSettings, SETTING_KEYS } from '@/lib/user-settings';
 
 type CommentAuth = { ownerId: string; ownerEmail: string | null; source: 'api-token' | 'session' };
 
@@ -251,6 +251,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         branchName: created.task.branch,
         commentId: created.comment.id,
         dispatchTarget: created.dispatchTarget,
+        hermesBotUsername: settings[SETTING_KEYS.HERMES_TELEGRAM_BOT_USERNAME],
       });
 
       const result = await sendTelegramMessage(botToken, chatId, message, {

@@ -18,13 +18,15 @@ describe('lib/hermes-command', () => {
       }),
     ).toBe(
       [
-        '/preqstation dispatch',
-        'project_key=PROJ',
-        'task_key=PROJ-316',
-        'objective=plan',
-        'engine=codex',
-        'branch_name=task/proj-316/dashboard-choejongbeojeoneulo-hwagjang',
-      ].join(' '),
+        '/preqstation_dispatch',
+        [
+          'project_key=PROJ',
+          'task_key=PROJ-316',
+          'objective=plan',
+          'engine=codex',
+          'branch_name=task/proj-316/dashboard-choejongbeojeoneulo-hwagjang',
+        ].join(' '),
+      ].join('\n'),
     );
   });
 
@@ -38,13 +40,31 @@ describe('lib/hermes-command', () => {
       }),
     ).toBe(
       [
-        '/preqstation dispatch',
-        'project_key=PROJ',
-        'task_key=PROJ-316',
-        'objective=implement',
-        'engine=codex',
-        'model=gpt-5-codex',
-      ].join(' '),
+        '/preqstation_dispatch',
+        [
+          'project_key=PROJ',
+          'task_key=PROJ-316',
+          'objective=implement',
+          'engine=codex',
+          'model=gpt-5-codex',
+        ].join(' '),
+      ].join('\n'),
+    );
+  });
+
+  it('puts Hermes dispatch fields on a new line after the bot command', () => {
+    expect(
+      buildHermesTaskCommand({
+        taskKey: 'PROJ-316',
+        status: 'todo',
+        engineKey: 'codex',
+        botUsername: '@custom_hermes_bot',
+      }),
+    ).toBe(
+      [
+        '/preqstation_dispatch@custom_hermes_bot',
+        'project_key=PROJ task_key=PROJ-316 objective=implement engine=codex',
+      ].join('\n'),
     );
   });
 
@@ -99,7 +119,7 @@ describe('lib/hermes-command', () => {
         engineKey: 'codex',
         insightPrompt: 'Break down the Connections page redesign',
       }),
-    ).toContain('/preqstation dispatch');
+    ).toContain('/preqstation_dispatch');
     expect(
       buildHermesProjectInsightCommand({
         projectKey: 'proj',
@@ -137,14 +157,16 @@ describe('lib/hermes-command', () => {
       }),
     ).toBe(
       [
-        '/preqstation dispatch',
-        'project_key=PROJ',
-        'objective=qa',
-        'engine=claude-code',
-        'branch_name=main',
-        'qa_run_id=run-123',
-        'qa_task_keys=PROJ-1,PROJ-2',
-      ].join(' '),
+        '/preqstation_dispatch',
+        [
+          'project_key=PROJ',
+          'objective=qa',
+          'engine=claude-code',
+          'branch_name=main',
+          'qa_run_id=run-123',
+          'qa_task_keys=PROJ-1,PROJ-2',
+        ].join(' '),
+      ].join('\n'),
     );
   });
 

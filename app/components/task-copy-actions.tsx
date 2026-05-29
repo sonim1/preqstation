@@ -84,6 +84,7 @@ type TaskCopyActionsProps = {
   agentModelCatalog?: AgentModelCatalog | null;
   telegramEnabled?: boolean;
   hermesTelegramEnabled?: boolean;
+  hermesBotUsername?: string | null;
   suppressShortcut?: boolean;
   placement?: 'rail' | 'bottom';
   onTaskQueued?: (taskKey: string, queuedAt: string, dispatchTarget: TaskDispatchTarget) => void;
@@ -392,6 +393,7 @@ export function TaskCopyActions({
   agentModelCatalog,
   telegramEnabled = false,
   hermesTelegramEnabled,
+  hermesBotUsername,
   suppressShortcut = false,
   placement = 'rail',
   onTaskQueued,
@@ -491,6 +493,7 @@ export function TaskCopyActions({
           model: selectedModel,
           branchName,
           objective: effectiveObjective,
+          hermesBotUsername,
         })
       : buildTaskTelegramMessage({
           taskKey,
@@ -585,6 +588,7 @@ export function TaskCopyActions({
               model: selectedModel,
               branchName,
               objective: effectiveObjective,
+              hermesBotUsername,
             })
           : buildTaskTelegramMessage({
               taskKey,

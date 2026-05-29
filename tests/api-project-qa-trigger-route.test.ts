@@ -249,6 +249,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
       openclaw_telegram_chat_id: '123456',
       hermes_telegram_enabled: 'true',
       hermes_telegram_chat_id: '7654321',
+      hermes_telegram_bot_username: '@custom_hermes_bot',
     });
 
     await POST(
@@ -266,14 +267,16 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
       'bot-token',
       '7654321',
       [
-        '/preqstation dispatch',
-        'project_key=PROJ',
-        'objective=qa',
-        'engine=codex',
-        'branch_name=main',
-        'qa_run_id=run-123',
-        'qa_task_keys=PROJ-1,PROJ-2',
-      ].join(' '),
+        '/preqstation_dispatch@custom_hermes_bot',
+        [
+          'project_key=PROJ',
+          'objective=qa',
+          'engine=codex',
+          'branch_name=main',
+          'qa_run_id=run-123',
+          'qa_task_keys=PROJ-1,PROJ-2',
+        ].join(' '),
+      ].join('\n'),
       { normalizeCommand: false },
     );
   });

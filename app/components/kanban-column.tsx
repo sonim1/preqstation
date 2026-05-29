@@ -28,6 +28,7 @@ type KanbanColumnProps = {
   editHrefBase: string;
   editHrefJoiner: string;
   telegramEnabled?: boolean;
+  hermesBotUsername?: string | null;
   router: AppRouterInstance;
   onTaskQueued?: (
     taskKey: string,
@@ -61,6 +62,7 @@ type KanbanColumnTaskCardProps = {
   editHrefBase: string;
   editHrefJoiner: string;
   telegramEnabled: boolean;
+  hermesBotUsername?: string | null;
   router: AppRouterInstance;
   onTaskQueued?: (
     taskKey: string,
@@ -92,6 +94,7 @@ function KanbanColumnTaskCard({
   editHrefBase,
   editHrefJoiner,
   telegramEnabled,
+  hermesBotUsername,
   router,
   onTaskQueued,
   onOpenTaskEditor,
@@ -181,6 +184,7 @@ function KanbanColumnTaskCard({
             isMobile={isMobile}
             editHref={editHref}
             telegramEnabled={telegramEnabled}
+            hermesBotUsername={hermesBotUsername}
             onTaskQueued={onTaskQueued}
             onQuickMoveTask={onQuickMoveTask}
             onDeleteTask={onDeleteTask}
@@ -204,6 +208,7 @@ export function KanbanColumn({
   editHrefBase,
   editHrefJoiner,
   telegramEnabled = false,
+  hermesBotUsername,
   router,
   onTaskQueued,
   onOpenTaskEditor,
@@ -272,6 +277,7 @@ export function KanbanColumn({
                     editHrefBase={editHrefBase}
                     editHrefJoiner={editHrefJoiner}
                     telegramEnabled={telegramEnabled}
+                    hermesBotUsername={hermesBotUsername}
                     router={router}
                     onTaskQueued={onTaskQueued}
                     onOpenTaskEditor={onOpenTaskEditor}

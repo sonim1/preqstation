@@ -46,7 +46,9 @@ vi.mock('@/app/components/panels.module.css', () => ({
 }));
 
 vi.mock('@/app/components/telegram-settings', () => ({
-  TelegramSettings: () => <div>Telegram settings</div>,
+  TelegramSettings: ({ defaultHermesBotUsername }: { defaultHermesBotUsername?: string }) => (
+    <div data-slot="telegram-settings">{defaultHermesBotUsername}</div>
+  ),
 }));
 
 vi.mock('@/app/components/timezone-settings', () => ({
@@ -116,6 +118,7 @@ vi.mock('@/lib/user-settings', () => ({
     OPENCLAW_TELEGRAM_ENABLED: 'openclaw_telegram_enabled',
     HERMES_TELEGRAM_CHAT_ID: 'hermes_telegram_chat_id',
     HERMES_TELEGRAM_ENABLED: 'hermes_telegram_enabled',
+    HERMES_TELEGRAM_BOT_USERNAME: 'hermes_telegram_bot_username',
     TIMEZONE: 'timezone',
     AGENT_MODEL_CATALOG: 'agent_model_catalog',
   },
@@ -147,6 +150,7 @@ describe('app/(workspace)/(main)/settings/page', () => {
       openclaw_telegram_enabled: '',
       hermes_telegram_chat_id: '',
       hermes_telegram_enabled: '',
+      hermes_telegram_bot_username: '@custom_hermes_bot',
       timezone: 'America/Toronto',
       agent_model_catalog: '',
     });
@@ -209,6 +213,13 @@ describe('app/(workspace)/(main)/settings/page', () => {
     const html = await renderSettingsPage();
 
     expect(html).not.toContain('Engine Presets');
+  });
+
+  it('passes the saved Hermes bot id to Telegram settings', async () => {
+    const html = await renderSettingsPage();
+
+    expect(html).toContain('data-slot="telegram-settings"');
+    expect(html).toContain('@custom_hermes_bot');
   });
 
   it('keeps the settings hero focused on settings content without a connections shortcut', async () => {
