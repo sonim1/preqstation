@@ -151,6 +151,10 @@ function KanbanColumnTaskCard({
             .join(' ')}
           data-run-state={task.runState ?? undefined}
           data-has-unread-notification={hasUnreadNotification ? 'true' : undefined}
+          data-kanban-task-key={task.taskKey}
+          data-kanban-task-id={task.id}
+          data-kanban-dragging={snapshot.isDragging ? 'true' : undefined}
+          data-kanban-drop-animating={snapshot.isDropAnimating ? 'true' : undefined}
           role="link"
           tabIndex={snapshot.isDragging ? -1 : 0}
           onClick={(e) => {
