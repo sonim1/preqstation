@@ -77,6 +77,8 @@ describe('kanban card accessibility', () => {
     expect(html).toContain('role="link"');
     expect(html).toContain('tabindex="0"');
     expect(html).not.toContain('aria-label="Open task');
+    expect(html).toContain('data-kanban-task-key="PROJ-inbox"');
+    expect(html).toContain('data-kanban-task-id="inbox-1"');
     expect(html).toContain('PROJ-inbox');
     expect(html).toContain('Accessible card');
   });

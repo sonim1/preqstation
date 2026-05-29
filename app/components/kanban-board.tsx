@@ -63,6 +63,7 @@ import { useOfflineStatus } from './offline-status-provider';
 import { ProjectInsightModal } from './project-insight-modal';
 import { ReadyQaActions } from './ready-qa-actions';
 import { useTerminology } from './terminology-provider';
+import { useKanbanCardMoveAnimation } from './use-kanban-card-move-animation';
 
 type ProjectOption = { id: string; name: string };
 type SelectedProject = ProjectOption & { projectKey: string };
@@ -485,6 +486,8 @@ export function KanbanBoard({
   const archiveRequestIdRef = useRef(0);
   const previousArchiveProjectIdRef = useRef(archiveProjectId);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const hasHydratedBoardRef = useRef(false);
+  const { captureCardRects, playCardMoveAnimations } = useKanbanCardMoveAnimation();
   const editHrefJoiner = useMemo(() => (editHrefBase.includes('?') ? '&' : '?'), [editHrefBase]);
 
   const [isMobile, setIsMobile] = useState(false);
@@ -574,6 +577,15 @@ export function KanbanBoard({
     () => selectKanbanColumns(kanbanStore.getState()),
     [kanbanStore],
   );
+  const scheduleCardMoveAnimations = useCallback(() => {
+    const container = scrollRef.current;
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => playCardMoveAnimations(container));
+      return;
+    }
+
+    playCardMoveAnimations(container);
+  }, [playCardMoveAnimations]);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 48em)');
@@ -621,6 +633,11 @@ export function KanbanBoard({
       return;
     }
 
+    const shouldAnimateHydrate = hasHydratedBoardRef.current;
+    if (shouldAnimateHydrate) {
+      captureCardRects(scrollRef.current);
+    }
+
     const hydratedFocusedTask = resolveHydratedFocusedTask(
       kanbanStore.getState().focusedTask,
       selectedProject,
@@ -630,8 +647,18 @@ export function KanbanBoard({
       focusedTask: hydratedFocusedTask,
     });
     columnsRef.current = resolvedServerColumns;
+    hasHydratedBoardRef.current = true;
     setSaveError(null);
-  }, [kanbanStore, resolvedServerColumns, selectedProject]);
+    if (shouldAnimateHydrate) {
+      scheduleCardMoveAnimations();
+    }
+  }, [
+    captureCardRects,
+    kanbanStore,
+    resolvedServerColumns,
+    scheduleCardMoveAnimations,
+    selectedProject,
+  ]);
 
   useEffect(() => {
     columnsRef.current = columns;
@@ -744,10 +771,12 @@ export function KanbanBoard({
         return;
       }
 
+      captureCardRects(scrollRef.current);
       kanbanStore.getState().upsertSnapshots(snapshots);
       columnsRef.current = readColumnsFromStore();
+      scheduleCardMoveAnimations();
     },
-    [kanbanStore, readColumnsFromStore],
+    [captureCardRects, kanbanStore, readColumnsFromStore, scheduleCardMoveAnimations],
   );
 
   const flushPersistQueue = useCallback(
@@ -861,6 +890,7 @@ export function KanbanBoard({
   const quickMoveTask = useCallback(
     (taskId: string, targetStatus: KanbanStatus) => {
       const previous = columnsRef.current;
+      captureCardRects(scrollRef.current);
       const changedTaskKeys = kanbanStore
         .getState()
         .applyMove(taskId, targetStatus, previous[targetStatus].length);
@@ -884,6 +914,7 @@ export function KanbanBoard({
       };
       columnsRef.current = nextColumns;
       setSaveError(null);
+      scheduleCardMoveAnimations();
       if (!online && boardOfflineSync) {
         void boardOfflineSync.queueTaskMove(fallbackTaskMove);
         return;
@@ -908,6 +939,8 @@ export function KanbanBoard({
       online,
       persistMoveIntent,
       readColumnsFromStore,
+      captureCardRects,
+      scheduleCardMoveAnimations,
     ],
   );
 

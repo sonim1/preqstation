@@ -13,16 +13,40 @@ const setKanbanReconciliationPausedMock = vi.hoisted(() => vi.fn());
 const mobileBoardProps = vi.hoisted(() => ({
   current: null as null | Record<string, unknown>,
 }));
+const desktopColumnProps = vi.hoisted(() => ({
+  current: [] as Array<Record<string, unknown>>,
+}));
+const dragDropContextProps = vi.hoisted(() => ({
+  current: null as null | { onDragEnd?: (result: unknown) => void },
+}));
+const moveAnimation = vi.hoisted(() => ({
+  captureCardRects: vi.fn(),
+  playCardMoveAnimations: vi.fn(),
+  events: [] as string[],
+}));
 const router = vi.hoisted(() => ({
   refresh: vi.fn(),
   push: vi.fn(),
 }));
 const mocked = vi.hoisted(() => ({
   storeState: {
-    applyMove: vi.fn(() => []),
+    tasksByKey: {} as Record<string, KanbanTask>,
+    taskKeysById: {} as Record<string, string>,
+    columnTaskKeys: {
+      inbox: [] as string[],
+      todo: [] as string[],
+      hold: [] as string[],
+      ready: [] as string[],
+      done: [] as string[],
+      archived: [] as string[],
+    },
+    applyMove: vi.fn(
+      (_taskId: string, _status: KanbanTask['status'], _index: number): string[] => [],
+    ),
     applyOptimisticRunState: vi.fn(),
     hydrate: vi.fn(),
     removeTask: vi.fn(),
+    upsertSnapshots: vi.fn(),
     focusedTask: null as EditableBoardTask | null,
   },
 }));
@@ -38,7 +62,16 @@ vi.mock('react', async () => {
 });
 
 vi.mock('@hello-pangea/dnd', () => ({
-  DragDropContext: ({ children }: { children: React.ReactNode }) => children,
+  DragDropContext: ({
+    children,
+    onDragEnd,
+  }: {
+    children: React.ReactNode;
+    onDragEnd?: (result: unknown) => void;
+  }) => {
+    dragDropContextProps.current = { onDragEnd };
+    return children;
+  },
 }));
 
 vi.mock('@mantine/core', () => ({
@@ -103,7 +136,23 @@ vi.mock('@/app/components/kanban-board-mobile', () => ({
 }));
 
 vi.mock('@/app/components/kanban-column', () => ({
-  KanbanColumn: () => null,
+  KanbanColumn: (props: Record<string, unknown>) => {
+    desktopColumnProps.current.push(props);
+    return React.createElement('section', { 'data-column-status': props.status as string });
+  },
+}));
+
+vi.mock('@/app/components/use-kanban-card-move-animation', () => ({
+  useKanbanCardMoveAnimation: () => ({
+    captureCardRects: (container: HTMLElement | null) => {
+      moveAnimation.events.push('capture');
+      moveAnimation.captureCardRects(container);
+    },
+    playCardMoveAnimations: (container: HTMLElement | null) => {
+      moveAnimation.events.push('play');
+      moveAnimation.playCardMoveAnimations(container);
+    },
+  }),
 }));
 
 vi.mock('@/app/components/kanban-quick-add', () => ({
@@ -191,6 +240,27 @@ function buildColumns(taskKey = 'PROJ-1'): KanbanColumns {
   };
 }
 
+function seedStoreColumns(columns: KanbanColumns) {
+  mocked.storeState.tasksByKey = {};
+  mocked.storeState.taskKeysById = {};
+  mocked.storeState.columnTaskKeys = {
+    inbox: [],
+    todo: [],
+    hold: [],
+    ready: [],
+    done: [],
+    archived: [],
+  };
+
+  for (const status of Object.keys(columns) as Array<keyof KanbanColumns>) {
+    for (const task of columns[status]) {
+      mocked.storeState.tasksByKey[task.taskKey] = task;
+      mocked.storeState.taskKeysById[task.id] = task.taskKey;
+      mocked.storeState.columnTaskKeys[status].push(task.taskKey);
+    }
+  }
+}
+
 function buildFocusedTask(
   overrides: Partial<EditableBoardTask> & { taskKey: string; projectId: string | null },
 ): EditableBoardTask {
@@ -265,13 +335,22 @@ describe('app/components/kanban-board store hydration', () => {
     useTransitionMock.mockReset();
     useKanbanColumnsMock.mockReset();
     mobileBoardProps.current = null;
+    desktopColumnProps.current = [];
+    dragDropContextProps.current = null;
+    moveAnimation.captureCardRects.mockReset();
+    moveAnimation.playCardMoveAnimations.mockReset();
+    moveAnimation.events = [];
     router.refresh.mockReset();
     router.push.mockReset();
-    useKanbanColumnsMock.mockReturnValue(buildColumns());
+    const columns = buildColumns();
+    seedStoreColumns(columns);
+    useKanbanColumnsMock.mockReturnValue(columns);
     mocked.storeState.applyMove.mockReset();
+    mocked.storeState.applyMove.mockReturnValue([]);
     mocked.storeState.applyOptimisticRunState.mockReset();
     mocked.storeState.hydrate.mockReset();
     mocked.storeState.removeTask.mockReset();
+    mocked.storeState.upsertSnapshots.mockReset();
     mocked.storeState.focusedTask = null;
 
     useStateMock.mockImplementation((initialValue: unknown) => [
@@ -369,6 +448,113 @@ describe('app/components/kanban-board store hydration', () => {
     expect(startTransition).toHaveBeenCalledTimes(1);
     expect(router.refresh).toHaveBeenCalledTimes(1);
     expect(events).toEqual(['transition', 'refresh']);
+  });
+
+  it('captures and schedules card move animations for desktop quick moves', () => {
+    const task = makeTask({ id: 'task-1', taskKey: 'PROJ-1', status: 'todo' });
+    const columns = {
+      inbox: [],
+      todo: [task],
+      hold: [],
+      ready: [],
+      done: [],
+      archived: [],
+    } satisfies KanbanColumns;
+    seedStoreColumns(columns);
+    useKanbanColumnsMock.mockReturnValue(columns);
+    mocked.storeState.applyMove.mockImplementation((taskId, targetStatus) => {
+      moveAnimation.events.push('applyMove');
+      const taskKey = mocked.storeState.taskKeysById[taskId];
+      const movedTask = mocked.storeState.tasksByKey[taskKey];
+      if (!movedTask) {
+        return [];
+      }
+
+      mocked.storeState.columnTaskKeys = {
+        inbox: mocked.storeState.columnTaskKeys.inbox.filter((key) => key !== taskKey),
+        todo: mocked.storeState.columnTaskKeys.todo.filter((key) => key !== taskKey),
+        hold: mocked.storeState.columnTaskKeys.hold.filter((key) => key !== taskKey),
+        ready: [
+          ...mocked.storeState.columnTaskKeys.ready.filter((key) => key !== taskKey),
+          taskKey,
+        ],
+        done: mocked.storeState.columnTaskKeys.done.filter((key) => key !== taskKey),
+        archived: mocked.storeState.columnTaskKeys.archived.filter((key) => key !== taskKey),
+      };
+      mocked.storeState.tasksByKey = {
+        ...mocked.storeState.tasksByKey,
+        [taskKey]: { ...movedTask, status: targetStatus, sortOrder: 'z0' },
+      };
+      return [taskKey];
+    });
+    vi.stubGlobal('requestAnimationFrame', ((callback: FrameRequestCallback) => {
+      moveAnimation.events.push('requestAnimationFrame');
+      callback(0);
+      return 1;
+    }) as typeof requestAnimationFrame);
+
+    renderToStaticMarkup(
+      <KanbanBoard
+        serverColumns={columns}
+        editHrefBase="/board"
+        projectOptions={[]}
+        labelOptions={[]}
+        selectedProject={null}
+        enginePresets={null}
+      />,
+    );
+
+    const todoColumn = desktopColumnProps.current.find((props) => props.status === 'todo');
+    const onQuickMoveTask = todoColumn?.onQuickMoveTask;
+    if (typeof onQuickMoveTask !== 'function') {
+      throw new Error('Expected desktop column to receive quick move handler.');
+    }
+
+    onQuickMoveTask('task-1', 'ready');
+
+    expect(moveAnimation.captureCardRects).toHaveBeenCalledTimes(1);
+    expect(mocked.storeState.applyMove).toHaveBeenCalledWith('task-1', 'ready', 0);
+    expect(moveAnimation.playCardMoveAnimations).toHaveBeenCalledTimes(1);
+    expect(moveAnimation.events).toEqual(['capture', 'applyMove', 'requestAnimationFrame', 'play']);
+  });
+
+  it('does not use custom move animations for direct drag and drop', () => {
+    const task = makeTask({ id: 'task-1', taskKey: 'PROJ-1', status: 'todo' });
+    const columns = {
+      inbox: [],
+      todo: [task],
+      hold: [],
+      ready: [],
+      done: [],
+      archived: [],
+    } satisfies KanbanColumns;
+    seedStoreColumns(columns);
+    useKanbanColumnsMock.mockReturnValue(columns);
+    mocked.storeState.applyMove.mockImplementation(() => {
+      moveAnimation.events.push('applyMove');
+      return ['PROJ-1'];
+    });
+
+    renderToStaticMarkup(
+      <KanbanBoard
+        serverColumns={columns}
+        editHrefBase="/board"
+        projectOptions={[]}
+        labelOptions={[]}
+        selectedProject={null}
+        enginePresets={null}
+      />,
+    );
+
+    dragDropContextProps.current?.onDragEnd?.({
+      source: { droppableId: 'todo', index: 0 },
+      destination: { droppableId: 'ready', index: 0 },
+    });
+
+    expect(mocked.storeState.applyMove).toHaveBeenCalledWith('task-1', 'ready', 0);
+    expect(moveAnimation.captureCardRects).not.toHaveBeenCalled();
+    expect(moveAnimation.playCardMoveAnimations).not.toHaveBeenCalled();
+    expect(moveAnimation.events).toEqual(['applyMove']);
   });
 });
 
