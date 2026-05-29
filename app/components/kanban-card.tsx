@@ -176,6 +176,7 @@ export type KanbanCardContentProps = {
   isMobile?: boolean;
   editHref: string;
   telegramEnabled?: boolean;
+  hermesBotUsername?: string | null;
   onTaskQueued?: (
     taskKey: string,
     queuedAt: string,
@@ -253,9 +254,11 @@ export function renderTelegramDispatchTarget(dispatchTarget: KanbanTask['dispatc
 export function buildKanbanCardTelegramDispatch({
   task,
   displayEngine,
+  hermesBotUsername,
 }: {
   task: Pick<KanbanTask, 'taskKey' | 'status' | 'branch' | 'dispatchTarget'>;
   displayEngine: string | null;
+  hermesBotUsername?: string | null;
 }) {
   if (task.dispatchTarget === 'hermes-telegram') {
     return {
@@ -265,6 +268,7 @@ export function buildKanbanCardTelegramDispatch({
         status: task.status,
         engine: displayEngine,
         branchName: task.branch ?? null,
+        hermesBotUsername,
       }),
     };
   }
@@ -406,6 +410,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   isMobile = false,
   editHref,
   telegramEnabled = false,
+  hermesBotUsername,
   onTaskQueued,
   onQuickMoveTask,
   onDeleteTask,
@@ -462,7 +467,11 @@ export const KanbanCardContent = memo(function KanbanCardContent({
     </span>
   );
 
-  const telegramDispatch = buildKanbanCardTelegramDispatch({ task, displayEngine });
+  const telegramDispatch = buildKanbanCardTelegramDispatch({
+    task,
+    displayEngine,
+    hermesBotUsername,
+  });
   const telegramMessage = telegramDispatch.message;
   const telegramEngineConfig = getEngineConfig(displayEngine) ?? ENGINE_CONFIGS.codex;
   const telegramDispatchModeLabel = toDispatchModeLabel(task.status);

@@ -15,6 +15,7 @@ import { useActionState, useEffect, useState } from 'react';
 import { SettingStatusMessage } from '@/app/components/setting-status-message';
 import controlClasses from '@/app/components/settings-controls.module.css';
 import { SubmitButton } from '@/app/components/submit-button';
+import { formatHermesBotUsername } from '@/lib/hermes-command';
 
 import classes from './telegram-settings.module.css';
 
@@ -22,7 +23,7 @@ type SaveActionState =
   | { ok: true; message: string }
   | {
       ok: false;
-      field?: 'botToken' | 'openClawChatId' | 'hermesChatId' | 'form';
+      field?: 'botToken' | 'openClawChatId' | 'hermesChatId' | 'hermesBotUsername' | 'form';
       message: string;
     }
   | null;
@@ -33,6 +34,7 @@ type TelegramSettingsProps = {
   defaultOpenClawEnabled: boolean;
   defaultHermesChatId: string;
   defaultHermesEnabled: boolean;
+  defaultHermesBotUsername?: string;
   hasSavedBotToken: boolean;
 };
 
@@ -63,6 +65,7 @@ type ChannelConfig = {
     action: 'message' | 'status';
     label: string;
     message?: string;
+    normalizeCommand?: boolean;
   }>;
 };
 
@@ -92,7 +95,13 @@ const CHANNEL_CONFIGS: readonly ChannelConfig[] = [
     enableName: 'telegram_hermes_enabled',
     enableLabel: 'Enable Hermes Telegram messaging',
     errorField: 'hermesChatId',
-    testButtons: [{ action: 'message', label: 'Send Hermes Test' }],
+    testButtons: [
+      {
+        action: 'message',
+        label: 'Send Hermes Test',
+        normalizeCommand: false,
+      },
+    ],
   },
 ] as const;
 
@@ -162,6 +171,7 @@ export function TelegramSettings({
   defaultOpenClawEnabled,
   defaultHermesChatId,
   defaultHermesEnabled,
+  defaultHermesBotUsername,
   hasSavedBotToken,
 }: TelegramSettingsProps) {
   const [state, formAction] = useActionState(action, null);
@@ -170,6 +180,9 @@ export function TelegramSettings({
   const [openClawEnabled, setOpenClawEnabled] = useState(defaultOpenClawEnabled);
   const [hermesChatId, setHermesChatId] = useState(defaultHermesChatId);
   const [hermesEnabled, setHermesEnabled] = useState(defaultHermesEnabled);
+  const [hermesBotUsername, setHermesBotUsername] = useState(() =>
+    formatHermesBotUsername(defaultHermesBotUsername),
+  );
   const [activeChannel, setActiveChannel] = useState<TelegramChannel>(() =>
     resolveInitialChannel({
       openClawEnabled: defaultOpenClawEnabled,
@@ -183,6 +196,7 @@ export function TelegramSettings({
   const botTokenError = saveErrorField === 'botToken';
   const openClawChatIdError = saveErrorField === 'openClawChatId';
   const hermesChatIdError = saveErrorField === 'hermesChatId';
+  const hermesBotUsernameError = saveErrorField === 'hermesBotUsername';
   const fieldErrorMessage = state && !state.ok ? state.message : undefined;
   const saveStatus: { tone: 'success' | 'error'; message: string } | null = state
     ? { tone: state.ok ? 'success' : 'error', message: state.message }
@@ -198,6 +212,7 @@ export function TelegramSettings({
     setOpenClawEnabled(defaultOpenClawEnabled);
     setHermesChatId(defaultHermesChatId);
     setHermesEnabled(defaultHermesEnabled);
+    setHermesBotUsername(formatHermesBotUsername(defaultHermesBotUsername));
     setActiveChannel(
       resolveInitialChannel({
         openClawEnabled: defaultOpenClawEnabled,
@@ -206,8 +221,18 @@ export function TelegramSettings({
         hermesChatId: defaultHermesChatId,
       }),
     );
-  }, [defaultHermesChatId, defaultHermesEnabled, defaultOpenClawChatId, defaultOpenClawEnabled]);
-  async function handleTestMessage(channel: TelegramChannel, message?: string) {
+  }, [
+    defaultHermesBotUsername,
+    defaultHermesChatId,
+    defaultHermesEnabled,
+    defaultOpenClawChatId,
+    defaultOpenClawEnabled,
+  ]);
+  async function handleTestMessage(
+    channel: TelegramChannel,
+    message?: string,
+    normalizeCommand?: boolean,
+  ) {
     const trimmedBotToken = botToken.trim();
     const chatId = channel === 'openclaw' ? openClawChatId : hermesChatId;
     const validationError = getTelegramTestValidationError({
@@ -220,7 +245,22 @@ export function TelegramSettings({
       return;
     }
 
-    const action = message === '/status' ? 'status' : 'message';
+    const rawUsername = hermesBotUsername.trim();
+    if (
+      channel === 'hermes' &&
+      !message &&
+      rawUsername &&
+      !/^@?[A-Za-z0-9_]{5,32}$/.test(rawUsername)
+    ) {
+      setTestState({ status: 'error', message: 'Hermes Bot ID must use @botid format.' });
+      return;
+    }
+
+    const resolvedMessage =
+      channel === 'hermes' && !message
+        ? `/preqstation_dispatch${formatHermesBotUsername(hermesBotUsername)}`
+        : message;
+    const action = resolvedMessage === '/status' ? 'status' : 'message';
     setTestState({ status: 'loading', channel, action });
 
     try {
@@ -232,7 +272,8 @@ export function TelegramSettings({
         body: JSON.stringify({
           chatId: chatId.trim(),
           ...(trimmedBotToken ? { botToken: trimmedBotToken } : {}),
-          ...(message ? { message } : {}),
+          ...(resolvedMessage ? { message: resolvedMessage } : {}),
+          ...(typeof normalizeCommand === 'boolean' ? { normalizeCommand } : {}),
         }),
       });
       const body = (await response.json().catch(() => null)) as {
@@ -302,6 +343,15 @@ export function TelegramSettings({
           <Text size="sm" className={classes.channelHelp}>
             Choose a channel tab. Status describes setup, not which tab is selected.
           </Text>
+          <TextInput
+            name="telegram_hermes_bot_username"
+            label="Hermes Bot ID"
+            placeholder="@botid"
+            value={hermesBotUsername}
+            onChange={(event) => setHermesBotUsername(event.currentTarget.value)}
+            error={hermesBotUsernameError ? fieldErrorMessage : undefined}
+            className={`${controlClasses.fieldWide} ${controlClasses.touchInput}`}
+          />
           <div className={classes.channelTabs} role="tablist" aria-label="Telegram channels">
             {CHANNEL_CONFIGS.map((channel) => {
               const channelStateForTab = channelState[channel.key];
@@ -402,7 +452,13 @@ export function TelegramSettings({
                           key={button.label}
                           type="button"
                           variant="default"
-                          onClick={() => void handleTestMessage(channel.key, button.message)}
+                          onClick={() =>
+                            void handleTestMessage(
+                              channel.key,
+                              button.message,
+                              button.normalizeCommand,
+                            )
+                          }
                           loading={
                             testState.status === 'loading' &&
                             testState.channel === channel.key &&

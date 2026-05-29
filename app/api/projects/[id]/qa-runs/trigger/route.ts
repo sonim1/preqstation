@@ -21,7 +21,7 @@ import { buildProjectQaDispatchMessage } from '@/lib/task-telegram-client';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { decryptTelegramToken } from '@/lib/telegram-crypto';
 import { resolveTelegramDispatchConfig } from '@/lib/telegram-dispatch-settings';
-import { getUserSettings } from '@/lib/user-settings';
+import { getUserSettings, SETTING_KEYS } from '@/lib/user-settings';
 
 const triggerQaRunSchema = z
   .object({
@@ -131,6 +131,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         dispatchTarget,
         qaRunId: run.id,
         qaTaskKeys: run.taskKeys,
+        hermesBotUsername: settings[SETTING_KEYS.HERMES_TELEGRAM_BOT_USERNAME],
         model: qaModel,
       });
 

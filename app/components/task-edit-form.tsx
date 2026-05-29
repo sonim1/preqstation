@@ -101,6 +101,7 @@ export type TaskEditFormProps = {
   branchName?: string | null;
   telegramEnabled?: boolean;
   hermesTelegramEnabled?: boolean;
+  hermesBotUsername?: string | null;
   onTaskQueued?: (
     taskKey: string,
     queuedAt: string,
@@ -939,6 +940,7 @@ function TaskEditFormContent({
   branchName,
   telegramEnabled,
   hermesTelegramEnabled,
+  hermesBotUsername,
   onTaskQueued,
   onDispatchQueued,
   onTaskUpdated: _onTaskUpdated,
@@ -1374,6 +1376,7 @@ function TaskEditFormContent({
             dispatchTarget={editableTodo.dispatchTarget ?? null}
             telegramEnabled={telegramEnabled ?? false}
             hermesTelegramEnabled={hermesTelegramEnabled}
+            hermesBotUsername={hermesBotUsername}
             suppressShortcut={commentShortcutActive}
             onTaskQueued={handleDispatchQueued}
             onDispatchSelectionChange={handleDispatchSelectionChange}

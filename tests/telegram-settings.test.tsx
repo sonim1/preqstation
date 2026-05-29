@@ -171,6 +171,131 @@ describe('app/components/telegram-settings', () => {
     expect(html).toContain('Send Hermes Test');
   });
 
+  it('renders and submits the configured Hermes bot id', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MantineProvider>
+        <TelegramSettings
+          action={vi.fn(async () => null)}
+          defaultOpenClawChatId=""
+          defaultOpenClawEnabled={false}
+          defaultHermesChatId="5678"
+          defaultHermesEnabled
+          defaultHermesBotUsername="@custom_hermes_bot"
+          hasSavedBotToken
+        />
+      </MantineProvider>,
+    );
+
+    expect((screen.getByLabelText('Hermes Bot ID') as HTMLInputElement).value).toBe(
+      '@custom_hermes_bot',
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send Hermes Test' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/telegram/test',
+        expect.objectContaining({
+          body: JSON.stringify({
+            chatId: '5678',
+            message: '/preqstation_dispatch@custom_hermes_bot',
+            normalizeCommand: false,
+          }),
+        }),
+      );
+    });
+  });
+
+  it('shows the Hermes bot id input even when OpenClaw is the active tab', () => {
+    render(
+      <MantineProvider>
+        <TelegramSettings
+          action={vi.fn(async () => null)}
+          defaultOpenClawChatId="1234"
+          defaultOpenClawEnabled
+          defaultHermesChatId=""
+          defaultHermesEnabled={false}
+          hasSavedBotToken
+        />
+      </MantineProvider>,
+    );
+
+    expect((screen.getByLabelText('Hermes Bot ID') as HTMLInputElement).value).toBe('');
+  });
+
+  it('sends the Hermes test message without a bot id when none is configured', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MantineProvider>
+        <TelegramSettings
+          action={vi.fn(async () => null)}
+          defaultOpenClawChatId=""
+          defaultOpenClawEnabled={false}
+          defaultHermesChatId="5678"
+          defaultHermesEnabled
+          hasSavedBotToken
+        />
+      </MantineProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Send Hermes Test' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/telegram/test',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            chatId: '5678',
+            message: '/preqstation_dispatch',
+            normalizeCommand: false,
+          }),
+        }),
+      );
+    });
+  });
+
+  it('rejects malformed unsaved Hermes bot ids before sending a test message', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MantineProvider>
+        <TelegramSettings
+          action={vi.fn(async () => null)}
+          defaultOpenClawChatId=""
+          defaultOpenClawEnabled={false}
+          defaultHermesChatId="5678"
+          defaultHermesEnabled
+          hasSavedBotToken
+        />
+      </MantineProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText('Hermes Bot ID'), {
+      target: { value: '@@mybot' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Send Hermes Test' }));
+
+    expect(await screen.findByText('Hermes Bot ID must use @botid format.')).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('allows blank test-token input when a saved token already exists', () => {
     expect(
       getTelegramTestValidationError({

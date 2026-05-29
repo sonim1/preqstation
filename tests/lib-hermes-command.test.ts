@@ -18,7 +18,7 @@ describe('lib/hermes-command', () => {
       }),
     ).toBe(
       [
-        '/preqstation dispatch',
+        '/preqstation_dispatch',
         'project_key=PROJ',
         'task_key=PROJ-316',
         'objective=plan',
@@ -38,7 +38,7 @@ describe('lib/hermes-command', () => {
       }),
     ).toBe(
       [
-        '/preqstation dispatch',
+        '/preqstation_dispatch',
         'project_key=PROJ',
         'task_key=PROJ-316',
         'objective=implement',
@@ -46,6 +46,17 @@ describe('lib/hermes-command', () => {
         'model=gpt-5-codex',
       ].join(' '),
     );
+  });
+
+  it('uses the configured Hermes bot id in dispatch commands', () => {
+    expect(
+      buildHermesTaskCommand({
+        taskKey: 'PROJ-316',
+        status: 'todo',
+        engineKey: 'codex',
+        botUsername: '@custom_hermes_bot',
+      }),
+    ).toContain('/preqstation_dispatch@custom_hermes_bot');
   });
 
   it('includes ask_hint only for ask dispatches', () => {
@@ -99,7 +110,7 @@ describe('lib/hermes-command', () => {
         engineKey: 'codex',
         insightPrompt: 'Break down the Connections page redesign',
       }),
-    ).toContain('/preqstation dispatch');
+    ).toContain('/preqstation_dispatch');
     expect(
       buildHermesProjectInsightCommand({
         projectKey: 'proj',
@@ -137,7 +148,7 @@ describe('lib/hermes-command', () => {
       }),
     ).toBe(
       [
-        '/preqstation dispatch',
+        '/preqstation_dispatch',
         'project_key=PROJ',
         'objective=qa',
         'engine=claude-code',

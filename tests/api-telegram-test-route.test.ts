@@ -205,6 +205,26 @@ describe('app/api/telegram/test/route', () => {
     });
   });
 
+  it('can send a custom test message without command normalization', async () => {
+    const response = await POST(
+      postRequest({
+        botToken: '123:abc',
+        chatId: '1234',
+        message: '/preqstation_dispatch',
+        normalizeCommand: false,
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true });
+
+    const [, options] = mocked.fetch.mock.calls[0] as [string, RequestInit];
+    expect(JSON.parse(String(options.body))).toEqual({
+      chat_id: '1234',
+      text: '/preqstation_dispatch',
+    });
+  });
+
   it('maps telegram failure to 400 response', async () => {
     mocked.fetch.mockResolvedValueOnce(
       new Response(JSON.stringify({ ok: false, description: 'bad token' }), {

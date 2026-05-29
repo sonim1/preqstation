@@ -128,6 +128,8 @@ split by dispatch target:
   OpenClaw `/status`, and any QA or project insight sends that target `telegram`
 - **Hermes Chat ID** + **Enable Hermes Telegram messaging**: used for Hermes-targeted task sends
   plus any QA or project insight sends that target `hermes-telegram`
+- **Hermes Bot ID**: optional `@botid` value for group chats where the Hermes bot must be
+  addressed directly
 
 Operational notes:
 
@@ -135,6 +137,8 @@ Operational notes:
   project insight actions continue to work.
 - If you enable Hermes, task sends plus QA and project insight actions that target
   `hermes-telegram` use the Hermes chat instead of the OpenClaw chat.
+- If you set a Hermes Bot ID, Hermes task, QA, project insight, and test commands use
+  `/preqstation_dispatch@botid`. Leave it blank to send `/preqstation_dispatch`.
 - QA runs and project insight actions dispatch only through the enabled Telegram targets shown in
   their modals; there is no in-app `Channels` fallback for those flows.
 - Older installs can still fall back to the legacy single-channel settings
@@ -144,6 +148,8 @@ Validation rules:
 
 - Saving settings fails if OpenClaw is enabled without an OpenClaw Chat ID, Hermes is enabled
   without a Hermes Chat ID, or either channel is enabled without a Bot Token.
+- Hermes Bot ID is optional, but when present it must use `@botid` format with letters, numbers, or
+  underscores.
 - The test buttons require the selected channel Chat ID plus either a newly entered Bot Token or a
   previously saved Bot Token.
 - The project insight modal can expose `🦞 Telegram` and/or `H Telegram`, depending on which
