@@ -48,7 +48,7 @@ describe('lib/hermes-command', () => {
     );
   });
 
-  it('uses the configured Hermes bot id in dispatch commands', () => {
+  it('addresses the configured Hermes bot in the dispatch command mention', () => {
     expect(
       buildHermesTaskCommand({
         taskKey: 'PROJ-316',
@@ -56,7 +56,15 @@ describe('lib/hermes-command', () => {
         engineKey: 'codex',
         botUsername: '@custom_hermes_bot',
       }),
-    ).toContain('/preqstation_dispatch@custom_hermes_bot');
+    ).toBe(
+      [
+        '/preqstation_dispatch@custom_hermes_bot',
+        'project_key=PROJ',
+        'task_key=PROJ-316',
+        'objective=implement',
+        'engine=codex',
+      ].join(' '),
+    );
   });
 
   it('includes ask_hint only for ask dispatches', () => {
