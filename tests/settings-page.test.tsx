@@ -12,6 +12,9 @@ const mocked = vi.hoisted(() => ({
   setUserSetting: vi.fn(),
   writeAuditLog: vi.fn(),
   encryptTelegramToken: vi.fn(),
+  telegramSettingsAction: null as
+    | null
+    | ((prevState: unknown, formData: FormData) => Promise<unknown>),
 }));
 
 vi.mock('next/cache', () => ({
@@ -46,9 +49,16 @@ vi.mock('@/app/components/panels.module.css', () => ({
 }));
 
 vi.mock('@/app/components/telegram-settings', () => ({
-  TelegramSettings: ({ defaultHermesBotUsername }: { defaultHermesBotUsername?: string }) => (
-    <div data-slot="telegram-settings">{defaultHermesBotUsername}</div>
-  ),
+  TelegramSettings: ({
+    action,
+    defaultHermesBotUsername,
+  }: {
+    action: (prevState: unknown, formData: FormData) => Promise<unknown>;
+    defaultHermesBotUsername?: string;
+  }) => {
+    mocked.telegramSettingsAction = action;
+    return <div data-slot="telegram-settings">{defaultHermesBotUsername}</div>;
+  },
 }));
 
 vi.mock('@/app/components/timezone-settings', () => ({
@@ -141,6 +151,11 @@ describe('app/(workspace)/(main)/settings/page', () => {
       email: 'owner@example.com',
       twoFactorEnabled: false,
     });
+    mocked.requireOwnerUser.mockResolvedValue({
+      id: 'owner-1',
+      email: 'owner@example.com',
+      twoFactorEnabled: false,
+    });
     mocked.getUserSettings.mockResolvedValue({
       kitchen_mode: 'false',
       telegram_bot_token: '',
@@ -154,6 +169,7 @@ describe('app/(workspace)/(main)/settings/page', () => {
       timezone: 'America/Toronto',
       agent_model_catalog: '',
     });
+    mocked.telegramSettingsAction = null;
   });
 
   it('does not render the removed labels section in workspace settings', async () => {
@@ -221,6 +237,24 @@ describe('app/(workspace)/(main)/settings/page', () => {
     expect(html).toContain('data-slot="telegram-settings"');
     expect(html).toContain('@custom_hermes_bot');
   });
+
+  it.each(['@abcd', `@${'a'.repeat(33)}`])(
+    'rejects Hermes bot ids outside Telegram username length: %s',
+    async (botUsername) => {
+      await renderSettingsPage();
+      const formData = new FormData();
+      formData.set('telegram_hermes_bot_username', botUsername);
+
+      const result = await mocked.telegramSettingsAction?.(null, formData);
+
+      expect(result).toEqual({
+        ok: false,
+        field: 'hermesBotUsername',
+        message: 'Hermes Bot ID must use @botid format.',
+      });
+      expect(mocked.setUserSetting).not.toHaveBeenCalled();
+    },
+  );
 
   it('keeps the settings hero focused on settings content without a connections shortcut', async () => {
     const html = await renderSettingsPage();

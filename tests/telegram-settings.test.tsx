@@ -267,6 +267,35 @@ describe('app/components/telegram-settings', () => {
     });
   });
 
+  it('rejects malformed unsaved Hermes bot ids before sending a test message', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MantineProvider>
+        <TelegramSettings
+          action={vi.fn(async () => null)}
+          defaultOpenClawChatId=""
+          defaultOpenClawEnabled={false}
+          defaultHermesChatId="5678"
+          defaultHermesEnabled
+          hasSavedBotToken
+        />
+      </MantineProvider>,
+    );
+
+    fireEvent.change(screen.getByLabelText('Hermes Bot ID'), {
+      target: { value: '@@mybot' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Send Hermes Test' }));
+
+    expect(await screen.findByText('Hermes Bot ID must use @botid format.')).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it('allows blank test-token input when a saved token already exists', () => {
     expect(
       getTelegramTestValidationError({

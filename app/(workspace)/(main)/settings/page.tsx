@@ -83,7 +83,7 @@ export default async function SettingsPage() {
         };
       }
 
-      if (hermesBotUsername && !/^@[A-Za-z0-9_]{3,}$/.test(hermesBotUsername)) {
+      if (hermesBotUsername && !/^@[A-Za-z0-9_]{5,32}$/.test(hermesBotUsername)) {
         return {
           ok: false as const,
           field: 'hermesBotUsername' as const,

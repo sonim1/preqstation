@@ -245,6 +245,17 @@ export function TelegramSettings({
       return;
     }
 
+    const rawUsername = hermesBotUsername.trim();
+    if (
+      channel === 'hermes' &&
+      !message &&
+      rawUsername &&
+      !/^@?[A-Za-z0-9_]{5,32}$/.test(rawUsername)
+    ) {
+      setTestState({ status: 'error', message: 'Hermes Bot ID must use @botid format.' });
+      return;
+    }
+
     const resolvedMessage =
       channel === 'hermes' && !message
         ? `/preqstation_dispatch${formatHermesBotUsername(hermesBotUsername)}`
