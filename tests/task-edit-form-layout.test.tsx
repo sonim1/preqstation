@@ -3,6 +3,8 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
+import taskEditFormClasses from '@/app/components/task-edit-form.module.css';
+
 const useAutoSaveMock = vi.hoisted(() => vi.fn());
 
 vi.mock('next/navigation', () => ({
@@ -138,7 +140,20 @@ describe('app/components/task-edit-form layout', () => {
     expect(html).not.toContain('data-panel="task-edit-dispatch"');
     expect(html).toContain('data-panel="task-edit-metadata"');
     expect(html).toContain('data-panel="task-edit-notes-primary"');
+    expect(html).toContain('data-panel="task-edit-comments"');
     expect(html).toContain('data-panel="task-edit-activity"');
+    expect(html).toContain(
+      `class="${taskEditFormClasses.metadataSection} ${taskEditFormClasses.sectionSurface}"`,
+    );
+    expect(html).toContain(
+      `class="${taskEditFormClasses.notesCard} ${taskEditFormClasses.mainSectionSurface}"`,
+    );
+    expect(html).toContain(
+      `class="${taskEditFormClasses.activityCard} ${taskEditFormClasses.mainSectionSurface}"`,
+    );
+    expect(html).not.toContain(
+      `class="${taskEditFormClasses.notesCard} ${taskEditFormClasses.sectionSurface}"`,
+    );
     expect(html).not.toContain('Overview');
     expect(html).not.toContain('aria-label="Overview help"');
     expect(html).not.toContain('data-panel="task-edit-overview"');
@@ -158,6 +173,9 @@ describe('app/components/task-edit-form layout', () => {
     );
     expect(html.indexOf('Notes')).toBeLessThan(html.indexOf('Activity'));
     expect(html.indexOf('data-panel="task-edit-notes-primary"')).toBeLessThan(
+      html.indexOf('data-panel="task-edit-comments"'),
+    );
+    expect(html.indexOf('data-panel="task-edit-comments"')).toBeLessThan(
       html.indexOf('data-panel="task-edit-activity"'),
     );
     expect(html).not.toContain('data-slot="auto-save-indicator"');

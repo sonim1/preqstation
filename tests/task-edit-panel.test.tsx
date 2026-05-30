@@ -6,6 +6,8 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import taskEditFormClasses from '@/app/components/task-edit-form.module.css';
+
 const routerReplaceMock = vi.hoisted(() => vi.fn());
 const taskEditFormPropsMock = vi.hoisted(() => vi.fn());
 const taskEditFormControllerMock = vi.hoisted(() => vi.fn());
@@ -159,6 +161,11 @@ describe('app/components/task-edit-panel', () => {
     const shell = document.querySelector('[data-layout="task-edit-shell"]');
     const mainColumn = document.querySelector('[data-panel="task-edit-main-column"]');
     const sidebar = document.querySelector('[data-panel="task-edit-sidebar"]');
+    const notesPanel = document.querySelector('[data-panel="task-edit-notes-primary"]');
+    const commentsPanel = document.querySelector('[data-panel="task-edit-comments"]');
+    const activityPanel = document.querySelector('[data-panel="task-edit-activity"]');
+    const dispatchPanel = document.querySelector('[data-panel="task-edit-dispatch"]');
+    const metadataPanel = document.querySelector('[data-panel="task-edit-metadata"]');
 
     expect(shell).not.toBeNull();
     expect(mainColumn).not.toBeNull();
@@ -190,16 +197,25 @@ describe('app/components/task-edit-panel', () => {
     expect(document.querySelector('[data-panel="task-edit-settings-card"]')).not.toBeNull();
 
     const allPanels = Array.from(document.querySelectorAll('[data-panel]'));
-    const activityPanel = document.querySelector('[data-panel="task-edit-activity"]');
-    const dispatchPanel = document.querySelector('[data-panel="task-edit-dispatch"]');
 
+    expect(notesPanel).not.toBeNull();
+    expect(commentsPanel).not.toBeNull();
     expect(activityPanel).not.toBeNull();
     expect(dispatchPanel).not.toBeNull();
+    expect(metadataPanel).not.toBeNull();
 
-    if (!activityPanel || !dispatchPanel) {
-      throw new Error('Expected activity and dispatch panels to render.');
+    if (!notesPanel || !commentsPanel || !activityPanel || !dispatchPanel || !metadataPanel) {
+      throw new Error('Expected task edit skeleton content panels to render.');
     }
 
+    expect(notesPanel.classList).toContain(taskEditFormClasses.mainSectionSurface);
+    expect(commentsPanel.classList).toContain(taskEditFormClasses.mainSectionSurface);
+    expect(activityPanel.classList).toContain(taskEditFormClasses.mainSectionSurface);
+    expect(notesPanel.classList).not.toContain(taskEditFormClasses.sectionSurface);
+    expect(commentsPanel.classList).not.toContain(taskEditFormClasses.sectionSurface);
+    expect(activityPanel.classList).not.toContain(taskEditFormClasses.sectionSurface);
+    expect(dispatchPanel.classList).toContain(taskEditFormClasses.sectionSurface);
+    expect(metadataPanel.classList).toContain(taskEditFormClasses.sectionSurface);
     expect(allPanels.indexOf(activityPanel)).toBeLessThan(allPanels.indexOf(dispatchPanel));
   });
 

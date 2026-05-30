@@ -176,12 +176,43 @@ describe('task edit reading surface CSS', () => {
     expect([...new Set(referencedTokens)].filter((token) => !definedTokens.has(token))).toEqual([]);
   });
 
-  it('puts the task edit panel sections on the shared tokenized surface', () => {
+  it('keeps framed metadata and dispatch sections on the shared tokenized surface', () => {
     const sectionSurfaceRule = getRuleBody(taskEditFormCss, '.sectionSurface');
 
+    expect(sectionSurfaceRule).toContain('padding: clamp(0.875rem, 1.4vw, 1rem);');
     expect(sectionSurfaceRule).toContain('border: 1px solid var(--ui-border);');
     expect(sectionSurfaceRule).toContain('border-radius: 8px;');
     expectTokenBackground(sectionSurfaceRule, '--ui-surface');
+    expect(sectionSurfaceRule).toContain('box-shadow: var(--ui-elevation-1);');
+  });
+
+  it('keeps main task edit sections unframed around their inner reading surfaces', () => {
+    const dom = new JSDOM(`
+      <html>
+        <head><style>${taskEditFormCss}</style></head>
+        <body>
+          <section class="sectionSurface mainSectionSurface" data-testid="main-section"></section>
+        </body>
+      </html>
+    `);
+    const mainSection = dom.window.document.querySelector<HTMLElement>(
+      '[data-testid="main-section"]',
+    );
+
+    expect(mainSection).toBeTruthy();
+
+    const style = dom.window.getComputedStyle(mainSection!);
+
+    expect(style.minWidth).toBe('0px');
+    expect(style.paddingTop).toBe('0px');
+    expect(style.paddingRight).toBe('0px');
+    expect(style.paddingBottom).toBe('0px');
+    expect(style.paddingLeft).toBe('0px');
+    expect(style.borderTopWidth).toBe('0px');
+    expect(style.borderTopStyle).toBe('none');
+    expect(style.borderTopLeftRadius).toBe('0');
+    expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(style.boxShadow).toBe('none');
   });
 
   it('uses semantic tokens for editor and markdown text accents', () => {
