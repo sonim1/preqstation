@@ -422,11 +422,38 @@ describe('app/components/kanban-card', () => {
   });
 
   it('keeps the ambient board layer inside the stage bounds', () => {
-    const stageAfterRule = getCssRuleBody(globalsCss, '.kanban-stage::after');
+    const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
+      `
+        <section class="kanban-stage" data-testid="stage">
+          <div data-testid="stage-ambient"></div>
+        </section>
+      `,
+      true,
+    );
+    const stageAfterRule = Array.from(document.styleSheets)
+      .flatMap((styleSheet) => Array.from(styleSheet.cssRules))
+      .find(
+        (rule): rule is CSSStyleRule =>
+          'selectorText' in rule && rule.selectorText === '.kanban-stage::after' && 'style' in rule,
+      );
+    const ambientRuleMirror = document.createElement('style');
 
-    expect(stageAfterRule).toMatch(/inset:\s*0;/);
-    expect(stageAfterRule).not.toMatch(/inset:\s*-/);
-    expect(stageAfterRule).not.toMatch(/transform:/);
+    expect(stageAfterRule).toBeDefined();
+    ambientRuleMirror.textContent = `[data-testid="stage-ambient"] { ${stageAfterRule!.style.cssText} }`;
+    document.head.append(ambientRuleMirror);
+
+    try {
+      const ambientStyle = window.getComputedStyle(
+        getRequiredFixtureElement(fixture, 'stage-ambient'),
+      );
+
+      expect(ambientStyle.position).toBe('absolute');
+      expect(ambientStyle.inset).toBe('0px');
+      expect(ambientStyle.transform).toBe('none');
+    } finally {
+      ambientRuleMirror.remove();
+      cleanupFixture();
+    }
   });
 
   it('keeps the dark kanban card surface opaque while softening the repeated outline', () => {
