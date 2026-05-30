@@ -435,7 +435,7 @@ export function WorkspaceShell({
                     className="workspace-avatar-trigger"
                     aria-label="Open account menu"
                   >
-                    <Avatar color="blue" radius="xl" size={44}>
+                    <Avatar color="blue" radius="xl" size={32}>
                       {initialFromEmail(email)}
                     </Avatar>
                   </UnstyledButton>

@@ -1065,7 +1065,10 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px;
+  width: var(--ui-hit-touch-min);
+  min-width: var(--ui-hit-touch-min);
+  height: var(--ui-hit-touch-min);
+  padding: 0;
   border-radius: 999px;
   border: 1px solid var(--ui-workspace-control-border);
   background: var(--ui-workspace-control-surface);

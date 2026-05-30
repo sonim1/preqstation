@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { MantineProvider } from '@mantine/core';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
@@ -50,6 +53,11 @@ import {
   TaskNotificationCenter,
 } from '@/app/components/task-notification-center';
 import { useTaskNotificationStore } from '@/app/components/task-notification-store';
+
+const taskNotificationCenterSource = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/task-notification-center.tsx'),
+  'utf8',
+);
 
 function makeNotification(
   overrides: Partial<{
@@ -149,6 +157,13 @@ describe('app/components/task-notification-center', () => {
       </MantineProvider>,
     );
   }
+
+  it('keeps the navbar notification trigger on the shared 44px control contract', () => {
+    expect(taskNotificationCenterSource).toMatch(
+      /<ActionIcon[\s\S]*size=\{44\}[\s\S]*className="workspace-notification-trigger"/,
+    );
+    expect(taskNotificationCenterSource).toMatch(/<IconBell size=\{20\} \/>/);
+  });
 
   it('uses the unread total from the API instead of the loaded page length', async () => {
     fetchMock.mockResolvedValueOnce({
