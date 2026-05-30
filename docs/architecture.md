@@ -357,7 +357,7 @@ Projects can also store an `agent_instructions` setting. When present, task payl
 - OpenClaw-targeted task, QA, and insight sends use the `!/preqstation dispatch ...`
   command format
 - Hermes-targeted task, QA, and insight sends use `/preqstation_dispatch`, with the optional
-  configured Hermes bot mention attached as `/preqstation_dispatch@<botid>`
+  configured Hermes bot mention prepended as `@<botid> /preqstation_dispatch`
 - `/api/telegram/send/insight` defaults to the OpenClaw channel and can target Hermes when
   `dispatchTarget=hermes-telegram`
 - `POST /api/projects/:id/qa-runs/trigger` requires a non-empty `taskKeys` array. It accepts

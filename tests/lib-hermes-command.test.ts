@@ -19,12 +19,14 @@ describe('lib/hermes-command', () => {
     ).toBe(
       [
         '/preqstation_dispatch',
-        'project_key=PROJ',
-        'task_key=PROJ-316',
-        'objective=plan',
-        'engine=codex',
-        'branch_name=task/proj-316/dashboard-choejongbeojeoneulo-hwagjang',
-      ].join(' '),
+        [
+          'project_key=PROJ',
+          'task_key=PROJ-316',
+          'objective=plan',
+          'engine=codex',
+          'branch_name=task/proj-316/dashboard-choejongbeojeoneulo-hwagjang',
+        ].join(' '),
+      ].join('\n'),
     );
   });
 
@@ -39,16 +41,18 @@ describe('lib/hermes-command', () => {
     ).toBe(
       [
         '/preqstation_dispatch',
-        'project_key=PROJ',
-        'task_key=PROJ-316',
-        'objective=implement',
-        'engine=codex',
-        'model=gpt-5-codex',
-      ].join(' '),
+        [
+          'project_key=PROJ',
+          'task_key=PROJ-316',
+          'objective=implement',
+          'engine=codex',
+          'model=gpt-5-codex',
+        ].join(' '),
+      ].join('\n'),
     );
   });
 
-  it('addresses the configured Hermes bot in the dispatch command mention', () => {
+  it('addresses the configured Hermes bot before the dispatch command', () => {
     expect(
       buildHermesTaskCommand({
         taskKey: 'PROJ-316',
@@ -58,12 +62,9 @@ describe('lib/hermes-command', () => {
       }),
     ).toBe(
       [
-        '/preqstation_dispatch@custom_hermes_bot',
-        'project_key=PROJ',
-        'task_key=PROJ-316',
-        'objective=implement',
-        'engine=codex',
-      ].join(' '),
+        '@custom_hermes_bot /preqstation_dispatch',
+        'project_key=PROJ task_key=PROJ-316 objective=implement engine=codex',
+      ].join('\n'),
     );
   });
 
@@ -157,13 +158,15 @@ describe('lib/hermes-command', () => {
     ).toBe(
       [
         '/preqstation_dispatch',
-        'project_key=PROJ',
-        'objective=qa',
-        'engine=claude-code',
-        'branch_name=main',
-        'qa_run_id=run-123',
-        'qa_task_keys=PROJ-1,PROJ-2',
-      ].join(' '),
+        [
+          'project_key=PROJ',
+          'objective=qa',
+          'engine=claude-code',
+          'branch_name=main',
+          'qa_run_id=run-123',
+          'qa_task_keys=PROJ-1,PROJ-2',
+        ].join(' '),
+      ].join('\n'),
     );
   });
 

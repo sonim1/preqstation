@@ -25,6 +25,7 @@ const TASK_PANEL_RESIZE_VIEWPORT_GUTTER = 48;
 const TASK_PANEL_RESIZE_DEFAULT_SIZE = { width: 1280, height: 720 };
 const TASK_PANEL_RESIZE_FALLBACK_VIEWPORT = { width: 1440, height: 900 };
 const TASK_PANEL_RESIZE_BOUNDARY_SELECTOR = '.workspace-main';
+const TASK_PANEL_DRAG_START_THRESHOLD = 3;
 const TASK_PANEL_RESIZE_ENABLE: Enable = {
   top: true,
   right: true,
@@ -57,6 +58,8 @@ type TaskPanelOffset = {
   x: number;
   y: number;
 };
+
+type TaskPanelOffsetSource = 'resize' | 'drag';
 
 type TaskPanelViewport = {
   width: number;
@@ -202,6 +205,31 @@ export function clampTaskPanelResizeOffset(
   };
 }
 
+export function clampTaskPanelDragOffset(
+  offset: TaskPanelOffset,
+  size: TaskPanelSize,
+  viewport: TaskPanelViewport,
+): TaskPanelOffset {
+  const maxOffsetX = Math.max(0, (viewport.width - size.width) / 2);
+  const maxOffsetY = Math.max(0, (viewport.height - size.height) / 2);
+
+  return {
+    x: Math.min(Math.max(offset.x, -maxOffsetX), maxOffsetX),
+    y: Math.min(Math.max(offset.y, -maxOffsetY), maxOffsetY),
+  };
+}
+
+function clampTaskPanelOffset(
+  offset: TaskPanelOffset,
+  size: TaskPanelSize,
+  viewport: TaskPanelViewport,
+  source: TaskPanelOffsetSource,
+): TaskPanelOffset {
+  return source === 'drag'
+    ? clampTaskPanelDragOffset(offset, size, viewport)
+    : clampTaskPanelResizeOffset(offset, size, viewport);
+}
+
 export function calculateTaskPanelResizeOffset(
   baseOffset: TaskPanelOffset,
   direction: ResizeDirection,
@@ -322,6 +350,7 @@ export function TaskPanelModal({
   const searchParams = useSearchParams();
   const isMobile = useMediaQuery('(max-width: 48em)');
   const [isClosing, setIsClosing] = useState(false);
+  const [isPanelDragging, setIsPanelDragging] = useState(false);
   const [optimisticDesktopFullScreen, setOptimisticDesktopFullScreen] = useState<{
     fromHref: string;
     value: boolean;
@@ -354,7 +383,9 @@ export function TaskPanelModal({
     : `Enter full screen for ${title} dialog`;
   const completeClose = onClose ?? (() => router.replace(closeHref));
   const isResizeEnabled = Boolean(resizableStorageKey) && isMobile === false && !modalFullScreen;
+  const isDragEnabled = isResizeEnabled;
   const [viewport, setViewport] = useState<TaskPanelViewport>(TASK_PANEL_RESIZE_FALLBACK_VIEWPORT);
+  const viewportRef = useRef(viewport);
   const resizeBounds = {
     minWidth: TASK_PANEL_RESIZE_MIN_WIDTH,
     minHeight: TASK_PANEL_RESIZE_MIN_HEIGHT,
@@ -371,17 +402,52 @@ export function TaskPanelModal({
     clampTaskPanelSize(TASK_PANEL_RESIZE_DEFAULT_SIZE, TASK_PANEL_RESIZE_FALLBACK_VIEWPORT),
   );
   const [resizeOffset, setResizeOffset] = useState<TaskPanelOffset>({ x: 0, y: 0 });
+  const [offsetSource, setOffsetSource] = useState<TaskPanelOffsetSource>('resize');
   const resizeStartOffsetRef = useRef<TaskPanelOffset>({ x: 0, y: 0 });
+  const resizeStartOffsetSourceRef = useRef<TaskPanelOffsetSource>('resize');
+  const dragStartPointerRef = useRef<TaskPanelOffset | null>(null);
+  const dragStartOffsetRef = useRef<TaskPanelOffset>({ x: 0, y: 0 });
+  const dragPointerIdRef = useRef<number | null>(null);
+  const dragCaptureTargetRef = useRef<HTMLElement | null>(null);
+  const hasActiveDragRef = useRef(false);
+  const finishDragRef = useRef<(() => void) | null>(null);
   const clampedResizableSize = clampTaskPanelSize(resizableSize, viewport);
   const clampedResizeOffset = clampTaskPanelResizeOffset(
     resizeOffset,
     clampedResizableSize,
     viewport,
   );
+  const clampedDragOffset = clampTaskPanelDragOffset(resizeOffset, clampedResizableSize, viewport);
+  const activePanelOffset = offsetSource === 'drag' ? clampedDragOffset : clampedResizeOffset;
+
+  useIsomorphicLayoutEffect(() => {
+    viewportRef.current = viewport;
+  }, [viewport]);
+
+  function releasePanelDragPointerCapture() {
+    const captureTarget = dragCaptureTargetRef.current;
+    const pointerId = dragPointerIdRef.current;
+    dragCaptureTargetRef.current = null;
+
+    if (
+      captureTarget &&
+      pointerId !== null &&
+      typeof captureTarget.releasePointerCapture === 'function'
+    ) {
+      try {
+        captureTarget.releasePointerCapture(pointerId);
+      } catch {
+        // Pointer capture may already be released by the browser.
+      }
+    }
+  }
 
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
+      finishDragRef.current?.();
+      finishDragRef.current = null;
+      releasePanelDragPointerCapture();
     };
   }, []);
 
@@ -415,9 +481,18 @@ export function TaskPanelModal({
     if (!isResizeEnabled) {
       let isActive = true;
 
+      finishDragRef.current?.();
+      finishDragRef.current = null;
+      releasePanelDragPointerCapture();
+      dragStartPointerRef.current = null;
+      dragPointerIdRef.current = null;
+      hasActiveDragRef.current = false;
       resizeStartOffsetRef.current = { x: 0, y: 0 };
+      resizeStartOffsetSourceRef.current = 'resize';
       queueMicrotask(() => {
         if (isActive) {
+          setOffsetSource('resize');
+          setIsPanelDragging(false);
           setResizeOffset({ x: 0, y: 0 });
         }
       });
@@ -469,15 +544,111 @@ export function TaskPanelModal({
       { width: ref.offsetWidth, height: ref.offsetHeight },
       currentViewport,
     );
-    const nextOffset = clampTaskPanelResizeOffset(
+    const nextOffsetSource = resizeStartOffsetSourceRef.current;
+    const nextOffset = clampTaskPanelOffset(
       calculateTaskPanelResizeOffset(resizeStartOffsetRef.current, direction, delta),
       nextSize,
       currentViewport,
+      nextOffsetSource,
     );
 
+    setOffsetSource(nextOffsetSource);
     setResizeOffset(nextOffset);
     setResizableSize(nextSize);
     writeTaskPanelStoredSize(resizableStorageKey, window.localStorage, nextSize);
+  }
+
+  function removePanelDragListeners() {
+    finishDragRef.current?.();
+    finishDragRef.current = null;
+  }
+
+  function finishPanelDrag() {
+    removePanelDragListeners();
+    releasePanelDragPointerCapture();
+    dragStartPointerRef.current = null;
+    dragPointerIdRef.current = null;
+    hasActiveDragRef.current = false;
+    if (isMountedRef.current) {
+      setIsPanelDragging(false);
+    }
+  }
+
+  function handleHeaderPointerDown(event: React.PointerEvent<HTMLElement>) {
+    if (
+      !isDragEnabled ||
+      event.button !== 0 ||
+      isTaskPanelHeaderInteractiveTarget(event.target) ||
+      typeof window === 'undefined'
+    ) {
+      return;
+    }
+
+    finishPanelDrag();
+    dragStartPointerRef.current = { x: event.clientX, y: event.clientY };
+    dragStartOffsetRef.current = activePanelOffset;
+    dragPointerIdRef.current = event.pointerId;
+    dragCaptureTargetRef.current = event.currentTarget;
+
+    try {
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+    } catch {
+      dragCaptureTargetRef.current = null;
+    }
+
+    const handlePointerMove = (pointerEvent: PointerEvent) => {
+      if (dragPointerIdRef.current !== pointerEvent.pointerId) {
+        return;
+      }
+
+      const startPointer = dragStartPointerRef.current;
+
+      if (!startPointer) {
+        return;
+      }
+
+      const deltaX = pointerEvent.clientX - startPointer.x;
+      const deltaY = pointerEvent.clientY - startPointer.y;
+
+      if (
+        !hasActiveDragRef.current &&
+        Math.hypot(deltaX, deltaY) < TASK_PANEL_DRAG_START_THRESHOLD
+      ) {
+        return;
+      }
+
+      hasActiveDragRef.current = true;
+      pointerEvent.preventDefault();
+      setOffsetSource('drag');
+      setIsPanelDragging(true);
+      setResizeOffset(
+        clampTaskPanelDragOffset(
+          {
+            x: dragStartOffsetRef.current.x + deltaX,
+            y: dragStartOffsetRef.current.y + deltaY,
+          },
+          clampedResizableSize,
+          viewportRef.current,
+        ),
+      );
+    };
+
+    const handlePointerEnd = (pointerEvent: PointerEvent) => {
+      if (dragPointerIdRef.current !== pointerEvent.pointerId) {
+        return;
+      }
+
+      finishPanelDrag();
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerEnd);
+    window.addEventListener('pointercancel', handlePointerEnd);
+    finishDragRef.current = () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerEnd);
+      window.removeEventListener('pointercancel', handlePointerEnd);
+    };
   }
 
   function setDesktopFullScreen(nextDesktopFullScreen: boolean) {
@@ -546,7 +717,10 @@ export function TaskPanelModal({
       <Modal.Header
         className={classes.header}
         data-testid="task-panel-modal-header"
+        data-draggable={isDragEnabled ? 'true' : undefined}
+        data-dragging={isPanelDragging ? 'true' : undefined}
         onDoubleClick={handleHeaderDoubleClick}
+        onPointerDown={handleHeaderPointerDown}
       >
         <Modal.Title className={classes.title}>{titleNode}</Modal.Title>
         <Modal.CloseButton
@@ -601,25 +775,29 @@ export function TaskPanelModal({
           maxHeight={resizeBounds.maxHeight}
           size={clampedResizableSize}
           style={{
-            left: clampedResizeOffset.x,
-            top: clampedResizeOffset.y,
+            left: activePanelOffset.x,
+            top: activePanelOffset.y,
           }}
           onResizeStart={(_event, _direction) => {
-            resizeStartOffsetRef.current = clampedResizeOffset;
+            resizeStartOffsetRef.current = activePanelOffset;
+            resizeStartOffsetSourceRef.current = offsetSource;
           }}
           onResize={(_event, direction, ref, delta) => {
             const nextSize = clampTaskPanelSize(
               { width: ref.offsetWidth, height: ref.offsetHeight },
               viewport,
             );
-            const nextOffset = clampTaskPanelResizeOffset(
+            const nextOffsetSource = resizeStartOffsetSourceRef.current;
+            const nextOffset = clampTaskPanelOffset(
               calculateTaskPanelResizeOffset(resizeStartOffsetRef.current, direction, delta),
               nextSize,
               viewport,
+              nextOffsetSource,
             );
 
             ref.style.left = `${nextOffset.x}px`;
             ref.style.top = `${nextOffset.y}px`;
+            setOffsetSource(nextOffsetSource);
           }}
           onResizeStop={handleResizeStop}
         >
