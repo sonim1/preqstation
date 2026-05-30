@@ -258,6 +258,19 @@ function getRequiredFixtureElement(fixture: HTMLElement, testId: string) {
   return element as HTMLElement;
 }
 
+function makeActiveProjectOptions(count: number): WorkspaceProjectOption[] {
+  return Array.from({ length: count }, (_, index) => {
+    const number = index + 1;
+
+    return {
+      id: `project-${number}`,
+      name: `Project ${number}`,
+      projectKey: `PROJECT-${number}`,
+      status: 'active',
+    };
+  });
+}
+
 function expectComputedStyleProperties(
   element: HTMLElement,
   expectedProperties: Record<string, string>,
@@ -657,6 +670,52 @@ describe('app/components/workspace-shell', () => {
     );
   });
 
+  it('limits the desktop board subnav to a short quick list when many boards are active', () => {
+    const { container } = renderWorkspaceShellDom({
+      desktopOpened: true,
+      projectOptions: makeActiveProjectOptions(10),
+    });
+    const quickBoardLinks = container.querySelectorAll('.workspace-board-subnav-link');
+    const hiddenInlineBoardLink = container.querySelector('[href="/board/PROJECT-5"]');
+
+    expect(quickBoardLinks).toHaveLength(4);
+    expect(hiddenInlineBoardLink).toBeNull();
+  });
+
+  it('keeps the current board visible when it is outside the default quick board range', () => {
+    const html = renderWorkspaceShell({
+      desktopOpened: true,
+      pathname: '/board/PROJECT-10',
+      rememberedProjectKey: 'PROJECT-10',
+      projectOptions: makeActiveProjectOptions(10),
+    });
+
+    expect(html).toContain('href="/board/PROJECT-10"');
+    expect(html).toMatch(
+      /href="\/board\/PROJECT-10"[\s\S]*workspace-board-subnav-link[\s\S]*aria-current="page"/,
+    );
+    expect(html.match(/workspace-board-subnav-link/g) ?? []).toHaveLength(4);
+    expect(html).toContain('data-current-board-index="3"');
+  });
+
+  it('adds an overflow board picker only when active boards exceed the quick list', () => {
+    const crowdedHtml = renderWorkspaceShell({
+      desktopOpened: true,
+      projectOptions: makeActiveProjectOptions(5),
+    });
+    const shortHtml = renderWorkspaceShell({
+      desktopOpened: true,
+      projectOptions: makeActiveProjectOptions(4),
+    });
+
+    expect(crowdedHtml).toContain('workspace-board-subnav-more');
+    expect(crowdedHtml).toContain('Open all boards menu');
+    expect(shortHtml).not.toContain('workspace-board-subnav-more');
+    expect(workspaceShellSource).toMatch(
+      /className="workspace-board-subnav-more"[\s\S]*<ProjectPickerMenuItems/,
+    );
+  });
+
   it('renders a connections nav link instead of api keys', () => {
     const html = renderWorkspaceShell({ desktopOpened: true });
 
@@ -956,6 +1015,15 @@ describe('app/components/workspace-shell', () => {
     );
     expect(globalsCss).toMatch(
       /\.workspace-board-subnav-link:focus-visible\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*var\(--ui-workspace-focus-shadow\);/,
+    );
+  });
+
+  it('keeps the board overflow row on workspace tokens', () => {
+    expect(globalsCss).toMatch(
+      /\.workspace-board-subnav-more\s*\{[^}]*min-height:\s*44px;[^}]*background:\s*transparent;[^}]*color:\s*color-mix\(in srgb, var\(--ui-text\), var\(--ui-muted-text\) 28%\);/,
+    );
+    expect(globalsCss).toMatch(
+      /\.workspace-board-subnav-more:hover,\s*\.workspace-board-subnav-more:focus-visible\s*\{[^}]*background:\s*var\(--ui-workspace-control-hover-surface\);[^}]*box-shadow:\s*var\(--ui-workspace-focus-shadow\);/,
     );
   });
 

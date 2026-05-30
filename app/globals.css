@@ -965,6 +965,49 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   color: var(--ui-text);
 }
 
+.workspace-board-subnav-more {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: color-mix(in srgb, var(--ui-text), var(--ui-muted-text) 28%);
+  font-size: 13px;
+  font-weight: 560;
+  transition:
+    background 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.workspace-board-subnav-more:hover,
+.workspace-board-subnav-more:focus-visible {
+  outline: none;
+  background: var(--ui-workspace-control-hover-surface);
+  color: var(--ui-text);
+  box-shadow: var(--ui-workspace-focus-shadow);
+}
+
+.workspace-board-subnav-more-copy {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-board-subnav-more-count {
+  margin-left: auto;
+  color: var(--ui-muted-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .workspace-board-picker-item[data-current-board='true'] .workspace-board-current-indicator {
   color: var(--ui-accent);
 }
