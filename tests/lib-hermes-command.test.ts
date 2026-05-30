@@ -52,7 +52,7 @@ describe('lib/hermes-command', () => {
     );
   });
 
-  it('puts Hermes dispatch fields on a new line after the bot command', () => {
+  it('addresses the configured Hermes bot in the dispatch command mention', () => {
     expect(
       buildHermesTaskCommand({
         taskKey: 'PROJ-316',

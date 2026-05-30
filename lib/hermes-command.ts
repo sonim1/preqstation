@@ -17,8 +17,9 @@ export function formatHermesBotUsername(value: string | null | undefined) {
   return botUsername ? `@${botUsername}` : '';
 }
 
-function buildHermesDispatchPrefix(botUsername: string | null | undefined) {
-  return `/preqstation_dispatch${formatHermesBotUsername(botUsername)}`;
+export function buildHermesDispatchTrigger(botUsername: string | null | undefined) {
+  const botMention = formatHermesBotUsername(botUsername);
+  return botMention ? `/preqstation_dispatch${botMention}` : '/preqstation_dispatch';
 }
 
 function normalizeFieldValue(value: string | null | undefined) {
@@ -38,7 +39,7 @@ function appendField(lines: string[], key: string, value: string | null | undefi
 }
 
 function buildHermesCommand(botUsername: string | null | undefined, fields: string[]) {
-  return [buildHermesDispatchPrefix(botUsername), fields.join(' ')].join('\n');
+  return [buildHermesDispatchTrigger(botUsername), fields.join(' ')].join('\n');
 }
 
 function getProjectKeyFromTaskKey(taskKey: string) {
