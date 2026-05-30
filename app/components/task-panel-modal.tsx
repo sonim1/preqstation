@@ -412,6 +412,7 @@ export function TaskPanelModal({
   const hasActiveDragRef = useRef(false);
   const finishDragRef = useRef<(() => void) | null>(null);
   const clampedResizableSize = clampTaskPanelSize(resizableSize, viewport);
+  const clampedResizableSizeRef = useRef<TaskPanelSize>(clampedResizableSize);
   const clampedResizeOffset = clampTaskPanelResizeOffset(
     resizeOffset,
     clampedResizableSize,
@@ -422,7 +423,8 @@ export function TaskPanelModal({
 
   useIsomorphicLayoutEffect(() => {
     viewportRef.current = viewport;
-  }, [viewport]);
+    clampedResizableSizeRef.current = clampedResizableSize;
+  }, [clampedResizableSize, viewport]);
 
   function releasePanelDragPointerCapture() {
     const captureTarget = dragCaptureTargetRef.current;
@@ -626,7 +628,7 @@ export function TaskPanelModal({
             x: dragStartOffsetRef.current.x + deltaX,
             y: dragStartOffsetRef.current.y + deltaY,
           },
-          clampedResizableSize,
+          clampedResizableSizeRef.current,
           viewportRef.current,
         ),
       );

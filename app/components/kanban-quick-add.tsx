@@ -209,7 +209,7 @@ export function KanbanQuickAdd({
           />
           <TaskMetadataPriorityPicker
             priorityOptions={taskPriorityOptions}
-            initialPriority={taskPriority}
+            initialPriority="none"
             label={`${terminology.task.singular} priority`}
             onChange={setTaskPriority}
           />
