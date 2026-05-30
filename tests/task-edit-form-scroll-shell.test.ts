@@ -128,9 +128,15 @@ describe('task edit modal scroll-shell rendered layout regressions', () => {
       `class="${taskEditFormClasses.metadataSection} ${taskEditFormClasses.sectionSurface}"`,
     );
     expect(html).toContain(
-      `class="${taskEditFormClasses.notesCard} ${taskEditFormClasses.sectionSurface}"`,
+      `class="${taskEditFormClasses.notesCard} ${taskEditFormClasses.mainSectionSurface}"`,
     );
     expect(html).toContain(
+      `class="${taskEditFormClasses.activityCard} ${taskEditFormClasses.mainSectionSurface}"`,
+    );
+    expect(html).not.toContain(
+      `class="${taskEditFormClasses.notesCard} ${taskEditFormClasses.sectionSurface}"`,
+    );
+    expect(html).not.toContain(
       `class="${taskEditFormClasses.activityCard} ${taskEditFormClasses.sectionSurface}"`,
     );
     expect(html).toContain('data-panel="task-edit-main-column"');
@@ -139,6 +145,7 @@ describe('task edit modal scroll-shell rendered layout regressions', () => {
     expect(html).not.toContain('data-panel="task-edit-dispatch"');
     expect(html).toContain('data-panel="task-edit-metadata"');
     expect(html).toContain('data-panel="task-edit-notes-primary"');
+    expect(html).toContain('data-panel="task-edit-comments"');
     expect(html).toContain('data-panel="task-edit-activity"');
     expect(html).toContain('data-panel="task-edit-settings-card"');
     expect(html).toContain('data-slot="task-copy-actions"');
@@ -149,6 +156,9 @@ describe('task edit modal scroll-shell rendered layout regressions', () => {
       html.indexOf('data-panel="task-edit-bottom-dispatch"'),
     );
     expect(html.indexOf('data-panel="task-edit-notes-primary"')).toBeLessThan(
+      html.indexOf('data-panel="task-edit-comments"'),
+    );
+    expect(html.indexOf('data-panel="task-edit-comments"')).toBeLessThan(
       html.indexOf('data-panel="task-edit-activity"'),
     );
     expect(html).not.toContain('data-panel="task-edit-overview"');
