@@ -1759,25 +1759,31 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 .kanban-stage::after {
   content: '';
   position: absolute;
-  inset: -8%;
+  inset: 0;
   z-index: var(--kanban-stage-ambient-z-index);
   pointer-events: none;
   background: var(--kanban-stage-ambient-layer);
   background-size:
     160% 160%,
     145% 145%;
+  background-position:
+    48% 49%,
+    52% 51%;
   opacity: var(--kanban-stage-ambient-opacity);
-  transform: translate3d(-2%, -1%, 0);
   animation: var(--kanban-stage-ambient-animation);
 }
 
 @keyframes kanbanStageAmbientDrift {
   0% {
-    transform: translate3d(-2%, -1%, 0);
+    background-position:
+      46% 49%,
+      54% 51%;
   }
 
   100% {
-    transform: translate3d(2%, 1%, 0);
+    background-position:
+      54% 51%,
+      46% 49%;
   }
 }
 

@@ -421,6 +421,14 @@ describe('app/components/kanban-card', () => {
     }
   });
 
+  it('keeps the ambient board layer inside the stage bounds', () => {
+    const stageAfterRule = getCssRuleBody(globalsCss, '.kanban-stage::after');
+
+    expect(stageAfterRule).toMatch(/inset:\s*0;/);
+    expect(stageAfterRule).not.toMatch(/inset:\s*-/);
+    expect(stageAfterRule).not.toMatch(/transform:/);
+  });
+
   it('keeps the dark kanban card surface opaque while softening the repeated outline', () => {
     const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
       `
