@@ -94,7 +94,10 @@ vi.mock('@/app/components/task-notification-center', () => ({
 }));
 
 import { resolveWorkspaceKanbanHref, WorkspaceShell } from '@/app/components/workspace-shell';
-import { type WorkspaceProjectOption } from '@/lib/workspace-project-picker';
+import {
+  RECENT_PROJECTS_STORAGE,
+  type WorkspaceProjectOption,
+} from '@/lib/workspace-project-picker';
 
 afterEach(() => {
   cleanup();
@@ -153,7 +156,15 @@ function prepareWorkspaceShellRender(args: RenderWorkspaceShellArgs) {
     .mockReturnValueOnce([false, { toggle: vi.fn(), close: vi.fn() }])
     .mockReturnValueOnce([options.desktopOpened, { toggle: vi.fn(), close: vi.fn() }]);
   usePathnameMock.mockReturnValue(options.pathname);
-  useSyncExternalStoreMock.mockReturnValue(options.rememberedProjectKey);
+  let externalStoreCallIndex = 0;
+  useSyncExternalStoreMock.mockImplementation(
+    (_subscribe: unknown, _getSnapshot: unknown, getServerSnapshot?: () => unknown) => {
+      externalStoreCallIndex += 1;
+      if (externalStoreCallIndex === 1) return options.rememberedProjectKey;
+
+      return getServerSnapshot?.();
+    },
+  );
 
   return options;
 }
@@ -256,6 +267,19 @@ function getRequiredFixtureElement(fixture: HTMLElement, testId: string) {
   expect(element).not.toBeNull();
 
   return element as HTMLElement;
+}
+
+function makeActiveProjectOptions(count: number): WorkspaceProjectOption[] {
+  return Array.from({ length: count }, (_, index) => {
+    const number = index + 1;
+
+    return {
+      id: `project-${number}`,
+      name: `Project ${number}`,
+      projectKey: `PROJECT-${number}`,
+      status: 'active',
+    };
+  });
 }
 
 function expectComputedStyleProperties(
@@ -692,6 +716,82 @@ describe('app/components/workspace-shell', () => {
     );
   });
 
+  it('limits the desktop board subnav to a short quick list when many boards are active', () => {
+    const { container } = renderWorkspaceShellDom({
+      desktopOpened: true,
+      projectOptions: makeActiveProjectOptions(10),
+    });
+    const quickBoardLinks = container.querySelectorAll('.workspace-board-subnav-link');
+    const hiddenInlineBoardLink = container.querySelector('[href="/board/PROJECT-5"]');
+
+    expect(quickBoardLinks).toHaveLength(4);
+    expect(hiddenInlineBoardLink).toBeNull();
+  });
+
+  it('keeps the current board visible when it is outside the default quick board range', () => {
+    const html = renderWorkspaceShell({
+      desktopOpened: true,
+      pathname: '/board/PROJECT-10',
+      rememberedProjectKey: 'PROJECT-10',
+      projectOptions: makeActiveProjectOptions(10),
+    });
+
+    expect(html).toContain('href="/board/PROJECT-10"');
+    expect(html).toMatch(
+      /href="\/board\/PROJECT-10"[\s\S]*workspace-board-subnav-link[\s\S]*aria-current="page"/,
+    );
+    expect(html.match(/workspace-board-subnav-link/g) ?? []).toHaveLength(4);
+    expect(html).toContain('data-current-board-index="3"');
+  });
+
+  it('does not read recent boards from localStorage for the initial render', () => {
+    window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(['PROJECT-6', 'PROJECT-5']));
+
+    try {
+      const html = renderWorkspaceShell({
+        desktopOpened: true,
+        pathname: '/board/PROJECT-1',
+        rememberedProjectKey: 'PROJECT-1',
+        projectOptions: makeActiveProjectOptions(6),
+      });
+
+      expect(html).toContain('href="/board/PROJECT-3"');
+      expect(html).toContain('href="/board/PROJECT-4"');
+      expect(html).not.toContain('href="/board/PROJECT-5"');
+      expect(html).not.toContain('href="/board/PROJECT-6"');
+    } finally {
+      window.localStorage.removeItem(RECENT_PROJECTS_STORAGE);
+    }
+  });
+
+  it('adds an overflow board picker only when active boards exceed the quick list', () => {
+    const crowdedHtml = renderWorkspaceShell({
+      desktopOpened: true,
+      projectOptions: makeActiveProjectOptions(5),
+    });
+    const shortHtml = renderWorkspaceShell({
+      desktopOpened: true,
+      projectOptions: makeActiveProjectOptions(4),
+    });
+
+    expect(crowdedHtml).toContain('workspace-board-subnav-more');
+    expect(crowdedHtml).toContain('Open all boards menu');
+    expect(shortHtml).not.toContain('workspace-board-subnav-more');
+    expect(workspaceShellSource).toMatch(
+      /className="workspace-board-subnav-more"[\s\S]*<ProjectPickerMenuItems/,
+    );
+  });
+
+  it('shows the number of boards hidden from the quick list in the overflow badge', () => {
+    const { container } = renderWorkspaceShellDom({
+      desktopOpened: true,
+      projectOptions: makeActiveProjectOptions(10),
+    });
+    const overflowCount = container.querySelector('.workspace-board-subnav-more-count');
+
+    expect(overflowCount?.textContent).toBe('6');
+  });
+
   it('renders a connections nav link instead of api keys', () => {
     const html = renderWorkspaceShell({ desktopOpened: true });
 
@@ -992,6 +1092,22 @@ describe('app/components/workspace-shell', () => {
     expect(globalsCss).toMatch(
       /\.workspace-board-subnav-link:focus-visible\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*var\(--ui-workspace-focus-shadow\);/,
     );
+  });
+
+  it('keeps the board overflow row on workspace tokens', () => {
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <button class="workspace-board-subnav-more" data-testid="more"></button>
+    `);
+
+    try {
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'more'), {
+        'min-height': '44px',
+        background: 'transparent',
+        color: 'color-mix(in srgb, var(--ui-text), var(--ui-muted-text) 28%)',
+      });
+    } finally {
+      cleanup();
+    }
   });
 
   it('keeps the left header chrome on token-driven dark surfaces', () => {
