@@ -64,7 +64,7 @@ describe('lib/task-telegram-client', () => {
     );
   });
 
-  it('uses the configured Hermes bot id for Hermes comment dispatches', () => {
+  it('mentions the configured Hermes bot before Hermes comment dispatches', () => {
     expect(
       buildTaskCommentDispatchMessage({
         taskKey: 'PROJ-328',
@@ -74,7 +74,7 @@ describe('lib/task-telegram-client', () => {
         dispatchTarget: 'hermes-telegram',
         hermesBotUsername: '@custom_hermes_bot',
       }),
-    ).toContain('/preqstation_dispatch@custom_hermes_bot');
+    ).toContain('@custom_hermes_bot /preqstation_dispatch');
   });
 
   it('propagates model overrides through comment dispatch messages', () => {
