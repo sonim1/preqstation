@@ -41,6 +41,7 @@ import {
   LAST_PROJECT_KEY_STORAGE,
   pushRecentProjectKey,
   readRecentProjectKeys,
+  RECENT_PROJECTS_STORAGE,
   resolvePickerProject,
   type WorkspaceProjectOption,
 } from '@/lib/workspace-project-picker';
@@ -88,6 +89,7 @@ const PROJECT_KEY_CHANGED_EVENT = 'pm:lastProjectKey:changed';
 const BOARD_SUBNAV_ROW_HEIGHT = 44;
 const BOARD_SUBNAV_ROW_GAP = 4;
 const BOARD_QUICK_LINK_LIMIT = 4;
+const EMPTY_RECENT_PROJECT_KEYS: string[] = [];
 
 type BoardNavLinkProps = {
   project: WorkspaceProjectOption;
@@ -198,6 +200,26 @@ function subscribeRememberedProjectKey(onStoreChange: () => void) {
   };
 }
 
+function subscribeRecentProjectKeys(onStoreChange: () => void) {
+  if (typeof window === 'undefined') return () => undefined;
+
+  const onStorage = (event: StorageEvent) => {
+    if (event.key !== RECENT_PROJECTS_STORAGE) return;
+    onStoreChange();
+  };
+
+  const onCustomEvent = () => {
+    onStoreChange();
+  };
+
+  window.addEventListener('storage', onStorage);
+  window.addEventListener(PROJECT_KEY_CHANGED_EVENT, onCustomEvent);
+  return () => {
+    window.removeEventListener('storage', onStorage);
+    window.removeEventListener(PROJECT_KEY_CHANGED_EVENT, onCustomEvent);
+  };
+}
+
 export function WorkspaceShell({
   email,
   projectOptions,
@@ -218,6 +240,11 @@ export function WorkspaceShell({
     subscribeRememberedProjectKey,
     readRememberedProjectKey,
     () => null,
+  );
+  const recentProjectKeys = useSyncExternalStore(
+    subscribeRecentProjectKeys,
+    readRecentProjectKeys,
+    () => EMPTY_RECENT_PROJECT_KEYS,
   );
   const activeProjectOptions = useMemo(
     () => partitionWorkspaceProjectOptions(projectOptions),
@@ -252,7 +279,6 @@ export function WorkspaceShell({
   const mobilePickerProject = selectedProject;
   const currentActiveBoardProject =
     currentBoardProject?.status === ACTIVE_PROJECT_STATUS ? currentBoardProject : null;
-  const recentProjectKeys = readRecentProjectKeys();
   const quickBoardOptions = useMemo(
     () => getQuickBoardOptions(activeProjectOptions, currentActiveBoardProject, recentProjectKeys),
     [activeProjectOptions, currentActiveBoardProject, recentProjectKeys],

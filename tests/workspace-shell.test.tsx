@@ -94,7 +94,10 @@ vi.mock('@/app/components/task-notification-center', () => ({
 }));
 
 import { resolveWorkspaceKanbanHref, WorkspaceShell } from '@/app/components/workspace-shell';
-import { type WorkspaceProjectOption } from '@/lib/workspace-project-picker';
+import {
+  RECENT_PROJECTS_STORAGE,
+  type WorkspaceProjectOption,
+} from '@/lib/workspace-project-picker';
 
 afterEach(() => {
   cleanup();
@@ -153,7 +156,15 @@ function prepareWorkspaceShellRender(args: RenderWorkspaceShellArgs) {
     .mockReturnValueOnce([false, { toggle: vi.fn(), close: vi.fn() }])
     .mockReturnValueOnce([options.desktopOpened, { toggle: vi.fn(), close: vi.fn() }]);
   usePathnameMock.mockReturnValue(options.pathname);
-  useSyncExternalStoreMock.mockReturnValue(options.rememberedProjectKey);
+  let externalStoreCallIndex = 0;
+  useSyncExternalStoreMock.mockImplementation(
+    (_subscribe: unknown, _getSnapshot: unknown, getServerSnapshot?: () => unknown) => {
+      externalStoreCallIndex += 1;
+      if (externalStoreCallIndex === 1) return options.rememberedProjectKey;
+
+      return getServerSnapshot?.();
+    },
+  );
 
   return options;
 }
@@ -698,6 +709,26 @@ describe('app/components/workspace-shell', () => {
     expect(html).toContain('data-current-board-index="3"');
   });
 
+  it('does not read recent boards from localStorage for the initial render', () => {
+    window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(['PROJECT-6', 'PROJECT-5']));
+
+    try {
+      const html = renderWorkspaceShell({
+        desktopOpened: true,
+        pathname: '/board/PROJECT-1',
+        rememberedProjectKey: 'PROJECT-1',
+        projectOptions: makeActiveProjectOptions(6),
+      });
+
+      expect(html).toContain('href="/board/PROJECT-3"');
+      expect(html).toContain('href="/board/PROJECT-4"');
+      expect(html).not.toContain('href="/board/PROJECT-5"');
+      expect(html).not.toContain('href="/board/PROJECT-6"');
+    } finally {
+      window.localStorage.removeItem(RECENT_PROJECTS_STORAGE);
+    }
+  });
+
   it('adds an overflow board picker only when active boards exceed the quick list', () => {
     const crowdedHtml = renderWorkspaceShell({
       desktopOpened: true,
@@ -1019,12 +1050,19 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('keeps the board overflow row on workspace tokens', () => {
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-more\s*\{[^}]*min-height:\s*44px;[^}]*background:\s*transparent;[^}]*color:\s*color-mix\(in srgb, var\(--ui-text\), var\(--ui-muted-text\) 28%\);/,
-    );
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-more:hover,\s*\.workspace-board-subnav-more:focus-visible\s*\{[^}]*background:\s*var\(--ui-workspace-control-hover-surface\);[^}]*box-shadow:\s*var\(--ui-workspace-focus-shadow\);/,
-    );
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <button class="workspace-board-subnav-more" data-testid="more"></button>
+    `);
+
+    try {
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'more'), {
+        'min-height': '44px',
+        background: 'transparent',
+        color: 'color-mix(in srgb, var(--ui-text), var(--ui-muted-text) 28%)',
+      });
+    } finally {
+      cleanup();
+    }
   });
 
   it('keeps the left header chrome on token-driven dark surfaces', () => {
