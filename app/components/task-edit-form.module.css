@@ -64,7 +64,7 @@
 
 .mainColumn {
   display: grid;
-  gap: 1.25rem;
+  gap: 1rem;
   grid-template-rows: auto auto auto;
   align-content: start;
   height: fit-content;
@@ -281,6 +281,15 @@
   border-radius: 8px;
   background: var(--ui-surface);
   box-shadow: var(--ui-elevation-1);
+}
+
+.mainSectionSurface {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .skeletonNotesEditor {

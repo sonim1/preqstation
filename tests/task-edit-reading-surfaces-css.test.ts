@@ -176,12 +176,25 @@ describe('task edit reading surface CSS', () => {
     expect([...new Set(referencedTokens)].filter((token) => !definedTokens.has(token))).toEqual([]);
   });
 
-  it('puts the task edit panel sections on the shared tokenized surface', () => {
+  it('keeps framed metadata and dispatch sections on the shared tokenized surface', () => {
     const sectionSurfaceRule = getRuleBody(taskEditFormCss, '.sectionSurface');
 
+    expect(sectionSurfaceRule).toContain('padding: clamp(0.875rem, 1.4vw, 1rem);');
     expect(sectionSurfaceRule).toContain('border: 1px solid var(--ui-border);');
     expect(sectionSurfaceRule).toContain('border-radius: 8px;');
     expectTokenBackground(sectionSurfaceRule, '--ui-surface');
+    expect(sectionSurfaceRule).toContain('box-shadow: var(--ui-elevation-1);');
+  });
+
+  it('keeps main task edit sections unframed around their inner reading surfaces', () => {
+    const mainSectionSurfaceRule = getRuleBody(taskEditFormCss, '.mainSectionSurface');
+
+    expect(mainSectionSurfaceRule).toContain('min-width: 0;');
+    expect(mainSectionSurfaceRule).toContain('padding: 0;');
+    expect(mainSectionSurfaceRule).toContain('border: 0;');
+    expect(mainSectionSurfaceRule).toContain('border-radius: 0;');
+    expect(mainSectionSurfaceRule).toContain('background: transparent;');
+    expect(mainSectionSurfaceRule).toContain('box-shadow: none;');
   });
 
   it('uses semantic tokens for editor and markdown text accents', () => {
