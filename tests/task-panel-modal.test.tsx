@@ -608,12 +608,25 @@ describe('TaskPanelModal', () => {
       const querySelectorSpy = vi.spyOn(document, 'querySelector');
       querySelectorSpy.mockClear();
 
-      fireEvent.pointerDown(getByTestId('task-panel-modal-header'), {
+      const header = getByTestId('task-panel-modal-header');
+      const setPointerCapture = vi.fn();
+      const releasePointerCapture = vi.fn();
+      Object.defineProperty(header, 'setPointerCapture', {
+        configurable: true,
+        value: setPointerCapture,
+      });
+      Object.defineProperty(header, 'releasePointerCapture', {
+        configurable: true,
+        value: releasePointerCapture,
+      });
+
+      fireEvent.pointerDown(header, {
         button: 0,
         clientX: 500,
         clientY: 300,
         pointerId: 7,
       });
+      expect(setPointerCapture).toHaveBeenCalledWith(7);
       fireEvent.pointerMove(window, {
         clientX: 760,
         clientY: 120,
@@ -628,8 +641,103 @@ describe('TaskPanelModal', () => {
       await waitFor(() => {
         expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 140, top: -90 });
       });
+      expect(releasePointerCapture).toHaveBeenCalledWith(7);
       expect(querySelectorSpy).not.toHaveBeenCalled();
-      expect(getByTestId('task-panel-modal-header').getAttribute('data-draggable')).toBe('true');
+      expect(header.getAttribute('data-draggable')).toBe('true');
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
+  it('does not snap into the resize gutter when resizing after an edge drag', async () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    window.localStorage.setItem(
+      'preqstation:task-edit-panel:size:v1',
+      JSON.stringify({ width: 720, height: 520 }),
+    );
+
+    try {
+      const { getByTestId } = render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].size).toEqual({ width: 720, height: 520 });
+      });
+
+      fireEvent.pointerDown(getByTestId('task-panel-modal-header'), {
+        button: 0,
+        clientX: 500,
+        clientY: 300,
+        pointerId: 10,
+      });
+      fireEvent.pointerMove(window, {
+        clientX: 760,
+        clientY: 300,
+        pointerId: 10,
+      });
+      fireEvent.pointerUp(window, {
+        clientX: 760,
+        clientY: 300,
+        pointerId: 10,
+      });
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 140, top: 0 });
+      });
+
+      const resizeRef = document.createElement('div');
+      Object.defineProperty(resizeRef, 'offsetWidth', {
+        configurable: true,
+        value: 720,
+      });
+      Object.defineProperty(resizeRef, 'offsetHeight', {
+        configurable: true,
+        value: 520,
+      });
+      const latestResizableProps = resizableMock.mock.calls.at(-1)?.[0];
+
+      act(() => {
+        latestResizableProps.onResizeStart?.(null, 'right', {
+          offsetWidth: 720,
+          offsetHeight: 520,
+        });
+        latestResizableProps.onResize?.(null, 'right', resizeRef, {
+          width: 0,
+          height: 0,
+        });
+      });
+
+      expect(resizeRef.style.left).toBe('140px');
+      expect(resizeRef.style.top).toBe('0px');
+
+      act(() => {
+        latestResizableProps.onResizeStop?.(
+          null,
+          'right',
+          {
+            offsetWidth: 720,
+            offsetHeight: 520,
+          },
+          {
+            width: 0,
+            height: 0,
+          },
+        );
+      });
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 140, top: 0 });
+      });
     } finally {
       cleanup();
       dom.restore();
