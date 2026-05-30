@@ -180,6 +180,7 @@ vi.mock('next/navigation', () => ({
 
 import {
   calculateTaskPanelResizeOffset,
+  clampTaskPanelDragOffset,
   clampTaskPanelResizeOffset,
   clampTaskPanelSize,
   readTaskPanelStoredSize,
@@ -318,7 +319,7 @@ describe('TaskPanelModal', () => {
   it('does not activate resize for mobile or fullscreen modal states', () => {
     useMediaQueryMock.mockReturnValue(true);
 
-    renderToStaticMarkup(
+    const mobileHtml = renderToStaticMarkup(
       <TaskPanelModal
         opened={true}
         title="Edit Task"
@@ -330,12 +331,13 @@ describe('TaskPanelModal', () => {
       </TaskPanelModal>,
     );
 
+    expect(mobileHtml).not.toContain('data-draggable="true"');
     expect(resizableMock).not.toHaveBeenCalled();
 
     useMediaQueryMock.mockReturnValue(false);
     useSearchParamsMock.mockReturnValue(new URLSearchParams('fullscreen=1'));
 
-    renderToStaticMarkup(
+    const fullscreenHtml = renderToStaticMarkup(
       <TaskPanelModal
         opened={true}
         title="Edit Task"
@@ -347,6 +349,7 @@ describe('TaskPanelModal', () => {
       </TaskPanelModal>,
     );
 
+    expect(fullscreenHtml).not.toContain('data-draggable="true"');
     expect(resizableMock).not.toHaveBeenCalled();
   });
 
@@ -559,6 +562,153 @@ describe('TaskPanelModal', () => {
         { width: 760, height: 560 },
       ),
     ).toEqual({ x: 0, y: 0 });
+  });
+
+  it('clamps drag offsets to the viewport edges', () => {
+    expect(
+      clampTaskPanelDragOffset(
+        { x: 200, y: -120 },
+        { width: 720, height: 520 },
+        { width: 1000, height: 700 },
+      ),
+    ).toEqual({ x: 140, y: -90 });
+    expect(
+      clampTaskPanelDragOffset(
+        { x: 60, y: 40 },
+        { width: 900, height: 620 },
+        { width: 760, height: 560 },
+      ),
+    ).toEqual({ x: 0, y: 0 });
+  });
+
+  it('moves the desktop resizable panel by dragging the header surface', async () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    window.localStorage.setItem(
+      'preqstation:task-edit-panel:size:v1',
+      JSON.stringify({ width: 720, height: 520 }),
+    );
+
+    try {
+      const { getByTestId } = render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].size).toEqual({ width: 720, height: 520 });
+      });
+
+      fireEvent.pointerDown(getByTestId('task-panel-modal-header'), {
+        button: 0,
+        clientX: 500,
+        clientY: 300,
+        pointerId: 7,
+      });
+      fireEvent.pointerMove(window, {
+        clientX: 760,
+        clientY: 120,
+        pointerId: 7,
+      });
+      fireEvent.pointerUp(window, {
+        clientX: 760,
+        clientY: 120,
+        pointerId: 7,
+      });
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 140, top: -90 });
+      });
+      expect(getByTestId('task-panel-modal-header').getAttribute('data-draggable')).toBe('true');
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
+  it('does not drag from header controls or fullscreen modal states', async () => {
+    const dom = installDom({ width: 1000, height: 700 });
+    window.localStorage.setItem(
+      'preqstation:task-edit-panel:size:v1',
+      JSON.stringify({ width: 720, height: 520 }),
+    );
+
+    try {
+      const { getByLabelText, getByTestId, rerender } = render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          fullscreenStorageKey="preqstation:task-edit-panel:fullscreen:v1"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].size).toEqual({ width: 720, height: 520 });
+      });
+
+      fireEvent.pointerDown(getByLabelText('Enter full screen for Edit Task dialog'), {
+        button: 0,
+        clientX: 500,
+        clientY: 300,
+        pointerId: 8,
+      });
+      fireEvent.pointerMove(window, {
+        clientX: 760,
+        clientY: 120,
+        pointerId: 8,
+      });
+      fireEvent.pointerUp(window, {
+        clientX: 760,
+        clientY: 120,
+        pointerId: 8,
+      });
+
+      expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 0, top: 0 });
+      expect(replaceMock).not.toHaveBeenCalled();
+
+      useSearchParamsMock.mockReturnValue(new URLSearchParams('fullscreen=1'));
+      rerender(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          fullscreenStorageKey="preqstation:task-edit-panel:fullscreen:v1"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      expect(getByTestId('task-panel-modal-header').getAttribute('data-draggable')).toBeNull();
+      fireEvent.pointerDown(getByTestId('task-panel-modal-header'), {
+        button: 0,
+        clientX: 500,
+        clientY: 300,
+        pointerId: 9,
+      });
+      fireEvent.pointerMove(window, {
+        clientX: 760,
+        clientY: 120,
+        pointerId: 9,
+      });
+
+      expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 0, top: 0 });
+    } finally {
+      cleanup();
+      dom.restore();
+    }
   });
 
   it('uses a stable fallback size for the first render and hydrates stored size after mount', async () => {
