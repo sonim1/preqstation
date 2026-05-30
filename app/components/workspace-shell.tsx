@@ -406,7 +406,7 @@ export function WorkspaceShell({
         <UnstyledButton className="workspace-board-subnav-more" aria-label="Open all boards menu">
           <span className="workspace-board-subnav-more-copy">More boards</span>
           <span className="workspace-board-subnav-more-count" aria-hidden="true">
-            {activeProjectOptions.length}
+            {activeProjectOptions.length - quickBoardOptions.length}
           </span>
           <IconDots size={16} aria-hidden="true" />
         </UnstyledButton>

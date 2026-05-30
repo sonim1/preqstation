@@ -747,6 +747,16 @@ describe('app/components/workspace-shell', () => {
     );
   });
 
+  it('shows the number of boards hidden from the quick list in the overflow badge', () => {
+    const { container } = renderWorkspaceShellDom({
+      desktopOpened: true,
+      projectOptions: makeActiveProjectOptions(10),
+    });
+    const overflowCount = container.querySelector('.workspace-board-subnav-more-count');
+
+    expect(overflowCount?.textContent).toBe('6');
+  });
+
   it('renders a connections nav link instead of api keys', () => {
     const html = renderWorkspaceShell({ desktopOpened: true });
 
