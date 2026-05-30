@@ -52,7 +52,7 @@ describe('lib/hermes-command', () => {
     );
   });
 
-  it('addresses the configured Hermes bot before the dispatch command', () => {
+  it('addresses the dispatch command to the configured Hermes bot', () => {
     expect(
       buildHermesTaskCommand({
         taskKey: 'PROJ-316',
@@ -62,7 +62,7 @@ describe('lib/hermes-command', () => {
       }),
     ).toBe(
       [
-        '@custom_hermes_bot /preqstation_dispatch',
+        '/preqstation_dispatch@custom_hermes_bot',
         'project_key=PROJ task_key=PROJ-316 objective=implement engine=codex',
       ].join('\n'),
     );

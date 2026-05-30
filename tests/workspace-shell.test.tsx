@@ -1091,47 +1091,77 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('keeps the compact project picker in the mobile header row and scopes compact trigger styles', () => {
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-brand-copy\s*\{[\s\S]*display:\s*none;/,
-    );
-    expect(globalsCss).toMatch(
-      /\.command-palette-trigger--compact\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*center;[^}]*width:\s*var\(--ui-hit-touch-min\);[^}]*min-width:\s*var\(--ui-hit-touch-min\);[^}]*justify-content:\s*center;/,
-    );
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-header-middle\s*\{[\s\S]*justify-content:\s*stretch;/,
-    );
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*margin:\s*0;/,
-    );
-    expect(globalsCss).toMatch(
-      /\.workspace-mobile-project-picker\s*\{[^}]*min-height:\s*var\(--ui-hit-touch-min\);/,
-    );
+    expect(
+      getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-brand-copy', ['display']),
+    ).toEqual({ display: 'none' });
+    expect(
+      getCssRuleProperties('.command-palette-trigger--compact', [
+        'display',
+        'align-items',
+        'width',
+        'min-width',
+        'justify-content',
+      ]),
+    ).toEqual({
+      display: 'flex',
+      'align-items': 'center',
+      width: 'var(--ui-hit-touch-min)',
+      'min-width': 'var(--ui-hit-touch-min)',
+      'justify-content': 'center',
+    });
+    expect(
+      getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-header-middle', [
+        'justify-content',
+      ]),
+    ).toEqual({ 'justify-content': 'stretch' });
+    expect(
+      getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-mobile-project-picker', [
+        'margin',
+      ]),
+    ).toEqual({ margin: '0px' });
+    expect(getCssRuleProperties('.workspace-mobile-project-picker', ['min-height'])).toEqual({
+      'min-height': 'var(--ui-hit-touch-min)',
+    });
   });
 
   it('lets the mobile picker shrink between fixed header controls', () => {
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-header-inner\s*\{[\s\S]*grid-template-columns:\s*auto auto minmax\(0,\s*1fr\) auto;/,
-    );
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-header-inner\s*\{[\s\S]*grid-template-rows:\s*56px;/,
-    );
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-header-middle\s*\{[\s\S]*width:\s*100%;/,
-    );
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-header-middle\s*\{[\s\S]*min-width:\s*0;/,
-    );
+    expect(
+      getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-header-inner', [
+        'grid-template-columns',
+        'grid-template-rows',
+      ]),
+    ).toEqual({
+      'grid-template-columns': 'auto auto minmax(0, 1fr) auto',
+      'grid-template-rows': '56px',
+    });
+    expect(
+      getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-header-middle', [
+        'width',
+        'min-width',
+      ]),
+    ).toEqual({
+      width: '100%',
+      'min-width': '0px',
+    });
   });
 
   it('gives the mobile project picker responsive room for long project names', () => {
-    expect(globalsCss).toMatch(
-      /\.workspace-mobile-project-picker\s*\{[^}]*max-width:\s*min\(60vw, 260px\);/,
-    );
-    expect(globalsCss).toMatch(
-      /\.workspace-mobile-project-picker-label\s*\{[^}]*max-width:\s*min\(38vw, 168px\);/,
-    );
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*width:\s*100%;[\s\S]*min-width:\s*0;[\s\S]*max-width:\s*100%;/,
-    );
+    expect(getCssRuleProperties('.workspace-mobile-project-picker', ['max-width'])).toEqual({
+      'max-width': 'min(60vw, 260px)',
+    });
+    expect(getCssRuleProperties('.workspace-mobile-project-picker-label', ['max-width'])).toEqual({
+      'max-width': 'min(38vw, 168px)',
+    });
+    expect(
+      getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-mobile-project-picker', [
+        'width',
+        'min-width',
+        'max-width',
+      ]),
+    ).toEqual({
+      width: '100%',
+      'min-width': '0px',
+      'max-width': '100%',
+    });
   });
 });

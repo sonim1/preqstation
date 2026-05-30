@@ -144,7 +144,7 @@ describe('app/api/tasks/[id]/comments/route', () => {
     expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
       'bot-token',
       '12345',
-      expect.stringContaining('@custom_hermes_bot /preqstation_dispatch'),
+      expect.stringContaining('/preqstation_dispatch@custom_hermes_bot'),
       { normalizeCommand: false },
     );
     expect(await response.json()).toEqual(
@@ -198,7 +198,7 @@ describe('app/api/tasks/[id]/comments/route', () => {
     expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
       'bot-token',
       '12345',
-      expect.stringContaining('@custom_hermes_bot /preqstation_dispatch'),
+      expect.stringContaining('/preqstation_dispatch@custom_hermes_bot'),
       { normalizeCommand: false },
     );
     expect(mocked.sendTelegramMessage).toHaveBeenCalledWith(
