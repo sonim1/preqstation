@@ -257,16 +257,12 @@ describe('board frame token contract', () => {
   it('keeps kanban card base surfaces opaque and position-independent', () => {
     const lightStyle = window.getComputedStyle(document.documentElement);
 
-    expectOpaquePositionIndependentSurface(
-      resolveCssVariable(lightStyle, '--kanban-card-surface'),
-    );
+    expectOpaquePositionIndependentSurface(resolveCssVariable(lightStyle, '--kanban-card-surface'));
 
     document.documentElement.setAttribute('data-mantine-color-scheme', 'dark');
     const darkStyle = window.getComputedStyle(document.documentElement);
 
-    expectOpaquePositionIndependentSurface(
-      resolveCssVariable(darkStyle, '--kanban-card-surface'),
-    );
+    expectOpaquePositionIndependentSurface(resolveCssVariable(darkStyle, '--kanban-card-surface'));
   });
 
   it('keeps the mobile tab bar separator shadow pointed upward', () => {
@@ -346,7 +342,8 @@ describe('board frame token contract', () => {
       window.getComputedStyle(getElement('.kanban-column')).backgroundColor,
     );
     expectNoComputedShadow('.kanban-column');
-    expectComputedToken('.kanban-quickadd-panel', 'background', '--kanban-frame-chrome-surface');
+    expectComputedToken('.kanban-quickadd-panel', 'background', '--ui-surface');
+    expectComputedToken('.kanban-quickadd-panel', '--paper-border-color', '--ui-border');
   });
 
   it('renders mobile tab and refresh hooks through the mobile board component', () => {

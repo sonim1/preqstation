@@ -7,6 +7,7 @@ import { type FormEvent, useMemo, useState } from 'react';
 import { useBoardOfflineSync } from '@/app/components/board-offline-sync-provider';
 import { useOfflineStatus } from '@/app/components/offline-status-provider';
 import { TaskLabelPicker } from '@/app/components/task-label-picker';
+import { TaskMetadataPriorityPicker } from '@/app/components/task-metadata-controls';
 import { useTerminology } from '@/app/components/terminology-provider';
 import type { KanbanTask } from '@/lib/kanban-helpers';
 import { parseTaskPriority, taskPriorityOptionData } from '@/lib/task-meta';
@@ -206,11 +207,11 @@ export function KanbanQuickAdd({
               }
             }}
           />
-          <NativeSelect
-            value={taskPriority}
-            onChange={(e) => setTaskPriority(e.currentTarget.value)}
-            aria-label="Priority"
-            data={taskPriorityOptions}
+          <TaskMetadataPriorityPicker
+            priorityOptions={taskPriorityOptions}
+            initialPriority={taskPriority}
+            label={`${terminology.task.singular} priority`}
+            onChange={setTaskPriority}
           />
           <Group justify="flex-end" gap="xs">
             <Button

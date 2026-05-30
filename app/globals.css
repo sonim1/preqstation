@@ -2025,8 +2025,9 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 }
 
 .kanban-quickadd-panel {
-  border-color: var(--kanban-frame-chrome-border);
-  background: var(--kanban-frame-chrome-surface);
+  --paper-border-color: var(--ui-border);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface);
   box-shadow: var(--ui-elevation-1);
 }
 
@@ -3142,10 +3143,6 @@ html[data-mantine-color-scheme='dark'] .kanban-quickadd-panel,
 html[data-mantine-color-scheme='dark'] .workspace-header,
 html[data-mantine-color-scheme='dark'] .workspace-navbar {
   border-color: var(--ui-border);
-}
-
-html[data-mantine-color-scheme='dark'] .kanban-quickadd-panel {
-  background: var(--ui-card-bg);
 }
 
 html[data-mantine-color-scheme='dark'] .workspace-header,
