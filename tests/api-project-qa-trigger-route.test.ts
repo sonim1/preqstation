@@ -267,7 +267,7 @@ describe('app/api/projects/[id]/qa-runs/trigger/route', () => {
       'bot-token',
       '7654321',
       [
-        '@custom_hermes_bot /preqstation_dispatch',
+        '/preqstation_dispatch@custom_hermes_bot',
         [
           'project_key=PROJ',
           'objective=qa',
