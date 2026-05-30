@@ -610,17 +610,16 @@ export function TaskPanelModal({
       const deltaX = pointerEvent.clientX - startPointer.x;
       const deltaY = pointerEvent.clientY - startPointer.y;
 
-      if (
-        !hasActiveDragRef.current &&
-        Math.hypot(deltaX, deltaY) < TASK_PANEL_DRAG_START_THRESHOLD
-      ) {
-        return;
+      if (!hasActiveDragRef.current) {
+        if (Math.hypot(deltaX, deltaY) < TASK_PANEL_DRAG_START_THRESHOLD) {
+          return;
+        }
+        hasActiveDragRef.current = true;
+        setOffsetSource('drag');
+        setIsPanelDragging(true);
       }
 
-      hasActiveDragRef.current = true;
       pointerEvent.preventDefault();
-      setOffsetSource('drag');
-      setIsPanelDragging(true);
       setResizeOffset(
         clampTaskPanelDragOffset(
           {
@@ -797,7 +796,6 @@ export function TaskPanelModal({
 
             ref.style.left = `${nextOffset.x}px`;
             ref.style.top = `${nextOffset.y}px`;
-            setOffsetSource(nextOffsetSource);
           }}
           onResizeStop={handleResizeStop}
         >
