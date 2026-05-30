@@ -39,7 +39,8 @@ Session-authenticated settings clients can update the global agent model catalog
 `value` must be a JSON object keyed by `claude-code`, `codex`, and/or `gemini-cli`. Each engine
 array may contain model ID strings or `{ "label": "...", "value": "..." }` objects. The API rejects
 invalid JSON and normalizes accepted values before saving them in `user_settings.agent_model_catalog`.
-Successful responses include the normalized catalog string as `value`:
+Successful settings updates include the saved string as `value`; for the model catalog, this is the
+normalized catalog string:
 
 ```json
 {

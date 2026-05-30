@@ -125,6 +125,22 @@ function getCssRuleBody(source: string, selector: string) {
   return match?.[1] ?? '';
 }
 
+function getFixtureCssRule(selector: string) {
+  for (const sheet of Array.from(document.styleSheets)) {
+    for (const rule of Array.from(sheet.cssRules)) {
+      if ('selectorText' in rule && rule.selectorText === selector) {
+        return rule as CSSStyleRule;
+      }
+    }
+  }
+
+  throw new Error(`CSS rule "${selector}" was not found in the fixture styles`);
+}
+
+function applyFixtureCssRule(selector: string, element: HTMLElement) {
+  element.style.cssText = getFixtureCssRule(selector).style.cssText;
+}
+
 function resolveWaveTopHeadroom(runState: 'queued' | 'running') {
   const { paths, waveHeight, waveShiftPercent, bandTopClearance } = getRunStateWaveConfig(runState);
   const highestCrest = Math.min(
@@ -422,11 +438,26 @@ describe('app/components/kanban-card', () => {
   });
 
   it('keeps the ambient board layer inside the stage bounds', () => {
-    const stageAfterRule = getCssRuleBody(globalsCss, '.kanban-stage::after');
+    const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
+      `
+        <section class="kanban-stage" data-testid="stage">
+          <span data-testid="ambient-layer"></span>
+        </section>
+      `,
+      true,
+    );
 
-    expect(stageAfterRule).toMatch(/inset:\s*0;/);
-    expect(stageAfterRule).not.toMatch(/inset:\s*-/);
-    expect(stageAfterRule).not.toMatch(/transform:/);
+    try {
+      const ambientLayer = getRequiredFixtureElement(fixture, 'ambient-layer');
+      applyFixtureCssRule('.kanban-stage::after', ambientLayer);
+
+      const ambientLayerStyle = window.getComputedStyle(ambientLayer);
+
+      expect(ambientLayerStyle.inset).toBe('0px');
+      expect(['', 'none']).toContain(ambientLayerStyle.transform);
+    } finally {
+      cleanupFixture();
+    }
   });
 
   it('keeps the dark kanban card surface opaque while softening the repeated outline', () => {
