@@ -605,6 +605,9 @@ describe('TaskPanelModal', () => {
         expect(resizableMock.mock.calls.at(-1)?.[0].size).toEqual({ width: 720, height: 520 });
       });
 
+      const querySelectorSpy = vi.spyOn(document, 'querySelector');
+      querySelectorSpy.mockClear();
+
       fireEvent.pointerDown(getByTestId('task-panel-modal-header'), {
         button: 0,
         clientX: 500,
@@ -625,6 +628,7 @@ describe('TaskPanelModal', () => {
       await waitFor(() => {
         expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 140, top: -90 });
       });
+      expect(querySelectorSpy).not.toHaveBeenCalled();
       expect(getByTestId('task-panel-modal-header').getAttribute('data-draggable')).toBe('true');
     } finally {
       cleanup();

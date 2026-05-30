@@ -374,6 +374,7 @@ export function TaskPanelModal({
   const isResizeEnabled = Boolean(resizableStorageKey) && isMobile === false && !modalFullScreen;
   const isDragEnabled = isResizeEnabled;
   const [viewport, setViewport] = useState<TaskPanelViewport>(TASK_PANEL_RESIZE_FALLBACK_VIEWPORT);
+  const viewportRef = useRef(viewport);
   const resizeBounds = {
     minWidth: TASK_PANEL_RESIZE_MIN_WIDTH,
     minHeight: TASK_PANEL_RESIZE_MIN_HEIGHT,
@@ -405,6 +406,10 @@ export function TaskPanelModal({
   );
   const clampedDragOffset = clampTaskPanelDragOffset(resizeOffset, clampedResizableSize, viewport);
   const activePanelOffset = offsetSource === 'drag' ? clampedDragOffset : clampedResizeOffset;
+
+  useIsomorphicLayoutEffect(() => {
+    viewportRef.current = viewport;
+  }, [viewport]);
 
   useEffect(() => {
     return () => {
@@ -579,7 +584,7 @@ export function TaskPanelModal({
             y: dragStartOffsetRef.current.y + deltaY,
           },
           clampedResizableSize,
-          getTaskPanelViewport(),
+          viewportRef.current,
         ),
       );
     };
