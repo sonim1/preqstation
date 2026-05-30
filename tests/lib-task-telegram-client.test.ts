@@ -64,7 +64,7 @@ describe('lib/task-telegram-client', () => {
     );
   });
 
-  it('mentions the configured Hermes bot before Hermes comment dispatches', () => {
+  it('keeps the configured Hermes bot id on Hermes comment dispatches', () => {
     expect(
       buildTaskCommentDispatchMessage({
         taskKey: 'PROJ-328',
