@@ -358,7 +358,7 @@ export function WorkspaceShell({
         breakpoint: 'sm',
         collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
       }}
-      header={{ height: { base: 104, sm: 56 } }}
+      header={{ height: 56 }}
       className="workspace-shell"
     >
       <AppShell.Header className="workspace-header">
