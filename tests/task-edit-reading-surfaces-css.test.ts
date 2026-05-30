@@ -187,14 +187,32 @@ describe('task edit reading surface CSS', () => {
   });
 
   it('keeps main task edit sections unframed around their inner reading surfaces', () => {
-    const mainSectionSurfaceRule = getRuleBody(taskEditFormCss, '.mainSectionSurface');
+    const dom = new JSDOM(`
+      <html>
+        <head><style>${taskEditFormCss}</style></head>
+        <body>
+          <section class="sectionSurface mainSectionSurface" data-testid="main-section"></section>
+        </body>
+      </html>
+    `);
+    const mainSection = dom.window.document.querySelector<HTMLElement>(
+      '[data-testid="main-section"]',
+    );
 
-    expect(mainSectionSurfaceRule).toContain('min-width: 0;');
-    expect(mainSectionSurfaceRule).toContain('padding: 0;');
-    expect(mainSectionSurfaceRule).toContain('border: 0;');
-    expect(mainSectionSurfaceRule).toContain('border-radius: 0;');
-    expect(mainSectionSurfaceRule).toContain('background: transparent;');
-    expect(mainSectionSurfaceRule).toContain('box-shadow: none;');
+    expect(mainSection).toBeTruthy();
+
+    const style = dom.window.getComputedStyle(mainSection!);
+
+    expect(style.minWidth).toBe('0px');
+    expect(style.paddingTop).toBe('0px');
+    expect(style.paddingRight).toBe('0px');
+    expect(style.paddingBottom).toBe('0px');
+    expect(style.paddingLeft).toBe('0px');
+    expect(style.borderTopWidth).toBe('0px');
+    expect(style.borderTopStyle).toBe('none');
+    expect(style.borderTopLeftRadius).toBe('0');
+    expect(style.backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(style.boxShadow).toBe('none');
   });
 
   it('uses semantic tokens for editor and markdown text accents', () => {
