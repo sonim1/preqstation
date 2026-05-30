@@ -357,7 +357,7 @@ Projects can also store an `agent_instructions` setting. When present, task payl
 - OpenClaw-targeted task, QA, and insight sends use the `!/preqstation dispatch ...`
   command format
 - Hermes-targeted task, QA, and insight sends use `/preqstation_dispatch`, with the optional
-  configured Hermes bot mention prepended as `@<botid> /preqstation_dispatch`
+  configured Hermes bot username appended as `/preqstation_dispatch@<botid>`
 - `/api/telegram/send/insight` defaults to the OpenClaw channel and can target Hermes when
   `dispatchTarget=hermes-telegram`
 - `POST /api/projects/:id/qa-runs/trigger` requires a non-empty `taskKeys` array. It accepts
@@ -385,8 +385,8 @@ Projects can also store an `agent_instructions` setting. When present, task payl
   invalid model IDs normalize to no override.
 - Valid model overrides are appended as `model` metadata to OpenClaw
   `!/preqstation dispatch ...` commands and Hermes `/preqstation_dispatch` commands,
-  including the optional `@<botid>` command mention suffix, for task dispatch, dispatched comments, QA
-  dispatch, and project insight dispatch.
+  including the optional `/preqstation_dispatch@<botid>` command form, for task dispatch,
+  dispatched comments, QA dispatch, and project insight dispatch.
 - Model overrides do not update `tasks.engine`, workflow status, or the persisted QA run record.
 
 ### Event System
