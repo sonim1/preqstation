@@ -125,20 +125,40 @@ function getCssRuleBody(source: string, selector: string) {
   return match?.[1] ?? '';
 }
 
-function getFixtureCssRule(selector: string) {
-  for (const sheet of Array.from(document.styleSheets)) {
-    for (const rule of Array.from(sheet.cssRules)) {
-      if ('selectorText' in rule && rule.selectorText === selector) {
-        return rule as CSSStyleRule;
-      }
+function getCssRuleStyleText(source: string, selector: string) {
+  const style = document.createElement('style');
+
+  style.textContent = source;
+  document.head.append(style);
+
+  try {
+    const rule = findCssStyleRule(style.sheet?.cssRules, selector);
+
+    return rule?.style.cssText ?? '';
+  } finally {
+    style.remove();
+  }
+}
+
+function findCssStyleRule(rules: CSSRuleList | undefined, selector: string): CSSStyleRule | null {
+  if (!rules) {
+    return null;
+  }
+
+  for (const rule of Array.from(rules)) {
+    if ('selectorText' in rule && (rule as CSSStyleRule).selectorText === selector) {
+      return rule as CSSStyleRule;
+    }
+
+    const nestedRules = (rule as CSSRule & { cssRules?: CSSRuleList }).cssRules;
+    const nestedMatch = findCssStyleRule(nestedRules, selector);
+
+    if (nestedMatch) {
+      return nestedMatch;
     }
   }
 
-  throw new Error(`CSS rule "${selector}" was not found in the fixture styles`);
-}
-
-function applyFixtureCssRule(selector: string, element: HTMLElement) {
-  element.style.cssText = getFixtureCssRule(selector).style.cssText;
+  return null;
 }
 
 function resolveWaveTopHeadroom(runState: 'queued' | 'running') {
@@ -438,24 +458,31 @@ describe('app/components/kanban-card', () => {
   });
 
   it('keeps the ambient board layer inside the stage bounds', () => {
+    const stageAfterFixtureStyle = document.createElement('style');
     const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
       `
         <section class="kanban-stage" data-testid="stage">
-          <span data-testid="ambient-layer"></span>
+          <div data-testid="stage-after"></div>
         </section>
       `,
       true,
     );
 
+    stageAfterFixtureStyle.textContent = `[data-testid="stage-after"] { ${getCssRuleStyleText(
+      globalsCss,
+      '.kanban-stage::after',
+    )} }`;
+    document.head.append(stageAfterFixtureStyle);
+
     try {
-      const ambientLayer = getRequiredFixtureElement(fixture, 'ambient-layer');
-      applyFixtureCssRule('.kanban-stage::after', ambientLayer);
+      const stageAfterStyle = window.getComputedStyle(
+        getRequiredFixtureElement(fixture, 'stage-after'),
+      );
 
-      const ambientLayerStyle = window.getComputedStyle(ambientLayer);
-
-      expect(ambientLayerStyle.inset).toBe('0px');
-      expect(['', 'none']).toContain(ambientLayerStyle.transform);
+      expect(stageAfterStyle.getPropertyValue('inset')).toBe('0px');
+      expect(stageAfterStyle.transform).toBe('none');
     } finally {
+      stageAfterFixtureStyle.remove();
       cleanupFixture();
     }
   });

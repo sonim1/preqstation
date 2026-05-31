@@ -1767,8 +1767,8 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
     160% 160%,
     145% 145%;
   background-position:
-    48% 49%,
-    52% 51%;
+    46% 49%,
+    54% 51%;
   opacity: var(--kanban-stage-ambient-opacity);
   animation: var(--kanban-stage-ambient-animation);
 }
