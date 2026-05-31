@@ -424,7 +424,7 @@ export function TaskPanelModal({
   useIsomorphicLayoutEffect(() => {
     viewportRef.current = viewport;
     clampedResizableSizeRef.current = clampedResizableSize;
-  }, [clampedResizableSize, viewport]);
+  }, [clampedResizableSize.height, clampedResizableSize.width, viewport]);
 
   function releasePanelDragPointerCapture() {
     const captureTarget = dragCaptureTargetRef.current;

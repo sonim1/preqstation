@@ -94,7 +94,10 @@ vi.mock('@/app/components/task-notification-center', () => ({
 }));
 
 import { resolveWorkspaceKanbanHref, WorkspaceShell } from '@/app/components/workspace-shell';
-import { type WorkspaceProjectOption } from '@/lib/workspace-project-picker';
+import {
+  RECENT_PROJECTS_STORAGE,
+  type WorkspaceProjectOption,
+} from '@/lib/workspace-project-picker';
 
 afterEach(() => {
   cleanup();
@@ -153,7 +156,15 @@ function prepareWorkspaceShellRender(args: RenderWorkspaceShellArgs) {
     .mockReturnValueOnce([false, { toggle: vi.fn(), close: vi.fn() }])
     .mockReturnValueOnce([options.desktopOpened, { toggle: vi.fn(), close: vi.fn() }]);
   usePathnameMock.mockReturnValue(options.pathname);
-  useSyncExternalStoreMock.mockReturnValue(options.rememberedProjectKey);
+  let externalStoreCallIndex = 0;
+  useSyncExternalStoreMock.mockImplementation(
+    (_subscribe: unknown, _getSnapshot: unknown, getServerSnapshot?: () => unknown) => {
+      externalStoreCallIndex += 1;
+      if (externalStoreCallIndex === 1) return options.rememberedProjectKey;
+
+      return getServerSnapshot?.();
+    },
+  );
 
   return options;
 }
@@ -256,6 +267,19 @@ function getRequiredFixtureElement(fixture: HTMLElement, testId: string) {
   expect(element).not.toBeNull();
 
   return element as HTMLElement;
+}
+
+function makeActiveProjectOptions(count: number): WorkspaceProjectOption[] {
+  return Array.from({ length: count }, (_, index) => {
+    const number = index + 1;
+
+    return {
+      id: `project-${number}`,
+      name: `Project ${number}`,
+      projectKey: `PROJECT-${number}`,
+      status: 'active',
+    };
+  });
 }
 
 function expectComputedStyleProperties(
@@ -367,13 +391,12 @@ describe('app/components/workspace-shell', () => {
     expect(globalsCss).toContain('justify-self: end;');
   });
 
-  it('uses a two-row AppShell header height on mobile and the existing height above mobile', () => {
+  it('uses a single AppShell header height across mobile and desktop', () => {
     const html = renderWorkspaceShell(true);
 
-    expect(html).toContain('--app-shell-header-height:calc(6.5rem * var(--mantine-scale));');
-    expect(html).toContain(
-      '@media(min-width: 48em){:root{--app-shell-header-height:calc(3.5rem * var(--mantine-scale));',
-    );
+    expect(html).toContain('--app-shell-header-height:calc(3.5rem * var(--mantine-scale));');
+    expect(html).not.toContain('--app-shell-header-height:calc(6.5rem * var(--mantine-scale));');
+    expect(html).not.toContain('@media(min-width: 48em){:root{--app-shell-header-height:');
   });
 
   it('keeps the mobile header CSS below Mantine sm where AppShell switches to 56px', () => {
@@ -443,6 +466,42 @@ describe('app/components/workspace-shell', () => {
         'grid-column': '3',
         'grid-row': '1',
       });
+      expect(
+        getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-header-start', [
+          'grid-column',
+          'grid-row',
+        ]),
+      ).toEqual({
+        'grid-column': '1',
+        'grid-row': '1',
+      });
+      expect(
+        getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-header-brand', [
+          'grid-column',
+          'grid-row',
+        ]),
+      ).toEqual({
+        'grid-column': '2',
+        'grid-row': '1',
+      });
+      expect(
+        getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-header-middle', [
+          'grid-column',
+          'grid-row',
+        ]),
+      ).toEqual({
+        'grid-column': '3',
+        'grid-row': '1',
+      });
+      expect(
+        getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-header-end', [
+          'grid-column',
+          'grid-row',
+        ]),
+      ).toEqual({
+        'grid-column': '4',
+        'grid-row': '1',
+      });
     } finally {
       fixture.cleanup();
     }
@@ -476,8 +535,21 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('matches the desktop account avatar size to the 44px navbar controls', () => {
+    expect(
+      getCssRuleProperties('.workspace-avatar-trigger', [
+        'width',
+        'min-width',
+        'height',
+        'padding-top',
+      ]),
+    ).toEqual({
+      width: 'var(--ui-hit-touch-min)',
+      'min-width': 'var(--ui-hit-touch-min)',
+      height: 'var(--ui-hit-touch-min)',
+      'padding-top': '0px',
+    });
     expect(workspaceShellSource).toMatch(
-      /className="workspace-avatar-trigger"[\s\S]*<Avatar color="blue" radius="xl" size=\{44\}>/,
+      /className="workspace-avatar-trigger"[\s\S]*<Avatar color="blue" radius="xl" size=\{32\}>/,
     );
   });
 
@@ -655,6 +727,82 @@ describe('app/components/workspace-shell', () => {
     expect(html).toMatch(
       /href="\/board\/ALPHA"[\s\S]*workspace-board-subnav-link[\s\S]*href="\/board\/GAMMA"[\s\S]*workspace-board-subnav-link/,
     );
+  });
+
+  it('limits the desktop board subnav to a short quick list when many boards are active', () => {
+    const { container } = renderWorkspaceShellDom({
+      desktopOpened: true,
+      projectOptions: makeActiveProjectOptions(10),
+    });
+    const quickBoardLinks = container.querySelectorAll('.workspace-board-subnav-link');
+    const hiddenInlineBoardLink = container.querySelector('[href="/board/PROJECT-5"]');
+
+    expect(quickBoardLinks).toHaveLength(4);
+    expect(hiddenInlineBoardLink).toBeNull();
+  });
+
+  it('keeps the current board visible when it is outside the default quick board range', () => {
+    const html = renderWorkspaceShell({
+      desktopOpened: true,
+      pathname: '/board/PROJECT-10',
+      rememberedProjectKey: 'PROJECT-10',
+      projectOptions: makeActiveProjectOptions(10),
+    });
+
+    expect(html).toContain('href="/board/PROJECT-10"');
+    expect(html).toMatch(
+      /href="\/board\/PROJECT-10"[\s\S]*workspace-board-subnav-link[\s\S]*aria-current="page"/,
+    );
+    expect(html.match(/workspace-board-subnav-link/g) ?? []).toHaveLength(4);
+    expect(html).toContain('data-current-board-index="3"');
+  });
+
+  it('does not read recent boards from localStorage for the initial render', () => {
+    window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(['PROJECT-6', 'PROJECT-5']));
+
+    try {
+      const html = renderWorkspaceShell({
+        desktopOpened: true,
+        pathname: '/board/PROJECT-1',
+        rememberedProjectKey: 'PROJECT-1',
+        projectOptions: makeActiveProjectOptions(6),
+      });
+
+      expect(html).toContain('href="/board/PROJECT-3"');
+      expect(html).toContain('href="/board/PROJECT-4"');
+      expect(html).not.toContain('href="/board/PROJECT-5"');
+      expect(html).not.toContain('href="/board/PROJECT-6"');
+    } finally {
+      window.localStorage.removeItem(RECENT_PROJECTS_STORAGE);
+    }
+  });
+
+  it('adds an overflow board picker only when active boards exceed the quick list', () => {
+    const crowdedHtml = renderWorkspaceShell({
+      desktopOpened: true,
+      projectOptions: makeActiveProjectOptions(5),
+    });
+    const shortHtml = renderWorkspaceShell({
+      desktopOpened: true,
+      projectOptions: makeActiveProjectOptions(4),
+    });
+
+    expect(crowdedHtml).toContain('workspace-board-subnav-more');
+    expect(crowdedHtml).toContain('Open all boards menu');
+    expect(shortHtml).not.toContain('workspace-board-subnav-more');
+    expect(workspaceShellSource).toMatch(
+      /className="workspace-board-subnav-more"[\s\S]*<ProjectPickerMenuItems/,
+    );
+  });
+
+  it('shows the number of boards hidden from the quick list in the overflow badge', () => {
+    const { container } = renderWorkspaceShellDom({
+      desktopOpened: true,
+      projectOptions: makeActiveProjectOptions(10),
+    });
+    const overflowCount = container.querySelector('.workspace-board-subnav-more-count');
+
+    expect(overflowCount?.textContent).toBe('6');
   });
 
   it('renders a connections nav link instead of api keys', () => {
@@ -959,6 +1107,22 @@ describe('app/components/workspace-shell', () => {
     );
   });
 
+  it('keeps the board overflow row on workspace tokens', () => {
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <button class="workspace-board-subnav-more" data-testid="more"></button>
+    `);
+
+    try {
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'more'), {
+        'min-height': '44px',
+        background: 'transparent',
+        color: 'color-mix(in srgb, var(--ui-text), var(--ui-muted-text) 28%)',
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
   it('keeps the left header chrome on token-driven dark surfaces', () => {
     expect(globalsCss).toMatch(
       /html\[data-mantine-color-scheme='dark'\] \.workspace-brand-link,\s*html\[data-mantine-color-scheme='dark'\] \.workspace-avatar-trigger\s*\{[^}]*background:\s*var\(--ui-workspace-control-surface\);/,
@@ -1055,42 +1219,78 @@ describe('app/components/workspace-shell', () => {
     expect(globalsCss).not.toContain('.workspace-project-picker:focus-visible');
   });
 
-  it('centers the compact project picker and keeps the compact trigger styling scoped to its modifier', () => {
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-brand-copy\s*\{[\s\S]*display:\s*none;/,
-    );
-    expect(globalsCss).toMatch(
-      /\.command-palette-trigger--compact\s*\{[^}]*display:\s*flex;[^}]*align-items:\s*center;[^}]*width:\s*var\(--ui-hit-touch-min\);[^}]*min-width:\s*var\(--ui-hit-touch-min\);[^}]*justify-content:\s*center;/,
-    );
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-header-middle\s*\{[\s\S]*justify-content:\s*center;/,
-    );
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*margin:\s*0 auto;/,
-    );
-    expect(globalsCss).toMatch(
-      /\.workspace-mobile-project-picker\s*\{[^}]*min-height:\s*var\(--ui-hit-touch-min\);/,
-    );
+  it('keeps the compact project picker in the mobile header row and scopes compact trigger styles', () => {
+    expect(
+      getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-brand-copy', ['display']),
+    ).toEqual({ display: 'none' });
+    expect(
+      getCssRuleProperties('.command-palette-trigger--compact', [
+        'display',
+        'align-items',
+        'width',
+        'min-width',
+        'justify-content',
+      ]),
+    ).toEqual({
+      display: 'flex',
+      'align-items': 'center',
+      width: 'var(--ui-hit-touch-min)',
+      'min-width': 'var(--ui-hit-touch-min)',
+      'justify-content': 'center',
+    });
+    expect(
+      getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-header-middle', [
+        'justify-content',
+      ]),
+    ).toEqual({ 'justify-content': 'stretch' });
+    expect(
+      getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-mobile-project-picker', [
+        'margin',
+      ]),
+    ).toEqual({ margin: '0px' });
+    expect(getCssRuleProperties('.workspace-mobile-project-picker', ['min-height'])).toEqual({
+      'min-height': 'var(--ui-hit-touch-min)',
+    });
   });
 
   it('lets the mobile picker shrink between fixed header controls', () => {
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-header-inner\s*\{[\s\S]*grid-template-columns:\s*auto minmax\(0,\s*1fr\) auto;/,
-    );
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-header-middle\s*\{[\s\S]*width:\s*100%;/,
-    );
+    expect(
+      getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-header-inner', [
+        'grid-template-columns',
+        'grid-template-rows',
+      ]),
+    ).toEqual({
+      'grid-template-columns': 'auto auto minmax(0, 1fr) auto',
+      'grid-template-rows': '56px',
+    });
+    expect(
+      getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-header-middle', [
+        'width',
+        'min-width',
+      ]),
+    ).toEqual({
+      width: '100%',
+      'min-width': '0px',
+    });
   });
 
   it('gives the mobile project picker responsive room for long project names', () => {
-    expect(globalsCss).toMatch(
-      /\.workspace-mobile-project-picker\s*\{[^}]*max-width:\s*min\(60vw, 260px\);/,
-    );
-    expect(globalsCss).toMatch(
-      /\.workspace-mobile-project-picker-label\s*\{[^}]*max-width:\s*min\(38vw, 168px\);/,
-    );
-    expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-mobile-project-picker\s*\{[\s\S]*width:\s*min\(100%,\s*260px\);[\s\S]*max-width:\s*100%;/,
-    );
+    expect(getCssRuleProperties('.workspace-mobile-project-picker', ['max-width'])).toEqual({
+      'max-width': 'min(60vw, 260px)',
+    });
+    expect(getCssRuleProperties('.workspace-mobile-project-picker-label', ['max-width'])).toEqual({
+      'max-width': 'min(38vw, 168px)',
+    });
+    expect(
+      getCssMediaRuleProperties('(max-width: 47.999em)', '.workspace-mobile-project-picker', [
+        'width',
+        'min-width',
+        'max-width',
+      ]),
+    ).toEqual({
+      width: '100%',
+      'min-width': '0px',
+      'max-width': '100%',
+    });
   });
 });

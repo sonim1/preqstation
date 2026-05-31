@@ -150,6 +150,18 @@ describe('app/components/task-notification-center', () => {
     );
   }
 
+  it('keeps the navbar notification trigger on the shared 44px control contract', () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => makePage(0, []),
+    });
+
+    renderTaskNotificationCenter();
+
+    const trigger = screen.getByLabelText(/notifications/i);
+    expect(trigger.classList.contains('workspace-notification-trigger')).toBe(true);
+  });
+
   it('uses the unread total from the API instead of the loaded page length', async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,

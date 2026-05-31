@@ -702,6 +702,78 @@ describe('TaskPanelModal', () => {
     }
   });
 
+  it('keeps drag clamping in sync when the viewport grows mid-drag', async () => {
+    const dom = installDom({ width: 1400, height: 900 });
+
+    try {
+      const { getByTestId } = render(
+        <TaskPanelModal
+          opened={true}
+          title="Edit Task"
+          closeHref="/board"
+          size="80rem"
+          resizableStorageKey="preqstation:task-edit-panel:size:v1"
+        >
+          <div>Panel content</div>
+        </TaskPanelModal>,
+      );
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].size).toEqual({ width: 1280, height: 720 });
+      });
+
+      dom.resizeTo(900, 650);
+
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].size).toEqual({ width: 852, height: 602 });
+      });
+
+      fireEvent.pointerDown(getByTestId('task-panel-modal-header'), {
+        button: 0,
+        clientX: 500,
+        clientY: 300,
+        pointerId: 12,
+      });
+
+      dom.resizeTo(1400, 900);
+
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].size).toEqual({ width: 1280, height: 720 });
+      });
+
+      fireEvent.pointerMove(window, {
+        clientX: 800,
+        clientY: 300,
+        pointerId: 12,
+      });
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 60, top: 0 });
+      });
+
+      dom.resizeTo(1800, 1000);
+
+      act(() => {
+        window.dispatchEvent(new Event('resize'));
+      });
+
+      await waitFor(() => {
+        expect(resizableMock.mock.calls.at(-1)?.[0].style).toEqual({ left: 60, top: 0 });
+      });
+    } finally {
+      cleanup();
+      dom.restore();
+    }
+  });
+
   it('does not snap into the resize gutter when resizing after an edge drag', async () => {
     const dom = installDom({ width: 1000, height: 700 });
     window.localStorage.setItem(
