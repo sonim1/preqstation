@@ -535,8 +535,21 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('matches the desktop account avatar size to the 44px navbar controls', () => {
+    expect(
+      getCssRuleProperties('.workspace-avatar-trigger', [
+        'width',
+        'min-width',
+        'height',
+        'padding-top',
+      ]),
+    ).toEqual({
+      width: 'var(--ui-hit-touch-min)',
+      'min-width': 'var(--ui-hit-touch-min)',
+      height: 'var(--ui-hit-touch-min)',
+      'padding-top': '0px',
+    });
     expect(workspaceShellSource).toMatch(
-      /className="workspace-avatar-trigger"[\s\S]*<Avatar color="blue" radius="xl" size=\{44\}>/,
+      /className="workspace-avatar-trigger"[\s\S]*<Avatar color="blue" radius="xl" size=\{32\}>/,
     );
   });
 
