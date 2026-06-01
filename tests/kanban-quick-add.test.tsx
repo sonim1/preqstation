@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const taskLabelPickerPropsMock = vi.hoisted(() => vi.fn());
+const taskPriorityPickerPropsMock = vi.hoisted(() => vi.fn());
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -64,6 +65,13 @@ vi.mock('@/app/components/task-label-picker', () => ({
   },
 }));
 
+vi.mock('@/app/components/task-metadata-controls', () => ({
+  TaskMetadataPriorityPicker: (props: Record<string, unknown>) => {
+    taskPriorityPickerPropsMock(props);
+    return <button type="button" aria-label={`${props.label}: No priority`} />;
+  },
+}));
+
 import { KanbanQuickAdd } from '@/app/components/kanban-quick-add';
 
 function renderQuickAdd(selectedProject: { id: string; name: string } | null) {
@@ -84,6 +92,7 @@ function renderQuickAdd(selectedProject: { id: string; name: string } | null) {
 describe('app/components/kanban-quick-add accessibility', () => {
   beforeEach(() => {
     taskLabelPickerPropsMock.mockReset();
+    taskPriorityPickerPropsMock.mockReset();
   });
 
   it('renders accessible names for all interactive fields on all-project boards', () => {
@@ -91,11 +100,20 @@ describe('app/components/kanban-quick-add accessibility', () => {
 
     expect(html).toContain('aria-label="Task title"');
     expect(html).toContain('aria-label="Project"');
-    expect(html).toContain('aria-label="Priority"');
+    expect(html).toContain('aria-label="Task priority: No priority"');
     expect(taskLabelPickerPropsMock).toHaveBeenCalledWith(
       expect.objectContaining({
         projectId: '',
         selectedLabelIds: [],
+      }),
+    );
+    expect(taskPriorityPickerPropsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        initialPriority: 'none',
+        label: 'Task priority',
+        priorityOptions: expect.arrayContaining([
+          expect.objectContaining({ value: 'none', label: 'No priority' }),
+        ]),
       }),
     );
   });
@@ -106,11 +124,17 @@ describe('app/components/kanban-quick-add accessibility', () => {
     expect(html).toContain('Alpha');
     expect(html).toContain('aria-label="Task title"');
     expect(html).not.toContain('aria-label="Project"');
-    expect(html).toContain('aria-label="Priority"');
+    expect(html).toContain('aria-label="Task priority: No priority"');
     expect(taskLabelPickerPropsMock).toHaveBeenCalledWith(
       expect.objectContaining({
         projectId: 'project-1',
         labelOptions: [{ id: 'label-1', name: 'Bug', color: 'red' }],
+      }),
+    );
+    expect(taskPriorityPickerPropsMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        initialPriority: 'none',
+        label: 'Task priority',
       }),
     );
   });
