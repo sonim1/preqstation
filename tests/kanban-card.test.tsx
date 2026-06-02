@@ -125,21 +125,6 @@ function getCssRuleBody(source: string, selector: string) {
   return match?.[1] ?? '';
 }
 
-function getCssRuleStyleText(source: string, selector: string) {
-  const style = document.createElement('style');
-
-  style.textContent = source;
-  document.head.append(style);
-
-  try {
-    const rule = findCssStyleRule(style.sheet?.cssRules, selector);
-
-    return rule?.style.cssText ?? '';
-  } finally {
-    style.remove();
-  }
-}
-
 function findCssStyleRule(rules: CSSRuleList | undefined, selector: string): CSSStyleRule | null {
   if (!rules) {
     return null;
@@ -459,31 +444,25 @@ describe('app/components/kanban-card', () => {
   });
 
   it('keeps the ambient board layer inside the stage bounds', () => {
-    const stageAfterFixtureStyle = document.createElement('style');
-    const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
-      `
-        <section class="kanban-stage" data-testid="stage">
-          <div data-testid="stage-after"></div>
-        </section>
-      `,
+    const { fixture, style, cleanup: cleanupFixture } = renderCardsCssFixture(
+      '<div class="kanban-stage" data-testid="stage"></div>',
       true,
     );
 
-    stageAfterFixtureStyle.textContent = `[data-testid="stage-after"] { ${getCssRuleStyleText(
-      globalsCss,
-      '.kanban-stage::after',
-    )} }`;
-    document.head.append(stageAfterFixtureStyle);
-
     try {
-      const stageAfterStyle = window.getComputedStyle(
-        getRequiredFixtureElement(fixture, 'stage-after'),
-      );
+      const afterRule = findCssStyleRule(style.sheet?.cssRules, '.kanban-stage::after');
 
-      expect(stageAfterStyle.getPropertyValue('inset')).toBe('0px');
-      expect(stageAfterStyle.transform).toBe('none');
+      expect(afterRule).toBeDefined();
+
+      const testElement = document.createElement('div');
+      testElement.style.cssText = afterRule!.style.cssText;
+      fixture.append(testElement);
+
+      const computed = window.getComputedStyle(testElement);
+
+      expect(computed.getPropertyValue('inset')).toBe('0px');
+      expect(computed.transform).toBe('none');
     } finally {
-      stageAfterFixtureStyle.remove();
       cleanupFixture();
     }
   });
