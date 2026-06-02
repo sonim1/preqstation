@@ -306,6 +306,7 @@ export function TaskNotificationCenter() {
           radius="xl"
           variant="default"
           className="workspace-notification-trigger"
+          style={{ backgroundColor: 'transparent' }}
           aria-label={
             unreadCount > 0 ? `Open notifications (${unreadCount} unread)` : 'Open notifications'
           }

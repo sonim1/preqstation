@@ -1036,18 +1036,10 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .workspace-brand-link:focus-visible,
 .workspace-divider-rail-button:focus-visible,
-.workspace-header-sidebar-toggle:focus-visible,
-.workspace-notification-trigger:focus-visible,
-.workspace-avatar-trigger:focus-visible {
+.workspace-header-sidebar-toggle:focus-visible {
   outline: none;
   border-color: var(--ui-accent);
   box-shadow: var(--ui-workspace-outer-focus-shadow);
-}
-
-.workspace-brand-link:focus-visible,
-.workspace-notification-trigger:focus-visible,
-.workspace-avatar-trigger:focus-visible {
-  background: var(--ui-workspace-control-hover-surface);
 }
 
 .workspace-header-sidebar-toggle {
@@ -1061,23 +1053,20 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   background: var(--ui-workspace-control-surface);
 }
 
-.workspace-avatar-trigger {
+.workspace-avatar-trigger,
+.workspace-notification-trigger {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 2px;
+  padding: 0;
   border-radius: 999px;
-  border: 1px solid var(--ui-workspace-control-border);
-  background: var(--ui-workspace-control-surface);
-  cursor: pointer;
   transition:
-    border-color 140ms ease,
-    background-color 140ms ease;
-}
-
-.workspace-notification-trigger {
-  border-color: var(--ui-workspace-control-border);
-  background: var(--ui-workspace-control-surface);
+    background-color 140ms ease,
+    box-shadow 140ms ease;
 }
 
 .workspace-notification-indicator .mantine-Indicator-indicator {
@@ -1092,7 +1081,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 .workspace-notification-trigger:focus-visible,
 .workspace-avatar-trigger:hover,
 .workspace-avatar-trigger:focus-visible {
-  border-color: var(--ui-accent);
+  background: transparent;
 }
 
 .workspace-user-menu {
@@ -3040,11 +3029,11 @@ html[data-mantine-color-scheme='dark'] .workspace-header-sidebar-toggle:focus-vi
 
 html[data-mantine-color-scheme='dark'] .workspace-brand-link,
 html[data-mantine-color-scheme='dark'] .workspace-avatar-trigger {
-  background: var(--ui-workspace-control-surface);
+  background: transparent;
 }
 
 html[data-mantine-color-scheme='dark'] .workspace-notification-trigger {
-  background: var(--ui-workspace-control-surface);
+  background: transparent;
 }
 
 html[data-mantine-color-scheme='dark'] .workspace-mobile-project-picker:hover,
