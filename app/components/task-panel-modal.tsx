@@ -412,6 +412,7 @@ export function TaskPanelModal({
   const hasActiveDragRef = useRef(false);
   const finishDragRef = useRef<(() => void) | null>(null);
   const clampedResizableSize = clampTaskPanelSize(resizableSize, viewport);
+  const clampedResizableSizeRef = useRef<TaskPanelSize>(clampedResizableSize);
   const clampedResizeOffset = clampTaskPanelResizeOffset(
     resizeOffset,
     clampedResizableSize,
@@ -422,7 +423,8 @@ export function TaskPanelModal({
 
   useIsomorphicLayoutEffect(() => {
     viewportRef.current = viewport;
-  }, [viewport]);
+    clampedResizableSizeRef.current = clampedResizableSize;
+  }, [clampedResizableSize.height, clampedResizableSize.width, viewport]);
 
   function releasePanelDragPointerCapture() {
     const captureTarget = dragCaptureTargetRef.current;
@@ -610,24 +612,23 @@ export function TaskPanelModal({
       const deltaX = pointerEvent.clientX - startPointer.x;
       const deltaY = pointerEvent.clientY - startPointer.y;
 
-      if (
-        !hasActiveDragRef.current &&
-        Math.hypot(deltaX, deltaY) < TASK_PANEL_DRAG_START_THRESHOLD
-      ) {
-        return;
+      if (!hasActiveDragRef.current) {
+        if (Math.hypot(deltaX, deltaY) < TASK_PANEL_DRAG_START_THRESHOLD) {
+          return;
+        }
+        hasActiveDragRef.current = true;
+        setOffsetSource('drag');
+        setIsPanelDragging(true);
       }
 
-      hasActiveDragRef.current = true;
       pointerEvent.preventDefault();
-      setOffsetSource('drag');
-      setIsPanelDragging(true);
       setResizeOffset(
         clampTaskPanelDragOffset(
           {
             x: dragStartOffsetRef.current.x + deltaX,
             y: dragStartOffsetRef.current.y + deltaY,
           },
-          clampedResizableSize,
+          clampedResizableSizeRef.current,
           viewportRef.current,
         ),
       );
@@ -797,7 +798,6 @@ export function TaskPanelModal({
 
             ref.style.left = `${nextOffset.x}px`;
             ref.style.top = `${nextOffset.y}px`;
-            setOffsetSource(nextOffsetSource);
           }}
           onResizeStop={handleResizeStop}
         >

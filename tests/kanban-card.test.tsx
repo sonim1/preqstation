@@ -125,6 +125,42 @@ function getCssRuleBody(source: string, selector: string) {
   return match?.[1] ?? '';
 }
 
+function getCssRuleStyleText(source: string, selector: string) {
+  const style = document.createElement('style');
+
+  style.textContent = source;
+  document.head.append(style);
+
+  try {
+    const rule = findCssStyleRule(style.sheet?.cssRules, selector);
+
+    return rule?.style.cssText ?? '';
+  } finally {
+    style.remove();
+  }
+}
+
+function findCssStyleRule(rules: CSSRuleList | undefined, selector: string): CSSStyleRule | null {
+  if (!rules) {
+    return null;
+  }
+
+  for (const rule of Array.from(rules)) {
+    if ('selectorText' in rule && (rule as CSSStyleRule).selectorText === selector) {
+      return rule as CSSStyleRule;
+    }
+
+    const nestedRules = (rule as CSSRule & { cssRules?: CSSRuleList }).cssRules;
+    const nestedMatch = findCssStyleRule(nestedRules, selector);
+
+    if (nestedMatch) {
+      return nestedMatch;
+    }
+  }
+
+  return null;
+}
+
 function resolveWaveTopHeadroom(runState: 'queued' | 'running') {
   const { paths, waveHeight, waveShiftPercent, bandTopClearance } = getRunStateWaveConfig(runState);
   const highestCrest = Math.min(
@@ -423,28 +459,31 @@ describe('app/components/kanban-card', () => {
   });
 
   it('keeps the ambient board layer inside the stage bounds', () => {
-    const {
-      fixture,
-      style,
-      cleanup: cleanupFixture,
-    } = renderCardsCssFixture('<div class="kanban-stage" data-testid="stage"></div>', true);
+    const stageAfterFixtureStyle = document.createElement('style');
+    const { fixture, cleanup: cleanupFixture } = renderCardsCssFixture(
+      `
+        <section class="kanban-stage" data-testid="stage">
+          <div data-testid="stage-after"></div>
+        </section>
+      `,
+      true,
+    );
+
+    stageAfterFixtureStyle.textContent = `[data-testid="stage-after"] { ${getCssRuleStyleText(
+      globalsCss,
+      '.kanban-stage::after',
+    )} }`;
+    document.head.append(stageAfterFixtureStyle);
 
     try {
-      const sheet = style.sheet as CSSStyleSheet | undefined;
-      const rules = Array.from(sheet?.cssRules ?? []) as CSSStyleRule[];
-      const afterRule = rules.find((rule) => rule.selectorText === '.kanban-stage::after');
+      const stageAfterStyle = window.getComputedStyle(
+        getRequiredFixtureElement(fixture, 'stage-after'),
+      );
 
-      expect(afterRule).toBeDefined();
-
-      const materializedLayer = document.createElement('div');
-      materializedLayer.style.cssText = afterRule?.style.cssText ?? '';
-      fixture.appendChild(materializedLayer);
-
-      const layerStyle = window.getComputedStyle(materializedLayer);
-
-      expect(layerStyle.inset).toBe('0px');
-      expect(layerStyle.transform).toBe('none');
+      expect(stageAfterStyle.getPropertyValue('inset')).toBe('0px');
+      expect(stageAfterStyle.transform).toBe('none');
     } finally {
+      stageAfterFixtureStyle.remove();
       cleanupFixture();
     }
   });
