@@ -47,8 +47,10 @@ export function pushRecentProjectKey(projectKey: string): void {
   }
 }
 
-export function getRecencyOrderedProjectOptions(projectOptions: WorkspaceProjectOption[]) {
-  const recentProjectKeys = readRecentProjectKeys();
+export function getRecencyOrderedProjectOptions(
+  projectOptions: WorkspaceProjectOption[],
+  recentProjectKeys = readRecentProjectKeys(),
+) {
   const seen = new Set<string>();
   const ordered: WorkspaceProjectOption[] = [];
 

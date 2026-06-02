@@ -35,14 +35,14 @@ import { ACTIVE_PROJECT_STATUS } from '@/lib/project-meta';
 import {
   findProjectByKey,
   findVisibleProjectByKey,
-  getRecencyOrderedProjectOptions,
   getProjectSelectHref,
+  getRecencyOrderedProjectOptions,
   getWorkspaceProjectSubtitle,
+  LAST_PROJECT_KEY_STORAGE,
+  pushRecentProjectKey,
+  readRecentProjectKeys,
   RECENT_PROJECTS_CHANGED_EVENT,
   RECENT_PROJECTS_STORAGE,
-  LAST_PROJECT_KEY_STORAGE,
-  readRecentProjectKeys,
-  pushRecentProjectKey,
   resolvePickerProject,
   type WorkspaceProjectOption,
 } from '@/lib/workspace-project-picker';
@@ -199,12 +199,13 @@ export function WorkspaceShell({
     readProjectOrderState,
     () => '',
   );
-  const [storedRememberedProjectKey, projectOrderMarker] = (projectOrderState || '').split('|', 2);
+  const [storedRememberedProjectKey, ...recentProjectKeys] = (projectOrderState || '').split('|');
   const rememberedProjectKey = storedRememberedProjectKey || null;
-  const orderedProjectOptions = useMemo(
-    () => getRecencyOrderedProjectOptions(projectOptions),
-    [projectOptions, projectOrderMarker],
-  );
+  const projectOrderMarker = recentProjectKeys.join('|');
+  const orderedProjectOptions = useMemo(() => {
+    const storedRecentProjectKeys = projectOrderMarker ? projectOrderMarker.split('|') : [];
+    return getRecencyOrderedProjectOptions(projectOptions, storedRecentProjectKeys);
+  }, [projectOptions, projectOrderMarker]);
   const activeProjectOptions = useMemo(
     () => partitionWorkspaceProjectOptions(orderedProjectOptions),
     [orderedProjectOptions],

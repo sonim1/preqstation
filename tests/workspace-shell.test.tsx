@@ -94,7 +94,10 @@ vi.mock('@/app/components/task-notification-center', () => ({
 }));
 
 import { resolveWorkspaceKanbanHref, WorkspaceShell } from '@/app/components/workspace-shell';
-import { type WorkspaceProjectOption } from '@/lib/workspace-project-picker';
+import {
+  RECENT_PROJECTS_STORAGE,
+  type WorkspaceProjectOption,
+} from '@/lib/workspace-project-picker';
 
 afterEach(() => {
   cleanup();
@@ -757,6 +760,47 @@ describe('app/components/workspace-shell', () => {
     expect(html).toContain('data-current-board-index="1"');
     expect(html).toContain('transform:translateY(48px)');
     expect(html).not.toContain('workspace-board-subnav-pulse');
+  });
+
+  it('recomputes board ordering when later recent project keys change', () => {
+    ensureBrowserObservers();
+    ensureMatchMedia();
+
+    const projectOptions = [
+      { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
+      { id: '2', name: 'Beta', projectKey: 'BETA', status: 'active' },
+      { id: '3', name: 'Gamma', projectKey: 'GAMMA', status: 'active' },
+      { id: '4', name: 'Delta', projectKey: 'DELTA', status: 'active' },
+    ] satisfies WorkspaceProjectOption[];
+    let projectOrderState = 'ALPHA|BETA|GAMMA';
+
+    useDisclosureMock.mockReset();
+    useDisclosureMock.mockImplementation((opened = false) => [
+      opened,
+      { toggle: vi.fn(), close: vi.fn() },
+    ]);
+    usePathnameMock.mockReturnValue('/board/ALPHA');
+    useSyncExternalStoreMock.mockReset();
+    useSyncExternalStoreMock.mockImplementation(() => projectOrderState);
+    window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(['BETA', 'GAMMA']));
+
+    try {
+      const { container, rerender } = render(workspaceShellElement(projectOptions));
+      const boardLabels = () =>
+        Array.from(container.querySelectorAll<HTMLElement>('.workspace-board-subnav-link')).map(
+          (link) => link.textContent?.trim(),
+        );
+
+      expect(boardLabels()).toEqual(['Beta', 'Gamma', 'Alpha', 'Delta']);
+
+      window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(['BETA', 'DELTA']));
+      projectOrderState = 'ALPHA|BETA|DELTA';
+      rerender(workspaceShellElement(projectOptions));
+
+      expect(boardLabels()).toEqual(['Beta', 'Delta', 'Alpha', 'Gamma']);
+    } finally {
+      window.localStorage.removeItem(RECENT_PROJECTS_STORAGE);
+    }
   });
 
   it('keeps the board selection surface hidden when no board is selected', () => {
