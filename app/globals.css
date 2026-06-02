@@ -1078,10 +1078,15 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 }
 
 .workspace-notification-trigger:hover,
+.workspace-avatar-trigger:hover {
+  background: var(--ui-workspace-control-hover-surface);
+}
+
 .workspace-notification-trigger:focus-visible,
-.workspace-avatar-trigger:hover,
 .workspace-avatar-trigger:focus-visible {
-  background: transparent;
+  outline: none;
+  background: var(--ui-workspace-control-hover-surface);
+  box-shadow: var(--ui-workspace-outer-focus-shadow);
 }
 
 .workspace-user-menu {
@@ -3025,15 +3030,6 @@ html[data-mantine-color-scheme='dark'] .workspace-header-sidebar-toggle:hover,
 html[data-mantine-color-scheme='dark'] .workspace-header-sidebar-toggle:focus-visible {
   border-color: var(--ui-workspace-accent-border-soft);
   background: var(--ui-workspace-control-hover-surface);
-}
-
-html[data-mantine-color-scheme='dark'] .workspace-brand-link,
-html[data-mantine-color-scheme='dark'] .workspace-avatar-trigger {
-  background: transparent;
-}
-
-html[data-mantine-color-scheme='dark'] .workspace-notification-trigger {
-  background: transparent;
 }
 
 html[data-mantine-color-scheme='dark'] .workspace-mobile-project-picker:hover,

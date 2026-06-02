@@ -422,11 +422,31 @@ describe('app/components/kanban-card', () => {
   });
 
   it('keeps the ambient board layer inside the stage bounds', () => {
-    const stageAfterRule = getCssRuleBody(globalsCss, '.kanban-stage::after');
+    const style = document.createElement('style');
+    style.textContent = globalsCss;
+    document.head.append(style);
+    const fixture = document.createElement('div');
+    document.body.append(fixture);
 
-    expect(stageAfterRule).toMatch(/inset:\s*0;/);
-    expect(stageAfterRule).not.toMatch(/inset:\s*-/);
-    expect(stageAfterRule).not.toMatch(/transform:/);
+    try {
+      const stageAfterRule = Array.from(style.sheet?.cssRules ?? []).find(
+        (rule): rule is CSSStyleRule =>
+          'selectorText' in rule && rule.selectorText === '.kanban-stage::after',
+      );
+
+      expect(stageAfterRule).toBeDefined();
+      fixture.style.cssText = stageAfterRule?.style.cssText ?? '';
+
+      const computed = getComputedStyle(fixture);
+      expect(computed.top).toBe('0px');
+      expect(computed.right).toBe('0px');
+      expect(computed.bottom).toBe('0px');
+      expect(computed.left).toBe('0px');
+      expect(computed.transform).toBe('none');
+    } finally {
+      fixture.remove();
+      style.remove();
+    }
   });
 
   it('keeps the dark kanban card surface opaque while softening the repeated outline', () => {
