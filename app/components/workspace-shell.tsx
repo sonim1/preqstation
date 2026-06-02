@@ -35,9 +35,13 @@ import { ACTIVE_PROJECT_STATUS } from '@/lib/project-meta';
 import {
   findProjectByKey,
   findVisibleProjectByKey,
+  getRecencyOrderedProjectOptions,
   getProjectSelectHref,
   getWorkspaceProjectSubtitle,
+  RECENT_PROJECTS_CHANGED_EVENT,
+  RECENT_PROJECTS_STORAGE,
   LAST_PROJECT_KEY_STORAGE,
+  readRecentProjectKeys,
   pushRecentProjectKey,
   resolvePickerProject,
   type WorkspaceProjectOption,
@@ -145,11 +149,18 @@ function writeRememberedProjectKey(projectKey: string | null) {
   window.dispatchEvent(new Event(PROJECT_KEY_CHANGED_EVENT));
 }
 
-function subscribeRememberedProjectKey(onStoreChange: () => void) {
+function readProjectOrderState() {
+  if (typeof window === 'undefined') return '';
+  const rememberedProjectKey = readRememberedProjectKey();
+  const recentProjectKeys = readRecentProjectKeys();
+  return `${rememberedProjectKey || ''}|${recentProjectKeys.join('|')}`;
+}
+
+function subscribeProjectOrderState(onStoreChange: () => void) {
   if (typeof window === 'undefined') return () => undefined;
 
   const onStorage = (event: StorageEvent) => {
-    if (event.key !== LAST_PROJECT_KEY_STORAGE) return;
+    if (event.key !== LAST_PROJECT_KEY_STORAGE && event.key !== RECENT_PROJECTS_STORAGE) return;
     onStoreChange();
   };
 
@@ -159,9 +170,11 @@ function subscribeRememberedProjectKey(onStoreChange: () => void) {
 
   window.addEventListener('storage', onStorage);
   window.addEventListener(PROJECT_KEY_CHANGED_EVENT, onCustomEvent);
+  window.addEventListener(RECENT_PROJECTS_CHANGED_EVENT, onCustomEvent);
   return () => {
     window.removeEventListener('storage', onStorage);
     window.removeEventListener(PROJECT_KEY_CHANGED_EVENT, onCustomEvent);
+    window.removeEventListener(RECENT_PROJECTS_CHANGED_EVENT, onCustomEvent);
   };
 }
 
@@ -181,14 +194,20 @@ export function WorkspaceShell({
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
   const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
   const [commandPaletteRequested, setCommandPaletteRequested] = useState(false);
-  const rememberedProjectKey = useSyncExternalStore(
-    subscribeRememberedProjectKey,
-    readRememberedProjectKey,
-    () => null,
+  const projectOrderState = useSyncExternalStore(
+    subscribeProjectOrderState,
+    readProjectOrderState,
+    () => '',
+  );
+  const [storedRememberedProjectKey, projectOrderMarker] = (projectOrderState || '').split('|', 2);
+  const rememberedProjectKey = storedRememberedProjectKey || null;
+  const orderedProjectOptions = useMemo(
+    () => getRecencyOrderedProjectOptions(projectOptions),
+    [projectOptions, projectOrderMarker],
   );
   const activeProjectOptions = useMemo(
-    () => partitionWorkspaceProjectOptions(projectOptions),
-    [projectOptions],
+    () => partitionWorkspaceProjectOptions(orderedProjectOptions),
+    [orderedProjectOptions],
   );
 
   const pickerState = useMemo(
@@ -196,14 +215,14 @@ export function WorkspaceShell({
       resolvePickerProject({
         pathname,
         rememberedProjectKey,
-        projectOptions,
+        projectOptions: orderedProjectOptions,
       }),
-    [pathname, rememberedProjectKey, projectOptions],
+    [pathname, rememberedProjectKey, orderedProjectOptions],
   );
   const selectedProject = pickerState.project;
   const effectiveKanbanHref = useMemo(
-    () => resolveWorkspaceKanbanHref(kanbanHref, rememberedProjectKey, projectOptions),
-    [kanbanHref, rememberedProjectKey, projectOptions],
+    () => resolveWorkspaceKanbanHref(kanbanHref, rememberedProjectKey, orderedProjectOptions),
+    [kanbanHref, rememberedProjectKey, orderedProjectOptions],
   );
 
   const active: WorkspaceNavKey = pathname.startsWith('/settings')
@@ -253,7 +272,7 @@ export function WorkspaceShell({
       return;
     }
 
-    const project = findProjectByKey(projectOptions, projectKey);
+    const project = findProjectByKey(orderedProjectOptions, projectKey);
     if (!project) return;
 
     writeRememberedProjectKey(project.projectKey);
@@ -273,17 +292,17 @@ export function WorkspaceShell({
 
   useEffect(() => {
     if (!rememberedProjectKey) return;
-    if (findProjectByKey(projectOptions, rememberedProjectKey)) return;
+    if (findProjectByKey(orderedProjectOptions, rememberedProjectKey)) return;
     writeRememberedProjectKey(null);
-  }, [rememberedProjectKey, projectOptions]);
+  }, [rememberedProjectKey, orderedProjectOptions]);
 
   // Redirect /board → /board/{projectKey} when a remembered project exists
   useEffect(() => {
     if (pathname !== '/board') return;
-    const project = findVisibleProjectByKey(projectOptions, rememberedProjectKey);
+    const project = findVisibleProjectByKey(orderedProjectOptions, rememberedProjectKey);
     if (!project) return;
     router.replace(`/board/${project.projectKey}`);
-  }, [pathname, rememberedProjectKey, projectOptions, router]);
+  }, [pathname, rememberedProjectKey, orderedProjectOptions, router]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -322,7 +341,7 @@ export function WorkspaceShell({
       </Menu.Target>
       <Menu.Dropdown>
         <ProjectPickerMenuItems
-          projectOptions={projectOptions}
+          projectOptions={orderedProjectOptions}
           selectedProjectId={mobilePickerProject?.id ?? null}
           onSelect={handleProjectSelect}
         />

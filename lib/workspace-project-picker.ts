@@ -9,6 +9,7 @@ export type WorkspaceProjectOption = {
 
 export const LAST_PROJECT_KEY_STORAGE = 'pm:lastProjectKey';
 export const RECENT_PROJECTS_STORAGE = 'pm:recentProjects';
+export const RECENT_PROJECTS_CHANGED_EVENT = 'pm:recentProjects:changed';
 const RECENT_PROJECTS_MAX = 3;
 
 const EMPTY_KEYS: string[] = [];
@@ -40,9 +41,34 @@ export function pushRecentProjectKey(projectKey: string): void {
       ...current.filter((k) => k.toUpperCase() !== projectKey.toUpperCase()),
     ].slice(0, RECENT_PROJECTS_MAX);
     window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(next));
+    window.dispatchEvent(new Event(RECENT_PROJECTS_CHANGED_EVENT));
   } catch {
     // ignore storage failures
   }
+}
+
+export function getRecencyOrderedProjectOptions(projectOptions: WorkspaceProjectOption[]) {
+  const recentProjectKeys = readRecentProjectKeys();
+  const seen = new Set<string>();
+  const ordered: WorkspaceProjectOption[] = [];
+
+  for (const key of recentProjectKeys) {
+    const project = findProjectByKey(projectOptions, key);
+    if (!project) continue;
+    const normalized = project.projectKey.toUpperCase();
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    ordered.push(project);
+  }
+
+  for (const project of projectOptions) {
+    const normalized = project.projectKey.toUpperCase();
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    ordered.push(project);
+  }
+
+  return ordered;
 }
 
 export function extractProjectKeyFromPath(pathname: string): string | null {
