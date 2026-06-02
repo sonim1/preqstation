@@ -131,6 +131,8 @@ describe('app/api/settings/route', () => {
   });
 
   it('accepts a normalized global agent model catalog', async () => {
+    const normalizedCatalog =
+      '{"claude-code":[{"label":"Sonnet","value":"sonnet"}],"codex":[{"label":"gpt-5-codex","value":"gpt-5-codex"}],"gemini-cli":[]}';
     const response = await PATCH(
       patchRequest({
         key: 'agent_model_catalog',
@@ -144,10 +146,11 @@ describe('app/api/settings/route', () => {
     );
 
     expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ ok: true, value: normalizedCatalog });
     expect(mocked.setUserSetting).toHaveBeenCalledWith(
       'owner-1',
       'agent_model_catalog',
-      '{"claude-code":[{"label":"Sonnet","value":"sonnet"}],"codex":[{"label":"gpt-5-codex","value":"gpt-5-codex"}],"gemini-cli":[]}',
+      normalizedCatalog,
       mocked.client,
     );
   });

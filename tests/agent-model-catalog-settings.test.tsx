@@ -44,6 +44,32 @@ describe('app/components/agent-model-catalog-settings', () => {
     vi.unstubAllGlobals();
   });
 
+  it('uses the server-normalized catalog value after a successful save', async () => {
+    const normalizedCatalog =
+      '{"claude-code":[],"codex":[{"label":"gpt-5-codex","value":"gpt-5-codex"}],"gemini-cli":[]}';
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ ok: true, value: normalizedCatalog }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderSettings();
+
+    const textarea = screen.getByLabelText('Model catalog JSON');
+    const saveButton = screen.getByRole('button', { name: 'Save model catalog' });
+    fireEvent.change(textarea, {
+      target: {
+        value: '{"codex":["gpt-5-codex"],"claude-code":[],"gemini-cli":[]}',
+      },
+    });
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect((textarea as HTMLTextAreaElement).value).toBe(normalizedCatalog);
+    });
+    expect((saveButton as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('preserves the edited catalog after a validation failure', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: false,

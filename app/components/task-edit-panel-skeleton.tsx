@@ -10,7 +10,7 @@ export function TaskEditPanelSkeleton() {
       <div className={classes.shell} data-layout="task-edit-shell">
         <div className={classes.mainColumn} data-panel="task-edit-main-column">
           <section
-            className={`${classes.notesCard} ${classes.sectionSurface}`}
+            className={`${classes.notesCard} ${classes.mainSectionSurface}`}
             data-panel="task-edit-notes-primary"
           >
             <Stack gap="md" className={classes.notesContent}>
@@ -25,7 +25,7 @@ export function TaskEditPanelSkeleton() {
           </section>
 
           <section
-            className={`${classes.activityCard} ${classes.sectionSurface}`}
+            className={`${classes.activityCard} ${classes.mainSectionSurface}`}
             data-panel="task-edit-comments"
           >
             <Stack gap="md">
@@ -35,7 +35,7 @@ export function TaskEditPanelSkeleton() {
           </section>
 
           <section
-            className={`${classes.activityCard} ${classes.sectionSurface}`}
+            className={`${classes.activityCard} ${classes.mainSectionSurface}`}
             data-panel="task-edit-activity"
           >
             <Stack gap="md">

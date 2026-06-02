@@ -311,7 +311,7 @@ export function TaskNotificationCenter() {
           }
           onClick={openDrawer}
         >
-          <IconBell size={18} />
+          <IconBell size={20} />
         </ActionIcon>
       </Indicator>
 

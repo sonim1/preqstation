@@ -125,6 +125,27 @@ function getCssRuleBody(source: string, selector: string) {
   return match?.[1] ?? '';
 }
 
+function findCssStyleRule(rules: CSSRuleList | undefined, selector: string): CSSStyleRule | null {
+  if (!rules) {
+    return null;
+  }
+
+  for (const rule of Array.from(rules)) {
+    if ('selectorText' in rule && (rule as CSSStyleRule).selectorText === selector) {
+      return rule as CSSStyleRule;
+    }
+
+    const nestedRules = (rule as CSSRule & { cssRules?: CSSRuleList }).cssRules;
+    const nestedMatch = findCssStyleRule(nestedRules, selector);
+
+    if (nestedMatch) {
+      return nestedMatch;
+    }
+  }
+
+  return null;
+}
+
 function resolveWaveTopHeadroom(runState: 'queued' | 'running') {
   const { paths, waveHeight, waveShiftPercent, bandTopClearance } = getRunStateWaveConfig(runState);
   const highestCrest = Math.min(
@@ -217,6 +238,7 @@ function renderCardsCssFixture(
 
   return {
     fixture,
+    style,
     cleanup: () => {
       fixture.remove();
       style.remove();
@@ -422,30 +444,26 @@ describe('app/components/kanban-card', () => {
   });
 
   it('keeps the ambient board layer inside the stage bounds', () => {
-    const style = document.createElement('style');
-    style.textContent = globalsCss;
-    document.head.append(style);
-    const fixture = document.createElement('div');
-    document.body.append(fixture);
+    const { fixture, style, cleanup: cleanupFixture } = renderCardsCssFixture(
+      '<div class="kanban-stage" data-testid="stage"></div>',
+      true,
+    );
 
     try {
-      const stageAfterRule = Array.from(style.sheet?.cssRules ?? []).find(
-        (rule): rule is CSSStyleRule =>
-          'selectorText' in rule && rule.selectorText === '.kanban-stage::after',
-      );
+      const afterRule = findCssStyleRule(style.sheet?.cssRules, '.kanban-stage::after');
 
-      expect(stageAfterRule).toBeDefined();
-      fixture.style.cssText = stageAfterRule?.style.cssText ?? '';
+      expect(afterRule).toBeDefined();
 
-      const computed = getComputedStyle(fixture);
-      expect(computed.top).toBe('0px');
-      expect(computed.right).toBe('0px');
-      expect(computed.bottom).toBe('0px');
-      expect(computed.left).toBe('0px');
+      const testElement = document.createElement('div');
+      testElement.style.cssText = afterRule!.style.cssText;
+      fixture.append(testElement);
+
+      const computed = window.getComputedStyle(testElement);
+
+      expect(computed.getPropertyValue('inset')).toBe('0px');
       expect(computed.transform).toBe('none');
     } finally {
-      fixture.remove();
-      style.remove();
+      cleanupFixture();
     }
   });
 
