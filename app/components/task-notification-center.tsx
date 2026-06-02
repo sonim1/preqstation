@@ -304,7 +304,7 @@ export function TaskNotificationCenter() {
         <ActionIcon
           size={44}
           radius="xl"
-          variant="default"
+          variant="transparent"
           className="workspace-notification-trigger"
           aria-label={
             unreadCount > 0 ? `Open notifications (${unreadCount} unread)` : 'Open notifications'

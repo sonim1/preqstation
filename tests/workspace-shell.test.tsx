@@ -536,13 +536,17 @@ describe('app/components/workspace-shell', () => {
 
   it('matches the desktop account avatar size to the 44px navbar controls', () => {
     expect(
-      getCssRuleProperties('.workspace-avatar-trigger', [
+      getCssRuleProperties('.workspace-avatar-trigger,\n.workspace-notification-trigger', [
+        'border-style',
+        'background',
         'width',
         'min-width',
         'height',
         'padding-top',
       ]),
     ).toEqual({
+      'border-style': 'none',
+      background: 'transparent',
       width: 'var(--ui-hit-touch-min)',
       'min-width': 'var(--ui-hit-touch-min)',
       height: 'var(--ui-hit-touch-min)',
@@ -1060,7 +1064,10 @@ describe('app/components/workspace-shell', () => {
 
   it('defines a shared focus-visible treatment for header and rail controls', () => {
     expect(globalsCss).toMatch(
-      /\.workspace-brand-link:focus-visible,\s*\.workspace-divider-rail-button:focus-visible,\s*\.workspace-header-sidebar-toggle:focus-visible,\s*\.workspace-notification-trigger:focus-visible,\s*\.workspace-avatar-trigger:focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*border-color:\s*var\(--ui-accent\);[\s\S]*box-shadow:\s*var\(--ui-workspace-outer-focus-shadow\);/,
+      /\.workspace-brand-link:focus-visible,\s*\.workspace-divider-rail-button:focus-visible,\s*\.workspace-header-sidebar-toggle:focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*border-color:\s*var\(--ui-accent\);[\s\S]*box-shadow:\s*var\(--ui-workspace-outer-focus-shadow\);/,
+    );
+    expect(globalsCss).toMatch(
+      /\.workspace-notification-trigger:focus-visible,\s*\.workspace-avatar-trigger:focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*background:\s*var\(--ui-workspace-control-hover-surface\);[\s\S]*box-shadow:\s*var\(--ui-workspace-outer-focus-shadow\);/,
     );
   });
 
@@ -1165,8 +1172,11 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('keeps the left header chrome on token-driven dark surfaces', () => {
-    expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-brand-link,\s*html\[data-mantine-color-scheme='dark'\] \.workspace-avatar-trigger\s*\{[^}]*background:\s*var\(--ui-workspace-control-surface\);/,
+    expect(globalsCss).not.toMatch(
+      /html\[data-mantine-color-scheme='dark'\] \.workspace-brand-link,\s*html\[data-mantine-color-scheme='dark'\] \.workspace-avatar-trigger\s*\{/,
+    );
+    expect(globalsCss).not.toMatch(
+      /html\[data-mantine-color-scheme='dark'\] \.workspace-notification-trigger\s*\{/,
     );
     expect(globalsCss).toMatch(
       /html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker\s*\{[^}]*border-color:\s*var\(--ui-workspace-control-border\);[^}]*background:\s*var\(--ui-workspace-control-surface\);/,
