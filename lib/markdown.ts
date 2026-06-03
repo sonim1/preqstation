@@ -131,13 +131,26 @@ function isMarkdownTightBoundaryLine(line: string) {
   return isMarkdownHeadingLine(line) || isMarkdownListItemLine(line);
 }
 
+function shouldTrackMarkdownSpacingBoundary(line: string, nextContentLine: string) {
+  if (isMarkdownTightBoundaryLine(line) && isMarkdownParagraphBoundaryLine(nextContentLine)) {
+    return true;
+  }
+
+  if (
+    (isMarkdownParagraphBoundaryLine(line) || isMarkdownHeadingLine(line)) &&
+    isMarkdownListItemLine(nextContentLine)
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 function getMarkdownTightBoundaries(source: string) {
   const boundaries: HeadingParagraphBoundary[] = [];
   const lines = source.split('\n');
 
   for (let index = 0; index < lines.length; index += 1) {
-    if (!isMarkdownTightBoundaryLine(lines[index])) continue;
-
     let cursor = index + 1;
     let blankLineCount = 0;
 
@@ -146,7 +159,7 @@ function getMarkdownTightBoundaries(source: string) {
       cursor += 1;
     }
 
-    if (cursor < lines.length && isMarkdownParagraphBoundaryLine(lines[cursor])) {
+    if (cursor < lines.length && shouldTrackMarkdownSpacingBoundary(lines[index], lines[cursor])) {
       boundaries.push({ blankLineCount });
     }
   }
@@ -175,10 +188,6 @@ export function preserveTightMarkdownSpacing(currentMarkdown: string, nextMarkdo
     const line = nextLines[index];
     reconciledLines.push(line);
 
-    if (!isMarkdownTightBoundaryLine(line)) {
-      continue;
-    }
-
     let cursor = index + 1;
     let blankLineCount = 0;
 
@@ -187,15 +196,22 @@ export function preserveTightMarkdownSpacing(currentMarkdown: string, nextMarkdo
       cursor += 1;
     }
 
-    if (cursor >= nextLines.length || !isMarkdownParagraphBoundaryLine(nextLines[cursor])) {
+    if (
+      cursor >= nextLines.length ||
+      !shouldTrackMarkdownSpacingBoundary(line, nextLines[cursor])
+    ) {
       continue;
     }
 
     const currentBoundary = currentBoundaries[boundaryIndex];
     boundaryIndex += 1;
 
-    if (blankLineCount === 0 || currentBoundary?.blankLineCount !== 0) {
+    if (!currentBoundary || blankLineCount <= currentBoundary.blankLineCount) {
       continue;
+    }
+
+    for (let blankIndex = 0; blankIndex < currentBoundary.blankLineCount; blankIndex += 1) {
+      reconciledLines.push('');
     }
 
     didChange = true;

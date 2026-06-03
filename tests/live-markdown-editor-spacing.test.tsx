@@ -236,6 +236,42 @@ describe('LiveMarkdownEditor spacing reconciliation', () => {
     expect(onContentChange).not.toHaveBeenCalled();
   });
 
+  it('does not add a blank line between plain text and a bullet list during bootstrap', async () => {
+    const markdown = '제목\n- 1\n- 2\n- 3';
+    const { container, onContentChange } = renderEditor(markdown);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Description live editor').textContent).toContain('3');
+    });
+
+    expect(getHiddenMarkdownInput(container).value).toBe(markdown);
+    expect(onContentChange).not.toHaveBeenCalled();
+  });
+
+  it('does not add a blank line between plain text and a checklist during bootstrap', async () => {
+    const markdown = '제목\n- [ ] 1\n- [x] 2';
+    const { container, onContentChange } = renderEditor(markdown);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Description live editor').textContent).toContain('2');
+    });
+
+    expect(getHiddenMarkdownInput(container).value).toBe(markdown);
+    expect(onContentChange).not.toHaveBeenCalled();
+  });
+
+  it('keeps one deliberate blank line between plain text and a list during bootstrap', async () => {
+    const markdown = '제목\n\n- 1\n- 2';
+    const { container, onContentChange } = renderEditor(markdown);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Description live editor').textContent).toContain('2');
+    });
+
+    expect(getHiddenMarkdownInput(container).value).toBe(markdown);
+    expect(onContentChange).not.toHaveBeenCalled();
+  });
+
   it('converts an unchecked checklist marker as soon as the closing bracket lands', async () => {
     const { container, editor } = renderChecklistShortcutHarness();
 
@@ -323,6 +359,24 @@ describe('LiveMarkdownEditor spacing reconciliation', () => {
       expect(screen.getByLabelText('Description live editor').textContent).toContain(
         'Text right below',
       );
+    });
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Markdown' }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Description markdown source')).toBeInstanceOf(
+        HTMLTextAreaElement,
+      );
+    });
+    expect(getHiddenMarkdownInput(container).value).toBe(markdown);
+  });
+
+  it('keeps tight plain-text-to-list spacing when switching from live to markdown mode', async () => {
+    const markdown = '제목\n- 1\n- 2\n- 3';
+    const { container } = renderEditor(markdown);
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Description live editor').textContent).toContain('3');
     });
 
     fireEvent.click(screen.getByRole('radio', { name: 'Markdown' }));
