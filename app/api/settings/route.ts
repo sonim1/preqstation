@@ -81,7 +81,7 @@ export async function PATCH(req: Request) {
       );
     });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, value: nextValue });
   } catch (error) {
     if (error instanceof Response) return error;
     if (error instanceof z.ZodError) {

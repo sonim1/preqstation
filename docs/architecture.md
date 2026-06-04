@@ -385,8 +385,8 @@ Projects can also store an `agent_instructions` setting. When present, task payl
   invalid model IDs normalize to no override.
 - Valid model overrides are appended as `model` metadata to OpenClaw
   `!/preqstation dispatch ...` commands and Hermes `/preqstation_dispatch` commands,
-  including the optional `@<botid>` command mention suffix, for task dispatch, dispatched comments, QA
-  dispatch, and project insight dispatch.
+  including the optional leading `@<botid> /preqstation_dispatch` command form, for task dispatch,
+  dispatched comments, QA dispatch, and project insight dispatch.
 - Model overrides do not update `tasks.engine`, workflow status, or the persisted QA run record.
 
 ### Event System

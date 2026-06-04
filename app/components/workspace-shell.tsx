@@ -18,6 +18,7 @@ import { useDisclosure } from '@mantine/hooks';
 import {
   IconChevronLeft,
   IconChevronRight,
+  IconDots,
   IconFolders,
   IconHome2,
   IconLayoutKanban,
@@ -36,9 +37,13 @@ import {
   findProjectByKey,
   findVisibleProjectByKey,
   getProjectSelectHref,
+  getRecencyOrderedProjectOptions,
   getWorkspaceProjectSubtitle,
   LAST_PROJECT_KEY_STORAGE,
   pushRecentProjectKey,
+  readRecentProjectKeys,
+  RECENT_PROJECTS_CHANGED_EVENT,
+  RECENT_PROJECTS_STORAGE,
   resolvePickerProject,
   type WorkspaceProjectOption,
 } from '@/lib/workspace-project-picker';
@@ -85,6 +90,7 @@ function initialFromEmail(email: string) {
 const PROJECT_KEY_CHANGED_EVENT = 'pm:lastProjectKey:changed';
 const BOARD_SUBNAV_ROW_HEIGHT = 44;
 const BOARD_SUBNAV_ROW_GAP = 4;
+const BOARD_QUICK_LINK_LIMIT = 4;
 
 type BoardNavLinkProps = {
   project: WorkspaceProjectOption;
@@ -117,6 +123,36 @@ function partitionWorkspaceProjectOptions(projectOptions: WorkspaceProjectOption
   return projectOptions.filter((project) => project.status === ACTIVE_PROJECT_STATUS);
 }
 
+function getQuickBoardOptions(
+  activeProjectOptions: WorkspaceProjectOption[],
+  currentProject: WorkspaceProjectOption | null,
+  recentProjectKeys: string[],
+) {
+  const quickProjects = new Map<string, WorkspaceProjectOption>();
+
+  function addProject(project: WorkspaceProjectOption | null | undefined) {
+    if (!project || quickProjects.has(project.id)) return;
+    if (quickProjects.size >= BOARD_QUICK_LINK_LIMIT) return;
+    quickProjects.set(project.id, project);
+  }
+
+  addProject(currentProject);
+
+  for (const projectKey of recentProjectKeys) {
+    addProject(
+      activeProjectOptions.find(
+        (project) => project.projectKey.toUpperCase() === projectKey.toUpperCase(),
+      ),
+    );
+  }
+
+  for (const project of activeProjectOptions) {
+    addProject(project);
+  }
+
+  return activeProjectOptions.filter((project) => quickProjects.has(project.id));
+}
+
 function readRememberedProjectKey() {
   if (typeof window === 'undefined') return null;
   try {
@@ -145,11 +181,18 @@ function writeRememberedProjectKey(projectKey: string | null) {
   window.dispatchEvent(new Event(PROJECT_KEY_CHANGED_EVENT));
 }
 
-function subscribeRememberedProjectKey(onStoreChange: () => void) {
+function readProjectOrderState() {
+  if (typeof window === 'undefined') return '';
+  const rememberedProjectKey = readRememberedProjectKey();
+  const recentProjectKeys = readRecentProjectKeys();
+  return `${rememberedProjectKey || ''}|${recentProjectKeys.join('|')}`;
+}
+
+function subscribeProjectOrderState(onStoreChange: () => void) {
   if (typeof window === 'undefined') return () => undefined;
 
   const onStorage = (event: StorageEvent) => {
-    if (event.key !== LAST_PROJECT_KEY_STORAGE) return;
+    if (event.key !== LAST_PROJECT_KEY_STORAGE && event.key !== RECENT_PROJECTS_STORAGE) return;
     onStoreChange();
   };
 
@@ -159,9 +202,11 @@ function subscribeRememberedProjectKey(onStoreChange: () => void) {
 
   window.addEventListener('storage', onStorage);
   window.addEventListener(PROJECT_KEY_CHANGED_EVENT, onCustomEvent);
+  window.addEventListener(RECENT_PROJECTS_CHANGED_EVENT, onCustomEvent);
   return () => {
     window.removeEventListener('storage', onStorage);
     window.removeEventListener(PROJECT_KEY_CHANGED_EVENT, onCustomEvent);
+    window.removeEventListener(RECENT_PROJECTS_CHANGED_EVENT, onCustomEvent);
   };
 }
 
@@ -181,14 +226,21 @@ export function WorkspaceShell({
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
   const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
   const [commandPaletteRequested, setCommandPaletteRequested] = useState(false);
-  const rememberedProjectKey = useSyncExternalStore(
-    subscribeRememberedProjectKey,
-    readRememberedProjectKey,
-    () => null,
+  const projectOrderState = useSyncExternalStore(
+    subscribeProjectOrderState,
+    readProjectOrderState,
+    () => '',
   );
+  const [storedRememberedProjectKey, ...recentProjectKeys] = (projectOrderState || '').split('|');
+  const rememberedProjectKey = storedRememberedProjectKey || null;
+  const projectOrderMarker = recentProjectKeys.join('|');
+  const orderedProjectOptions = useMemo(() => {
+    const storedRecentProjectKeys = projectOrderMarker ? projectOrderMarker.split('|') : [];
+    return getRecencyOrderedProjectOptions(projectOptions, storedRecentProjectKeys);
+  }, [projectOptions, projectOrderMarker]);
   const activeProjectOptions = useMemo(
-    () => partitionWorkspaceProjectOptions(projectOptions),
-    [projectOptions],
+    () => partitionWorkspaceProjectOptions(orderedProjectOptions),
+    [orderedProjectOptions],
   );
 
   const pickerState = useMemo(
@@ -196,14 +248,14 @@ export function WorkspaceShell({
       resolvePickerProject({
         pathname,
         rememberedProjectKey,
-        projectOptions,
+        projectOptions: orderedProjectOptions,
       }),
-    [pathname, rememberedProjectKey, projectOptions],
+    [pathname, rememberedProjectKey, orderedProjectOptions],
   );
   const selectedProject = pickerState.project;
   const effectiveKanbanHref = useMemo(
-    () => resolveWorkspaceKanbanHref(kanbanHref, rememberedProjectKey, projectOptions),
-    [kanbanHref, rememberedProjectKey, projectOptions],
+    () => resolveWorkspaceKanbanHref(kanbanHref, rememberedProjectKey, orderedProjectOptions),
+    [kanbanHref, rememberedProjectKey, orderedProjectOptions],
   );
 
   const active: WorkspaceNavKey = pathname.startsWith('/settings')
@@ -219,9 +271,14 @@ export function WorkspaceShell({
   const mobilePickerProject = selectedProject;
   const currentActiveBoardProject =
     currentBoardProject?.status === ACTIVE_PROJECT_STATUS ? currentBoardProject : null;
+  const quickBoardOptions = useMemo(
+    () => getQuickBoardOptions(activeProjectOptions, currentActiveBoardProject, recentProjectKeys),
+    [activeProjectOptions, currentActiveBoardProject, recentProjectKeys],
+  );
   const currentBoardIndex = currentActiveBoardProject
-    ? activeProjectOptions.findIndex((project) => project.id === currentActiveBoardProject.id)
+    ? quickBoardOptions.findIndex((project) => project.id === currentActiveBoardProject.id)
     : -1;
+  const hasBoardOverflow = activeProjectOptions.length > quickBoardOptions.length;
   const isBoardContext = active === 'kanban';
   const currentScopeLabel = mobilePickerProject?.name || 'Boards';
   const workspaceSubtitle = getWorkspaceProjectSubtitle(currentBoardProject);
@@ -253,7 +310,7 @@ export function WorkspaceShell({
       return;
     }
 
-    const project = findProjectByKey(projectOptions, projectKey);
+    const project = findProjectByKey(orderedProjectOptions, projectKey);
     if (!project) return;
 
     writeRememberedProjectKey(project.projectKey);
@@ -273,17 +330,17 @@ export function WorkspaceShell({
 
   useEffect(() => {
     if (!rememberedProjectKey) return;
-    if (findProjectByKey(projectOptions, rememberedProjectKey)) return;
+    if (findProjectByKey(orderedProjectOptions, rememberedProjectKey)) return;
     writeRememberedProjectKey(null);
-  }, [rememberedProjectKey, projectOptions]);
+  }, [rememberedProjectKey, orderedProjectOptions]);
 
   // Redirect /board → /board/{projectKey} when a remembered project exists
   useEffect(() => {
     if (pathname !== '/board') return;
-    const project = findVisibleProjectByKey(projectOptions, rememberedProjectKey);
+    const project = findVisibleProjectByKey(orderedProjectOptions, rememberedProjectKey);
     if (!project) return;
     router.replace(`/board/${project.projectKey}`);
-  }, [pathname, rememberedProjectKey, projectOptions, router]);
+  }, [pathname, rememberedProjectKey, orderedProjectOptions, router]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -322,13 +379,39 @@ export function WorkspaceShell({
       </Menu.Target>
       <Menu.Dropdown>
         <ProjectPickerMenuItems
-          projectOptions={projectOptions}
+          projectOptions={orderedProjectOptions}
           selectedProjectId={mobilePickerProject?.id ?? null}
           onSelect={handleProjectSelect}
         />
       </Menu.Dropdown>
     </Menu>
   );
+  const desktopBoardOverflowMenu = hasBoardOverflow ? (
+    <Menu
+      position="right-start"
+      shadow="md"
+      width={300}
+      withArrow
+      classNames={{ dropdown: 'workspace-project-picker-menu' }}
+    >
+      <Menu.Target>
+        <UnstyledButton className="workspace-board-subnav-more" aria-label="Open all boards menu">
+          <span className="workspace-board-subnav-more-copy">More boards</span>
+          <span className="workspace-board-subnav-more-count" aria-hidden="true">
+            {activeProjectOptions.length - quickBoardOptions.length}
+          </span>
+          <IconDots size={16} aria-hidden="true" />
+        </UnstyledButton>
+      </Menu.Target>
+      <Menu.Dropdown>
+        <ProjectPickerMenuItems
+          projectOptions={orderedProjectOptions}
+          selectedProjectId={mobilePickerProject?.id ?? null}
+          onSelect={handleProjectSelect}
+        />
+      </Menu.Dropdown>
+    </Menu>
+  ) : null;
   const mobileAccountBlock = (
     <Box hiddenFrom="sm" className="workspace-mobile-account-shell">
       <Box className="workspace-mobile-account">
@@ -358,7 +441,7 @@ export function WorkspaceShell({
         breakpoint: 'sm',
         collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
       }}
-      header={{ height: { base: 104, sm: 56 } }}
+      header={{ height: 56 }}
       className="workspace-shell"
     >
       <AppShell.Header className="workspace-header">
@@ -435,7 +518,7 @@ export function WorkspaceShell({
                     className="workspace-avatar-trigger"
                     aria-label="Open account menu"
                   >
-                    <Avatar color="blue" radius="xl" size={44}>
+                    <Avatar color="blue" radius="xl" size={32}>
                       {initialFromEmail(email)}
                     </Avatar>
                   </UnstyledButton>
@@ -506,7 +589,7 @@ export function WorkspaceShell({
                       aria-hidden="true"
                       style={boardSelectionSurfaceStyle}
                     />
-                    {activeProjectOptions.map((project) => (
+                    {quickBoardOptions.map((project) => (
                       <BoardNavLink
                         key={project.id}
                         project={project}
@@ -514,6 +597,7 @@ export function WorkspaceShell({
                         onSelect={handleBoardSelect}
                       />
                     ))}
+                    {desktopBoardOverflowMenu}
                   </Stack>
                 ) : null}
               </Stack>

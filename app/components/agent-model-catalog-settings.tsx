@@ -45,6 +45,7 @@ export function AgentModelCatalogSettings({ defaultValue }: AgentModelCatalogSet
           body: JSON.stringify({ key: 'agent_model_catalog', value: nextValue }),
         });
         const body = (await response.json().catch(() => null)) as {
+          value?: string;
           error?: string;
         } | null;
 
@@ -53,8 +54,9 @@ export function AgentModelCatalogSettings({ defaultValue }: AgentModelCatalogSet
           return;
         }
 
-        setSavedValue(nextValue);
-        setValue(nextValue);
+        const savedCatalogValue = typeof body?.value === 'string' ? body.value : nextValue;
+        setSavedValue(savedCatalogValue);
+        setValue(savedCatalogValue);
         setStatus({ tone: 'success', message: 'Model catalog saved.' });
         statusTimeoutRef.current = setTimeout(() => {
           setStatus((current) =>

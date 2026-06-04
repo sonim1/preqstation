@@ -125,6 +125,27 @@ function getCssRuleBody(source: string, selector: string) {
   return match?.[1] ?? '';
 }
 
+function findCssStyleRule(rules: CSSRuleList | undefined, selector: string): CSSStyleRule | null {
+  if (!rules) {
+    return null;
+  }
+
+  for (const rule of Array.from(rules)) {
+    if ('selectorText' in rule && (rule as CSSStyleRule).selectorText === selector) {
+      return rule as CSSStyleRule;
+    }
+
+    const nestedRules = (rule as CSSRule & { cssRules?: CSSRuleList }).cssRules;
+    const nestedMatch = findCssStyleRule(nestedRules, selector);
+
+    if (nestedMatch) {
+      return nestedMatch;
+    }
+  }
+
+  return null;
+}
+
 function resolveWaveTopHeadroom(runState: 'queued' | 'running') {
   const { paths, waveHeight, waveShiftPercent, bandTopClearance } = getRunStateWaveConfig(runState);
   const highestCrest = Math.min(
@@ -217,6 +238,7 @@ function renderCardsCssFixture(
 
   return {
     fixture,
+    style,
     cleanup: () => {
       fixture.remove();
       style.remove();
@@ -422,11 +444,28 @@ describe('app/components/kanban-card', () => {
   });
 
   it('keeps the ambient board layer inside the stage bounds', () => {
-    const stageAfterRule = getCssRuleBody(globalsCss, '.kanban-stage::after');
+    const {
+      fixture,
+      style,
+      cleanup: cleanupFixture,
+    } = renderCardsCssFixture('<div class="kanban-stage" data-testid="stage"></div>', true);
 
-    expect(stageAfterRule).toMatch(/inset:\s*0;/);
-    expect(stageAfterRule).not.toMatch(/inset:\s*-/);
-    expect(stageAfterRule).not.toMatch(/transform:/);
+    try {
+      const afterRule = findCssStyleRule(style.sheet?.cssRules, '.kanban-stage::after');
+
+      expect(afterRule).toBeDefined();
+
+      const testElement = document.createElement('div');
+      testElement.style.cssText = afterRule!.style.cssText;
+      fixture.append(testElement);
+
+      const computed = window.getComputedStyle(testElement);
+
+      expect(computed.getPropertyValue('inset')).toBe('0px');
+      expect(computed.transform).toBe('none');
+    } finally {
+      cleanupFixture();
+    }
   });
 
   it('keeps the dark kanban card surface opaque while softening the repeated outline', () => {
