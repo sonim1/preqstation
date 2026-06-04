@@ -65,6 +65,25 @@ describe('lib/markdown', () => {
     );
   });
 
+  it('preserves tight plain-text-to-list spacing when live export adds a formatter-only blank line', () => {
+    expect(preserveTightMarkdownSpacing('제목\n- 1', '제목\n\n- 1')).toBe('제목\n- 1');
+    expect(preserveTightMarkdownSpacing('제목\n1. first', '제목\n\n1. first')).toBe(
+      '제목\n1. first',
+    );
+  });
+
+  it('preserves tight plain-text-to-checklist spacing when live export adds a formatter-only blank line', () => {
+    expect(preserveTightMarkdownSpacing('제목\n- [ ] 1', '제목\n\n- [ ] 1')).toBe('제목\n- [ ] 1');
+    expect(preserveTightMarkdownSpacing('제목\n- [x] 1', '제목\n\n- [x] 1')).toBe('제목\n- [x] 1');
+  });
+
+  it('keeps exactly one deliberate blank line before lists', () => {
+    expect(preserveTightMarkdownSpacing('제목\n\n- 1', '제목\n\n\n- 1')).toBe('제목\n\n- 1');
+    expect(preserveTightMarkdownSpacing('제목\n\n- [ ] 1', '제목\n\n\n- [ ] 1')).toBe(
+      '제목\n\n- [ ] 1',
+    );
+  });
+
   it('does not collapse heading spacing before lists or code fences', () => {
     expect(preserveTightMarkdownSpacing('## Title\n\n- item', '## Title\n\n- item')).toBe(
       '## Title\n\n- item',

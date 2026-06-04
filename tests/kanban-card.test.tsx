@@ -444,10 +444,11 @@ describe('app/components/kanban-card', () => {
   });
 
   it('keeps the ambient board layer inside the stage bounds', () => {
-    const { fixture, style, cleanup: cleanupFixture } = renderCardsCssFixture(
-      '<div class="kanban-stage" data-testid="stage"></div>',
-      true,
-    );
+    const {
+      fixture,
+      style,
+      cleanup: cleanupFixture,
+    } = renderCardsCssFixture('<div class="kanban-stage" data-testid="stage"></div>', true);
 
     try {
       const afterRule = findCssStyleRule(style.sheet?.cssRules, '.kanban-stage::after');

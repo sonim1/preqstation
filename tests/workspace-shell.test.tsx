@@ -762,7 +762,10 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('does not read recent boards from localStorage for the initial render', () => {
-    window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(['PROJECT-6', 'PROJECT-5']));
+    window.localStorage.setItem(
+      RECENT_PROJECTS_STORAGE,
+      JSON.stringify(['PROJECT-6', 'PROJECT-5']),
+    );
 
     try {
       const html = renderWorkspaceShell({
