@@ -52,6 +52,7 @@ const TASK_DISPATCH_PREFERENCE_STATUSES: TaskDispatchPreferenceStatus[] = [
 ];
 const dispatchModeOptions = [
   { key: 'plan', label: 'Plan' },
+  { key: 'ask', label: 'Ask' },
   { key: 'implement', label: 'Implement' },
   { key: 'review', label: 'Review' },
   { key: 'qa', label: 'QA' },
@@ -96,7 +97,10 @@ type TaskCopyActionsProps = {
 };
 
 type DispatchState = 'idle' | 'loading' | 'success' | 'error';
-type TaskDispatchMode = Extract<TaskDispatchObjective, 'plan' | 'implement' | 'review' | 'qa'>;
+type TaskDispatchMode = Extract<
+  TaskDispatchObjective,
+  'plan' | 'ask' | 'implement' | 'review' | 'qa'
+>;
 type TaskEditDispatchAction = Extract<
   TaskDispatchPreferenceAction,
   'send-telegram' | 'send-hermes-telegram'
@@ -128,6 +132,7 @@ function normalizeTaskDispatchPreferenceStatus(
 function isTaskDispatchMode(objective: TaskDispatchObjective | null | undefined) {
   return (
     objective === 'plan' ||
+    objective === 'ask' ||
     objective === 'implement' ||
     objective === 'review' ||
     objective === 'qa'
@@ -137,7 +142,7 @@ function isTaskDispatchMode(objective: TaskDispatchObjective | null | undefined)
 function getDispatchModesForStatus(status: string): TaskDispatchMode[] {
   switch (status) {
     case 'inbox':
-      return ['plan'];
+      return ['plan', 'ask'];
     case 'todo':
     case 'hold':
       return ['implement'];
@@ -221,6 +226,8 @@ function getDispatchModeDetail(mode: TaskDispatchMode) {
   switch (mode) {
     case 'plan':
       return 'Plan only';
+    case 'ask':
+      return 'Ask or refine';
     case 'implement':
       return 'Run the task';
     case 'review':

@@ -1047,17 +1047,52 @@ describe('app/components/task-copy-actions', () => {
     expect(html).not.toContain('Channels');
   });
 
-  it('shows plan only for inbox tasks', () => {
+  it('shows plan and ask for inbox tasks', () => {
     const html = renderTaskCopyActions({ status: 'inbox' });
 
     expect(html).toContain('Plan');
-    expect(html).not.toContain('Ask');
+    expect(html).toContain('Ask');
+    expect(html).toContain('data-option-count="2"');
     expect(html).not.toContain('Implement');
     expect(html).not.toContain('Review');
     expect(html).not.toContain('QA');
     expect(html).toContain(
       '!/preqstation dispatch plan PROJ-224 using codex branch_name=&quot;task/proj-224/move-status-test-button&quot;',
     );
+  });
+
+  it('restores stored ask mode for inbox tasks without adding a note hint', () => {
+    localStorage.setItem(
+      TASK_DISPATCH_PREFERENCES_STORAGE,
+      JSON.stringify({
+        inbox: {
+          engine: 'claude-code',
+          action: 'send-telegram',
+          objective: 'ask',
+        },
+      }),
+    );
+
+    const html = renderTaskCopyActions({ status: 'inbox' });
+
+    expect(html).toContain('aria-label="Selected mode: Ask"');
+    expect(html).toContain(
+      '!/preqstation dispatch ask PROJ-224 using claude-code branch_name=&quot;task/proj-224/move-status-test-button&quot;',
+    );
+    expect(html).not.toContain('ask_hint');
+  });
+
+  it('selects ask from the bottom inbox dispatch mode menu', async () => {
+    renderTaskCopyActionsClient({ status: 'inbox', placement: 'bottom' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mode: Plan' }));
+    expect(await screen.findByRole('menuitem', { name: /Plan/, hidden: true })).toBeTruthy();
+    fireEvent.click(screen.getByRole('menuitem', { name: /Ask/, hidden: true }));
+
+    expect(screen.getByRole('button', { name: 'Mode: Ask' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Preview dispatch prompt' }));
+    expect(await screen.findByText(/dispatch ask PROJ-224/)).toBeTruthy();
+    expect(screen.queryByText(/ask_hint/)).toBeNull();
   });
 
   it('shows review and QA only for ready tasks', () => {
