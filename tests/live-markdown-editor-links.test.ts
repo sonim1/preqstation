@@ -24,9 +24,10 @@ describe('LiveMarkdownEditor links', () => {
       'utf8',
     );
 
-    expect(source).toContain('import { CodeHighlightNode, CodeNode, registerCodeHighlighting }');
-    expect(source).toContain('function CodeHighlightingPlugin()');
-    expect(source).toContain('registerCodeHighlighting(editor);');
+    expect(source).toContain("from '@lexical/code-core'");
+    expect(source).toContain('const CodeHighlightingPlugin = dynamic(');
+    expect(source).not.toContain("from '@lexical/code'");
+    expect(source).not.toContain('registerCodeHighlighting');
     expect(source).not.toContain('const updateActiveSourceDraft = useCallback(');
     expect(source).not.toContain('openActiveSourceFromSelection');
     expect(source).not.toContain('className="live-editor-active-source"');

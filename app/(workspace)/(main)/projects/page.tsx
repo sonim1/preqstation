@@ -181,7 +181,7 @@ async function loadProjectActivityRows({
   `);
 }
 
-export default async function ProjectsPage({ searchParams }: ProjectsPageProps = {}) {
+export default async function ProjectsPage({ searchParams }: ProjectsPageProps) {
   const queryParams = await (searchParams ?? Promise.resolve<ProjectsSearchParams>({}));
   const owner = await getOwnerUserOrNull();
   if (!owner) redirect('/login?reason=auth');

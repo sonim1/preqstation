@@ -5,7 +5,10 @@
   "license": "MIT",
   "scripts": {
     "dev": "eval $(grep '^PORT=' .env.local 2>/dev/null); next dev -p ${PORT:-3000}",
-    "build": "next build",
+    "build": "node scripts/build.mjs",
+    "build:cloudflare": "node scripts/build.mjs --cloudflare",
+    "deploy:cloudflare": "opennextjs-cloudflare deploy -- --keep-vars",
+    "upload:cloudflare": "opennextjs-cloudflare upload -- --keep-vars",
     "start": "next start",
     "lint": "eslint .",
     "test:unit": "vitest run",
@@ -24,6 +27,7 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@js-temporal/polyfill": "^0.5.1",
     "@lexical/code": "^0.44.0",
+    "@lexical/code-core": "^0.44.0",
     "@lexical/link": "^0.44.0",
     "@lexical/list": "^0.44.0",
     "@lexical/markdown": "^0.44.0",
@@ -36,7 +40,6 @@
     "@mantine/spotlight": "^9.3.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@tabler/icons-react": "^3.44.0",
-    "any-ascii": "^0.3.3",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",
     "fractional-indexing": "^3.2.0",
@@ -66,6 +69,7 @@
     ]
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.19.11",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.7.0",
     "@types/react": "^19.2.14",
@@ -83,6 +87,7 @@
     "playwright": "^1.60.0",
     "prettier": "^3.8.3",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.0",
+    "wrangler": "^4.98.0"
   }
 }

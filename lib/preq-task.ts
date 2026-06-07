@@ -1,4 +1,3 @@
-import anyAscii from 'any-ascii';
 import { and, asc, eq, ilike, isNull, or } from 'drizzle-orm';
 
 import { db } from '@/lib/db';
@@ -183,6 +182,22 @@ export function normalizePreqTaskLabelNames(labels: string[] | undefined) {
   return normalized;
 }
 
+const BRANCH_TITLE_TRANSLITERATION: Record<string, string> = {
+  ユ: 'yu',
+  ザ: 'za',
+  を: 'o',
+  認: 'ren',
+  証: 'zheng',
+  追: 'zhui',
+  加: 'jia',
+};
+
+function transliterateBranchTitle(value: string) {
+  return Array.from(value)
+    .map((char) => BRANCH_TITLE_TRANSLITERATION[char] ?? char.normalize('NFKD'))
+    .join('');
+}
+
 export function serializePreqTask(task: PreqSerializableTask, ownerEmail: string) {
   const deployStrategy = resolveDeployStrategyConfig(task.project?.settings);
   const agentInstructions = resolveAgentInstructions(task.project?.settings);
@@ -216,8 +231,9 @@ export function serializePreqTask(task: PreqSerializableTask, ownerEmail: string
 }
 
 export function generateBranchName(taskKey: string, title: string): string {
-  const slug = anyAscii(title)
+  const slug = transliterateBranchTitle(title)
     .toLowerCase()
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .slice(0, 50);

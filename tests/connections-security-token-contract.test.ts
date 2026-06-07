@@ -81,7 +81,7 @@ function renderWithMantine(element: React.ReactElement) {
 }
 
 async function renderConnectionsPage() {
-  const page = await ConnectionsPage();
+  const page = await ConnectionsPage({});
 
   return renderWithMantine(page);
 }

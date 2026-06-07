@@ -345,10 +345,11 @@ function BrowserSessionActionGroup({
   );
 }
 
-export default async function ConnectionsPage(props?: {
+type ConnectionsPageProps = {
   searchParams?: Promise<{ legacy?: string }>;
-}) {
-  const searchParams = props?.searchParams;
+};
+
+export default async function ConnectionsPage({ searchParams }: ConnectionsPageProps) {
   const owner = await getOwnerUserOrNull();
   if (!owner) redirect('/login?reason=auth');
   const params = searchParams ? await searchParams : undefined;

@@ -9,7 +9,7 @@ import {
   parseProjectBackgroundCredit,
   PROJECT_BG_PRESETS,
   type ProjectBackgroundCredit,
-} from '@/lib/project-backgrounds';
+} from '@/lib/project-backgrounds-shared';
 
 type SearchState =
   | { status: 'idle' }

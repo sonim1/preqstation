@@ -11,6 +11,15 @@ import { ProjectBackgroundPicker } from '@/app/components/project-background-pic
 const globalsCss = fs.readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
 
 describe('app/components/project-background-picker', () => {
+  it('uses the zod-free background helpers in the client bundle', () => {
+    const source = fs.readFileSync(
+      path.join(process.cwd(), 'app/components/project-background-picker.tsx'),
+      'utf8',
+    );
+
+    expect(source).not.toContain("@/lib/project-backgrounds'");
+  });
+
   it('defines an in-bounds focus treatment for background option buttons', () => {
     expect(globalsCss).toMatch(
       /\.project-bg-option:focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*box-shadow:/,

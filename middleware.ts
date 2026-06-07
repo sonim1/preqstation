@@ -32,7 +32,7 @@ function isServerActionRequest(req: NextRequest) {
   return req.headers.has('next-action');
 }
 
-export default async function proxy(req: NextRequest) {
+export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const method = req.method;
   const ip = getClientIp(req.headers);
