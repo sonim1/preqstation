@@ -129,7 +129,9 @@ function normalizeTaskDispatchPreferenceStatus(
     : null;
 }
 
-function isTaskDispatchMode(objective: TaskDispatchObjective | null | undefined) {
+function isTaskDispatchMode(
+  objective: TaskDispatchObjective | null | undefined,
+): objective is TaskDispatchMode {
   return (
     objective === 'plan' ||
     objective === 'ask' ||
