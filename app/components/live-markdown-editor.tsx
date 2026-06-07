@@ -1,6 +1,6 @@
 'use client';
 
-import { CodeHighlightNode, CodeNode, registerCodeHighlighting } from '@lexical/code';
+import { CodeHighlightNode, CodeNode } from '@lexical/code-core';
 import { AutoLinkNode, LinkNode } from '@lexical/link';
 import {
   $createListItemNode,
@@ -61,6 +61,7 @@ import {
   PASTE_COMMAND,
   type RangeSelection,
 } from 'lexical';
+import dynamic from 'next/dynamic';
 import {
   type KeyboardEvent as ReactKeyboardEvent,
   useCallback,
@@ -111,6 +112,14 @@ import {
   preserveTightMarkdownSpacing,
   stripPreqChoiceBlocks,
 } from '@/lib/markdown';
+
+const CodeHighlightingPlugin = dynamic(
+  () =>
+    import('@/app/components/live-markdown-code-highlighting-plugin').then(
+      (module) => module.CodeHighlightingPlugin,
+    ),
+  { ssr: false },
+);
 
 type LiveMarkdownEditorProps = {
   name: string;
@@ -573,16 +582,6 @@ function EditorStateBridgePlugin({ onReady }: { onReady: (bridge: LiveEditorBrid
           .read(() => stripPreqChoiceBlocks($convertToMarkdownString(MARKDOWN_TRANSFORMERS))),
     });
   }, [editor, onReady]);
-
-  return null;
-}
-
-function CodeHighlightingPlugin() {
-  const [editor] = useLexicalComposerContext();
-
-  useEffect(() => {
-    return registerCodeHighlighting(editor);
-  }, [editor]);
 
   return null;
 }

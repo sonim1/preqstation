@@ -322,7 +322,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
   });
 
   it('loads workspace activity from the project daily rollup table', async () => {
-    const page = await ProjectsPage();
+    const page = await ProjectsPage({});
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
 
     expect(mocked.db.execute).toHaveBeenCalledOnce();
@@ -351,7 +351,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
       return [];
     });
 
-    const page = await ProjectsPage();
+    const page = await ProjectsPage({});
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
 
     expect(mocked.db.execute).toHaveBeenCalledTimes(2);
@@ -372,7 +372,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
     error.code = '42P01';
     mocked.db.execute.mockRejectedValue(error);
 
-    await expect(ProjectsPage()).rejects.toThrow('relation "other_rollup_table" does not exist');
+    await expect(ProjectsPage({})).rejects.toThrow('relation "other_rollup_table" does not exist');
   });
 
   it('does not hide non-missing project activity rollup query failures', async () => {
@@ -380,7 +380,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
       new Error('permission denied for relation dashboard_project_work_log_daily'),
     );
 
-    await expect(ProjectsPage()).rejects.toThrow(
+    await expect(ProjectsPage({})).rejects.toThrow(
       'permission denied for relation dashboard_project_work_log_daily',
     );
   });
@@ -404,7 +404,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
       return [];
     });
 
-    const page = await ProjectsPage();
+    const page = await ProjectsPage({});
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
     const [activityQuery] = mocked.db.execute.mock.calls[0] ?? [];
     const sqlText = toSqlText(activityQuery);
@@ -467,7 +467,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
       { projectId: 'project-3', lastWorkedAt: new Date('2026-03-12T12:00:00Z') },
     );
 
-    const page = await ProjectsPage();
+    const page = await ProjectsPage({});
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
 
     expect(html).toContain('Projects roster · 3 repos');
@@ -651,7 +651,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
       { projectId: 'project-2', lastWorkedAt: new Date('2026-03-11T13:00:00Z') },
     ];
 
-    const page = await ProjectsPage();
+    const page = await ProjectsPage({});
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
 
     expect(html).toContain('All 4');
@@ -734,7 +734,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
   it('marks the agent status indicator inactive when no agents are running or queued', async () => {
     mocked.state.runStateCounts = [];
 
-    const page = await ProjectsPage();
+    const page = await ProjectsPage({});
     const html = renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
 
     expect(html).toContain('data-active="false">0 agents running');
@@ -749,7 +749,7 @@ describe('app/(workspace)/(main)/projects/page', () => {
       data: { id: 'project-1', projectKey: 'PREQ', changed: true },
     });
 
-    const page = await ProjectsPage();
+    const page = await ProjectsPage({});
     renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
 
     const projectCardMenuProps = mocked.projectCardMenuProps.mock.calls[0]?.[0] as {

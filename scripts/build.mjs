@@ -23,13 +23,17 @@ function shouldBuildForCloudflare(env = process.env, args = process.argv.slice(2
   return args.includes(CLOUDFLARE_MODE_ARG) || env.WORKERS_CI === '1';
 }
 
+function getNextBuildArgs(env = process.env) {
+  return env[OPENNEXT_BUILD_ENV] === '1' ? ['build', '--webpack'] : ['build'];
+}
+
 if (shouldBuildForCloudflare()) {
   console.log('[build] Running OpenNext Cloudflare build.');
-  run('opennextjs-cloudflare', ['build', '--noMinify'], {
+  run('opennextjs-cloudflare', ['build'], {
     ...process.env,
     [OPENNEXT_BUILD_ENV]: '1',
   });
 } else {
   console.log('[build] Running Next.js build.');
-  run('next', ['build']);
+  run('next', getNextBuildArgs());
 }

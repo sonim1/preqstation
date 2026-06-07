@@ -91,6 +91,12 @@ describe('LiveMarkdownEditor mermaid diagrams', () => {
     expect(source).toContain('<LiveMermaidCodeNodeTransformPlugin />');
   });
 
+  it('keeps the Mermaid diagram renderer behind a client-only boundary', () => {
+    const source = readFileSync(join(process.cwd(), 'lib/live-markdown-mermaid.tsx'), 'utf8');
+
+    expect(source).not.toContain("from '@/app/components/mermaid-renderer'");
+  });
+
   it('renders mermaid fences as live diagrams while preserving markdown source', async () => {
     const markdown = '```mermaid\nflowchart LR\n  A --> B\n```';
     const { container } = renderEditor(markdown);

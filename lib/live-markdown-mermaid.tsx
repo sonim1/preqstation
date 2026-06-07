@@ -1,4 +1,4 @@
-import { CodeNode } from '@lexical/code';
+import { CodeNode } from '@lexical/code-core';
 import { type ElementTransformer } from '@lexical/markdown';
 import {
   $applyNodeReplacement,
@@ -12,7 +12,7 @@ import {
 } from 'lexical';
 import { type ReactNode } from 'react';
 
-import { MermaidDiagram } from '@/app/components/mermaid-renderer';
+import { DeferredMermaidDiagram } from '@/app/components/deferred-mermaid-diagram';
 
 type SerializedLiveMermaidNode = Spread<
   {
@@ -55,7 +55,10 @@ export class LiveMermaidNode extends DecoratorNode<ReactNode> {
 
   decorate(): ReactNode {
     return (
-      <MermaidDiagram source={this.getSource()} className="mermaid live-editor-mermaid-diagram" />
+      <DeferredMermaidDiagram
+        source={this.getSource()}
+        className="mermaid live-editor-mermaid-diagram"
+      />
     );
   }
 

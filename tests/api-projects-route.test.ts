@@ -98,7 +98,7 @@ describe('app/api/projects/route', () => {
   it('GET returns projects for owner', async () => {
     mocked.db.query.projects.findMany.mockResolvedValueOnce([{ id: 'project-1' }]);
 
-    const response = await GET();
+    const response = await GET(getRequest());
     const body = await response.json();
 
     expect(response.status).toBe(200);

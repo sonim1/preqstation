@@ -33,9 +33,9 @@ const createProjectSchema = z.object({
   priority: z.coerce.number().int().min(1).max(PROJECT_PRIORITY_MAX).optional(),
 });
 
-export async function GET(_req?: Request) {
+export async function GET(req: Request) {
   try {
-    const apiAuth = _req ? await authenticateApiToken(_req) : null;
+    const apiAuth = await authenticateApiToken(req);
     const ownerId = apiAuth?.ownerId || (await requireOwnerUser()).id;
 
     return await withOwnerDb(ownerId, async (client) => {

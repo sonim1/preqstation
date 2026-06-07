@@ -1,15 +1,23 @@
 'use client';
 
 import { Anchor, Badge, Group, Paper, Stack, Text } from '@mantine/core';
+import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 
-import { renderMermaidNodes } from '@/app/components/mermaid-renderer';
 import {
   extractMarkdownArtifacts,
   renderMarkdownToHtml,
   toggleChecklistItem,
 } from '@/lib/markdown';
 import { mergeTaskArtifacts, type TaskArtifact } from '@/lib/task-artifacts';
+
+const MarkdownMermaidHydrator = dynamic(
+  () =>
+    import('@/app/components/markdown-mermaid-hydrator').then(
+      (module) => module.MarkdownMermaidHydrator,
+    ),
+  { ssr: false },
+);
 
 type MarkdownPersistence = {
   endpoint: string;
@@ -46,22 +54,6 @@ export function MarkdownViewer({
     () => mergeTaskArtifacts(structuredArtifacts, extractMarkdownArtifacts(source)),
     [source, structuredArtifacts],
   );
-
-  useEffect(() => {
-    const nodes = Array.from(bodyRef.current?.querySelectorAll<HTMLElement>('.mermaid') ?? []);
-    if (nodes.length === 0) return undefined;
-
-    let cancelled = false;
-
-    void renderMermaidNodes(nodes, () => cancelled).catch((error: unknown) => {
-      if (cancelled) return;
-      console.error('Failed to render Mermaid diagram', error);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [html]);
 
   async function persistChecklist(nextSource: string, previousSource: string) {
     if (!persistence) return;
@@ -166,6 +158,7 @@ export function MarkdownViewer({
   return (
     <>
       {body}
+      {body ? <MarkdownMermaidHydrator containerRef={bodyRef} html={html} /> : null}
       {artifactList}
       {saveError && mode !== 'artifacts' ? (
         <div className="markdown-persist-error">{saveError}</div>

@@ -1,4 +1,4 @@
-import { CodeNode } from '@lexical/code';
+import { CodeNode } from '@lexical/code-core';
 import { $createParagraphNode, $createTextNode } from 'lexical';
 
 const CLOSING_FENCE_LINE = /^```(?:\s+)?$/;

@@ -1,5 +1,8 @@
 // @vitest-environment jsdom
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { render, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -16,6 +19,12 @@ vi.mock('mermaid', () => ({
 }));
 
 describe('MarkdownViewer mermaid hydration', () => {
+  it('keeps the Mermaid renderer behind a client-only boundary', () => {
+    const source = readFileSync(join(process.cwd(), 'app/components/markdown-viewer.tsx'), 'utf8');
+
+    expect(source).not.toContain("from '@/app/components/mermaid-renderer'");
+  });
+
   it('hydrates mermaid blocks inside the current viewer', async () => {
     render(<MarkdownViewer markdown={'```mermaid\ngraph TD\nA --> B\n```'} />);
 

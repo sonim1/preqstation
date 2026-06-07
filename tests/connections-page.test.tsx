@@ -161,7 +161,7 @@ vi.mock('@/lib/user-settings', () => ({
 import ConnectionsPage from '@/app/(workspace)/(main)/connections/page';
 
 async function renderConnectionsPage() {
-  const page = await ConnectionsPage();
+  const page = await ConnectionsPage({});
   return renderToStaticMarkup(<MantineProvider>{page}</MantineProvider>);
 }
 

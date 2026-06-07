@@ -1,4 +1,4 @@
-import { $createCodeNode, CodeNode } from '@lexical/code';
+import { $createCodeNode, CodeNode } from '@lexical/code-core';
 import { $createTextNode, $getRoot, createEditor, ParagraphNode } from 'lexical';
 import { describe, expect, it } from 'vitest';
 
