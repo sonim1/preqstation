@@ -24,10 +24,12 @@ function shouldBuildForCloudflare(env = process.env, args = process.argv.slice(2
 }
 
 if (shouldBuildForCloudflare()) {
+  console.log('[build] Running OpenNext Cloudflare build.');
   run('opennextjs-cloudflare', ['build', '--noMinify'], {
     ...process.env,
     [OPENNEXT_BUILD_ENV]: '1',
   });
 } else {
+  console.log('[build] Running Next.js build.');
   run('next', ['build']);
 }
