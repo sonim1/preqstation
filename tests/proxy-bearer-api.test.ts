@@ -23,7 +23,7 @@ vi.mock('@/lib/security-headers', () => ({
   setSecurityHeaders: mocked.setSecurityHeaders,
 }));
 
-import proxy from '@/proxy';
+import proxy from '@/middleware';
 
 function makeRequest(
   path: string,

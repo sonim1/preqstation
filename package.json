@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "eval $(grep '^PORT=' .env.local 2>/dev/null); next dev -p ${PORT:-3000}",
     "build": "next build",
+    "build:cloudflare": "opennextjs-cloudflare build --noMinify",
+    "deploy:cloudflare": "opennextjs-cloudflare deploy -- --keep-vars",
+    "upload:cloudflare": "opennextjs-cloudflare upload -- --keep-vars",
     "start": "next start",
     "lint": "eslint .",
     "test:unit": "vitest run",
@@ -63,6 +66,7 @@
     ]
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.19.11",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.7.0",
     "@types/react": "^19.2.14",
@@ -80,6 +84,7 @@
     "playwright": "^1.60.0",
     "prettier": "^3.8.3",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.0",
+    "wrangler": "^4.98.0"
   }
 }
