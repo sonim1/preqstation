@@ -122,16 +122,16 @@ async function sign(data: string) {
 }
 
 function safeEquals(a: string, b: string) {
-  const bufA = Buffer.from(a, 'utf8');
-  const bufB = Buffer.from(b, 'utf8');
-  if (bufA.length !== bufB.length) {
-    // Compare against self to consume constant time regardless of length mismatch
-    const { timingSafeEqual } = require('crypto') as typeof import('crypto');
-    timingSafeEqual(bufA, bufA);
-    return false;
+  const bytesA = new TextEncoder().encode(a);
+  const bytesB = new TextEncoder().encode(b);
+  const maxLength = Math.max(bytesA.length, bytesB.length);
+  let mismatch = bytesA.length ^ bytesB.length;
+
+  for (let index = 0; index < maxLength; index += 1) {
+    mismatch |= (bytesA[index] ?? 0) ^ (bytesB[index] ?? 0);
   }
-  const { timingSafeEqual } = require('crypto') as typeof import('crypto');
-  return timingSafeEqual(bufA, bufB);
+
+  return mismatch === 0;
 }
 
 async function createSignedToken(input: {
