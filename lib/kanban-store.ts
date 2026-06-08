@@ -258,6 +258,20 @@ export function selectKanbanColumns(
   return columns;
 }
 
+export function selectKanbanTask(
+  state: Pick<KanbanStoreState, 'tasksByKey'>,
+  taskKey: string | null | undefined,
+) {
+  return taskKey ? (state.tasksByKey[taskKey] ?? null) : null;
+}
+
+export function selectKanbanTaskKeysByStatus(
+  state: Pick<KanbanStoreState, 'columnTaskKeys'>,
+  status: KanbanStatus,
+) {
+  return state.columnTaskKeys[status];
+}
+
 export function selectKanbanRunStatePollingStatus(
   state: Pick<KanbanStoreState, 'tasksByKey' | 'lastTaskQueuedAt'>,
 ) {

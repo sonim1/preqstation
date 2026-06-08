@@ -292,6 +292,40 @@ describe('app/components/board-offline-sync-provider', () => {
     ]);
   });
 
+  it('flushes queued optimistic creates in the background while online', async () => {
+    getKanbanStateMock.mockReturnValue({
+      focusedTask: null,
+      tasksByKey: {},
+      columnTaskKeys: { inbox: [], todo: [], hold: [], ready: [], done: [], archived: [] },
+    });
+    queueOfflineCreateMutationMock.mockResolvedValue(undefined);
+    const onReady = vi.fn();
+
+    render(
+      <BoardOfflineSyncProvider editHrefBase="/board/PROJ" activeProjectId="project-1">
+        <BoardOfflineSyncProbe onReady={onReady} />
+      </BoardOfflineSyncProvider>,
+    );
+
+    await waitFor(() => {
+      expect(flushOfflineMutationsMock).toHaveBeenCalledTimes(1);
+      expect(onReady).toHaveBeenCalled();
+    });
+
+    await onReady.mock.lastCall?.[0]?.queueTaskCreate({
+      title: 'Online local-first card',
+      note: '',
+      project: { id: 'project-1', name: 'Project PROJ', projectKey: 'PROJ' },
+      labels: [],
+      taskPriority: 'none',
+      status: 'inbox',
+    });
+
+    await waitFor(() => {
+      expect(flushOfflineMutationsMock).toHaveBeenCalledTimes(2);
+    });
+  });
+
   it('clears the offline draft only after a queued patch replay succeeds', async () => {
     getKanbanStateMock.mockReturnValue({
       focusedTask: FocusedTask('PROJ-255'),

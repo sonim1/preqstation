@@ -13,6 +13,7 @@ import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.
 import {
   type ComponentType,
   type CSSProperties,
+  memo,
   type ReactNode,
   useCallback,
   useEffect,
@@ -126,7 +127,7 @@ type KanbanBoardMobileTaskCardProps = {
   isFocusDimmed?: boolean;
 };
 
-function KanbanBoardMobileTaskCard({
+const KanbanBoardMobileTaskCard = memo(function KanbanBoardMobileTaskCard({
   task,
   editHref,
   isPending,
@@ -212,7 +213,7 @@ function KanbanBoardMobileTaskCard({
       />
     </Paper>
   );
-}
+});
 
 export function KanbanBoardMobile({
   columns,

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { type FormEvent, useMemo, useState } from 'react';
 
 import { useBoardOfflineSync } from '@/app/components/board-offline-sync-provider';
-import { useOfflineStatus } from '@/app/components/offline-status-provider';
 import { TaskLabelPicker } from '@/app/components/task-label-picker';
 import { TaskMetadataPriorityPicker } from '@/app/components/task-metadata-controls';
 import { useTerminology } from '@/app/components/terminology-provider';
@@ -37,7 +36,6 @@ export function KanbanQuickAdd({
   onTaskCreated,
 }: KanbanQuickAddProps) {
   const boardOfflineSync = useBoardOfflineSync();
-  const { online } = useOfflineStatus();
   const router = useRouter();
   const terminology = useTerminology();
   const [title, setTitle] = useState('');
@@ -79,9 +77,9 @@ export function KanbanQuickAdd({
           ? selectedProject
           : projectOptions.find((project) => project.id === pid)) ?? null;
 
-      if (!online && boardOfflineSync) {
+      if (boardOfflineSync) {
         if (!selectedProjectOption) {
-          throw new Error('Project details are required for offline task creation.');
+          throw new Error('Project details are required for local task creation.');
         }
 
         const optimisticTask = await boardOfflineSync.queueTaskCreate({

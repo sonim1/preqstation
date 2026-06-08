@@ -3,12 +3,14 @@
 import { createContext, type ReactNode, useContext, useState } from 'react';
 import { useStore } from 'zustand';
 
-import type { KanbanColumns } from '@/lib/kanban-helpers';
+import type { KanbanColumns, KanbanStatus } from '@/lib/kanban-helpers';
 import {
   createKanbanStore,
   type EditableBoardTask,
   selectKanbanColumns,
   selectKanbanRunStatePollingStatus,
+  selectKanbanTask,
+  selectKanbanTaskKeysByStatus,
 } from '@/lib/kanban-store';
 
 type KanbanStoreApi = ReturnType<typeof createKanbanStore>;
@@ -58,6 +60,14 @@ export function useKanbanStore<T>(selector: (state: ReturnType<KanbanStoreApi['g
 
 export function useKanbanColumns() {
   return useKanbanStore(selectKanbanColumns);
+}
+
+export function useKanbanTask(taskKey: string | null | undefined) {
+  return useKanbanStore((state) => selectKanbanTask(state, taskKey));
+}
+
+export function useKanbanTaskKeysByStatus(status: KanbanStatus) {
+  return useKanbanStore((state) => selectKanbanTaskKeysByStatus(state, status));
 }
 
 export function useFocusedTask() {

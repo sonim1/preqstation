@@ -117,6 +117,9 @@ describe('app/components/task-edit-panel', () => {
   }
 
   beforeEach(() => {
+    routerReplaceMock.mockReset();
+    taskEditFormPropsMock.mockClear();
+    taskEditFormControllerMock.mockReset();
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       value: vi.fn().mockImplementation((query: string) => ({
@@ -219,9 +222,9 @@ describe('app/components/task-edit-panel', () => {
     expect(allPanels.indexOf(activityPanel)).toBeLessThan(allPanels.indexOf(dispatchPanel));
   });
 
-  it('renders the edit form once detail is ready', () => {
+  it('renders the edit form once detail is ready', async () => {
     taskEditFormControllerMock.mockReturnValue(buildController());
-    const html = renderToStaticMarkup(
+    const view = render(
       <MantineProvider>
         <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
           <TaskEditPanel {...BASE_PROPS} />
@@ -229,9 +232,15 @@ describe('app/components/task-edit-panel', () => {
       </MantineProvider>,
     );
 
-    expect(html).toContain('data-testid="task-edit-form"');
-    expect(html).toContain('data-resizable-storage-key="preqstation:task-edit-panel:size:v1"');
-    expect(html).not.toContain('data-testid="task-edit-loading-shell"');
+    await waitFor(() => {
+      expect(view.container.querySelector('[data-testid="task-edit-form"]')).not.toBeNull();
+    });
+
+    expect(view.container.innerHTML).toContain(
+      'data-resizable-storage-key="preqstation:task-edit-panel:size:v1"',
+    );
+    expect(view.container.querySelector('[data-testid="task-edit-loading-shell"]')).toBeNull();
+    view.unmount();
   });
 
   it('uses the same persisted resize key for empty edit panels', () => {
@@ -280,9 +289,9 @@ describe('app/components/task-edit-panel', () => {
     );
   });
 
-  it('places the autosave status in the modal header center for loaded edit panels', () => {
+  it('places the autosave status in the modal header center for loaded edit panels', async () => {
     taskEditFormControllerMock.mockReturnValue(buildController());
-    const html = renderToStaticMarkup(
+    const view = render(
       <MantineProvider>
         <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
           <TaskEditPanel {...BASE_PROPS} />
@@ -290,15 +299,19 @@ describe('app/components/task-edit-panel', () => {
       </MantineProvider>,
     );
 
-    expect(html).toContain('data-testid="task-panel-modal-header-center"');
-    expect(html).toContain('data-slot="panel-save-status"');
-    expect(html).toContain('data-status="saved"');
-    expect(html).toContain('data-justify="center"');
+    await waitFor(() => {
+      expect(view.container.querySelector('[data-slot="panel-save-status"]')).not.toBeNull();
+    });
+
+    expect(view.container.innerHTML).toContain('data-testid="task-panel-modal-header-center"');
+    expect(view.container.innerHTML).toContain('data-status="saved"');
+    expect(view.container.innerHTML).toContain('data-justify="center"');
+    view.unmount();
   });
 
-  it('closes the modal route after a successful dispatch queue action', () => {
+  it('closes the modal route after a successful dispatch queue action', async () => {
     taskEditFormControllerMock.mockReturnValue(buildController());
-    renderToStaticMarkup(
+    const view = render(
       <MantineProvider>
         <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
           <TaskEditPanel
@@ -320,13 +333,20 @@ describe('app/components/task-edit-panel', () => {
       </MantineProvider>,
     );
 
-    const taskEditFormProps = taskEditFormPropsMock.mock.calls.at(-1)?.[0] as {
-      onDispatchQueued?: () => void;
-    };
+    await waitFor(() => {
+      expect(taskEditFormPropsMock).toHaveBeenCalled();
+    });
 
-    taskEditFormProps.onDispatchQueued?.();
+    const taskEditFormProps = taskEditFormPropsMock.mock.calls.at(-1)?.[0] as
+      | {
+          onDispatchQueued?: () => void;
+        }
+      | undefined;
+
+    taskEditFormProps?.onDispatchQueued?.();
 
     expect(routerReplaceMock).toHaveBeenCalledWith('/board/proj');
+    view.unmount();
   });
 
   it('keeps escape-close enabled for the loaded task edit panel', () => {
