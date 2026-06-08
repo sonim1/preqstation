@@ -60,7 +60,7 @@
   width: 4px;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--ui-warning), white 16%),
+    color-mix(in srgb, var(--ui-warning), var(--ui-on-accent) 16%),
     color-mix(in srgb, var(--ui-warning), var(--ui-neutral-strong) 18%)
   );
   box-shadow: 0 0 16px color-mix(in srgb, var(--ui-warning), transparent 42%);
@@ -76,7 +76,7 @@
   width: 4px;
   background: linear-gradient(
     180deg,
-    color-mix(in srgb, var(--ui-success), white 16%),
+    color-mix(in srgb, var(--ui-success), var(--ui-on-accent) 16%),
     color-mix(in srgb, var(--ui-success), var(--ui-neutral-strong) 18%)
   );
   box-shadow: 0 0 16px color-mix(in srgb, var(--ui-success), transparent 42%);
