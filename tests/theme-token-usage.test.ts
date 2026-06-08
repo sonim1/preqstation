@@ -21,6 +21,14 @@ const cardsCss = fs.readFileSync(
   path.join(process.cwd(), 'app/components/cards.module.css'),
   'utf8',
 );
+const dashboardOperatorDeskCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/dashboard-operator-desk.module.css'),
+  'utf8',
+);
+const taskEditHeaderTitleCss = fs.readFileSync(
+  path.join(process.cwd(), 'app/components/task-edit-header-title.module.css'),
+  'utf8',
+);
 const taskPanelModalCss = fs.readFileSync(
   path.join(process.cwd(), 'app/components/task-panel-modal.module.css'),
   'utf8',
@@ -208,6 +216,23 @@ describe('theme token usage audit fixes', () => {
     expect(cardsCss).toContain('var(--ui-status-running)');
     expect(cardsCss).toContain('var(--ui-status-queued)');
     expect(cardsCss).toMatch(/\.projectBoardCard\s*\{[\s\S]*background:\s*var\(--ui-card-bg\);/);
+  });
+
+  it('keeps dashboard and card visual mixing on semantic tokens', () => {
+    expect(dashboardOperatorDeskCss).not.toMatch(/color-mix\(in srgb,[^;]*(?:\bblack\b|\bwhite\b)/);
+    expect(cardsCss).not.toMatch(/color-mix\(in srgb,[^;]*(?:\bblack\b|\bwhite\b)/);
+  });
+
+  it('renders tokenized focus affordances for custom dashboard and task title controls', () => {
+    const dashboardPointFocusRule = dashboardOperatorDeskCss.match(
+      /\.portfolioMatrixPoint:focus-visible\s*\.portfolioMatrixDot\s*\{([^}]*)\}/,
+    );
+    const titleEditorFocusRule = taskEditHeaderTitleCss.match(
+      /\.editor:focus-within\s*\{([^}]*)\}/,
+    );
+
+    expect(dashboardPointFocusRule?.[1]).toContain('var(--ui-focus-ring)');
+    expect(titleEditorFocusRule?.[1]).toContain('var(--ui-focus-ring)');
   });
 
   it('renders project detail status and metric chrome with shared ui tokens', () => {

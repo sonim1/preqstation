@@ -219,7 +219,6 @@
   background: transparent;
   transform: translate(-50%, -50%);
   z-index: 1;
-  outline: none;
   cursor: pointer;
   touch-action: manipulation;
   text-decoration: none;
@@ -242,7 +241,7 @@
   border: 1px solid color-mix(in srgb, var(--ui-border), transparent 4%);
   color: var(--ui-text);
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white, transparent 90%),
+    inset 0 1px 0 color-mix(in srgb, var(--ui-on-accent), transparent 90%),
     var(--ui-elevation-1);
 }
 
@@ -258,7 +257,29 @@
   width: 1.05rem;
   height: 1.05rem;
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb, white, transparent 88%),
+    inset 0 1px 0 color-mix(in srgb, var(--ui-on-accent), transparent 88%),
+    0 0 0 1px color-mix(in srgb, var(--ui-surface), transparent 10%),
+    var(--ui-elevation-2);
+}
+
+.portfolioMatrixPoint:focus-visible {
+  outline: none;
+}
+
+.portfolioMatrixPoint:focus-visible .portfolioMatrixDot {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--ui-focus-ring), transparent 18%),
+    0 0 0 5px color-mix(in srgb, var(--ui-accent), transparent 78%),
+    inset 0 1px 0 color-mix(in srgb, var(--ui-on-accent), transparent 90%),
+    var(--ui-elevation-2);
+}
+
+.portfolioMatrixPoint[data-overlap-size]:not([data-overlap-size='1']):focus-visible
+  .portfolioMatrixDot {
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--ui-focus-ring), transparent 18%),
+    0 0 0 5px color-mix(in srgb, var(--ui-accent), transparent 78%),
+    inset 0 1px 0 color-mix(in srgb, var(--ui-on-accent), transparent 88%),
     0 0 0 1px color-mix(in srgb, var(--ui-surface), transparent 10%),
     var(--ui-elevation-2);
 }
@@ -280,7 +301,7 @@
   min-width: 10.5rem;
   padding: 0.45rem 0.55rem;
   border-radius: 0.8rem;
-  background: color-mix(in srgb, var(--ui-surface-strong), black 4%);
+  background: color-mix(in srgb, var(--ui-surface-strong), var(--ui-surface) 14%);
   border: 1px solid color-mix(in srgb, var(--ui-border), transparent 10%);
   color: var(--ui-text);
   font-size: 0.68rem;
@@ -488,8 +509,8 @@
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--ui-surface-soft), white 2%),
-      color-mix(in srgb, var(--ui-surface), black 2%)
+      color-mix(in srgb, var(--ui-surface-soft), var(--ui-surface-strong) 12%),
+      color-mix(in srgb, var(--ui-surface), var(--ui-surface-muted) 12%)
     ),
     var(--ui-surface);
   overflow: hidden;
@@ -539,7 +560,7 @@
     linear-gradient(
       180deg,
       color-mix(in srgb, var(--ui-surface-soft), transparent 2%),
-      color-mix(in srgb, var(--ui-surface), black 4%)
+      color-mix(in srgb, var(--ui-surface), var(--ui-surface-muted) 16%)
     ),
     var(--ui-surface);
 }
