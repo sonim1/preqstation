@@ -783,6 +783,24 @@ describe('timing-safe verification', () => {
     const shortSig = 'abc';
     await expect(verifySessionToken(`${payloadB64}.${shortSig}`)).resolves.toBeNull();
   });
+
+  it('verifies tokens when Buffer is unavailable in the edge runtime', async () => {
+    const token = await buildToken({
+      sub: 'owner-1',
+      email: 'owner@example.com',
+      isOwner: true,
+      exp: futureExp(),
+    });
+    const originalBuffer = globalThis.Buffer;
+    vi.stubGlobal('Buffer', undefined);
+
+    try {
+      const payload = await verifySessionToken(token);
+      expect(payload?.email).toBe('owner@example.com');
+    } finally {
+      vi.stubGlobal('Buffer', originalBuffer);
+    }
+  });
 });
 
 describe('auth()', () => {
