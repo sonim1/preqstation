@@ -5,12 +5,13 @@ import { lazy, Suspense } from 'react';
 import { EmptyState } from '@/app/components/empty-state';
 
 import { TaskEditPanelSkeleton } from './task-edit-panel-skeleton';
+import {
+  TASK_EDIT_PANEL_FULLSCREEN_STORAGE_KEY,
+  TASK_EDIT_PANEL_RESIZE_STORAGE_KEY,
+} from './task-edit-panel-storage';
 import type { TaskEditPanelProps } from './task-edit-panel-types';
 import { TaskPanelModal } from './task-panel-modal';
 import { useTerminology } from './terminology-provider';
-
-const TASK_EDIT_PANEL_RESIZE_STORAGE_KEY = 'preqstation:task-edit-panel:size:v1';
-const TASK_EDIT_PANEL_FULLSCREEN_STORAGE_KEY = 'preqstation:task-edit-panel:fullscreen:v1';
 
 const LoadedTaskEditPanel = lazy(() =>
   import('./task-edit-panel-loaded').then((mod) => ({ default: mod.LoadedTaskEditPanel })),

@@ -2,9 +2,9 @@
 
 import 'fake-indexeddb/auto';
 
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { useEffect } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const flushOfflineMutationsMock = vi.hoisted(() => vi.fn());
 const useOfflineStatusMock = vi.hoisted(() => vi.fn());
@@ -120,6 +120,10 @@ function BoardOfflineSyncProbe({
 }
 
 describe('app/components/board-offline-sync-provider', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   beforeEach(() => {
     flushOfflineMutationsMock.mockReset();
     useOfflineStatusMock.mockReset();
@@ -292,7 +296,7 @@ describe('app/components/board-offline-sync-provider', () => {
     ]);
   });
 
-  it('flushes queued optimistic creates in the background while online', async () => {
+  it('defers queued optimistic create replay until after the optimistic task is returned', async () => {
     getKanbanStateMock.mockReturnValue({
       focusedTask: null,
       tasksByKey: {},
@@ -312,7 +316,8 @@ describe('app/components/board-offline-sync-provider', () => {
       expect(onReady).toHaveBeenCalled();
     });
 
-    await onReady.mock.lastCall?.[0]?.queueTaskCreate({
+    vi.useFakeTimers();
+    const result = await onReady.mock.lastCall?.[0]?.queueTaskCreate({
       title: 'Online local-first card',
       note: '',
       project: { id: 'project-1', name: 'Project PROJ', projectKey: 'PROJ' },
@@ -321,9 +326,71 @@ describe('app/components/board-offline-sync-provider', () => {
       status: 'inbox',
     });
 
-    await waitFor(() => {
-      expect(flushOfflineMutationsMock).toHaveBeenCalledTimes(2);
+    expect(result.taskKey).toMatch(/^OFFLINE-/);
+    expect(flushOfflineMutationsMock).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
     });
+    expect(flushOfflineMutationsMock).toHaveBeenCalledTimes(2);
+    vi.useRealTimers();
+  });
+
+  it('does not continue the active flush loop after connectivity changes to offline', async () => {
+    let online = true;
+    let resolveFirstFlush!: (value: { appliedCount: number; error: null; halted: boolean }) => void;
+    useOfflineStatusMock.mockImplementation(() => ({ online }));
+    getKanbanStateMock.mockReturnValue({
+      focusedTask: null,
+      tasksByKey: {},
+      columnTaskKeys: { inbox: [], todo: [], hold: [], ready: [], done: [], archived: [] },
+    });
+    queueOfflineCreateMutationMock.mockResolvedValue(undefined);
+    flushOfflineMutationsMock.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFirstFlush = resolve;
+        }),
+    );
+    const onReady = vi.fn();
+
+    const view = render(
+      <BoardOfflineSyncProvider editHrefBase="/board/PROJ" activeProjectId="project-1">
+        <BoardOfflineSyncProbe onReady={onReady} />
+      </BoardOfflineSyncProvider>,
+    );
+
+    await waitFor(() => {
+      expect(flushOfflineMutationsMock).toHaveBeenCalledTimes(1);
+      expect(onReady).toHaveBeenCalled();
+    });
+
+    vi.useFakeTimers();
+    await onReady.mock.lastCall?.[0]?.queueTaskCreate({
+      title: 'Online local-first card',
+      note: '',
+      project: { id: 'project-1', name: 'Project PROJ', projectKey: 'PROJ' },
+      labels: [],
+      taskPriority: 'none',
+      status: 'inbox',
+    });
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+
+    online = false;
+    view.rerender(
+      <BoardOfflineSyncProvider editHrefBase="/board/PROJ" activeProjectId="project-1">
+        <BoardOfflineSyncProbe onReady={onReady} />
+      </BoardOfflineSyncProvider>,
+    );
+    await act(async () => {
+      resolveFirstFlush({ appliedCount: 0, error: null, halted: false });
+      await Promise.resolve();
+    });
+
+    expect(flushOfflineMutationsMock).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
   });
 
   it('clears the offline draft only after a queued patch replay succeeds', async () => {

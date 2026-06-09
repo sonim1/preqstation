@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { MantineProvider } from '@mantine/core';
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -71,6 +71,10 @@ vi.mock('@/app/components/task-edit-header-title', () => ({
 }));
 
 import { EmptyTaskEditPanel, TaskEditPanel } from '@/app/components/task-edit-panel';
+import {
+  TASK_EDIT_PANEL_FULLSCREEN_STORAGE_KEY,
+  TASK_EDIT_PANEL_RESIZE_STORAGE_KEY,
+} from '@/app/components/task-edit-panel-storage';
 import { TerminologyProvider } from '@/app/components/terminology-provider';
 import { KITCHEN_TERMINOLOGY } from '@/lib/terminology';
 
@@ -144,7 +148,7 @@ describe('app/components/task-edit-panel', () => {
     );
 
     expect(html).toContain('data-testid="task-panel-modal"');
-    expect(html).toContain('data-resizable-storage-key="preqstation:task-edit-panel:size:v1"');
+    expect(html).toContain(`data-resizable-storage-key="${TASK_EDIT_PANEL_RESIZE_STORAGE_KEY}"`);
     expect(html).toContain('data-testid="task-edit-loading-shell"');
     expect(html).not.toContain('data-testid="task-edit-form"');
   });
@@ -237,7 +241,7 @@ describe('app/components/task-edit-panel', () => {
     });
 
     expect(view.container.innerHTML).toContain(
-      'data-resizable-storage-key="preqstation:task-edit-panel:size:v1"',
+      `data-resizable-storage-key="${TASK_EDIT_PANEL_RESIZE_STORAGE_KEY}"`,
     );
     expect(view.container.querySelector('[data-testid="task-edit-loading-shell"]')).toBeNull();
     view.unmount();
@@ -252,7 +256,7 @@ describe('app/components/task-edit-panel', () => {
       </MantineProvider>,
     );
 
-    expect(html).toContain('data-resizable-storage-key="preqstation:task-edit-panel:size:v1"');
+    expect(html).toContain(`data-resizable-storage-key="${TASK_EDIT_PANEL_RESIZE_STORAGE_KEY}"`);
   });
 
   it('uses the same persisted fullscreen key for loaded, loading, and empty edit panels', () => {
@@ -279,13 +283,13 @@ describe('app/components/task-edit-panel', () => {
     );
 
     expect(loadedHtml).toContain(
-      'data-fullscreen-storage-key="preqstation:task-edit-panel:fullscreen:v1"',
+      `data-fullscreen-storage-key="${TASK_EDIT_PANEL_FULLSCREEN_STORAGE_KEY}"`,
     );
     expect(loadingHtml).toContain(
-      'data-fullscreen-storage-key="preqstation:task-edit-panel:fullscreen:v1"',
+      `data-fullscreen-storage-key="${TASK_EDIT_PANEL_FULLSCREEN_STORAGE_KEY}"`,
     );
     expect(emptyHtml).toContain(
-      'data-fullscreen-storage-key="preqstation:task-edit-panel:fullscreen:v1"',
+      `data-fullscreen-storage-key="${TASK_EDIT_PANEL_FULLSCREEN_STORAGE_KEY}"`,
     );
   });
 
@@ -382,5 +386,37 @@ describe('app/components/task-edit-panel', () => {
     await waitFor(() => {
       expect(clearOfflineDraft).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('does not clear the saved draft again when only the controller object identity changes', async () => {
+    const clearOfflineDraft = vi.fn();
+    taskEditFormControllerMock.mockImplementation(() =>
+      buildController({
+        clearOfflineDraft,
+        updateState: { ok: true },
+      }),
+    );
+
+    const renderPanel = () => (
+      <MantineProvider>
+        <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
+          <TaskEditPanel {...BASE_PROPS} />
+        </TerminologyProvider>
+      </MantineProvider>
+    );
+    const view = render(renderPanel());
+
+    await waitFor(() => {
+      expect(clearOfflineDraft).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      view.rerender(renderPanel());
+      await Promise.resolve();
+    });
+
+    expect(taskEditFormControllerMock).toHaveBeenCalledTimes(2);
+    expect(clearOfflineDraft).toHaveBeenCalledTimes(1);
+    view.unmount();
   });
 });

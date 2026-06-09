@@ -75,18 +75,21 @@ export function OfflineWorkspaceRouteWarmer() {
       return;
     }
 
+    const warmedPathnames = warmedPathnamesRef.current;
     const pendingPathnames = routePathnames.filter(
-      (routePathname) => !warmedPathnamesRef.current.has(routePathname),
+      (routePathname) => !warmedPathnames.has(routePathname),
     );
     if (pendingPathnames.length === 0) {
       return;
     }
 
     for (const routePathname of pendingPathnames) {
-      warmedPathnamesRef.current.add(routePathname);
+      warmedPathnames.add(routePathname);
     }
 
-    return requestWarmIdleCallback(() => {
+    let didStartWarming = false;
+    const cancelWarm = requestWarmIdleCallback(() => {
+      didStartWarming = true;
       void Promise.all(
         pendingPathnames.map(async (routePathname) => {
           try {
@@ -96,14 +99,23 @@ export function OfflineWorkspaceRouteWarmer() {
 
             const cached = await cacheWorkspaceDocument(routePathname);
             if (!cached) {
-              warmedPathnamesRef.current.delete(routePathname);
+              warmedPathnames.delete(routePathname);
             }
           } catch {
-            warmedPathnamesRef.current.delete(routePathname);
+            warmedPathnames.delete(routePathname);
           }
         }),
       );
     });
+
+    return () => {
+      cancelWarm();
+      if (!didStartWarming) {
+        for (const routePathname of pendingPathnames) {
+          warmedPathnames.delete(routePathname);
+        }
+      }
+    };
   }, [pathname, router]);
 
   return null;

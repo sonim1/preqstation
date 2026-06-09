@@ -446,6 +446,7 @@ export function CommandPalette({
         } catch (error) {
           if (controller.signal.aborted) return;
           const localHits = await localSearchPromise;
+          if (controller.signal.aborted) return;
           if (localHits.length > 0) {
             setTaskHits(localHits);
             setTaskSearchState('ready');

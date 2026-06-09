@@ -109,9 +109,14 @@ export function BoardOfflineSyncProvider({
   const upsertSnapshots = useUpsertKanbanSnapshots();
   const isFlushingRef = useRef(false);
   const needsFlushRef = useRef(false);
+  const onlineRef = useRef(online);
+
+  useEffect(() => {
+    onlineRef.current = online;
+  }, [online]);
 
   const flushPendingMutations = useCallback(async () => {
-    if (!online) {
+    if (!onlineRef.current) {
       return;
     }
     if (isFlushingRef.current) {
@@ -189,23 +194,19 @@ export function BoardOfflineSyncProvider({
         if (result.error) {
           showErrorNotification(result.error);
         }
-      } while (needsFlushRef.current && online);
+      } while (needsFlushRef.current && onlineRef.current);
     } finally {
       isFlushingRef.current = false;
     }
-  }, [
-    activeProjectId,
-    editHrefBase,
-    kanbanStore,
-    online,
-    removeTask,
-    setFocusedTask,
-    upsertSnapshots,
-  ]);
+  }, [activeProjectId, editHrefBase, kanbanStore, removeTask, setFocusedTask, upsertSnapshots]);
 
   useEffect(() => {
+    if (!online) {
+      return;
+    }
+
     void flushPendingMutations();
-  }, [flushPendingMutations]);
+  }, [flushPendingMutations, online]);
 
   const queueTaskCreate = useCallback(
     async (input: QueueOfflineCreateInput) => {
@@ -243,13 +244,21 @@ export function BoardOfflineSyncProvider({
       });
 
       upsertSnapshots([optimisticTask]);
-      if (online) {
-        void flushPendingMutations();
+      if (onlineRef.current) {
+        const flush = () => {
+          void flushPendingMutations();
+        };
+
+        if (typeof window === 'undefined') {
+          flush();
+        } else {
+          window.setTimeout(flush, 0);
+        }
       }
 
       return optimisticTask;
     },
-    [flushPendingMutations, kanbanStore, online, upsertSnapshots],
+    [flushPendingMutations, kanbanStore, upsertSnapshots],
   );
 
   const queueTaskPatch = useCallback(

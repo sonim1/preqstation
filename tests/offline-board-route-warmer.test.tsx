@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const usePathnameMock = vi.hoisted(() => vi.fn());
@@ -186,6 +186,50 @@ describe('app/components/offline-board-route-warmer', () => {
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(6);
+    });
+  });
+
+  it('does not mark routes as warmed when navigation cancels the pending idle callback', async () => {
+    let pathname = '/board/PQST';
+    let nextIdleCallbackId = 1;
+    const idleCallbacks = new Map<number, IdleRequestCallback>();
+    usePathnameMock.mockImplementation(() => pathname);
+    const cachePutMock = vi.fn().mockResolvedValue(undefined);
+    const openMock = vi.fn().mockResolvedValue({ put: cachePutMock });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response('<html>cached workspace route</html>', { status: 200 }));
+
+    vi.stubGlobal('caches', { open: openMock });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.stubGlobal('requestIdleCallback', (callback: IdleRequestCallback) => {
+      const id = nextIdleCallbackId++;
+      idleCallbacks.set(id, callback);
+      return id;
+    });
+    vi.stubGlobal('cancelIdleCallback', (id: number) => {
+      idleCallbacks.delete(id);
+    });
+
+    const view = render(<OfflineWorkspaceRouteWarmer />);
+
+    expect(idleCallbacks.has(1)).toBe(true);
+    pathname = '/board';
+    window.history.replaceState({}, '', '/board');
+    view.rerender(<OfflineWorkspaceRouteWarmer />);
+    expect(idleCallbacks.has(1)).toBe(false);
+
+    const secondIdleCallback = idleCallbacks.get(2);
+    expect(secondIdleCallback).toBeDefined();
+    await act(async () => {
+      secondIdleCallback?.({ didTimeout: false, timeRemaining: () => 50 });
+    });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/dashboard', expect.any(Object));
+      expect(fetchMock).toHaveBeenCalledWith('/projects', expect.any(Object));
+      expect(fetchMock).toHaveBeenCalledWith('/settings', expect.any(Object));
+      expect(fetchMock).toHaveBeenCalledWith('/connections', expect.any(Object));
     });
   });
 });

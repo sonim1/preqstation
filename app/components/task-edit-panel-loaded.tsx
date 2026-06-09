@@ -10,12 +10,18 @@ import { TASK_STATUS_COLORS } from '@/lib/task-meta';
 
 import { TaskEditForm, useTaskEditFormController } from './task-edit-form';
 import { TaskEditHeaderTitle } from './task-edit-header-title';
+import {
+  TASK_EDIT_PANEL_FULLSCREEN_STORAGE_KEY,
+  TASK_EDIT_PANEL_RESIZE_STORAGE_KEY,
+} from './task-edit-panel-storage';
 import type { TaskEditPanelProps } from './task-edit-panel-types';
 import { TaskPanelModal } from './task-panel-modal';
 import { useTerminology } from './terminology-provider';
 
-export const TASK_EDIT_PANEL_RESIZE_STORAGE_KEY = 'preqstation:task-edit-panel:size:v1';
-export const TASK_EDIT_PANEL_FULLSCREEN_STORAGE_KEY = 'preqstation:task-edit-panel:fullscreen:v1';
+export {
+  TASK_EDIT_PANEL_FULLSCREEN_STORAGE_KEY,
+  TASK_EDIT_PANEL_RESIZE_STORAGE_KEY,
+} from './task-edit-panel-storage';
 
 export function LoadedTaskEditPanel({
   closeHref,
@@ -31,13 +37,16 @@ export function LoadedTaskEditPanel({
     editableTodo,
     ...formProps,
   });
+  const { clearOfflineDraft, updateState } = controller;
+  const isUpdateOk = updateState?.ok === true;
+
   useEffect(() => {
-    if (!controller.updateState?.ok) {
+    if (!isUpdateOk) {
       return;
     }
 
-    void controller.clearOfflineDraft();
-  }, [controller]);
+    void clearOfflineDraft();
+  }, [clearOfflineDraft, isUpdateOk]);
   const dialogTitle = `Edit ${terminology.task.singular}`;
   const workflowStatus = editableTodo.status as keyof typeof TASK_STATUS_COLORS;
 
