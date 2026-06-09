@@ -2174,6 +2174,20 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   padding-right: 2px;
 }
 
+.task-notification-drawer-footer {
+  padding-top: 8px;
+}
+
+.task-notification-mode-action {
+  color: var(--ui-muted-text);
+  font-weight: 600;
+}
+
+.task-notification-mode-action:hover {
+  color: var(--ui-text);
+  background: transparent;
+}
+
 .task-notification-item {
   display: block;
   width: 100%;

@@ -105,18 +105,6 @@ export function TaskNotificationDrawer({
       }
     >
       <Stack gap="sm">
-        <Group justify="space-between">
-          {isHistoryMode ? (
-            <Button variant="subtle" onClick={onShowUnread}>
-              Show unread
-            </Button>
-          ) : (
-            <Button variant="subtle" onClick={onShowHistory}>
-              Show history
-            </Button>
-          )}
-        </Group>
-
         <Stack gap={4} className="task-notification-drawer-list">
           {isLoading && notifications.length === 0 ? (
             <Text size="sm" c="dimmed">
@@ -215,6 +203,30 @@ export function TaskNotificationDrawer({
             <LoadMoreButton onClick={onLoadMore} disabled={isLoadingMore} />
           </Group>
         ) : null}
+
+        <Group justify="center" className="task-notification-drawer-footer">
+          {isHistoryMode ? (
+            <Button
+              variant="transparent"
+              color="gray"
+              size="xs"
+              className="task-notification-mode-action"
+              onClick={onShowUnread}
+            >
+              Show unread
+            </Button>
+          ) : (
+            <Button
+              variant="transparent"
+              color="gray"
+              size="xs"
+              className="task-notification-mode-action"
+              onClick={onShowHistory}
+            >
+              Show history
+            </Button>
+          )}
+        </Group>
       </Stack>
     </Drawer>
   );
