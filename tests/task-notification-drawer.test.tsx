@@ -16,13 +16,32 @@ vi.mock('@mantine/core', () => {
     </button>
   );
   const Badge = ({ children }: { children: ReactNode }) => <span>{children}</span>;
-  const Button = ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-    <button type="button" {...props}>
+  const Button = ({
+    children,
+    color,
+    variant,
+    ...props
+  }: React.ButtonHTMLAttributes<HTMLButtonElement> & { color?: string; variant?: string }) => (
+    <button type="button" data-color={color} data-variant={variant} {...props}>
       {children}
     </button>
   );
-  const Group = ({ children }: { children: ReactNode }) => <div>{children}</div>;
-  const Stack = ({ children }: { children: ReactNode }) => <div>{children}</div>;
+  const Group = ({
+    children,
+    className,
+    justify,
+  }: {
+    children: ReactNode;
+    className?: string;
+    justify?: string;
+  }) => (
+    <div className={className} data-justify={justify}>
+      {children}
+    </div>
+  );
+  const Stack = ({ children, className }: { children: ReactNode; className?: string }) => (
+    <div className={className}>{children}</div>
+  );
   const Text = ({ children }: { children: ReactNode }) => <span>{children}</span>;
 
   return {
@@ -145,6 +164,35 @@ describe('app/components/task-notification-drawer', () => {
     expect(html).toContain('<button type="button" class="task-notification-item"');
     expect(html).not.toContain('aria-label="Mark PROJ-327 notification as read"');
     expect(html).toContain('2026-04-08 05:10');
+  });
+
+  it('renders the mode action as a centered footer text action', () => {
+    const html = renderToStaticMarkup(
+      <TaskNotificationDrawer
+        opened={true}
+        onClose={vi.fn()}
+        mode="unread"
+        notifications={[makeNotification()]}
+        total={1}
+        isLoading={false}
+        isLoadingMore={false}
+        hasMore={false}
+        onNotificationClick={vi.fn()}
+        onShowHistory={vi.fn()}
+        onShowUnread={vi.fn()}
+        onLoadMore={vi.fn()}
+      />,
+    );
+
+    const listIndex = html.indexOf('class="task-notification-drawer-list"');
+    const footerIndex = html.indexOf('class="task-notification-drawer-footer"');
+    const actionIndex = html.indexOf('class="task-notification-mode-action"');
+
+    expect(footerIndex).toBeGreaterThan(listIndex);
+    expect(actionIndex).toBeGreaterThan(footerIndex);
+    expect(html).toContain('data-justify="center"');
+    expect(html).toContain('data-color="gray"');
+    expect(html).toContain('data-variant="transparent"');
   });
 
   it('renders task and connection expiration notifications with distinct copy', () => {
