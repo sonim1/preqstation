@@ -122,29 +122,25 @@ function renderTaskEditForm(overrides: RenderOverrides = {}) {
 }
 
 describe('app/components/task-edit-form layout', () => {
-  it('renders the edit form as a desktop workbench with metadata, notes, and bottom dispatch', () => {
+  it('renders the edit form with a notes-first command strip instead of a right rail', () => {
     const html = renderTaskEditForm();
 
     expect(html).toContain('Notes');
     expect(html).toContain('aria-label="Notes mode"');
-    expect(html).toContain('Task settings');
     expect(html).toContain('data-slot="task-copy-actions"');
     expect(html).toContain('Activity');
     expect(html).toContain('aria-label="Notes help"');
-    expect(html).toContain('aria-label="Task settings help"');
     expect(html).toContain('aria-label="Activity help"');
     expect(html).toContain('data-layout="task-edit-shell"');
-    expect(html).toContain('data-panel="task-edit-sidebar"');
     expect(html).toContain('data-panel="task-edit-main-column"');
-    expect(html).toContain('data-panel="task-edit-bottom-dispatch"');
+    expect(html).toContain('data-panel="task-edit-command-strip"');
+    expect(html).not.toContain('data-panel="task-edit-sidebar"');
+    expect(html).not.toContain('data-panel="task-edit-bottom-dispatch"');
     expect(html).not.toContain('data-panel="task-edit-dispatch"');
     expect(html).toContain('data-panel="task-edit-metadata"');
     expect(html).toContain('data-panel="task-edit-notes-primary"');
     expect(html).toContain('data-panel="task-edit-comments"');
     expect(html).toContain('data-panel="task-edit-activity"');
-    expect(html).toContain(
-      `class="${taskEditFormClasses.metadataSection} ${taskEditFormClasses.sectionSurface}"`,
-    );
     expect(html).toContain(
       `class="${taskEditFormClasses.notesCard} ${taskEditFormClasses.mainSectionSurface}"`,
     );
@@ -160,15 +156,12 @@ describe('app/components/task-edit-form layout', () => {
     expect(html).not.toContain('data-panel="task-edit-settings"');
     expect(html).not.toContain('Task title');
     expect(html.indexOf('data-panel="task-edit-main-column"')).toBeLessThan(
-      html.indexOf('data-panel="task-edit-sidebar"'),
-    );
-    expect(html.indexOf('data-panel="task-edit-bottom-dispatch"')).toBeLessThan(
-      html.indexOf('data-slot="task-copy-actions"'),
+      html.indexOf('data-panel="task-edit-command-strip"'),
     );
     expect(html.indexOf('data-panel="task-edit-metadata"')).toBeLessThan(
-      html.indexOf('data-panel="task-edit-bottom-dispatch"'),
+      html.indexOf('data-panel="task-edit-notes-primary"'),
     );
-    expect(html.indexOf('data-panel="task-edit-main-column"')).toBeLessThan(
+    expect(html.indexOf('data-slot="task-copy-actions"')).toBeLessThan(
       html.indexOf('data-panel="task-edit-notes-primary"'),
     );
     expect(html.indexOf('Notes')).toBeLessThan(html.indexOf('Activity'));
@@ -191,17 +184,17 @@ describe('app/components/task-edit-form layout', () => {
     expect(htmlWithoutLogs).not.toContain('data-slot="work-log-timeline"');
   });
 
-  it('hides dispatch but keeps task settings for archived tasks', () => {
+  it('hides dispatch but keeps command strip metadata for archived tasks', () => {
     const html = renderTaskEditForm({ status: 'archived' });
 
     expect(html).not.toContain('data-panel="task-edit-dispatch"');
+    expect(html).not.toContain('data-panel="task-edit-bottom-dispatch"');
     expect(html).not.toContain('data-slot="task-copy-actions"');
-    expect(html).toContain('data-panel="task-edit-sidebar"');
+    expect(html).toContain('data-panel="task-edit-command-strip"');
     expect(html).toContain('data-panel="task-edit-metadata"');
-    expect(html).toContain('Task settings');
   });
 
-  it('keeps long identity and labels in the sidebar while notes and activity stay in order', () => {
+  it('keeps long identity and labels in the command strip while notes and activity stay in order', () => {
     const longProjectName = 'Global payment operations project with a very long display name';
     const longLabelName = 'customer-escalation-with-a-long-label-name';
     const html = renderTaskEditForm({
@@ -215,11 +208,11 @@ describe('app/components/task-edit-form layout', () => {
 
     expect(html).toContain(longProjectName);
     expect(html).toContain(longLabelName);
-    expect(html).toContain('data-panel="task-edit-settings-card"');
-    expect(html.indexOf('data-panel="task-edit-sidebar"')).toBeLessThan(
+    expect(html).toContain('data-panel="task-edit-command-strip"');
+    expect(html.indexOf('data-panel="task-edit-command-strip"')).toBeLessThan(
       html.indexOf(longProjectName),
     );
-    expect(html.indexOf('data-panel="task-edit-settings-card"')).toBeLessThan(
+    expect(html.indexOf('data-panel="task-edit-metadata"')).toBeLessThan(
       html.indexOf(longLabelName),
     );
     expect(html.indexOf('data-panel="task-edit-notes-primary"')).toBeLessThan(
@@ -227,7 +220,7 @@ describe('app/components/task-edit-form layout', () => {
     );
   });
 
-  it('uses the default label trigger and shared priority control in task settings', () => {
+  it('uses the default label trigger and shared priority control in the command strip', () => {
     const html = renderTaskEditForm({
       projectId: 'project-1',
       projects: [{ id: 'project-1', name: 'Project Manager' }],

@@ -116,17 +116,13 @@ function renderTaskEditForm(saveStatus: 'idle' | 'saving' = 'idle') {
 }
 
 describe('task edit modal scroll-shell rendered layout regressions', () => {
-  it('renders the edit form as a two-column workbench with bottom dispatch', () => {
+  it('renders the edit form with one main column and a normal-flow command strip', () => {
     const html = renderTaskEditForm();
 
     expect(html).toContain(`class="${taskEditFormClasses.shell}"`);
     expect(html).toContain('data-layout="task-edit-shell"');
     expect(html).toContain(`class="${taskEditFormClasses.mainColumn}"`);
-    expect(html).toContain(`class="${taskEditFormClasses.sidebar}"`);
-    expect(html).toContain(`class="${taskEditFormClasses.bottomDispatch}"`);
-    expect(html).toContain(
-      `class="${taskEditFormClasses.metadataSection} ${taskEditFormClasses.sectionSurface}"`,
-    );
+    expect(html).toContain(`class="${taskEditFormClasses.commandStrip}"`);
     expect(html).toContain(
       `class="${taskEditFormClasses.notesCard} ${taskEditFormClasses.mainSectionSurface}"`,
     );
@@ -140,20 +136,20 @@ describe('task edit modal scroll-shell rendered layout regressions', () => {
       `class="${taskEditFormClasses.activityCard} ${taskEditFormClasses.sectionSurface}"`,
     );
     expect(html).toContain('data-panel="task-edit-main-column"');
-    expect(html).toContain('data-panel="task-edit-sidebar"');
-    expect(html).toContain('data-panel="task-edit-bottom-dispatch"');
+    expect(html).toContain('data-panel="task-edit-command-strip"');
+    expect(html).not.toContain('data-panel="task-edit-sidebar"');
+    expect(html).not.toContain('data-panel="task-edit-bottom-dispatch"');
     expect(html).not.toContain('data-panel="task-edit-dispatch"');
     expect(html).toContain('data-panel="task-edit-metadata"');
     expect(html).toContain('data-panel="task-edit-notes-primary"');
     expect(html).toContain('data-panel="task-edit-comments"');
     expect(html).toContain('data-panel="task-edit-activity"');
-    expect(html).toContain('data-panel="task-edit-settings-card"');
     expect(html).toContain('data-slot="task-copy-actions"');
     expect(html.indexOf('data-panel="task-edit-main-column"')).toBeLessThan(
-      html.indexOf('data-panel="task-edit-sidebar"'),
+      html.indexOf('data-panel="task-edit-command-strip"'),
     );
     expect(html.indexOf('data-panel="task-edit-metadata"')).toBeLessThan(
-      html.indexOf('data-panel="task-edit-bottom-dispatch"'),
+      html.indexOf('data-panel="task-edit-notes-primary"'),
     );
     expect(html.indexOf('data-panel="task-edit-notes-primary"')).toBeLessThan(
       html.indexOf('data-panel="task-edit-comments"'),
@@ -165,18 +161,16 @@ describe('task edit modal scroll-shell rendered layout regressions', () => {
     expect(html).not.toContain('data-panel="task-edit-settings"');
   });
 
-  it('renders compact task settings and resilient text hooks inside the metadata rail', () => {
+  it('renders compact metadata and resilient text hooks inside the command strip', () => {
     const html = renderTaskEditForm();
 
-    expect(html).toContain('Task settings');
+    expect(html).toContain('data-panel="task-edit-command-strip"');
     expect(html).toContain('Project Manager');
     expect(html).toContain('Frontend');
-    expect(html).toContain(`class="${taskEditFormClasses.settingsPanel}"`);
     expect(html).toContain(taskEditFormClasses.metaHeader);
     expect(html).toContain(taskEditFormClasses.taskIdentityRow);
     expect(html).toContain(taskEditFormClasses.projectName);
     expect(html).toContain(taskEditFormClasses.settingsControls);
-    expect(html).toContain(taskEditFormClasses.settingsDivider);
     expect(html).toContain('name="taskPriority"');
     expect(html).toContain('data-task-priority-value="none"');
     expect(html).toContain('data-task-label-trigger="default"');

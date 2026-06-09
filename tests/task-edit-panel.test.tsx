@@ -167,18 +167,19 @@ describe('app/components/task-edit-panel', () => {
     const document = new DOMParser().parseFromString(html, 'text/html');
     const shell = document.querySelector('[data-layout="task-edit-shell"]');
     const mainColumn = document.querySelector('[data-panel="task-edit-main-column"]');
-    const sidebar = document.querySelector('[data-panel="task-edit-sidebar"]');
+    const commandStrip = document.querySelector('[data-panel="task-edit-command-strip"]');
     const notesPanel = document.querySelector('[data-panel="task-edit-notes-primary"]');
     const commentsPanel = document.querySelector('[data-panel="task-edit-comments"]');
     const activityPanel = document.querySelector('[data-panel="task-edit-activity"]');
-    const dispatchPanel = document.querySelector('[data-panel="task-edit-dispatch"]');
     const metadataPanel = document.querySelector('[data-panel="task-edit-metadata"]');
 
     expect(shell).not.toBeNull();
     expect(mainColumn).not.toBeNull();
-    expect(sidebar).not.toBeNull();
+    expect(commandStrip).not.toBeNull();
+    expect(document.querySelector('[data-panel="task-edit-sidebar"]')).toBeNull();
+    expect(document.querySelector('[data-panel="task-edit-dispatch"]')).toBeNull();
 
-    if (!shell || !mainColumn || !sidebar) {
+    if (!shell || !mainColumn || !commandStrip) {
       throw new Error('Expected task edit skeleton layout panels to render.');
     }
 
@@ -186,44 +187,40 @@ describe('app/components/task-edit-panel', () => {
       Array.from(shell.children)
         .map((element) => element.getAttribute('data-panel'))
         .filter(Boolean),
-    ).toEqual(['task-edit-main-column', 'task-edit-sidebar']);
+    ).toEqual(['task-edit-main-column']);
 
     const mainPanels = Array.from(mainColumn.children)
       .map((element) => element.getAttribute('data-panel'))
       .filter(Boolean);
-    const sidebarPanels = Array.from(sidebar.children)
-      .map((element) => element.getAttribute('data-panel'))
-      .filter(Boolean);
 
     expect(mainPanels).toEqual([
+      'task-edit-command-strip',
       'task-edit-notes-primary',
       'task-edit-comments',
       'task-edit-activity',
     ]);
-    expect(sidebarPanels).toEqual(['task-edit-dispatch', 'task-edit-metadata']);
-    expect(document.querySelector('[data-panel="task-edit-settings-card"]')).not.toBeNull();
 
     const allPanels = Array.from(document.querySelectorAll('[data-panel]'));
 
+    expect(commandStrip).not.toBeNull();
     expect(notesPanel).not.toBeNull();
     expect(commentsPanel).not.toBeNull();
     expect(activityPanel).not.toBeNull();
-    expect(dispatchPanel).not.toBeNull();
     expect(metadataPanel).not.toBeNull();
 
-    if (!notesPanel || !commentsPanel || !activityPanel || !dispatchPanel || !metadataPanel) {
+    if (!notesPanel || !commentsPanel || !activityPanel || !metadataPanel) {
       throw new Error('Expected task edit skeleton content panels to render.');
     }
 
+    expect(commandStrip.classList).toContain(taskEditFormClasses.commandStrip);
     expect(notesPanel.classList).toContain(taskEditFormClasses.mainSectionSurface);
     expect(commentsPanel.classList).toContain(taskEditFormClasses.mainSectionSurface);
     expect(activityPanel.classList).toContain(taskEditFormClasses.mainSectionSurface);
     expect(notesPanel.classList).not.toContain(taskEditFormClasses.sectionSurface);
     expect(commentsPanel.classList).not.toContain(taskEditFormClasses.sectionSurface);
     expect(activityPanel.classList).not.toContain(taskEditFormClasses.sectionSurface);
-    expect(dispatchPanel.classList).toContain(taskEditFormClasses.sectionSurface);
-    expect(metadataPanel.classList).toContain(taskEditFormClasses.sectionSurface);
-    expect(allPanels.indexOf(activityPanel)).toBeLessThan(allPanels.indexOf(dispatchPanel));
+    expect(allPanels.indexOf(commandStrip)).toBeLessThan(allPanels.indexOf(notesPanel));
+    expect(allPanels.indexOf(metadataPanel)).toBeLessThan(allPanels.indexOf(notesPanel));
   });
 
   it('renders the edit form once detail is ready', async () => {

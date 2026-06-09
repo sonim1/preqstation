@@ -8,14 +8,6 @@
   padding-bottom: var(--mantine-spacing-xs);
 }
 
-.rootWithBottomDispatch {
-  padding-bottom: calc(var(--mantine-spacing-xs) + 5.75rem + env(safe-area-inset-bottom, 0px));
-}
-
-.bottomDispatch {
-  display: contents;
-}
-
 .mobileSavingOverlay {
   position: absolute;
   inset: 0;
@@ -47,17 +39,8 @@
   flex: 1 1 auto;
   display: grid;
   gap: 1rem;
-  grid-template-columns: minmax(0, 1fr) minmax(16rem, 20rem);
+  grid-template-columns: minmax(0, 1fr);
   min-height: 0;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.sidebar {
-  display: grid;
-  gap: 0.75rem;
-  min-height: 0;
-  align-content: start;
   min-width: 0;
   max-width: 100%;
 }
@@ -65,24 +48,68 @@
 .mainColumn {
   display: grid;
   gap: 1rem;
-  grid-template-rows: auto auto auto;
+  grid-template-rows: auto auto auto auto;
   align-content: start;
   height: fit-content;
   min-width: 0;
   max-width: 100%;
 }
 
-.dispatchRail {
-  display: grid;
-  align-content: start;
+.commandStrip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.75rem;
   min-width: 0;
   max-width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--ui-border);
+  border-radius: 8px;
+  background: var(--ui-surface);
+  box-shadow: var(--ui-elevation-1);
 }
 
 .metadataSection {
+  flex: 0 1 17rem;
   min-width: 0;
   max-width: 100%;
-  display: block;
+  display: grid;
+  align-self: stretch;
+  align-content: center;
+}
+
+.commandStripDispatch {
+  flex: 999 1 34rem;
+  min-width: min(100%, 30rem);
+  max-width: 100%;
+}
+
+.commandStripDispatch :global(.task-dispatch-bottom-bar) {
+  --task-dispatch-bottom-anchor: static;
+
+  position: static;
+  z-index: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  width: 100%;
+  padding: 0;
+  border-top: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.commandStripDispatch :global(.task-dispatch-bottom-inner) {
+  grid-template-columns:
+    minmax(7rem, 0.85fr) minmax(9rem, 1fr) minmax(7.5rem, 0.85fr)
+    minmax(6.75rem, 0.7fr) 2.75rem minmax(7.75rem, 0.75fr);
+  width: 100%;
+  margin: 0;
+}
+
+.commandStripDispatch :global(.task-dispatch-bottom-title) {
+  display: none;
 }
 
 .notesCard {
@@ -301,10 +328,6 @@
   height: clamp(3.5rem, 8vh, 4.5rem);
 }
 
-.skeletonPromptPreview {
-  height: clamp(5.5rem, 14vh, 7rem);
-}
-
 .sectionHeader {
   min-width: 0;
 }
@@ -345,18 +368,6 @@
 
 .metaHeader :global(.mantine-Group-root) {
   min-width: 0;
-}
-
-.settingsPanel {
-  min-width: 0;
-  max-width: 100%;
-  display: grid;
-  gap: 0.875rem;
-  padding: 0.875rem;
-  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--ui-surface-strong), transparent 48%);
-  overflow-wrap: anywhere;
 }
 
 .taskIdentityRow {
@@ -406,13 +417,13 @@
   overflow-wrap: anywhere;
 }
 
-.settingsDivider {
-  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 20%);
-}
-
 .settingsControls {
+  flex: 1 1 12rem;
   min-width: 0;
   max-width: 100%;
+  display: grid;
+  align-self: stretch;
+  align-content: end;
 }
 
 .settingsControls :global(.mantine-Stack-root),
@@ -424,11 +435,21 @@
   min-width: 0;
 }
 
+.skeletonCommandDispatch {
+  flex: 999 1 34rem;
+  display: grid;
+  grid-template-columns:
+    minmax(7rem, 0.85fr) minmax(9rem, 1fr) minmax(7.5rem, 0.85fr)
+    minmax(6.75rem, 0.7fr) 2.75rem minmax(7.75rem, 0.75fr);
+  gap: 0.5rem;
+  align-items: end;
+  min-width: min(100%, 30rem);
+  max-width: 100%;
+}
+
 @container (max-width: 82em) {
   .shell {
     --task-edit-section-min-height: clamp(22rem, 48vh, 34rem);
-
-    grid-template-columns: 1fr;
   }
 
   .sectionSurface {
@@ -438,17 +459,9 @@
   .notesCard {
     min-height: var(--task-edit-section-min-height);
   }
-
-  .dispatchRail {
-    min-height: auto;
-  }
 }
 
 @media (max-width: 48em) {
-  .rootWithBottomDispatch {
-    padding-bottom: calc(var(--mantine-spacing-xs) + 7.75rem + env(safe-area-inset-bottom, 0px));
-  }
-
   .mobileSavingOverlay {
     display: flex;
   }
@@ -469,11 +482,6 @@
     min-height: auto;
   }
 
-  .sidebar {
-    grid-template-columns: 1fr;
-  }
-
-  .dispatchRail,
   .metadataSection,
   .notesCard,
   .activityCard {
@@ -489,5 +497,33 @@
 
   .metaHeader {
     gap: 0.625rem;
+  }
+
+  .commandStrip {
+    display: grid;
+    grid-template-columns: minmax(7rem, auto) minmax(0, 1fr) minmax(0, 1fr);
+    padding: 0.625rem;
+  }
+
+  .metadataSection,
+  .settingsControls,
+  .commandStripDispatch,
+  .skeletonCommandDispatch {
+    flex-basis: auto;
+    min-width: 0;
+  }
+
+  .commandStripDispatch,
+  .skeletonCommandDispatch {
+    grid-column: 1 / -1;
+  }
+
+  .commandStripDispatch :global(.task-dispatch-bottom-inner),
+  .skeletonCommandDispatch {
+    grid-template-areas:
+      'engine model target mode'
+      'prompt prompt send send';
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.45rem;
   }
 }
