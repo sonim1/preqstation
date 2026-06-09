@@ -682,20 +682,28 @@ describe('app/components/workspace-shell', () => {
     expect(mobileProjectPickerSource).not.toContain('IconFolders');
   });
 
-  it('renders boards beneath the boards nav entry on desktop', () => {
+  it('keeps Boards top-level and puts Recent boards in a separate bottom group', () => {
     const { container } = renderWorkspaceShellDom({ desktopOpened: true });
     const navbar = within(getWorkspaceNavbar(container));
     const dashboardLink = navbar.getByRole('link', { name: 'Dashboard' });
     const projectsLink = navbar.getByRole('link', { name: 'Projects' });
     const boardsLink = navbar.getByRole('link', { name: 'Boards' });
+    const manageHeading = navbar.getByRole('heading', { level: 2, name: 'Manage' });
+    const settingsLink = navbar.getByRole('link', { name: 'Settings' });
+    const connectionsLink = navbar.getByRole('link', { name: 'Connections' });
+    const recentBoardsHeading = navbar.getByRole('heading', { level: 2, name: 'Recent boards' });
     const alphaBoardLink = navbar.getByRole('link', { name: 'Alpha' });
 
     expectBefore(dashboardLink, projectsLink);
     expectBefore(projectsLink, boardsLink);
-    expectBefore(boardsLink, alphaBoardLink);
+    expectBefore(boardsLink, manageHeading);
+    expectBefore(manageHeading, settingsLink);
+    expectBefore(settingsLink, connectionsLink);
+    expectBefore(connectionsLink, recentBoardsHeading);
+    expectBefore(recentBoardsHeading, alphaBoardLink);
   });
 
-  it('groups primary workspace links separately from management links', () => {
+  it('groups primary workspace, management, and recent board links separately', () => {
     const { container } = renderWorkspaceShellDom({ desktopOpened: true });
     const navbar = within(getWorkspaceNavbar(container));
     const workspaceHeading = navbar.getByRole('heading', { level: 2, name: 'Workspace' });
@@ -704,15 +712,17 @@ describe('app/components/workspace-shell', () => {
     const manageHeading = navbar.getByRole('heading', { level: 2, name: 'Manage' });
     const settingsLink = navbar.getByRole('link', { name: 'Settings' });
     const connectionsLink = navbar.getByRole('link', { name: 'Connections' });
+    const recentBoardsHeading = navbar.getByRole('heading', { level: 2, name: 'Recent boards' });
 
     expectBefore(workspaceHeading, dashboardLink);
     expectBefore(dashboardLink, boardsLink);
     expectBefore(boardsLink, manageHeading);
     expectBefore(manageHeading, settingsLink);
     expectBefore(settingsLink, connectionsLink);
+    expectBefore(connectionsLink, recentBoardsHeading);
   });
 
-  it('renders only active boards in the desktop board list', () => {
+  it('renders only active boards in the recent board preview', () => {
     const html = renderWorkspaceShell({
       desktopOpened: true,
       pathname: '/board/ALPHA',
@@ -728,24 +738,23 @@ describe('app/components/workspace-shell', () => {
     expect(html).not.toContain('>Paused<');
     expect(html).not.toContain('href="/board/BETA"');
     expect(html).not.toContain('href="/board/DELTA"');
-    expect(html).toMatch(
-      /href="\/board\/ALPHA"[\s\S]*workspace-board-subnav-link[\s\S]*href="\/board\/GAMMA"[\s\S]*workspace-board-subnav-link/,
-    );
+    expect(html).toMatch(/href="\/board\/ALPHA"[\s\S]*workspace-recent-board-link/);
+    expect(html).not.toContain('href="/board/GAMMA"');
   });
 
-  it('limits the desktop board subnav to a short quick list when many boards are active', () => {
+  it('limits the recent boards group to one visible board when many boards are active', () => {
     const { container } = renderWorkspaceShellDom({
       desktopOpened: true,
       projectOptions: makeActiveProjectOptions(10),
     });
-    const quickBoardLinks = container.querySelectorAll('.workspace-board-subnav-link');
+    const quickBoardLinks = container.querySelectorAll('.workspace-recent-board-link');
     const hiddenInlineBoardLink = container.querySelector('[href="/board/PROJECT-5"]');
 
-    expect(quickBoardLinks).toHaveLength(4);
+    expect(quickBoardLinks).toHaveLength(1);
     expect(hiddenInlineBoardLink).toBeNull();
   });
 
-  it('keeps the current board visible when it is outside the default quick board range', () => {
+  it('keeps the current board visible as the single recent board preview', () => {
     const html = renderWorkspaceShell({
       desktopOpened: true,
       pathname: '/board/PROJECT-10',
@@ -755,10 +764,11 @@ describe('app/components/workspace-shell', () => {
 
     expect(html).toContain('href="/board/PROJECT-10"');
     expect(html).toMatch(
-      /href="\/board\/PROJECT-10"[\s\S]*workspace-board-subnav-link[\s\S]*aria-current="page"/,
+      /href="\/board\/PROJECT-10"[\s\S]*workspace-recent-board-link[\s\S]*aria-current="page"/,
     );
-    expect(html.match(/workspace-board-subnav-link/g) ?? []).toHaveLength(4);
-    expect(html).toContain('data-current-board-index="3"');
+    expect(html.match(/workspace-recent-board-link/g) ?? []).toHaveLength(1);
+    expect(html).toContain('workspace-recent-board-count');
+    expect(html).toContain('+9');
   });
 
   it('does not read recent boards from localStorage for the initial render', () => {
@@ -775,8 +785,9 @@ describe('app/components/workspace-shell', () => {
         projectOptions: makeActiveProjectOptions(6),
       });
 
-      expect(html).toContain('href="/board/PROJECT-3"');
-      expect(html).toContain('href="/board/PROJECT-4"');
+      expect(html).toContain('href="/board/PROJECT-1"');
+      expect(html).not.toContain('href="/board/PROJECT-3"');
+      expect(html).not.toContain('href="/board/PROJECT-4"');
       expect(html).not.toContain('href="/board/PROJECT-5"');
       expect(html).not.toContain('href="/board/PROJECT-6"');
     } finally {
@@ -784,32 +795,32 @@ describe('app/components/workspace-shell', () => {
     }
   });
 
-  it('adds an overflow board picker only when active boards exceed the quick list', () => {
+  it('adds an overflow board picker only when more boards exist beyond the preview', () => {
     const crowdedHtml = renderWorkspaceShell({
       desktopOpened: true,
       projectOptions: makeActiveProjectOptions(5),
     });
     const shortHtml = renderWorkspaceShell({
       desktopOpened: true,
-      projectOptions: makeActiveProjectOptions(4),
+      projectOptions: makeActiveProjectOptions(1),
     });
 
-    expect(crowdedHtml).toContain('workspace-board-subnav-more');
+    expect(crowdedHtml).toContain('workspace-recent-board-overflow');
     expect(crowdedHtml).toContain('Open all boards menu');
-    expect(shortHtml).not.toContain('workspace-board-subnav-more');
+    expect(shortHtml).not.toContain('workspace-recent-board-overflow');
     expect(workspaceShellSource).toMatch(
-      /className="workspace-board-subnav-more"[\s\S]*<ProjectPickerMenuItems\s+projectOptions=\{orderedProjectOptions\}/,
+      /className="workspace-recent-board-overflow"[\s\S]*<ProjectPickerMenuItems\s+projectOptions=\{orderedProjectOptions\}/,
     );
   });
 
-  it('shows the number of boards hidden from the quick list in the overflow badge', () => {
+  it('shows the number of additional boards in a short right badge', () => {
     const { container } = renderWorkspaceShellDom({
       desktopOpened: true,
       projectOptions: makeActiveProjectOptions(10),
     });
-    const overflowCount = container.querySelector('.workspace-board-subnav-more-count');
+    const overflowCount = container.querySelector('.workspace-recent-board-count');
 
-    expect(overflowCount?.textContent).toBe('6');
+    expect(overflowCount?.textContent).toBe('+9');
   });
 
   it('renders a connections nav link instead of api keys', () => {
@@ -866,7 +877,7 @@ describe('app/components/workspace-shell', () => {
     expect(html).toContain('>Alpha<');
   });
 
-  it('marks the current board as a nested selector without a second active nav state', () => {
+  it('marks the current board in Recent boards without changing the top-level Boards link', () => {
     const html = renderWorkspaceShell({
       desktopOpened: true,
       pathname: '/board/ALPHA',
@@ -874,10 +885,12 @@ describe('app/components/workspace-shell', () => {
     });
 
     expect(html).toContain('data-current-board="true"');
+    expect(html).toContain('workspace-recent-board-link');
     expect(html).toContain('Boards');
+    expect(html).not.toContain('workspace-board-subnav-link');
   });
 
-  it('renders nested board rows as links and marks the current board with aria-current', () => {
+  it('renders the recent board preview as a link and marks the current board with aria-current', () => {
     const html = renderWorkspaceShell({
       desktopOpened: true,
       pathname: '/board/BETA',
@@ -888,15 +901,13 @@ describe('app/components/workspace-shell', () => {
       ],
     });
 
+    expect(html).not.toContain('href="/board/ALPHA"');
     expect(html).toMatch(
-      /href="\/board\/ALPHA"[\s\S]*workspace-board-subnav-link[\s\S]*href="\/board\/BETA"[\s\S]*workspace-board-subnav-link/,
-    );
-    expect(html).toMatch(
-      /href="\/board\/BETA"[\s\S]*workspace-board-subnav-link[\s\S]*aria-current="page"/,
+      /href="\/board\/BETA"[\s\S]*workspace-recent-board-link[\s\S]*aria-current="page"/,
     );
   });
 
-  it('renders a sliding board selection surface with a fixed row offset', () => {
+  it('does not render a nested board selection surface', () => {
     const html = renderWorkspaceShell({
       desktopOpened: true,
       pathname: '/board/BETA',
@@ -908,13 +919,13 @@ describe('app/components/workspace-shell', () => {
       ],
     });
 
-    expect(html).toContain('workspace-board-subnav-surface');
-    expect(html).toContain('data-current-board-index="1"');
-    expect(html).toContain('transform:translateY(48px)');
+    expect(html).not.toContain('workspace-board-subnav-surface');
+    expect(html).not.toContain('data-current-board-index');
+    expect(html).not.toContain('transform:translateY');
     expect(html).not.toContain('workspace-board-subnav-pulse');
   });
 
-  it('recomputes board ordering when later recent project keys change', () => {
+  it('recomputes the recent board preview when later recent project keys change', () => {
     ensureBrowserObservers();
     ensureMatchMedia();
 
@@ -924,54 +935,53 @@ describe('app/components/workspace-shell', () => {
       { id: '3', name: 'Gamma', projectKey: 'GAMMA', status: 'active' },
       { id: '4', name: 'Delta', projectKey: 'DELTA', status: 'active' },
     ] satisfies WorkspaceProjectOption[];
-    let projectOrderState = 'ALPHA|BETA|GAMMA';
+    let projectOrderState = 'ALPHA|GAMMA|BETA';
 
     useDisclosureMock.mockReset();
     useDisclosureMock.mockImplementation((opened = false) => [
       opened,
       { toggle: vi.fn(), close: vi.fn() },
     ]);
-    usePathnameMock.mockReturnValue('/board/ALPHA');
+    usePathnameMock.mockReturnValue('/dashboard');
     useSyncExternalStoreMock.mockReset();
     useSyncExternalStoreMock.mockImplementation(() => projectOrderState);
     window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(['BETA', 'GAMMA']));
 
     try {
       const { container, rerender } = render(workspaceShellElement(projectOptions));
-      const boardLabels = () =>
-        Array.from(container.querySelectorAll<HTMLElement>('.workspace-board-subnav-link')).map(
-          (link) => link.textContent?.trim(),
-        );
+      const boardLabel = () =>
+        container.querySelector<HTMLElement>('.workspace-recent-board-name')?.textContent?.trim();
 
-      expect(boardLabels()).toEqual(['Beta', 'Gamma', 'Alpha', 'Delta']);
+      expect(boardLabel()).toBe('Gamma');
 
       window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(['BETA', 'DELTA']));
       projectOrderState = 'ALPHA|BETA|DELTA';
       rerender(workspaceShellElement(projectOptions));
 
-      expect(boardLabels()).toEqual(['Beta', 'Delta', 'Alpha', 'Gamma']);
+      expect(boardLabel()).toBe('Beta');
     } finally {
       window.localStorage.removeItem(RECENT_PROJECTS_STORAGE);
     }
   });
 
-  it('keeps the board selection surface hidden when no board is selected', () => {
+  it('shows the most recent active board when no board route is selected', () => {
     const html = renderWorkspaceShell({
       desktopOpened: true,
       pathname: '/dashboard',
-      rememberedProjectKey: 'ALPHA',
+      rememberedProjectKey: 'ALPHA|GAMMA|BETA',
       projectOptions: [
         { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
         { id: '2', name: 'Beta', projectKey: 'BETA', status: 'active' },
+        { id: '3', name: 'Gamma', projectKey: 'GAMMA', status: 'active' },
       ],
     });
 
-    expect(html).toContain('data-current-board-index="-1"');
-    expect(html).toContain('opacity:0');
+    expect(html).toContain('href="/board/GAMMA"');
+    expect(html).not.toContain('workspace-board-subnav-surface');
     expect(html).not.toContain('data-current-board="true"');
   });
 
-  it('keeps paused current boards out of the desktop board list while leaving the active selection surface hidden', () => {
+  it('keeps paused current boards out of the recent board preview', () => {
     const html = renderWorkspaceShell({
       desktopOpened: true,
       pathname: '/board/BETA',
@@ -986,29 +996,28 @@ describe('app/components/workspace-shell', () => {
     expect(html).not.toContain('>Paused<');
     expect(html).not.toContain('href="/board/BETA"');
     expect(html).toContain('href="/board/ALPHA"');
-    expect(html).toContain('href="/board/GAMMA"');
-    expect(html).toContain('data-current-board-index="-1"');
-    expect(html).toContain('opacity:0');
+    expect(html).not.toContain('href="/board/GAMMA"');
+    expect(html).not.toContain('data-current-board="true"');
   });
 
-  it('matches the nested board row height to the larger selection surface by removing vertical padding', () => {
+  it('matches the recent board row to the compact sidebar touch target', () => {
     expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link\s*\{[^}]*min-height:\s*44px;[^}]*padding:\s*0 12px;/,
+      /\.workspace-recent-board-link\s*\{[^}]*min-height:\s*44px;[^}]*padding:\s*0 12px;/,
     );
   });
 
-  it('keeps Mantine root hover and current backgrounds transparent for nested board rows', () => {
+  it('keeps Mantine root hover and current backgrounds transparent for recent board rows', () => {
     expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link:hover,\s*\.workspace-board-subnav-link\[data-active\],\s*\.workspace-board-subnav-link\[data-active\]:hover,\s*\.workspace-board-subnav-link\[aria-current='page'\],\s*\.workspace-board-subnav-link\[aria-current='page'\]:hover\s*\{[\s\S]*background:\s*transparent;[\s\S]*background-color:\s*transparent;/,
+      /\.workspace-recent-board-link:hover,\s*\.workspace-recent-board-link\[data-active\],\s*\.workspace-recent-board-link\[data-active\]:hover,\s*\.workspace-recent-board-link\[aria-current='page'\],\s*\.workspace-recent-board-link\[aria-current='page'\]:hover\s*\{[\s\S]*background:\s*transparent;[\s\S]*background-color:\s*transparent;/,
     );
   });
 
-  it('defines an in-bounds focus treatment for nested board links', () => {
+  it('defines an in-bounds focus treatment for recent board links', () => {
     const nestedBoardFocusRule =
-      globalsCss.match(/\.workspace-board-subnav-link:focus-visible\s*\{([\s\S]*?)\}/)?.[1] ?? '';
+      globalsCss.match(/\.workspace-recent-board-link:focus-visible\s*\{([\s\S]*?)\}/)?.[1] ?? '';
     const nestedBoardBodyFocusRule =
       globalsCss.match(
-        /\.workspace-board-subnav-link:focus-visible\s+\.mantine-NavLink-body\s*\{([\s\S]*?)\}/,
+        /\.workspace-recent-board-link:focus-visible\s+\.mantine-NavLink-body\s*\{([\s\S]*?)\}/,
       )?.[1] ?? '';
 
     expect(nestedBoardFocusRule).toMatch(/outline:\s*none;/);
@@ -1028,13 +1037,13 @@ describe('app/components/workspace-shell', () => {
     const boardsLink = navbar.getByRole('link', { name: 'Boards' });
     const currentBoardLink = navbar.getByRole('link', { name: 'Alpha' });
     const focusRule = getCssRuleProperties(
-      '.workspace-nav-link:not(.workspace-board-subnav-link):focus-visible',
+      '.workspace-nav-link:not(.workspace-recent-board-link):focus-visible',
       ['outline', 'background', 'color', 'box-shadow'],
     );
 
     expect(Array.from(boardsLink.classList)).toContain('workspace-nav-link');
-    expect(Array.from(boardsLink.classList)).not.toContain('workspace-board-subnav-link');
-    expect(Array.from(currentBoardLink.classList)).toContain('workspace-board-subnav-link');
+    expect(Array.from(boardsLink.classList)).not.toContain('workspace-recent-board-link');
+    expect(Array.from(currentBoardLink.classList)).toContain('workspace-recent-board-link');
     expect(focusRule).toEqual({
       outline: 'none',
       background: 'var(--ui-workspace-accent-surface)',
@@ -1049,7 +1058,11 @@ describe('app/components/workspace-shell', () => {
     const navbar = within(getWorkspaceNavbar(container));
     const sectionHeadings = navbar.getAllByRole('heading', { level: 2 });
 
-    expect(sectionHeadings.map((heading) => heading.textContent)).toEqual(['Workspace', 'Manage']);
+    expect(sectionHeadings.map((heading) => heading.textContent)).toEqual([
+      'Workspace',
+      'Manage',
+      'Recent boards',
+    ]);
     sectionHeadings.forEach((heading) => {
       expect(Array.from(heading.classList)).toContain('workspace-nav-section-label');
     });
@@ -1061,7 +1074,7 @@ describe('app/components/workspace-shell', () => {
       const link = navbar.getByRole('link', { name });
 
       expect(Array.from(link.classList)).toContain('workspace-nav-link');
-      expect(Array.from(link.classList)).not.toContain('workspace-board-subnav-link');
+      expect(Array.from(link.classList)).not.toContain('workspace-recent-board-link');
     });
   });
 
@@ -1074,12 +1087,9 @@ describe('app/components/workspace-shell', () => {
     );
   });
 
-  it('reduces the nested board list inset and removes the selected pulse decoration', () => {
+  it('defines compact recent board group chrome without selected pulse decoration', () => {
     expect(globalsCss).toMatch(
-      /\.workspace-board-subnav\s*\{[^}]*margin-left:\s*8px;[^}]*padding:\s*2px;/,
-    );
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-surface\s*\{[^}]*top:\s*2px;[^}]*left:\s*2px;[^}]*right:\s*2px;/,
+      /\.workspace-recent-boards\s*\{[^}]*padding-top:\s*8px;[^}]*border-top:\s*1px solid var\(--ui-border\);/,
     );
     expect(globalsCss).not.toContain('.workspace-board-subnav-pulse');
   });
@@ -1087,7 +1097,7 @@ describe('app/components/workspace-shell', () => {
   it('uses flatter token-based sidebar chrome instead of blur-heavy gradients', () => {
     expect(globalsCss).not.toMatch(/\.workspace-navbar\s*\{[^}]*backdrop-filter:/);
     expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-surface\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);/,
+      /\.workspace-recent-board-link\[data-current-board='true'\]\s*\{[^}]*color:\s*var\(--ui-text\);/,
     );
     expect(globalsCss).toMatch(
       /\.workspace-nav-link\[data-active='true'\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*color:\s*var\(--ui-text\);/,
@@ -1143,7 +1153,7 @@ describe('app/components/workspace-shell', () => {
     }
   });
 
-  it('shares accent state tokens between project picker items and board subnav', () => {
+  it('shares accent state tokens between project picker items and recent boards', () => {
     expect(globalsCss).toMatch(/--ui-workspace-accent-surface:/);
     expect(globalsCss).toMatch(/--ui-workspace-accent-border:/);
     expect(globalsCss).toMatch(/--ui-workspace-focus-shadow:/);
@@ -1151,16 +1161,16 @@ describe('app/components/workspace-shell', () => {
       /\.workspace-project-picker-item\.is-selected,\s*\.workspace-board-picker-item\[data-current-board='true'\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--ui-workspace-accent-border\);/,
     );
     expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-surface\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--ui-workspace-accent-border\);/,
+      /\.workspace-recent-board-link\[data-current-board='true'\]\s*\{[^}]*color:\s*var\(--ui-text\);/,
     );
     expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link:focus-visible\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*var\(--ui-workspace-focus-shadow\);/,
+      /\.workspace-recent-board-link:focus-visible\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*var\(--ui-workspace-focus-shadow\);/,
     );
   });
 
-  it('keeps the board overflow row on workspace tokens', () => {
+  it('keeps the board overflow control on workspace tokens', () => {
     const { fixture, cleanup } = renderWorkspaceCssFixture(`
-      <button class="workspace-board-subnav-more" data-testid="more"></button>
+      <button class="workspace-recent-board-overflow" data-testid="more"></button>
     `);
 
     try {

@@ -88,31 +88,28 @@ function initialFromEmail(email: string) {
 }
 
 const PROJECT_KEY_CHANGED_EVENT = 'pm:lastProjectKey:changed';
-const BOARD_SUBNAV_ROW_HEIGHT = 44;
-const BOARD_SUBNAV_ROW_GAP = 4;
-const BOARD_QUICK_LINK_LIMIT = 4;
 
-type BoardNavLinkProps = {
+type RecentBoardLinkProps = {
   project: WorkspaceProjectOption;
   isCurrentBoard: boolean;
   onSelect: (projectKey: string) => void;
 };
 
-function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) {
+function RecentBoardLink({ project, isCurrentBoard, onSelect }: RecentBoardLinkProps) {
   return (
     <NavLink
       component={Link}
       href={`/board/${project.projectKey}`}
       prefetch={false}
       label={
-        <span className="workspace-board-subnav-label">
-          <span className="workspace-board-subnav-name">{project.name}</span>
+        <span className="workspace-recent-board-label">
+          <span className="workspace-recent-board-name">{project.name}</span>
         </span>
       }
       onClick={() => {
         onSelect(project.projectKey);
       }}
-      className="workspace-nav-link workspace-board-subnav-link"
+      className="workspace-nav-link workspace-recent-board-link"
       data-current-board={isCurrentBoard ? 'true' : undefined}
       aria-current={isCurrentBoard ? 'page' : undefined}
     />
@@ -123,34 +120,11 @@ function partitionWorkspaceProjectOptions(projectOptions: WorkspaceProjectOption
   return projectOptions.filter((project) => project.status === ACTIVE_PROJECT_STATUS);
 }
 
-function getQuickBoardOptions(
+function getRecentBoardPreview(
   activeProjectOptions: WorkspaceProjectOption[],
   currentProject: WorkspaceProjectOption | null,
-  recentProjectKeys: string[],
 ) {
-  const quickProjects = new Map<string, WorkspaceProjectOption>();
-
-  function addProject(project: WorkspaceProjectOption | null | undefined) {
-    if (!project || quickProjects.has(project.id)) return;
-    if (quickProjects.size >= BOARD_QUICK_LINK_LIMIT) return;
-    quickProjects.set(project.id, project);
-  }
-
-  addProject(currentProject);
-
-  for (const projectKey of recentProjectKeys) {
-    addProject(
-      activeProjectOptions.find(
-        (project) => project.projectKey.toUpperCase() === projectKey.toUpperCase(),
-      ),
-    );
-  }
-
-  for (const project of activeProjectOptions) {
-    addProject(project);
-  }
-
-  return activeProjectOptions.filter((project) => quickProjects.has(project.id));
+  return currentProject ?? activeProjectOptions[0] ?? null;
 }
 
 function readRememberedProjectKey() {
@@ -271,23 +245,18 @@ export function WorkspaceShell({
   const mobilePickerProject = selectedProject;
   const currentActiveBoardProject =
     currentBoardProject?.status === ACTIVE_PROJECT_STATUS ? currentBoardProject : null;
-  const quickBoardOptions = useMemo(
-    () => getQuickBoardOptions(activeProjectOptions, currentActiveBoardProject, recentProjectKeys),
-    [activeProjectOptions, currentActiveBoardProject, recentProjectKeys],
+  const recentBoardPreview = useMemo(
+    () => getRecentBoardPreview(activeProjectOptions, currentActiveBoardProject),
+    [activeProjectOptions, currentActiveBoardProject],
   );
-  const currentBoardIndex = currentActiveBoardProject
-    ? quickBoardOptions.findIndex((project) => project.id === currentActiveBoardProject.id)
-    : -1;
-  const hasBoardOverflow = activeProjectOptions.length > quickBoardOptions.length;
+  const hiddenRecentBoardCount = recentBoardPreview
+    ? Math.max(activeProjectOptions.length - 1, 0)
+    : 0;
+  const hasBoardOverflow = hiddenRecentBoardCount > 0;
   const isBoardContext = active === 'kanban';
   const currentScopeLabel = mobilePickerProject?.name || 'Boards';
   const workspaceSubtitle = getWorkspaceProjectSubtitle(currentBoardProject);
   const projectFilterAriaLabel = `${isBoardContext ? 'Board picker' : 'Project picker'}. Current: ${currentScopeLabel}`;
-  const boardSelectionSurfaceStyle = {
-    height: `${BOARD_SUBNAV_ROW_HEIGHT}px`,
-    transform: `translateY(${Math.max(currentBoardIndex, 0) * (BOARD_SUBNAV_ROW_HEIGHT + BOARD_SUBNAV_ROW_GAP)}px)`,
-    opacity: currentBoardIndex === -1 ? 0 : 1,
-  };
   const headerInnerClassName = desktopOpened
     ? 'workspace-header-inner'
     : 'workspace-header-inner workspace-header-inner--sidebar-collapsed';
@@ -386,7 +355,7 @@ export function WorkspaceShell({
       </Menu.Dropdown>
     </Menu>
   );
-  const desktopBoardOverflowMenu = hasBoardOverflow ? (
+  const recentBoardOverflowMenu = hasBoardOverflow ? (
     <Menu
       position="right-start"
       shadow="md"
@@ -395,10 +364,12 @@ export function WorkspaceShell({
       classNames={{ dropdown: 'workspace-project-picker-menu' }}
     >
       <Menu.Target>
-        <UnstyledButton className="workspace-board-subnav-more" aria-label="Open all boards menu">
-          <span className="workspace-board-subnav-more-copy">More boards</span>
-          <span className="workspace-board-subnav-more-count" aria-hidden="true">
-            {activeProjectOptions.length - quickBoardOptions.length}
+        <UnstyledButton
+          className="workspace-recent-board-overflow"
+          aria-label="Open all boards menu"
+        >
+          <span className="workspace-recent-board-count" aria-hidden="true">
+            +{hiddenRecentBoardCount}
           </span>
           <IconDots size={16} aria-hidden="true" />
         </UnstyledButton>
@@ -576,35 +547,9 @@ export function WorkspaceShell({
               rightSection={null}
               className="workspace-nav-link"
             />
-            <Box visibleFrom="md">
-              <Stack gap={6}>
-                {activeProjectOptions.length > 0 ? (
-                  <Stack
-                    gap={BOARD_SUBNAV_ROW_GAP}
-                    className="workspace-board-subnav"
-                    data-current-board-index={currentBoardIndex}
-                  >
-                    <span
-                      className="workspace-board-subnav-surface"
-                      aria-hidden="true"
-                      style={boardSelectionSurfaceStyle}
-                    />
-                    {quickBoardOptions.map((project) => (
-                      <BoardNavLink
-                        key={project.id}
-                        project={project}
-                        isCurrentBoard={currentActiveBoardProject?.id === project.id}
-                        onSelect={handleBoardSelect}
-                      />
-                    ))}
-                    {desktopBoardOverflowMenu}
-                  </Stack>
-                ) : null}
-              </Stack>
-            </Box>
           </Stack>
         </AppShell.Section>
-        <AppShell.Section px="xs" pb="xs">
+        <AppShell.Section px="xs">
           <Stack gap={6}>
             <Text component="h2" className="workspace-nav-section-label">
               Manage
@@ -636,6 +581,23 @@ export function WorkspaceShell({
             {mobileAccountBlock}
           </Stack>
         </AppShell.Section>
+        {recentBoardPreview ? (
+          <AppShell.Section px="xs" pb="xs" className="workspace-recent-boards">
+            <Stack gap={6}>
+              <Text component="h2" className="workspace-nav-section-label">
+                Recent boards
+              </Text>
+              <div className="workspace-recent-board-row">
+                <RecentBoardLink
+                  project={recentBoardPreview}
+                  isCurrentBoard={currentActiveBoardProject?.id === recentBoardPreview.id}
+                  onSelect={handleBoardSelect}
+                />
+                {recentBoardOverflowMenu}
+              </div>
+            </Stack>
+          </AppShell.Section>
+        ) : null}
       </AppShell.Navbar>
 
       <AppShell.Main className="workspace-main">
