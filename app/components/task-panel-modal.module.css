@@ -1,5 +1,5 @@
 .inner {
-  transition: padding 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: none;
 }
 
 .content {
@@ -13,12 +13,9 @@
   backdrop-filter: blur(18px);
   overflow: hidden;
   transition:
-    flex-basis 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    min-height 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    max-height 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    height 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    border-radius 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    border-radius 140ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 140ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 120ms ease;
 }
 
 .content[data-resizable='true'] {
@@ -121,7 +118,7 @@
   padding: clamp(0.95rem, 1.6vw, 1.15rem) clamp(1rem, 2vw, 1.35rem);
   border-bottom: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
   background: var(--ui-surface-modal-header);
-  transition: padding 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: background-color 120ms ease;
 }
 
 .header[data-draggable='true'] {
@@ -178,7 +175,7 @@
   overflow-x: hidden;
   padding: clamp(1rem, 2.2vw, 1.4rem);
   background: var(--ui-surface-modal-body);
-  transition: padding 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  transition: background-color 120ms ease;
 }
 
 .content[data-full-screen='true'] {

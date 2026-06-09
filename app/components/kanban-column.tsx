@@ -3,7 +3,7 @@
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 import { Badge, Group, Paper, Title } from '@mantine/core';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { memo, type ReactNode, useEffect, useRef } from 'react';
 
 import { KanbanEmptyLane } from '@/app/components/kanban-empty-lane';
 import type { EnginePresets, KanbanStatus, KanbanTask } from '@/lib/kanban-helpers';
@@ -86,7 +86,7 @@ type KanbanColumnTaskCardProps = {
   isFocusDimmed?: boolean;
 };
 
-function KanbanColumnTaskCard({
+const KanbanColumnTaskCard = memo(function KanbanColumnTaskCard({
   task,
   index,
   isPending,
@@ -201,7 +201,7 @@ function KanbanColumnTaskCard({
       )}
     </Draggable>
   );
-}
+});
 
 export function KanbanColumn({
   status,

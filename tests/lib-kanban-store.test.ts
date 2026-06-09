@@ -6,6 +6,8 @@ import {
   type EditableBoardTask,
   selectKanbanColumns,
   selectKanbanRunStatePollingStatus,
+  selectKanbanTask,
+  selectKanbanTaskKeysByStatus,
 } from '@/lib/kanban-store';
 
 function buildTask(
@@ -165,6 +167,32 @@ describe('lib/kanban-store', () => {
     const state = store.getState();
 
     expect(selectKanbanColumns(state)).toBe(selectKanbanColumns(state));
+  });
+
+  it('selects task keys and individual tasks without changing unrelated task references', () => {
+    const store = createKanbanStore({
+      columns: buildColumns(),
+      focusedTask: buildFocusedTask(),
+    });
+
+    const taskBefore = selectKanbanTask(store.getState(), 'PROJ-255');
+    const todoKeysBefore = selectKanbanTaskKeysByStatus(store.getState(), 'todo');
+
+    store.getState().upsertSnapshots([
+      buildTask({
+        id: 'task-2',
+        taskKey: 'PROJ-256',
+        sortOrder: 'b0',
+        title: 'Updated neighbor',
+      }),
+    ]);
+
+    expect(selectKanbanTask(store.getState(), 'PROJ-255')).toBe(taskBefore);
+    expect(selectKanbanTaskKeysByStatus(store.getState(), 'todo')).toEqual([
+      'PROJ-255',
+      'PROJ-256',
+    ]);
+    expect(selectKanbanTaskKeysByStatus(store.getState(), 'todo')).not.toBe(todoKeysBefore);
   });
 
   it('updates one task unread notification flag while preserving board order', () => {

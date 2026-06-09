@@ -108,96 +108,105 @@ export function BoardOfflineSyncProvider({
   const setFocusedTask = useSetFocusedTask();
   const upsertSnapshots = useUpsertKanbanSnapshots();
   const isFlushingRef = useRef(false);
+  const needsFlushRef = useRef(false);
+  const onlineRef = useRef(online);
+
+  useEffect(() => {
+    onlineRef.current = online;
+  }, [online]);
 
   const flushPendingMutations = useCallback(async () => {
-    if (!online || isFlushingRef.current) {
+    if (!onlineRef.current) {
+      return;
+    }
+    if (isFlushingRef.current) {
+      needsFlushRef.current = true;
       return;
     }
 
     isFlushingRef.current = true;
     try {
-      const result = await flushOfflineMutations({
-        onApplied: async (mutation) => {
-          if (mutation.kind === 'create') {
-            await deleteDraft(buildTaskOfflineDraftId(mutation.previousTaskKey));
-            await deleteDraft(buildTaskOfflineDraftId(mutation.boardTask.taskKey));
-          } else if (mutation.kind === 'delete') {
-            await deleteDraft(buildTaskOfflineDraftId(mutation.taskKey));
-          } else {
-            await deleteDraft(buildTaskOfflineDraftId(mutation.taskKey));
-          }
-
-          if (mutation.kind === 'delete') {
-            return;
-          }
-
-          if (activeProjectId && mutation.boardTask.project?.id !== activeProjectId) {
-            return;
-          }
-
-          if (mutation.kind === 'create') {
-            removeTask(mutation.previousTaskKey);
-            upsertSnapshots([mutation.boardTask]);
-
-            if (kanbanStore.getState().focusedTask?.taskKey === mutation.previousTaskKey) {
-              setFocusedTask(buildEditableBoardTaskPreview(mutation.boardTask));
+      do {
+        needsFlushRef.current = false;
+        const result = await flushOfflineMutations({
+          onApplied: async (mutation) => {
+            if (mutation.kind === 'create') {
+              await deleteDraft(buildTaskOfflineDraftId(mutation.previousTaskKey));
+              await deleteDraft(buildTaskOfflineDraftId(mutation.boardTask.taskKey));
+            } else if (mutation.kind === 'delete') {
+              await deleteDraft(buildTaskOfflineDraftId(mutation.taskKey));
+            } else {
+              await deleteDraft(buildTaskOfflineDraftId(mutation.taskKey));
             }
 
-            if (typeof window !== 'undefined') {
-              const currentUrl = new URL(window.location.href);
-              if (currentUrl.searchParams.get('taskId') === mutation.previousTaskKey) {
-                window.history.replaceState(
-                  null,
-                  '',
-                  buildBoardTaskEditHref(editHrefBase, mutation.boardTask.taskKey),
-                );
+            if (mutation.kind === 'delete') {
+              return;
+            }
+
+            if (activeProjectId && mutation.boardTask.project?.id !== activeProjectId) {
+              return;
+            }
+
+            if (mutation.kind === 'create') {
+              removeTask(mutation.previousTaskKey);
+              upsertSnapshots([mutation.boardTask]);
+
+              if (kanbanStore.getState().focusedTask?.taskKey === mutation.previousTaskKey) {
+                setFocusedTask(buildEditableBoardTaskPreview(mutation.boardTask));
               }
+
+              if (typeof window !== 'undefined') {
+                const currentUrl = new URL(window.location.href);
+                if (currentUrl.searchParams.get('taskId') === mutation.previousTaskKey) {
+                  window.history.replaceState(
+                    null,
+                    '',
+                    buildBoardTaskEditHref(editHrefBase, mutation.boardTask.taskKey),
+                  );
+                }
+              }
+
+              return;
             }
 
-            return;
-          }
+            upsertSnapshots([mutation.boardTask]);
+            if (kanbanStore.getState().focusedTask?.taskKey === mutation.taskKey) {
+              setFocusedTask(
+                mutation.focusedTask ?? buildEditableBoardTaskPreview(mutation.boardTask),
+              );
+            }
+          },
+          onConflict: async (conflict) => {
+            if (activeProjectId && conflict.boardTask.project?.id !== activeProjectId) {
+              return;
+            }
 
-          upsertSnapshots([mutation.boardTask]);
-          if (kanbanStore.getState().focusedTask?.taskKey === mutation.taskKey) {
-            setFocusedTask(
-              mutation.focusedTask ?? buildEditableBoardTaskPreview(mutation.boardTask),
-            );
-          }
-        },
-        onConflict: async (conflict) => {
-          if (activeProjectId && conflict.boardTask.project?.id !== activeProjectId) {
-            return;
-          }
+            upsertSnapshots([conflict.boardTask]);
+            if (kanbanStore.getState().focusedTask?.taskKey === conflict.taskKey) {
+              setFocusedTask(
+                conflict.focusedTask ?? buildEditableBoardTaskPreview(conflict.boardTask),
+              );
+            }
+            showErrorNotification(conflict.error);
+          },
+        });
 
-          upsertSnapshots([conflict.boardTask]);
-          if (kanbanStore.getState().focusedTask?.taskKey === conflict.taskKey) {
-            setFocusedTask(
-              conflict.focusedTask ?? buildEditableBoardTaskPreview(conflict.boardTask),
-            );
-          }
-          showErrorNotification(conflict.error);
-        },
-      });
-
-      if (result.error) {
-        showErrorNotification(result.error);
-      }
+        if (result.error) {
+          showErrorNotification(result.error);
+        }
+      } while (needsFlushRef.current && onlineRef.current);
     } finally {
       isFlushingRef.current = false;
     }
-  }, [
-    activeProjectId,
-    editHrefBase,
-    kanbanStore,
-    online,
-    removeTask,
-    setFocusedTask,
-    upsertSnapshots,
-  ]);
+  }, [activeProjectId, editHrefBase, kanbanStore, removeTask, setFocusedTask, upsertSnapshots]);
 
   useEffect(() => {
+    if (!online) {
+      return;
+    }
+
     void flushPendingMutations();
-  }, [flushPendingMutations]);
+  }, [flushPendingMutations, online]);
 
   const queueTaskCreate = useCallback(
     async (input: QueueOfflineCreateInput) => {
@@ -235,10 +244,21 @@ export function BoardOfflineSyncProvider({
       });
 
       upsertSnapshots([optimisticTask]);
+      if (onlineRef.current) {
+        const flush = () => {
+          void flushPendingMutations();
+        };
+
+        if (typeof window === 'undefined') {
+          flush();
+        } else {
+          window.setTimeout(flush, 0);
+        }
+      }
 
       return optimisticTask;
     },
-    [kanbanStore, upsertSnapshots],
+    [flushPendingMutations, kanbanStore, upsertSnapshots],
   );
 
   const queueTaskPatch = useCallback(

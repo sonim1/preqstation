@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { showErrorNotification } from '@/lib/notifications';
+import { searchOfflineTaskSnapshots } from '@/lib/offline/task-search';
 import { DEFAULT_TERMINOLOGY, type Terminology } from '@/lib/terminology';
 
 import { COMMAND_PALETTE_OPEN_EVENT } from './command-palette-trigger';
@@ -132,6 +133,25 @@ export function buildCommandPaletteTaskHref({
   taskKey: string;
 }) {
   return `/board/${projectKey}?panel=task-edit&taskId=${encodeURIComponent(taskKey)}`;
+}
+
+export function mergeCommandPaletteTaskHits(
+  localHits: CommandPaletteTaskHit[],
+  serverHits: CommandPaletteTaskHit[],
+) {
+  const seenTaskKeys = new Set<string>();
+  const merged: CommandPaletteTaskHit[] = [];
+
+  for (const hit of [...localHits, ...serverHits]) {
+    if (seenTaskKeys.has(hit.taskKey)) {
+      continue;
+    }
+
+    seenTaskKeys.add(hit.taskKey);
+    merged.push(hit);
+  }
+
+  return merged;
 }
 
 type ResolveCommandPaletteActionGroupsArgs = CommandPaletteProps & {
@@ -382,8 +402,16 @@ export function CommandPalette({
     }
 
     const controller = new AbortController();
+    const localSearchPromise = searchOfflineTaskSnapshots(trimmedQuery).catch(() => []);
     setTaskHits([]);
     setTaskSearchState('loading');
+
+    void localSearchPromise.then((localHits) => {
+      if (controller.signal.aborted || localHits.length === 0) return;
+      setTaskHits(localHits);
+      setTaskSearchState('ready');
+    });
+
     const timeoutId = window.setTimeout(() => {
       void (async () => {
         try {
@@ -410,13 +438,22 @@ export function CommandPalette({
 
           const payload = (await response.json()) as { results?: CommandPaletteTaskHit[] };
           if (controller.signal.aborted) return;
-          const nextTaskHits = payload.results ?? [];
+          const localHits = await localSearchPromise;
+          if (controller.signal.aborted) return;
+          const nextTaskHits = mergeCommandPaletteTaskHits(localHits, payload.results ?? []);
           setTaskHits(nextTaskHits);
           setTaskSearchState(nextTaskHits.length > 0 ? 'ready' : 'empty');
         } catch (error) {
           if (controller.signal.aborted) return;
-          setTaskHits([]);
-          setTaskSearchState('idle');
+          const localHits = await localSearchPromise;
+          if (controller.signal.aborted) return;
+          if (localHits.length > 0) {
+            setTaskHits(localHits);
+            setTaskSearchState('ready');
+          } else {
+            setTaskHits([]);
+            setTaskSearchState('idle');
+          }
           const message =
             error instanceof Error
               ? error.message
