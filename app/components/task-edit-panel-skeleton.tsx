@@ -1,6 +1,6 @@
 'use client';
 
-import { Group, SimpleGrid, Skeleton, Stack } from '@mantine/core';
+import { Group, Skeleton, Stack } from '@mantine/core';
 
 import classes from './task-edit-form.module.css';
 
@@ -9,6 +9,35 @@ export function TaskEditPanelSkeleton() {
     <div className={classes.root} data-testid="task-edit-loading-shell" aria-busy="true">
       <div className={classes.shell} data-layout="task-edit-shell">
         <div className={classes.mainColumn} data-panel="task-edit-main-column">
+          <section
+            className={classes.commandStrip}
+            data-panel="task-edit-command-strip"
+            aria-label="Task controls loading"
+          >
+            <div className={classes.metadataSection} data-panel="task-edit-metadata">
+              <Stack gap="sm" className={`${classes.metaHeader} task-edit-meta-header`}>
+                <Group gap="sm" wrap="wrap" className={classes.taskIdentityRow}>
+                  <Skeleton h={34} w={112} radius="xl" />
+                  <Skeleton h={18} w={148} radius="sm" />
+                </Group>
+              </Stack>
+            </div>
+            <div className={classes.settingsControls}>
+              <Skeleton h={40} radius="md" />
+            </div>
+            <div className={classes.settingsControls}>
+              <Skeleton h={40} radius="md" />
+            </div>
+            <div className={classes.skeletonCommandDispatch}>
+              <Skeleton h={40} radius="md" />
+              <Skeleton h={40} radius="md" />
+              <Skeleton h={40} radius="md" />
+              <Skeleton h={40} radius="md" />
+              <Skeleton h={40} w={44} radius="md" />
+              <Skeleton h={40} radius="md" />
+            </div>
+          </section>
+
           <section
             className={`${classes.notesCard} ${classes.mainSectionSurface}`}
             data-panel="task-edit-notes-primary"
@@ -45,49 +74,6 @@ export function TaskEditPanelSkeleton() {
             </Stack>
           </section>
         </div>
-
-        <aside className={classes.sidebar} data-panel="task-edit-sidebar">
-          <section
-            className={`${classes.dispatchRail} ${classes.sectionSurface}`}
-            data-panel="task-edit-dispatch"
-          >
-            <Stack gap="sm">
-              <Skeleton h={14} w="32%" radius="sm" />
-              <SimpleGrid cols={3} spacing={4}>
-                <Skeleton h={32} radius="sm" />
-                <Skeleton h={32} radius="sm" />
-                <Skeleton h={32} radius="sm" />
-              </SimpleGrid>
-              <SimpleGrid cols={3} spacing={4}>
-                <Skeleton h={32} radius="sm" />
-                <Skeleton h={32} radius="sm" />
-                <Skeleton h={32} radius="sm" />
-              </SimpleGrid>
-              <Skeleton radius="md" className={classes.skeletonPromptPreview} />
-              <Skeleton h={44} radius="md" />
-            </Stack>
-          </section>
-
-          <section
-            className={`${classes.metadataSection} ${classes.sectionSurface}`}
-            data-panel="task-edit-metadata"
-          >
-            <Stack gap="md">
-              <Skeleton h={14} w="46%" radius="sm" />
-              <div className={classes.settingsPanel} data-panel="task-edit-settings-card">
-                <Stack gap="md">
-                  <Skeleton h={32} radius="md" />
-                  <SimpleGrid cols={2} spacing="sm">
-                    <Skeleton h={32} radius="md" />
-                    <Skeleton h={32} radius="md" />
-                  </SimpleGrid>
-                  <Skeleton h={32} radius="md" />
-                  <Skeleton h={36} radius="md" />
-                </Stack>
-              </div>
-            </Stack>
-          </section>
-        </aside>
       </div>
     </div>
   );

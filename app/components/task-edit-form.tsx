@@ -1070,11 +1070,7 @@ function TaskEditFormContent({
   }, [draftNote, noteRenderKey]);
 
   return (
-    <div
-      className={[classes.root, showDispatchPanel ? classes.rootWithBottomDispatch : null]
-        .filter(Boolean)
-        .join(' ')}
-    >
+    <div className={classes.root}>
       {saveStatus === 'saving' ? (
         <div
           className={classes.mobileSavingOverlay}
@@ -1102,6 +1098,97 @@ function TaskEditFormContent({
 
         <div className={classes.shell} data-layout="task-edit-shell">
           <div className={classes.mainColumn} data-panel="task-edit-main-column">
+            <section
+              className={classes.commandStrip}
+              data-panel="task-edit-command-strip"
+              aria-label={`${terminology.task.singular} controls`}
+            >
+              <div className={classes.metadataSection} data-panel="task-edit-metadata">
+                <Stack gap="sm" className={`${classes.metaHeader} task-edit-meta-header`}>
+                  <Group gap="sm" wrap="wrap" className={classes.taskIdentityRow}>
+                    <Tooltip
+                      label={idCopied ? 'Copied!' : `Copy ${terminology.task.singular} ID`}
+                      withArrow
+                    >
+                      <UnstyledButton
+                        type="button"
+                        onClick={copyTaskId}
+                        className={classes.taskKeyButton}
+                        data-slot="task-edit-key-copy"
+                        aria-label={`Copy ${terminology.task.singular} ID ${taskKey}`}
+                      >
+                        <span className={classes.taskKeyText}>{taskKey}</span>
+                        {idCopied ? (
+                          <IconCheck size={15} className={classes.taskKeyIcon} />
+                        ) : (
+                          <IconCopy size={15} className={classes.taskKeyIcon} />
+                        )}
+                      </UnstyledButton>
+                    </Tooltip>
+                    {projectName && (
+                      <Text size="sm" fw={700} className={classes.projectName}>
+                        {projectName}
+                      </Text>
+                    )}
+                  </Group>
+                </Stack>
+              </div>
+
+              <div className={classes.settingsControls}>
+                <TaskLabelPicker
+                  disabled={isOffline}
+                  key={`labels:${labelRenderKey ?? fieldRenderKey}`}
+                  labelOptions={labelOptions}
+                  selectedLabelIds={selectedLabelIds}
+                  selectedLabels={selectedLabels}
+                  projectId={projectId}
+                  triggerAriaLabel={`Edit labels for ${editableTodo.title}`}
+                  triggerLabel="Labels"
+                  emptyStateLabel="Select labels"
+                  searchPlaceholder="Search labels"
+                  onChange={(value) => {
+                    setSelectedLabelIds(value);
+                    triggerSave(0);
+                  }}
+                  onOptionsChange={(nextLabelOptions) => {
+                    if (projectId) {
+                      onProjectLabelOptionsChange?.(projectId, nextLabelOptions);
+                    }
+                  }}
+                />
+              </div>
+
+              <div className={classes.settingsControls}>
+                <TaskMetadataPriorityPicker
+                  disabled={isOffline}
+                  key={`priority:${priorityRenderKey ?? fieldRenderKey}`}
+                  initialPriority={taskPriority}
+                  priorityOptions={taskPriorityOptions}
+                  label={`${terminology.task.singular} priority`}
+                  onChange={() => triggerSave(0)}
+                />
+              </div>
+
+              {showDispatchPanel ? (
+                <div className={classes.commandStripDispatch}>
+                  <TaskCopyActions
+                    placement="bottom"
+                    taskKey={taskKey}
+                    branchName={branchName}
+                    status={status}
+                    engine={engine}
+                    dispatchTarget={editableTodo.dispatchTarget ?? null}
+                    telegramEnabled={telegramEnabled ?? false}
+                    hermesTelegramEnabled={hermesTelegramEnabled}
+                    hermesBotUsername={hermesBotUsername}
+                    suppressShortcut={commentShortcutActive}
+                    onTaskQueued={handleDispatchQueued}
+                    onDispatchSelectionChange={handleDispatchSelectionChange}
+                  />
+                </div>
+              ) : null}
+            </section>
+
             <section
               className={`${classes.notesCard} ${classes.mainSectionSurface}`}
               data-panel="task-edit-notes-primary"
@@ -1283,106 +1370,8 @@ function TaskEditFormContent({
               </Stack>
             </section>
           </div>
-
-          <aside className={classes.sidebar} data-panel="task-edit-sidebar">
-            <section
-              className={`${classes.metadataSection} ${classes.sectionSurface}`}
-              data-panel="task-edit-metadata"
-            >
-              <Stack gap="md">
-                <SectionHeading
-                  title={`${terminology.task.singular} settings`}
-                  helpText={`${terminology.task.singular} identity, labels, and priority stay together in one compact rail.`}
-                />
-
-                <div className={classes.settingsPanel} data-panel="task-edit-settings-card">
-                  <Stack gap="sm" className={`${classes.metaHeader} task-edit-meta-header`}>
-                    <Group gap="sm" wrap="nowrap" className={classes.taskIdentityRow}>
-                      <Tooltip
-                        label={idCopied ? 'Copied!' : `Copy ${terminology.task.singular} ID`}
-                        withArrow
-                      >
-                        <UnstyledButton
-                          type="button"
-                          onClick={copyTaskId}
-                          className={classes.taskKeyButton}
-                          data-slot="task-edit-key-copy"
-                          aria-label={`Copy ${terminology.task.singular} ID ${taskKey}`}
-                        >
-                          <span className={classes.taskKeyText}>{taskKey}</span>
-                          {idCopied ? (
-                            <IconCheck size={15} className={classes.taskKeyIcon} />
-                          ) : (
-                            <IconCopy size={15} className={classes.taskKeyIcon} />
-                          )}
-                        </UnstyledButton>
-                      </Tooltip>
-                      {projectName && (
-                        <Text size="sm" fw={700} className={classes.projectName}>
-                          {projectName}
-                        </Text>
-                      )}
-                    </Group>
-                  </Stack>
-
-                  <div className={classes.settingsDivider} />
-
-                  <Stack gap="lg" className={classes.settingsControls}>
-                    <TaskLabelPicker
-                      disabled={isOffline}
-                      key={`labels:${labelRenderKey ?? fieldRenderKey}`}
-                      labelOptions={labelOptions}
-                      selectedLabelIds={selectedLabelIds}
-                      selectedLabels={selectedLabels}
-                      projectId={projectId}
-                      triggerAriaLabel={`Edit labels for ${editableTodo.title}`}
-                      triggerLabel="Labels"
-                      emptyStateLabel="Select labels"
-                      searchPlaceholder="Search labels"
-                      onChange={(value) => {
-                        setSelectedLabelIds(value);
-                        triggerSave(0);
-                      }}
-                      onOptionsChange={(nextLabelOptions) => {
-                        if (projectId) {
-                          onProjectLabelOptionsChange?.(projectId, nextLabelOptions);
-                        }
-                      }}
-                    />
-                    <TaskMetadataPriorityPicker
-                      disabled={isOffline}
-                      key={`priority:${priorityRenderKey ?? fieldRenderKey}`}
-                      initialPriority={taskPriority}
-                      priorityOptions={taskPriorityOptions}
-                      label={`${terminology.task.singular} priority`}
-                      onChange={() => triggerSave(0)}
-                    />
-                  </Stack>
-                </div>
-              </Stack>
-            </section>
-          </aside>
         </div>
       </form>
-
-      {showDispatchPanel ? (
-        <div className={classes.bottomDispatch} data-panel="task-edit-bottom-dispatch">
-          <TaskCopyActions
-            placement="bottom"
-            taskKey={taskKey}
-            branchName={branchName}
-            status={status}
-            engine={engine}
-            dispatchTarget={editableTodo.dispatchTarget ?? null}
-            telegramEnabled={telegramEnabled ?? false}
-            hermesTelegramEnabled={hermesTelegramEnabled}
-            hermesBotUsername={hermesBotUsername}
-            suppressShortcut={commentShortcutActive}
-            onTaskQueued={handleDispatchQueued}
-            onDispatchSelectionChange={handleDispatchSelectionChange}
-          />
-        </div>
-      ) : null}
     </div>
   );
 }
