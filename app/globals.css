@@ -837,53 +837,41 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
     box-shadow 140ms ease;
 }
 
-.workspace-nav-link:not(.workspace-board-subnav-link) {
+.workspace-nav-link:not(.workspace-recent-board-link) {
   min-height: var(--ui-hit-touch-min);
   border: 1px solid transparent;
 }
 
-.workspace-nav-link:not(.workspace-board-subnav-link):hover {
+.workspace-nav-link:not(.workspace-recent-board-link):hover {
   background: var(--ui-workspace-control-hover-surface);
   color: var(--ui-text);
 }
 
-.workspace-nav-link:not(.workspace-board-subnav-link):focus-visible {
+.workspace-nav-link:not(.workspace-recent-board-link):focus-visible {
   outline: none;
   background: var(--ui-workspace-accent-surface);
   color: var(--ui-text);
   box-shadow: var(--ui-workspace-focus-shadow);
 }
 
-.workspace-board-subnav {
-  position: relative;
-  margin-left: 8px;
-  margin-top: 2px;
-  padding: 2px;
-  border-radius: 16px;
-  background: var(--ui-surface-muted);
-  overflow: hidden;
+.workspace-recent-boards {
+  padding-top: 8px;
+  border-top: 1px solid var(--ui-border);
 }
 
-.workspace-board-subnav-surface {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  right: 2px;
-  border-radius: 12px;
-  pointer-events: none;
-  background: var(--ui-workspace-accent-surface);
-  box-shadow: inset 0 0 0 1px var(--ui-workspace-accent-border);
-  transition:
-    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 180ms ease;
+.workspace-recent-board-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 6px;
 }
 
-.workspace-board-subnav-link {
-  position: relative;
-  z-index: 1;
+.workspace-recent-board-link {
+  min-width: 0;
   min-height: 44px;
   padding: 0 12px;
-  border-radius: 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
   background: transparent;
   color: color-mix(in srgb, var(--ui-text), var(--ui-muted-text) 28%);
   transition:
@@ -891,54 +879,38 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
     box-shadow 140ms ease;
 }
 
-.workspace-board-subnav-link:hover,
-.workspace-board-subnav-link[data-active],
-.workspace-board-subnav-link[data-active]:hover,
-.workspace-board-subnav-link[aria-current='page'],
-.workspace-board-subnav-link[aria-current='page']:hover {
+.workspace-recent-board-link:hover,
+.workspace-recent-board-link[data-active],
+.workspace-recent-board-link[data-active]:hover,
+.workspace-recent-board-link[aria-current='page'],
+.workspace-recent-board-link[aria-current='page']:hover {
   background: transparent;
   background-color: transparent;
 }
 
-.workspace-board-subnav-toggle .mantine-NavLink-body {
-  align-items: center;
-}
-
-.workspace-board-subnav-toggle-icon {
-  transition: transform 180ms ease;
-}
-
-.workspace-board-subnav-toggle[data-open='true'] .workspace-board-subnav-toggle-icon {
-  transform: rotate(90deg);
-}
-
-.workspace-board-subnav-children {
-  padding: 0 0 2px 10px;
-}
-
-.workspace-board-subnav-link:focus-visible {
+.workspace-recent-board-link:focus-visible {
   outline: none;
   background: var(--ui-workspace-accent-surface);
   color: var(--ui-text);
   box-shadow: var(--ui-workspace-focus-shadow);
 }
 
-.workspace-board-subnav-link .mantine-NavLink-body,
-.workspace-board-subnav-link .mantine-NavLink-label {
+.workspace-recent-board-link .mantine-NavLink-body,
+.workspace-recent-board-link .mantine-NavLink-label {
   min-width: 0;
 }
 
-.workspace-board-subnav-link .mantine-NavLink-body {
+.workspace-recent-board-link .mantine-NavLink-body {
   border-radius: 10px;
   transition: background-color 140ms ease;
 }
 
-.workspace-board-subnav-label {
+.workspace-recent-board-label {
   display: block;
   min-width: 0;
 }
 
-.workspace-board-subnav-name {
+.workspace-recent-board-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -957,55 +929,45 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   color: transparent;
 }
 
-.workspace-board-subnav-link[data-current-board='true'] {
+.workspace-recent-board-link[data-current-board='true'] {
   color: var(--ui-text);
 }
 
-.workspace-board-subnav-link:hover {
+.workspace-recent-board-link:hover {
   color: var(--ui-text);
 }
 
-.workspace-board-subnav-more {
-  position: relative;
-  z-index: 1;
-  display: flex;
+.workspace-recent-board-overflow {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  width: 100%;
+  justify-content: center;
+  gap: 4px;
+  min-width: 50px;
   min-height: 44px;
-  padding: 0 12px;
+  padding: 0 8px;
   border: 1px solid transparent;
-  border-radius: 12px;
+  border-radius: 10px;
   background: transparent;
   color: color-mix(in srgb, var(--ui-text), var(--ui-muted-text) 28%);
-  font-size: 13px;
-  font-weight: 560;
   transition:
     background 140ms ease,
     color 140ms ease,
     box-shadow 140ms ease;
 }
 
-.workspace-board-subnav-more:hover,
-.workspace-board-subnav-more:focus-visible {
+.workspace-recent-board-overflow:hover,
+.workspace-recent-board-overflow:focus-visible {
   outline: none;
   background: var(--ui-workspace-control-hover-surface);
   color: var(--ui-text);
   box-shadow: var(--ui-workspace-focus-shadow);
 }
 
-.workspace-board-subnav-more-copy {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.workspace-board-subnav-more-count {
-  margin-left: auto;
+.workspace-recent-board-count {
   color: var(--ui-muted-text);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1;
 }
 
 .workspace-board-picker-item[data-current-board='true'] .workspace-board-current-indicator {
@@ -3097,7 +3059,7 @@ html[data-mantine-color-scheme='dark'] .workspace-board-picker-item[data-current
   box-shadow: inset 0 0 0 1px var(--ui-workspace-accent-border);
 }
 
-html[data-mantine-color-scheme='dark'] .workspace-board-subnav-link[data-current-board='true'] {
+html[data-mantine-color-scheme='dark'] .workspace-recent-board-link[data-current-board='true'] {
   color: var(--ui-text);
 }
 
