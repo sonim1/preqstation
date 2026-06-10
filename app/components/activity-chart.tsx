@@ -136,14 +136,14 @@ export function ActivityChart({
             <CartesianGrid stroke={ACTIVITY_CHART_GRID} strokeDasharray="4 4" vertical={false} />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 10, fill: 'var(--ui-muted-text)' }}
+              tick={{ fontSize: 'var(--ui-font-size-tiny)', fill: 'var(--ui-muted-text)' }}
               interval={4}
               tickLine={false}
               axisLine={false}
             />
             <YAxis
               allowDecimals={false}
-              tick={{ fontSize: 10, fill: 'var(--ui-muted-text)' }}
+              tick={{ fontSize: 'var(--ui-font-size-tiny)', fill: 'var(--ui-muted-text)' }}
               width={32}
               tickLine={false}
               axisLine={false}

@@ -21,6 +21,7 @@ tsconfig.tsbuildinfo
 .superpowers/
 dogfood-output/
 .gstack/
+.od-skills/
 .preqstation-dispatch/
 .preqstation-prompt.txt
 .husky/_

@@ -20,7 +20,7 @@
 
 .titleText {
   min-width: 0;
-  font-size: clamp(1rem, 1.1vw + 0.8rem, 1.35rem);
+  font-size: var(--ui-font-size-title-2);
   font-weight: 700;
   line-height: 1.15;
   color: var(--mantine-color-text);
@@ -76,6 +76,6 @@
   }
 
   .titleText {
-    font-size: 1rem;
+    font-size: var(--ui-font-size-large);
   }
 }

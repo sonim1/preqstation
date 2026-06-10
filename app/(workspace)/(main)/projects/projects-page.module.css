@@ -36,7 +36,7 @@
   margin: 0;
   min-width: 0;
   color: var(--ui-text);
-  font-size: 0.88rem;
+  font-size: var(--ui-font-size-small);
   font-weight: 800;
   line-height: 1.25;
 }
@@ -47,7 +47,7 @@
   gap: 0.65rem;
   color: var(--ui-muted-text);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: var(--ui-font-size-micro);
   line-height: 1.25;
   white-space: nowrap;
 }
@@ -132,7 +132,7 @@
   box-shadow: var(--ui-elevation-2);
   color: var(--ui-text);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: var(--ui-font-size-micro);
   line-height: 1.1;
   opacity: 0;
   transform: translate(-50%, 0);
@@ -155,7 +155,7 @@
   margin-top: 0.55rem;
   color: var(--ui-muted-text);
   font-family: var(--font-mono);
-  font-size: 0.68rem;
+  font-size: var(--ui-font-size-micro);
   line-height: 1.2;
 }
 
@@ -193,7 +193,7 @@
   background: color-mix(in srgb, var(--ui-surface-muted), transparent 8%);
   color: var(--ui-muted-text);
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--ui-font-size-mini);
   line-height: 1;
 }
 
@@ -217,7 +217,7 @@ button.filterChip {
   min-width: max-content;
   color: var(--ui-muted-text);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: var(--ui-font-size-micro);
   line-height: 1;
 }
 
@@ -384,7 +384,7 @@ button.filterChip {
   min-width: 0;
   color: var(--ui-muted-text);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: var(--ui-font-size-micro);
   font-weight: 800;
   line-height: 1.1;
   overflow: hidden;
@@ -396,7 +396,7 @@ button.filterChip {
   margin: 0;
   min-width: 0;
   color: var(--ui-text);
-  font-size: 1.02rem;
+  font-size: var(--ui-font-size-large);
   font-weight: 800;
   line-height: 1.18;
   overflow-wrap: anywhere;
@@ -430,7 +430,7 @@ button.filterChip {
   margin: 0;
   overflow: hidden;
   color: var(--ui-muted-text);
-  font-size: 0.82rem;
+  font-size: var(--ui-font-size-mini);
   line-height: 1.45;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -460,7 +460,7 @@ button.filterChip {
 .metricValue {
   display: block;
   color: var(--ui-text);
-  font-size: 1.02rem;
+  font-size: var(--ui-font-size-large);
   line-height: 1;
 }
 
@@ -468,7 +468,7 @@ button.filterChip {
   min-width: 0;
   color: var(--ui-muted-text);
   font-family: var(--font-mono);
-  font-size: 0.58rem;
+  font-size: var(--ui-font-size-tiny);
   font-weight: 700;
   line-height: 1.15;
   overflow: hidden;
@@ -494,7 +494,7 @@ button.filterChip {
   min-width: 0;
   color: var(--ui-muted-text);
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: var(--ui-font-size-micro);
   line-height: 1.2;
 }
 
@@ -513,7 +513,7 @@ button.filterChip {
   margin: 0;
   padding: 1rem 0;
   color: var(--ui-muted-text);
-  font-size: 0.88rem;
+  font-size: var(--ui-font-size-small);
 }
 
 @media (max-width: 61.99375em) {
@@ -578,7 +578,7 @@ button.filterChip {
   }
 
   .metricValue {
-    font-size: 0.95rem;
+    font-size: var(--ui-font-size-regular);
   }
 
   .cardFooter {

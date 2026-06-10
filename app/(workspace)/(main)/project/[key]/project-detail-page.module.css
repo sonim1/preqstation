@@ -67,7 +67,7 @@
 
 .detailHeroTitle {
   color: var(--ui-text);
-  font-size: 2.75rem;
+  font-size: var(--ui-font-size-title-1);
   line-height: 0.98;
   letter-spacing: 0;
 }
@@ -75,7 +75,7 @@
 .detailHeroDescription {
   max-width: 58rem;
   color: color-mix(in srgb, var(--ui-muted-text), var(--ui-text) 18%);
-  font-size: 1.05rem;
+  font-size: var(--ui-font-size-large);
   line-height: 1.55;
   display: -webkit-box;
   overflow: hidden;
@@ -112,7 +112,7 @@
 
 .detailMetric strong {
   color: var(--ui-text);
-  font-size: 1.55rem;
+  font-size: var(--ui-font-size-title-2);
   line-height: 1;
 }
 
@@ -120,7 +120,7 @@
   min-width: 0;
   color: color-mix(in srgb, var(--ui-muted-text), var(--ui-text) 12%);
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: var(--ui-font-size-micro);
   font-weight: 700;
   line-height: 1.15;
   overflow: hidden;
@@ -196,7 +196,7 @@
 
 @media (max-width: 47.99375em) {
   .detailHeroTitle {
-    font-size: 2rem;
+    font-size: var(--ui-font-size-title-1);
   }
 
   .detailMetrics {

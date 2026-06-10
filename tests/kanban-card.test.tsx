@@ -856,26 +856,26 @@ describe('app/components/kanban-card', () => {
       /\.kanbanCardBody\s*\{[\s\S]*--kanban-card-inline-padding:\s*14px;[\s\S]*--kanban-card-bottom-padding:\s*12px;[\s\S]*padding:\s*12px var\(--kanban-card-inline-padding\) var\(--kanban-card-bottom-padding\);/,
     );
     expect(cardsCss).toMatch(
-      /\.kanbanCardTitle\s*\{[\s\S]*font-size:\s*1rem;[\s\S]*line-height:\s*1\.2;/,
+      /\.kanbanCardTitle\s*\{[\s\S]*font-size:\s*var\(--ui-font-size-large\);[\s\S]*line-height:\s*1\.2;/,
     );
-    expect(cardsCss).toMatch(/\.kanbanCardKey\s*\{[\s\S]*font-size:\s*0\.78rem;/);
+    expect(cardsCss).toMatch(/\.kanbanCardKey\s*\{[\s\S]*font-size:\s*var\(--ui-font-size-mini\);/);
     expect(cardsCss).toMatch(
-      /\.kanbanMetaChip\s*\{[\s\S]*gap:\s*5px;[\s\S]*min-height:\s*26px;[\s\S]*padding:\s*0 8px;[\s\S]*font-size:\s*0\.66rem;/,
+      /\.kanbanMetaChip\s*\{[\s\S]*gap:\s*5px;[\s\S]*min-height:\s*26px;[\s\S]*padding:\s*0 8px;[\s\S]*font-size:\s*var\(--ui-font-size-micro\);/,
     );
     expect(cardsCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanbanCardBody\s*\{[\s\S]*--kanban-card-inline-padding:\s*12px;[\s\S]*--kanban-card-bottom-padding:\s*11px;[\s\S]*padding:\s*11px 12px 11px 12px;/,
     );
     expect(cardsCss).toMatch(
-      /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanbanCardTitle\s*\{[\s\S]*font-size:\s*0\.94rem;/,
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanbanCardTitle\s*\{[\s\S]*font-size:\s*var\(--ui-font-size-regular\);/,
     );
     expect(cardsCss).toMatch(
-      /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanbanCardKey\s*\{[\s\S]*font-size:\s*0\.76rem;/,
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanbanCardKey\s*\{[\s\S]*font-size:\s*var\(--ui-font-size-micro\);/,
     );
     expect(cardsCss).toMatch(
       /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanbanMetaStack\s*\{[\s\S]*gap:\s*6px;/,
     );
     expect(cardsCss).toMatch(
-      /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanbanMetaChip\s*\{[\s\S]*min-height:\s*24px;[\s\S]*padding:\s*0 8px;[\s\S]*font-size:\s*0\.64rem;/,
+      /@media \(max-width: 48em\)\s*\{[\s\S]*\.kanbanMetaChip\s*\{[\s\S]*min-height:\s*24px;[\s\S]*padding:\s*0 8px;[\s\S]*font-size:\s*var\(--ui-font-size-micro\);/,
     );
     expect(globalsCss).toMatch(
       /\.kanban-status-button\s*\{[\s\S]*min-width:\s*var\(--ui-hit-min\);[\s\S]*min-height:\s*var\(--ui-hit-min\);/,
