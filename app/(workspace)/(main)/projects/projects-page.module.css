@@ -245,18 +245,37 @@ button.filterChip {
 }
 
 .projectCard {
+  --project-card-bg-image: none;
+  --project-card-surface: var(--ui-surface-elevated);
+  --project-card-overlay: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ui-surface-strong), transparent 18%),
+    color-mix(in srgb, var(--ui-surface-elevated), transparent 8%)
+  );
+
   position: relative;
   min-width: 0;
   min-height: 13rem;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--ui-border), transparent 12%);
   border-radius: 0.55rem;
-  background: var(--ui-surface-elevated);
+  background:
+    var(--project-card-overlay), var(--project-card-bg-image), var(--project-card-surface);
+  background-position: center;
+  background-size: cover;
   box-shadow: var(--ui-elevation-1);
   transition:
     border-color 140ms ease,
     box-shadow 140ms ease,
     transform 140ms ease;
+}
+
+.projectCard[data-project-card-background='image'] {
+  --project-card-overlay: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--ui-surface-strong), transparent 5%),
+    color-mix(in srgb, var(--ui-surface-elevated), transparent 16%)
+  );
 }
 
 .projectCard:has(.cardLink:hover),
@@ -279,8 +298,9 @@ button.filterChip {
 
 .projectCard[data-project-card-tone='paused'],
 .projectCard[data-project-card-tone='archived'] {
+  --project-card-surface: color-mix(in srgb, var(--ui-surface-muted), var(--ui-surface-strong) 28%);
+
   border-color: color-mix(in srgb, var(--ui-border), transparent 28%);
-  background: color-mix(in srgb, var(--ui-surface-muted), var(--ui-surface-strong) 28%);
   box-shadow: none;
 }
 

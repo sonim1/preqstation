@@ -45,6 +45,7 @@ function card(projectKey: string, name: string): ProjectPortfolioCardSummary {
     repoLabel: `sonim1/${projectKey}`,
     repoUrl: null,
     vercelUrl: null,
+    bgImage: null,
     detailsHref: `/project/${projectKey}`,
     editHref: `/projects?panel=project-edit&projectKey=${projectKey}`,
     lastActivityLabel: 'Last activity 1h ago',
