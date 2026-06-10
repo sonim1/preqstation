@@ -21,6 +21,7 @@ export default async function MainLayout({ children }: { children: React.ReactNo
         name: projects.name,
         projectKey: projects.projectKey,
         status: projects.status,
+        bgImage: projects.bgImage,
       })
       .from(projects)
       .where(and(eq(projects.ownerId, owner.id), isNull(projects.deletedAt)))

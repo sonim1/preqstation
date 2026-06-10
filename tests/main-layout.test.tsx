@@ -45,8 +45,18 @@ vi.mock('@/app/components/offline-board-route-warmer', () => ({
 }));
 
 vi.mock('@/app/components/workspace-shell', () => ({
-  WorkspaceShell: ({ children, email }: { children: React.ReactNode; email: string }) => (
-    <div data-workspace-shell={email}>{children}</div>
+  WorkspaceShell: ({
+    children,
+    email,
+    projectOptions,
+  }: {
+    children: React.ReactNode;
+    email: string;
+    projectOptions: Array<{ bgImage?: string | null }>;
+  }) => (
+    <div data-workspace-shell={email} data-project-bg-image={projectOptions[0]?.bgImage ?? ''}>
+      {children}
+    </div>
   ),
 }));
 
@@ -65,6 +75,7 @@ vi.mock('@/lib/db/schema', async () => {
       name: 'name',
       projectKey: 'projectKey',
       status: 'status',
+      bgImage: 'bgImage',
       ownerId: 'ownerId',
       deletedAt: 'deletedAt',
     },
@@ -89,7 +100,13 @@ describe('app/(workspace)/(main)/layout', () => {
     vi.clearAllMocks();
     mocked.getOwnerUserOrNull.mockResolvedValue({ id: 'owner-1', email: 'owner@example.com' });
     mocked.orderBy.mockResolvedValue([
-      { id: 'project-1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
+      {
+        id: 'project-1',
+        name: 'Alpha',
+        projectKey: 'ALPHA',
+        status: 'active',
+        bgImage: 'forest',
+      },
     ]);
     mocked.getUserSetting.mockResolvedValue('60000');
   });
@@ -99,12 +116,14 @@ describe('app/(workspace)/(main)/layout', () => {
     const html = renderToStaticMarkup(page);
 
     expect(html).toContain('data-workspace-shell="owner@example.com"');
+    expect(html).toContain('data-project-bg-image="forest"');
     expect(html).toContain('data-offline-workspace-route-warmer="true"');
     expect(mocked.offlineWorkspaceRouteWarmer).toHaveBeenCalledTimes(1);
     expect(mocked.getUserSetting).not.toHaveBeenCalled();
     expect(mocked.select).toHaveBeenCalledWith(
       expect.objectContaining({
         status: 'status',
+        bgImage: 'bgImage',
       }),
     );
   });
