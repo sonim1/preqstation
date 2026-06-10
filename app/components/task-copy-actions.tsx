@@ -17,7 +17,14 @@ import {
 import { AgentModelSelect } from '@/app/components/agent-model-select';
 import { DispatchPromptPreview } from '@/app/components/dispatch-prompt-preview';
 import { DispatchSegmentedControl } from '@/app/components/dispatch-segmented-control';
-import { type AgentModelCatalog, normalizeAgentModel } from '@/lib/agent-model-catalog';
+import {
+  type AgentModelCatalog,
+  type AgentModelOption,
+  DEFAULT_AGENT_MODEL_CATALOG,
+  DEFAULT_AGENT_MODEL_SELECT_VALUE,
+  getAgentModelSelectOptions,
+  normalizeAgentModel,
+} from '@/lib/agent-model-catalog';
 import {
   readTaskDispatchPreference,
   type TaskDispatchPreferenceAction,
@@ -57,6 +64,7 @@ const dispatchModeOptions = [
   { key: 'review', label: 'Review' },
   { key: 'qa', label: 'QA' },
 ] satisfies Array<{ key: TaskDispatchMode; label: string }>;
+const DEFAULT_MODEL_LABEL_PATTERN = /^Default \((.+)\)$/;
 const visuallyHiddenStyles = {
   position: 'absolute',
   width: '1px',
@@ -270,6 +278,46 @@ function renderTargetIcon(action: TaskEditDispatchAction) {
       aria-hidden="true"
     />
   );
+}
+
+function getBottomModelPickerOption(option: AgentModelOption): BottomDispatchPickerOption<string> {
+  if (option.value === DEFAULT_AGENT_MODEL_SELECT_VALUE) {
+    const defaultModel = DEFAULT_MODEL_LABEL_PATTERN.exec(option.label)?.[1];
+    return {
+      value: option.value,
+      label: 'Default',
+      detail: defaultModel,
+    };
+  }
+
+  return {
+    value: option.value,
+    label: option.label,
+    detail: option.label === option.value ? undefined : option.value,
+  };
+}
+
+function getBottomModelPickerOptions(
+  catalog: AgentModelCatalog | null | undefined,
+  engineKey: string | null | undefined,
+  value: string | null,
+) {
+  const normalizedValue = normalizeAgentModel(value);
+  const options = getAgentModelSelectOptions(catalog ?? DEFAULT_AGENT_MODEL_CATALOG, engineKey);
+  const optionsWithFallback =
+    normalizedValue && !options.some((option) => option.value === normalizedValue)
+      ? [...options, { label: normalizedValue, value: normalizedValue }]
+      : options;
+
+  return optionsWithFallback.map(getBottomModelPickerOption);
+}
+
+function getBottomModelSelectedLabel(
+  options: Array<BottomDispatchPickerOption<string>>,
+  value: string,
+) {
+  const selectedOption = options.find((option) => option.value === value);
+  return selectedOption?.label ?? (value === DEFAULT_AGENT_MODEL_SELECT_VALUE ? 'Default' : value);
 }
 
 function BottomDispatchPicker<T extends string>({
@@ -684,6 +732,14 @@ export function TaskCopyActions({
 
   if (placement === 'bottom') {
     const selectedEngineLabel = selectedEngine ? getEngineShortLabel(selectedEngine) : 'Engine';
+    const selectedModelValue =
+      normalizeAgentModel(selectedModel) ?? DEFAULT_AGENT_MODEL_SELECT_VALUE;
+    const modelOptions = getBottomModelPickerOptions(
+      agentModelCatalog,
+      selectedEngine?.key,
+      selectedModel,
+    );
+    const selectedModelLabel = getBottomModelSelectedLabel(modelOptions, selectedModelValue);
     const selectedActionLabel = getTaskEditDispatchTargetName(effectiveAction);
     const selectedModeLabel =
       visibleModeOptions.find((mode) => mode.key === effectiveObjective)?.label ??
@@ -733,12 +789,13 @@ export function TaskCopyActions({
           </div>
 
           <div className="task-dispatch-bottom-model-field">
-            <AgentModelSelect
-              engineKey={selectedEngine?.key}
-              catalog={agentModelCatalog}
-              value={selectedModel}
+            <BottomDispatchPicker
+              label="Model"
+              value={selectedModelValue}
+              selectedLabel={selectedModelLabel}
+              options={modelOptions}
               disabled={isSending}
-              onChange={selectModel}
+              onSelect={(value) => selectModel(normalizeAgentModel(value))}
             />
           </div>
 
