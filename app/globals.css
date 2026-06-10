@@ -831,14 +831,6 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   font-size: var(--ui-font-size-small);
 }
 
-.workspace-nav-section-label {
-  padding: 8px 12px 2px;
-  color: var(--ui-muted-text);
-  font-size: var(--ui-font-size-micro);
-  font-weight: 700;
-  line-height: 1;
-}
-
 .workspace-nav-link {
   border-radius: 10px;
   padding: 8px 12px;
@@ -1098,10 +1090,6 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .workspace-shell--sidebar-collapsed .workspace-navbar .mantine-AppShell-section {
   padding-inline: 8px;
-}
-
-.workspace-shell--sidebar-collapsed .workspace-nav-section-label {
-  display: none;
 }
 
 .workspace-shell--sidebar-collapsed .workspace-nav-link:not(.workspace-board-subnav-link) {
