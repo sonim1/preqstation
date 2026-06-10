@@ -223,7 +223,7 @@ describe('app/components/panels/deploy-settings-panel', () => {
     expect(screen.queryByText('Saved.')).toBeNull();
   });
 
-  it('describes auto PR requirements in terms of gh auth or GitHub MCP', () => {
+  it('describes auto PR requirements in terms of gh auth or authenticated GitHub integrations', () => {
     const html = renderToStaticMarkup(
       <MantineProvider>
         <DeploySettingsPanel
@@ -249,7 +249,7 @@ describe('app/components/panels/deploy-settings-panel', () => {
 
     expect(html).toContain('Requires GitHub access on the coding agent');
     expect(html).toContain('gh auth');
-    expect(html).toContain('GitHub MCP');
+    expect(html).toContain('authenticated GitHub integration');
   });
 
   it('explains the selected strategy before raw deploy controls', () => {

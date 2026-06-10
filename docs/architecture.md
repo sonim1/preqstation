@@ -4,17 +4,17 @@
 
 PREQSTATION is a task management platform designed for AI-agent-driven development workflows. It consists of three interconnected systems:
 
-| System                     | Role                                                                                                                             | Repository               |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| **preqstation**            | Central web service — task CRUD, Kanban UI, REST API, Telegram notifications                                                     | `preqstation`            |
-| **preqstation-dispatcher** | OpenClaw-native dispatcher layer — receives Telegram/OpenClaw dispatch requests and launches coding agents in isolated worktrees | `preqstation-dispatcher` |
-| **preqstation-skill**      | Agent client — MCP server and shell helpers that coding agents use to call Preq Station APIs (`preqstation`)                     | `preqstation-skill`      |
+| System                  | Role                                                                                                                              | Repository          |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| **preqstation**         | Central web service — task CRUD, Kanban UI, REST API, `/mcp`, Telegram notifications                                              | `preqstation`       |
+| **@sonim1/preqstation** | PREQ CLI dispatcher runtime — configures hosts, maps local projects, writes instructions, and launches coding agents in worktrees | `preqstation-cli`   |
+| **preqstation-skill**   | Legacy/manual direct-client support — optional MCP skill docs and shell helpers for older agent flows                             | `preqstation-skill` |
 
 Important naming note:
 
-- the durable public repo/system name is `preqstation-dispatcher`
-- some current package/plugin/config identifiers may still use `preqstation-openclaw` for compatibility
-- architecture docs should prefer `preqstation-dispatcher` except when a specific technical identifier is required
+- the durable public package/runtime is `@sonim1/preqstation`
+- some package/plugin/config identifiers still use `preqstation-dispatcher` or `preqstation-openclaw` for compatibility
+- architecture docs should prefer PREQ CLI or `@sonim1/preqstation` except when a specific technical identifier is required
 
 ## System Diagram
 
@@ -32,7 +32,7 @@ Important naming note:
 │                         │                    │               │
 └─────────────────────────┼────────────────────┼───────────────┘
                           │                    │
-                  API calls (Bearer token)     │ Sends notifications
+                  API/CLI calls                │ Sends notifications
                           │                    │
                           │                    ▼
                           │           ┌─────────────────┐
@@ -48,9 +48,9 @@ Important naming note:
                           │           │  /preqstation dispatch command   │
                           │           └────────────────┬────────────────┘
                           │                            │
-                          │                   Parses intent, creates
+                          │                   Runs PREQ CLI, creates
                           │                   git worktree, launches
-                          │                   coding agent (PTY+bg)
+                          │                   detached coding agent
                           │                            │
                           │                            ▼
                           │           ┌─────────────────────────────────┐
@@ -59,7 +59,7 @@ Important naming note:
                           │           │                                 │
                           │           │  Runs in isolated worktree      │
                           │           │  Implements code changes        │
-                          ◄───────────│  Uses preqstation-skill MCP     │
+                          ◄───────────│  Uses PREQ CLI instructions     │
                                       │  to report status & results     │
                                       └─────────────────────────────────┘
 ```
@@ -86,7 +86,7 @@ preqstation  →  dispatch target selected
                         →  Hermes chat receives task, QA, and project insight sends that target
                            `hermes-telegram`
                            →  receiving bot/runtime parses: engine, optional model, task ID, project key
-                              →  Resolves project path from explicit path, plugin config, shared mapping file, or MEMORY.md
+                              →  Resolves project path from CLI config, shared mapping file, or legacy fallback
                               →  Creates git worktree (isolated env)
                               →  Launches coding agent (claude/codex/gemini CLI)
 ```
@@ -94,21 +94,21 @@ preqstation  →  dispatch target selected
 ### 3. Agent Execution and Status Reporting
 
 ```
-Coding agent checks task status via preq_get_task, then:
+Coding agent checks task status via `preqstation task get`, then:
 
-  inbox       → preq_plan_task (write plan, → todo). Stop.
-  todo        → preq_start_task (runState → running)
+  inbox       → preqstation task plan (write plan, → todo). Stop.
+  todo        → preqstation task start (runState → running)
               → Implement + test + deploy per strategy
-              → preq_complete_task (→ ready, runState cleared)
-              → Stop. Do not call preq_review_task in the same run.
+              → preqstation task complete (→ ready, runState cleared)
+              → Stop. Do not run review in the same dispatch run.
   ready       → Run verification (tests, build, lint)
-              → preq_review_task (→ done)
+              → preqstation task review (→ done)
               → Stop.
 
-  If `feature_branch + auto_pr + commit_on_review` is enabled, `preq_complete_task`
+  If `feature_branch + auto_pr + commit_on_review` is enabled, the completion call
   cannot move the task to `ready` until the pushed branch name and PR URL are supplied.
   Telegram dispatch before agent pickup can mark the task as runState=queued.
-  On any failure → preq_block_task (→ hold)
+  On any failure → preqstation task block (→ hold)
 ```
 
 ---
@@ -183,7 +183,7 @@ Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `a
 
 #### Artifacts
 
-Tasks and QA runs persist structured artifacts in a JSON `artifacts` field. Full task responses include `artifacts`; compact task lists omit it. `POST /api/tasks`, `PATCH /api/tasks/:id`, and `PATCH /api/qa-runs/:id` accept up to 50 artifacts, and MCP tools forward artifacts through `preq_update_task_note`, `preq_complete_task`, and `preq_update_qa_run`.
+Tasks and QA runs persist structured artifacts in a JSON `artifacts` field. Full task responses include `artifacts`; compact task lists omit it. `POST /api/tasks`, `PATCH /api/tasks/:id`, and `PATCH /api/qa-runs/:id` accept up to 50 artifacts. The PREQ CLI and direct-client MCP tools both forward artifact metadata into these endpoints.
 
 Accepted artifact objects are normalized to:
 
@@ -335,13 +335,13 @@ Each project can configure a deployment strategy:
 Behavior:
 
 - **`direct_commit`** — Commit and push to `default_branch`. No PR. When `squash_merge=true`, squash all worktree commits into a single commit when merging to the default branch.
-- **`feature_branch`** — Commit and push to task branch. Create PR only when `auto_pr=true` (requires GitHub access on the coding agent via `gh auth` or GitHub MCP).
+- **`feature_branch`** — Commit and push to task branch. Create PR only when `auto_pr=true` (requires GitHub access on the coding agent via `gh auth` or another authenticated GitHub integration).
 
 Missing, invalid, and legacy `deploy_strategy=none` values are normalized to `direct_commit` at runtime, and existing stored `none` rows are backfilled by migration `0020_remove_none_deploy_strategy`.
 
 When `commit_on_review=true`, agents must finish the deploy handoff before transitioning to `ready`. For `feature_branch + auto_pr + commit_on_review`, `preq_complete_task` rejects the transition until both the pushed `branchName` and `prUrl` are provided. The setting name is retained for backward compatibility even though the workflow label is now `ready`.
 
-Projects can also store an `agent_instructions` setting. When present, task payloads returned by `preq_get_task` include that value as `agent_instructions` so coding agents can follow project-scoped response-language guidance.
+Projects can also store an `agent_instructions` setting. When present, task payloads returned by the CLI/API include that value as `agent_instructions` so coding agents can follow project-scoped response-language guidance.
 
 ### Telegram Integration
 
@@ -400,16 +400,16 @@ Work logs automatically created when agents submit `result` payloads, storing ex
 
 ---
 
-## preqstation-dispatcher
+## PREQ CLI Dispatcher
 
 ### Purpose
 
-Bridges Telegram/OpenClaw dispatch requests to coding agent execution. When a user sends a task request through Telegram and it reaches OpenClaw, the dispatcher parses the intent, resolves the target project path, and launches the appropriate coding agent in an isolated git worktree.
+Bridges Telegram/OpenClaw/Hermes dispatch requests to coding agent execution. When a dispatch host receives a task request, the PREQ CLI parses the intent, resolves the target project path, writes `.preqstation-instructions.txt`, and launches the appropriate coding agent in an isolated git worktree.
 
 Important naming note:
 
-- the durable public repo name is `preqstation-dispatcher`
-- some package, plugin, or config identifiers may still use `preqstation-openclaw` for compatibility
+- the durable public package is `@sonim1/preqstation`
+- some package, plugin, or config identifiers may still use `preqstation-dispatcher` or `preqstation-openclaw` for compatibility
 - treat those legacy identifiers as technical implementation details, not the preferred public system name
 
 ### Execution Flow
@@ -423,23 +423,22 @@ Important naming note:
    → objective
 
 2. Resolve project path
-   → explicit absolute path in the message, if present
-   → saved plugin mapping
-   → shared `~/.preqstation-dispatch/projects.json`
-   → fallback `MEMORY.md`
+   → saved CLI/project mapping
+   → shared `~/.preqstation/projects.json`
+   → legacy `~/.preqstation-dispatch/projects.json` or `MEMORY.md` fallback
 
 3. Create isolated worktree
    → git -C <project_cwd> worktree add -b <branch> <worktree_path> HEAD
-   → Worktree root: `${OPENCLAW_WORKTREE_ROOT:-/tmp/openclaw-worktrees}`
+   → Worktree root: `${PREQSTATION_WORKTREE_ROOT:-~/.preqstation/worktrees}`
 
-4. Render prompt bootstrap
-   → write `.preqstation-prompt.txt`
-   → include task context, branch, objective, and execution constraints
+4. Render instruction bootstrap
+   → write `.preqstation-instructions.txt`
+   → include task context, branch, objective, CLI path, and execution constraints
 
 5. Launch coding agent as a detached process
-   → Claude:  claude --dangerously-skip-permissions '<prompt>'
-   → Codex:   codex exec --dangerously-bypass-approvals-and-sandbox '<prompt>'
-   → Gemini:  GEMINI_SANDBOX=false gemini -p '<prompt>'
+   → Claude Code
+   → Codex CLI
+   → Gemini CLI
 
 6. Monitor via detached runtime artifacts
    → `.preqstation-dispatch/<engine>.pid`
@@ -450,10 +449,10 @@ Important naming note:
 
 - **Worktree-first execution** — Agents never run in the primary checkout. Every task gets its own worktree for isolation.
 - **Detached launch model** — The dispatcher no longer treats PTY/background session monitoring as the primary public contract.
-- **Layered project-path resolution** — Project paths resolve from explicit paths, plugin config, the shared mapping file, or fallback `MEMORY.md`.
+- **Layered project-path resolution** — Project paths resolve from CLI config, the shared mapping file, or legacy fallback mappings.
 - **Branch naming** — Must include project key. Format: `preqstation/<project_key>/<branch_slug>`.
 - **Worktree cleanup** — The coding agent cleans up its own worktree (`git worktree remove` + `prune`) as the final step before exiting, regardless of success or failure.
-- **PREQSTATION workflow in prompt** — The rendered prompt includes explicit instructions for the agent to use `preq_*` MCP tools (fetch task, check deploy strategy, update status, submit results). Each run follows exactly one lifecycle branch; execution starts from `todo`, uses `runState` to show `queued` / `running`, stops after `preq_complete_task` moves the task to `ready`, and only `ready` tasks should proceed to `preq_review_task`. For `feature_branch + auto_pr + commit_on_review`, the completion call must include the pushed `branchName` and `prUrl` first.
+- **PREQSTATION workflow in instructions** — The rendered instructions tell the worker to use the absolute `preqstation` CLI path for lifecycle reads and mutations. Each run follows exactly one lifecycle branch; execution starts from `todo`, uses `runState` to show `queued` / `running`, stops after completion moves the task to `ready`, and only `ready` tasks should proceed to review. For `feature_branch + auto_pr + commit_on_review`, the completion call must include the pushed `branchName` and `prUrl` first.
 
 ### Progress Modes
 
@@ -468,23 +467,16 @@ Important naming note:
 
 ### Purpose
 
-MCP server and shell helpers that coding agents (Claude, Codex, Gemini) use to interact with the Preq Station REST API during task execution.
+Legacy/manual MCP skill docs and shell helpers that coding agents can use for direct-client compatibility. Current detached dispatch workers use the PREQ CLI instruction contract instead.
 
 ### Installation
 
 ```bash
-# Claude Code
-claude mcp add -s user \
-  --env='PREQSTATION_API_URL=https://<domain>' \
-  --env='PREQSTATION_TOKEN=preq_xxxxx' \
-  preqstation -- \
-  node <path>/scripts/preqstation-mcp-server.mjs
+# Claude Code direct-client compatibility
+claude mcp add -s user --transport http preqstation https://<domain>/mcp
 
-# Codex
-codex mcp add preqstation \
-  --env='PREQSTATION_API_URL=https://<domain>' \
-  --env='PREQSTATION_TOKEN=preq_xxxxx' \
-  -- node <path>/scripts/preqstation-mcp-server.mjs
+# Codex direct-client compatibility
+codex mcp add preqstation --url https://<domain>/mcp
 ```
 
 ### MCP Tools
@@ -545,13 +537,14 @@ For existing deployments, update the existing owner row in place so related data
 | `PREQSTATION_TOKEN`   | No       | Shell-helper or legacy stdio bearer token  |
 | `PREQSTATION_ENGINE`  | No       | Default engine when auto-detection fails   |
 
-Recommended MCP installs now target `https://<preqstation-domain>/mcp` directly and authenticate with OAuth instead of local REST tokens.
+Direct-client MCP installs target `https://<preqstation-domain>/mcp` directly and authenticate with OAuth instead of local REST tokens.
 
-### preqstation-dispatcher
+### PREQ CLI dispatcher
 
-| Variable                 | Required | Purpose                                                 |
-| ------------------------ | -------- | ------------------------------------------------------- |
-| `OPENCLAW_WORKTREE_ROOT` | No       | Worktree directory (default: `/tmp/openclaw-worktrees`) |
+| Variable                    | Required | Purpose                                                  |
+| --------------------------- | -------- | -------------------------------------------------------- |
+| `PREQSTATION_DISPATCH_HOME` | No       | Local CLI state directory (default: `~/.preqstation`)    |
+| `PREQSTATION_WORKTREE_ROOT` | No       | Worktree directory (default: `~/.preqstation/worktrees`) |
 
 ---
 
@@ -579,7 +572,7 @@ Recommended MCP installs now target `https://<preqstation-domain>/mcp` directly 
 
 ### Agent Isolation
 
-- preqstation-dispatcher enforces worktree-first execution
+- PREQ CLI dispatcher enforces worktree-first execution
 - Agents never run in primary checkout directories
 - Agents never run in `~/clawd/` or `~/.openclaw/`
 - `dangerously-*` flags allowed only after safety gate validation in resolved worktrees

@@ -62,26 +62,26 @@ export default async function OnboardingPage() {
         detail: string;
       } = {
         status: 'missing' as const,
-        label: 'Worker not connected',
-        detail: 'Connect a worker through MCP or create an API token before expecting execution.',
+        label: 'Dispatch host not verified',
+        detail: 'Install the PREQSTATION CLI on the dispatcher host before expecting execution.',
       };
-      if (activeConnection) {
+      if (recentWorkerLog) {
         readiness = {
           status: 'ready',
-          label: 'Worker connected',
-          detail: `${activeConnection.displayName} is connected for worker execution.`,
+          label: 'Dispatch activity found',
+          detail: `Recent ${recentWorkerLog.engine} work log confirms a dispatch worker has executed work.`,
         };
-      } else if (recentWorkerLog) {
+      } else if (activeConnection) {
         readiness = {
-          status: 'ready',
-          label: 'Worker activity found',
-          detail: `Recent ${recentWorkerLog.engine} work log confirms a worker has executed work.`,
+          status: 'unknown',
+          label: 'Direct MCP client found',
+          detail: `${activeConnection.displayName} is connected for direct-client compatibility, but CLI dispatch has not produced a recent work log yet.`,
         };
       } else if (latestTask?.engine || latestTask?.runState) {
         readiness = {
           status: 'unknown',
-          label: 'Worker state unknown',
-          detail: `${latestTask.taskKey} has worker metadata, but no active connection or recent worker log was found.`,
+          label: 'Dispatch state unknown',
+          detail: `${latestTask.taskKey} has dispatch metadata, but no recent work log was found.`,
         };
       }
 

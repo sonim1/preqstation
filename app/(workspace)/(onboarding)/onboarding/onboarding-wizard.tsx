@@ -117,23 +117,23 @@ export function OnboardingWizard({
         <Stepper.Step label="Model" />
         <Stepper.Step label="Project" />
         <Stepper.Step label={terminology.task.singular} />
-        <Stepper.Step label="Worker" />
+        <Stepper.Step label="Dispatch Host" />
       </Stepper>
 
       {taskDone ? dashboardActions : null}
 
       <Paper withBorder radius="lg" p="lg" className="onboarding-card">
         <Stack gap="md">
-          <Title order={3}>Start with a worker-first system.</Title>
+          <Title order={3}>Start with CLI-first dispatch.</Title>
           <Text c="dimmed" size="sm">
-            Preqstation is the control plane: it stores projects, tasks, state, and work logs. A
-            worker is the execution path that gets tasks done. The dispatcher is optional advanced
-            automation after the worker path is clear.
+            Preqstation is the control plane: it stores projects, tasks, state, and work logs. The
+            PREQ CLI runs on the dispatcher host and launches Claude Code, Codex, or Gemini in
+            isolated worktrees.
           </Text>
           <List size="sm" spacing="xs">
             <List.Item>Control plane: source of truth for project and task state.</List.Item>
-            <List.Item>Worker: execution path for completing assigned tasks.</List.Item>
-            <List.Item>Dispatcher: optional queue automation for later scale.</List.Item>
+            <List.Item>PREQ CLI: maps local repos and launches detached workers.</List.Item>
+            <List.Item>Direct MCP: optional compatibility for manual client access.</List.Item>
           </List>
         </Stack>
       </Paper>
@@ -151,7 +151,7 @@ export function OnboardingWizard({
               </Badge>
             </Group>
             <Text c="dimmed" size="sm">
-              {createdProject?.name} is ready to hold the first worker task.
+              {createdProject?.name} is ready to hold the first task.
             </Text>
           </Stack>
         ) : (
@@ -193,7 +193,7 @@ export function OnboardingWizard({
               <Title order={3}>{`${terminology.task.singular} setup locked`}</Title>
             </Group>
             <Text c="dimmed" size="sm">
-              Create a project first so the first worker task has a confirmed home.
+              Create a project first so the first task has a confirmed home.
             </Text>
           </Stack>
         ) : taskDone ? (
@@ -208,7 +208,7 @@ export function OnboardingWizard({
               </Badge>
             </Group>
             <Text c="dimmed" size="sm">
-              {createdTask?.title} is the first concrete unit a worker can execute.
+              {createdTask?.title} is the first concrete unit a dispatch host can execute.
             </Text>
           </Stack>
         ) : (
@@ -247,7 +247,7 @@ export function OnboardingWizard({
                 <IconCircleDashed size={16} />
               )}
             </ThemeIcon>
-            <Title order={3}>Worker readiness</Title>
+            <Title order={3}>Dispatch host readiness</Title>
             <Badge variant="light" className={toneClassName('onboarding-badge', workerTone)}>
               {workerReadiness.label}
             </Badge>
@@ -261,17 +261,17 @@ export function OnboardingWizard({
             <Paper withBorder radius="md" p="md" className="onboarding-nested-panel">
               <Stack gap="xs">
                 <Text fw={600} size="sm">
-                  Connect a worker
+                  Install PREQ CLI
                 </Text>
                 <Text c="dimmed" size="xs">
-                  Install the Preqstation skill in your worker runtime, then connect through MCP or
-                  create an API token from Connections.
+                  Run the PREQSTATION CLI installer on the Hermes, OpenClaw, or operator host that
+                  will launch detached workers.
                 </Text>
                 <Group gap="xs" className="onboarding-action-row">
                   <Code block className="onboarding-code" style={{ flex: 1 }}>
-                    npx skills add sonim1/preqstation-skill -g -a claude-code
+                    npx -y @sonim1/preqstation@latest install
                   </Code>
-                  <CopyButton value="npx skills add sonim1/preqstation-skill -g -a claude-code">
+                  <CopyButton value="npx -y @sonim1/preqstation@latest install">
                     {({ copied, copy }) => (
                       <Button
                         variant="subtle"
@@ -293,11 +293,11 @@ export function OnboardingWizard({
 
           <Stack gap="xs">
             <Text fw={600} size="sm">
-              Dispatcher is optional
+              Direct MCP is optional
             </Text>
             <Text c="dimmed" size="xs">
-              Use dispatcher automation after project, task, and worker state are understandable. It
-              is not required for first success.
+              Use direct MCP or legacy API tokens only for manual compatibility. The CLI is the
+              normal path for detached dispatch.
             </Text>
           </Stack>
 

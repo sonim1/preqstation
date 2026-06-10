@@ -115,7 +115,7 @@ describe('OnboardingWizard', () => {
     vi.clearAllMocks();
   });
 
-  it('explains the control plane, worker path, and optional dispatcher', () => {
+  it('explains the control plane, PREQ CLI dispatch host, and direct MCP compatibility', () => {
     const html = renderToStaticMarkup(
       <OnboardingWizard
         createProjectAction={createProjectAction}
@@ -124,17 +124,20 @@ describe('OnboardingWizard', () => {
         initialTask={null}
         workerReadiness={{
           status: 'missing',
-          label: 'Worker not connected',
-          detail: 'Connect a worker through MCP or an API token.',
+          label: 'Dispatch host not verified',
+          detail: 'Install the PREQ CLI on the dispatcher host before expecting execution.',
         }}
       />,
     );
 
     expect(html).toContain('control plane');
-    expect(html).toContain('worker is the execution path');
-    expect(html).toContain('dispatcher is optional');
-    expect(html).toContain('Worker not connected');
-    expect(html).toContain('Connect a worker through MCP or an API token.');
+    expect(html).toContain('PREQ CLI runs on the dispatcher host');
+    expect(html).toContain('Direct MCP: optional compatibility');
+    expect(html).toContain('Dispatch host not verified');
+    expect(html).toContain(
+      'Install the PREQ CLI on the dispatcher host before expecting execution.',
+    );
+    expect(html).toContain('npx -y @sonim1/preqstation@latest install');
     expect(html).toContain('Create Project');
     expect(html).toContain('Task setup locked');
     expect(html).not.toContain('Create your first task');
@@ -150,8 +153,8 @@ describe('OnboardingWizard', () => {
         initialTask={null}
         workerReadiness={{
           status: 'missing',
-          label: 'Worker not connected',
-          detail: 'Connect a worker through MCP or an API token.',
+          label: 'Dispatch host not verified',
+          detail: 'Install the PREQ CLI on the dispatcher host before expecting execution.',
         }}
       />,
     );
@@ -172,8 +175,8 @@ describe('OnboardingWizard', () => {
         initialTask={{ id: 'task-1', taskKey: 'OPS-1', title: 'Ship worker setup', status: 'todo' }}
         workerReadiness={{
           status: 'ready',
-          label: 'Worker connected',
-          detail: 'Codex MCP is connected for worker execution.',
+          label: 'Dispatch activity found',
+          detail: 'Recent codex work log confirms a dispatch worker has executed work.',
         }}
       />,
     );
@@ -182,7 +185,7 @@ describe('OnboardingWizard', () => {
     expect(html).toContain('Launch Ops');
     expect(html).toContain('Task confirmed');
     expect(html).toContain('OPS-1');
-    expect(html).toContain('Worker connected');
+    expect(html).toContain('Dispatch activity found');
     expect(html).toContain('Go to Dashboard');
     expect(html).toContain('href="/dashboard"');
     expect(html).toContain('data-active="3"');

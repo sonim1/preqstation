@@ -274,7 +274,7 @@ describe('connections and security control token contract', () => {
       apiKeyFormStyles.securityAlert,
     );
     const neutralAlert = getClosestClassByText(
-      'Skill Environment Variables',
+      'Legacy Shell Helper Variables',
       apiKeyFormStyles.securityAlert,
     );
     const tokenDisplay = screen.getByText('preq_example');

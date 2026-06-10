@@ -1,9 +1,10 @@
 # API
 
-PreqStation exposes two agent integration surfaces.
+PreqStation exposes three agent integration surfaces.
 
+- **PREQ CLI** through `@sonim1/preqstation` for current detached dispatch hosts
 - **REST API** for shell helpers and direct automation
-- **MCP over HTTP** at `/mcp` for Claude Code / Codex with OAuth login
+- **MCP over HTTP** at `/mcp` for direct-client compatibility with OAuth login
 
 ### REST API
 
@@ -73,8 +74,8 @@ the task's saved engine or persist on the QA run record.
 - Compatibility endpoints for path-aware MCP/OIDC discovery: `/.well-known/oauth-authorization-server/mcp`, `/.well-known/openid-configuration/mcp`, and `/mcp/.well-known/openid-configuration`
 - Auth: OAuth authorization code flow with browser login
 - Owner visibility: `/connections` shows client name, engine, status, last-used time, and expiry
-- Claude Code install: `claude mcp add --transport http preqstation https://<your-domain>/mcp`
-- Codex install: `codex mcp add preqstation --url https://<your-domain>/mcp`
+- Claude Code direct-client install: `claude mcp add --transport http preqstation https://<your-domain>/mcp`
+- Codex direct-client install: `codex mcp add preqstation --url https://<your-domain>/mcp`
 - Exposed read tools include `preq_list_projects`, `preq_list_tasks`, `preq_list_project_activity`, `preq_get_task`, and `preq_get_project_settings`
 
 #### `preq_list_project_activity`
@@ -158,7 +159,7 @@ See [`architecture.md`](architecture.md) for the current API and workflow contra
 For first-time system onboarding, prefer:
 
 - [PreqStation Guide](https://preqstation.com/guide) for the umbrella guide and recommended reading order
-- [`preqstation-skill`](https://github.com/sonim1/preqstation-skill) for worker/runtime setup
-- [`preqstation-dispatcher`](https://github.com/sonim1/preqstation-dispatcher) for PREQ CLI setup and dispatcher automation
+- [`@sonim1/preqstation`](https://www.npmjs.com/package/@sonim1/preqstation) for PREQ CLI setup and dispatcher automation
+- [`preqstation-skill`](https://github.com/sonim1/preqstation-skill) for legacy/manual direct-client MCP support
 
 ---

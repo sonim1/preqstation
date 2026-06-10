@@ -186,7 +186,7 @@ describe('app/(workspace)/(main)/connections/page', () => {
     expect(html).toContain('Connections');
     expect(html).toContain('No connections yet');
     expect(html).toContain(
-      'Finish OAuth in an agent and it will appear here with its status, last use, and expiry.',
+      'Finish OAuth in a direct MCP client and it will appear here with its status, last use, and expiry.',
     );
     expect(html).toContain('class="sectionEmptyState"');
     expect(html.match(/data-icon-class-name="emptyStateIcon"/g) ?? []).toHaveLength(2);

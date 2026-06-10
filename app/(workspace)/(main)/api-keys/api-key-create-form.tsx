@@ -69,9 +69,9 @@ export function ApiKeyCreateForm() {
 
       <Alert
         className={`${styles.securityAlert} ${styles.securityAlertNeutral}`}
-        title="Skill Environment Variables"
+        title="Legacy Shell Helper Variables"
       >
-        <Text size="sm">Use this with your skill config:</Text>
+        <Text size="sm">Use these only for legacy REST or shell-helper automation:</Text>
         <Code className={styles.environmentDisplay} block>
           {`PREQSTATION_API_URL=https://your-domain.vercel.app\nPREQSTATION_TOKEN=preq_xxxxx`}
         </Code>

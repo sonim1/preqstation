@@ -129,7 +129,7 @@ describe('app/(workspace)/(onboarding)/onboarding/page', () => {
     );
   });
 
-  it('lets owners confirm existing project and task state and marks worker ready from MCP', async () => {
+  it('lets owners confirm existing project and task state and treats direct MCP as compatibility signal', async () => {
     mocked.selectWhere.mockResolvedValue([{ count: 1 }]);
     mocked.findProject.mockResolvedValue({
       id: 'project-1',
@@ -165,9 +165,10 @@ describe('app/(workspace)/(onboarding)/onboarding/page', () => {
             status: 'todo',
           },
           workerReadiness: expect.objectContaining({
-            status: 'ready',
-            label: 'Worker connected',
-            detail: 'Codex MCP is connected for worker execution.',
+            status: 'unknown',
+            label: 'Direct MCP client found',
+            detail:
+              'Codex MCP is connected for direct-client compatibility, but CLI dispatch has not produced a recent work log yet.',
           }),
         }),
       }),

@@ -388,8 +388,8 @@ export default async function ConnectionsPage({ searchParams }: ConnectionsPageP
           {params?.legacy === '1' ? (
             <Text className={`${styles.legacyNote} ${styles.mutedText}`} size="sm">
               Legacy API-key integrations are being retired. Existing bearer tokens still remain a
-              compatibility path for now, but new agent installs should use OAuth-backed MCP
-              connections instead.
+              compatibility path for now, but new dispatcher hosts should use the PREQ CLI with
+              OAuth-backed auth instead.
             </Text>
           ) : null}
 
@@ -457,7 +457,7 @@ export default async function ConnectionsPage({ searchParams }: ConnectionsPageP
                   icon={<IconPlugConnected size={24} />}
                   iconClassName={styles.emptyStateIcon}
                   title="No connections yet"
-                  description="Finish OAuth in an agent and it will appear here with its status, last use, and expiry."
+                  description="Finish OAuth in a direct MCP client and it will appear here with its status, last use, and expiry."
                 />
               ) : null}
               {visibleConnections.length > 0 ? (

@@ -375,7 +375,7 @@ export function DeploySettingsPanel({
                   label="Auto-create PR on push"
                 />
                 <Tooltip
-                  label="Requires GitHub access on the coding agent (`gh auth` or GitHub MCP)"
+                  label="Requires GitHub access on the coding agent (`gh auth` or an authenticated GitHub integration)"
                   withArrow
                   multiline
                   w={240}
@@ -383,8 +383,8 @@ export function DeploySettingsPanel({
                   <IconInfoCircle
                     size={16}
                     className={controlClasses.panelIcon}
-                    title="Requires GitHub access on the coding agent (`gh auth` or GitHub MCP)"
-                    aria-label="Requires GitHub access on the coding agent (`gh auth` or GitHub MCP)"
+                    title="Requires GitHub access on the coding agent (`gh auth` or an authenticated GitHub integration)"
+                    aria-label="Requires GitHub access on the coding agent (`gh auth` or an authenticated GitHub integration)"
                   />
                 </Tooltip>
               </Group>

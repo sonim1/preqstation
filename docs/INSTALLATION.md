@@ -27,14 +27,14 @@ The app runs at `http://localhost:3000` by default. Set `PORT=` in `.env.local` 
 ### First-Run Onboarding
 
 After the owner logs in for the first time, an empty workspace routes to `/onboarding`. The wizard
-uses a worker-first sequence:
+uses a CLI-first sequence:
 
 1. Create or confirm the first project.
 2. Create the first task inside that project.
-3. Connect a worker through MCP or an API token.
+3. Configure a PREQSTATION CLI dispatch host.
 
-Dispatcher automation is optional. Use the dispatcher after the project, task, and worker path is
-working; it is not required for the first successful setup.
+Direct MCP and legacy API-token automation are compatibility paths. Current detached dispatch should
+run through `@sonim1/preqstation` on the operator host.
 
 ---
 

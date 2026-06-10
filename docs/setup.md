@@ -221,7 +221,7 @@ Dispatch notes:
 - Burst abuse returns `429 Too many requests`
 - `/api/projects` and `/api/todos` are owner-only
 - An owner with no projects lands on `/onboarding`, creates a project first, then creates the first
-  task for that project before connecting a worker
+  task for that project before configuring a PREQSTATION CLI dispatch host
 - Dashboard integration URL save, log creation, and status updates work
 - Board columns show `Hold` and `Ready`
 - OpenClaw Telegram test, OpenClaw `/status`, and Hermes Telegram test succeed for the channels you enabled
@@ -231,8 +231,9 @@ Dispatch notes:
 - Task dispatch previews include model metadata only after a non-default model is selected
 - QA runs can queue only the selected ready tasks through `🦞 Telegram` and/or `H Telegram`, and
   project insight dispatch uses the enabled Telegram target chips shown in the modal
-- `claude mcp add --transport http .../mcp` or `codex mcp add ... --url .../mcp` completes browser login successfully
-- Dispatcher setup is optional and can wait until the project/task/worker path is already working
+- `preqstation auth login --server-url https://your-pm-domain.vercel.app` completes browser login successfully on the dispatcher host
+- `preqstation setup auto` maps local git checkouts into `~/.preqstation/projects.json`
+- Direct MCP setup remains available as a compatibility path and should not be required for normal dispatch
 
 ## 9) Offline Workspace Validation
 
@@ -275,17 +276,29 @@ Run this after any deploy that changes board shell code, `/sw.js`, or the offlin
 - Create a dedicated DB user for the app.
 - Grant only required schema/table privileges.
 
-## 11) PREQSTATION Agent Setup
+## 11) PREQSTATION CLI Dispatch Host Setup
 
-Recommended MCP setup:
+Recommended CLI setup:
+
+```bash
+npx -y @sonim1/preqstation@latest install
+preqstation auth login --server-url https://your-pm-domain.vercel.app
+preqstation setup auto
+preqstation status
+```
+
+The CLI opens a browser window for OAuth when needed and stores local state under
+`~/.preqstation`. After setup, dispatch hosts such as Hermes and OpenClaw launch work through the
+PREQ CLI rather than native PREQ MCP lifecycle tools.
+
+Optional direct-client MCP setup:
 
 ```bash
 claude mcp add --transport http preqstation https://your-pm-domain.vercel.app/mcp
 codex mcp add preqstation --url https://your-pm-domain.vercel.app/mcp
 ```
 
-The client should open a browser window and complete OAuth login automatically.
-After the flow completes, confirm the client appears on `/connections`.
+After the direct-client MCP flow completes, confirm the client appears on `/connections`.
 
 Optional shell helper setup:
 
@@ -301,7 +314,7 @@ The API now separates workflow status from execution state:
 - Workflow status: `inbox`, `todo`, `hold`, `ready`, `done`, `archived`
 - Execution state: `queued`, `running`, or `null`
 
-Install the skill package:
+Legacy/manual worker skill setup:
 
 ```bash
 npx skills add sonim1/preqstation-skill -g
