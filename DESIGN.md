@@ -29,7 +29,8 @@
 - **Headings:** Pretendard with `Inter`, `SF Pro Display`, and system sans-serif fallbacks.
 - **Wordmark:** `.brand-wordmark` is uppercase with slight positive tracking; `.font-brand` uses the display/system stack in `app/globals.css`.
 - **Data and code:** Use monospace for task keys, commands, logs, snippets, token values, timestamps, and compact chart labels.
-- **Scale:** Prefer Mantine's type scale for routine UI. Use explicit sizes only where dense surfaces need stable layout.
+- **Scale:** Use the Linear-inspired product type scale: 10, 12, 13, 14, 15, 17, 20, 24, and 36px equivalents. The default routine UI size is 15px (`--ui-font-size-regular`), with 13-14px for dense controls and metadata.
+- **Headings:** Keep authenticated-product headings restrained: 20px for panel titles, 24px for page-level section titles, and 36px only for primary dashboard/route hero titles.
 - **Rule:** Do not introduce a second display face inside the authenticated app.
 
 ## Color
@@ -55,6 +56,7 @@ Canonical tokens live in `app/globals.css`. Treat `--ui-*` variables as the app-
 - **Workspace chrome:** `--ui-workspace-control-surface`, `--ui-workspace-control-hover-surface`, `--ui-workspace-popover-surface`, `--ui-workspace-control-border`, `--ui-workspace-accent-surface`, `--ui-workspace-accent-border`, `--ui-workspace-control-shadow`, `--ui-workspace-popover-shadow`.
 - **Admin/security:** `--ui-admin-*` tokens for settings and forms; `--ui-security-*` tokens for API keys, connections, alerts, and destructive/security actions.
 - **Text:** `--ui-text`, `--ui-muted-text`, `--ui-on-accent`, `--ui-on-danger`.
+- **Type scale:** `--ui-font-size-tiny`, `--ui-font-size-micro`, `--ui-font-size-mini`, `--ui-font-size-small`, `--ui-font-size-regular`, `--ui-font-size-large`, `--ui-font-size-title-3`, `--ui-font-size-title-2`, `--ui-font-size-title-1`, and shared `--ui-line-height-*` aliases.
 - **Accent:** `--ui-accent`, `--ui-accent-strong`, `--ui-accent-soft`.
 - **State:** `--ui-success`, `--ui-danger`, `--ui-warning`, `--ui-neutral-strong` and soft variants.
 - **Workflow:** `--ui-workflow-status-inbox`, `--ui-workflow-status-todo`, `--ui-workflow-status-hold`, `--ui-workflow-status-ready`, `--ui-workflow-status-done`, `--ui-workflow-status-archived`.
