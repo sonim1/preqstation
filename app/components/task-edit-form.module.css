@@ -8,6 +8,14 @@
   padding-bottom: var(--mantine-spacing-xs);
 }
 
+.rootWithBottomDispatch {
+  padding-bottom: calc(var(--mantine-spacing-xs) + 5.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.bottomDispatch {
+  display: contents;
+}
+
 .mobileSavingOverlay {
   position: absolute;
   inset: 0;
@@ -76,40 +84,6 @@
   display: grid;
   align-self: stretch;
   align-content: center;
-}
-
-.commandStripDispatch {
-  flex: 999 1 34rem;
-  min-width: min(100%, 30rem);
-  max-width: 100%;
-}
-
-.commandStripDispatch :global(.task-dispatch-bottom-bar) {
-  --task-dispatch-bottom-anchor: static;
-
-  position: static;
-  z-index: auto;
-  right: auto;
-  bottom: auto;
-  left: auto;
-  width: 100%;
-  padding: 0;
-  border-top: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-}
-
-.commandStripDispatch :global(.task-dispatch-bottom-inner) {
-  grid-template-columns:
-    minmax(7rem, 0.85fr) minmax(9rem, 1fr) minmax(7.5rem, 0.85fr)
-    minmax(6.75rem, 0.7fr) 2.75rem minmax(7.75rem, 0.75fr);
-  width: 100%;
-  margin: 0;
-}
-
-.commandStripDispatch :global(.task-dispatch-bottom-title) {
-  display: none;
 }
 
 .notesCard {
@@ -435,16 +409,25 @@
   min-width: 0;
 }
 
-.skeletonCommandDispatch {
-  flex: 999 1 34rem;
+.skeletonBottomDispatch {
+  position: fixed;
+  z-index: 90;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: grid;
   grid-template-columns:
-    minmax(7rem, 0.85fr) minmax(9rem, 1fr) minmax(7.5rem, 0.85fr)
-    minmax(6.75rem, 0.7fr) 2.75rem minmax(7.75rem, 0.75fr);
+    minmax(7rem, 0.85fr) minmax(9rem, 1fr) minmax(7.5rem, 0.85fr) minmax(6.75rem, 0.7fr)
+    2.75rem minmax(7.75rem, 0.75fr);
   gap: 0.5rem;
   align-items: end;
-  min-width: min(100%, 30rem);
-  max-width: 100%;
+  min-width: 0;
+  padding: 0.625rem max(1rem, env(safe-area-inset-right, 0px))
+    calc(0.625rem + env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px));
+  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+  background: color-mix(in srgb, var(--ui-surface-strong) 91%, transparent);
+  box-shadow: var(--ui-elevation-3);
+  backdrop-filter: blur(18px);
 }
 
 @container (max-width: 82em) {
@@ -462,6 +445,10 @@
 }
 
 @media (max-width: 48em) {
+  .rootWithBottomDispatch {
+    padding-bottom: calc(var(--mantine-spacing-xs) + 7.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
   .mobileSavingOverlay {
     display: flex;
   }
@@ -507,23 +494,17 @@
 
   .metadataSection,
   .settingsControls,
-  .commandStripDispatch,
-  .skeletonCommandDispatch {
+  .skeletonBottomDispatch {
     flex-basis: auto;
     min-width: 0;
   }
 
-  .commandStripDispatch,
-  .skeletonCommandDispatch {
-    grid-column: 1 / -1;
-  }
-
-  .commandStripDispatch :global(.task-dispatch-bottom-inner),
-  .skeletonCommandDispatch {
+  .skeletonBottomDispatch {
     grid-template-areas:
       'engine model target mode'
       'prompt prompt send send';
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.45rem;
+    padding: 0.5rem 0.625rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
   }
 }

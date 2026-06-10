@@ -6,7 +6,11 @@ import classes from './task-edit-form.module.css';
 
 export function TaskEditPanelSkeleton() {
   return (
-    <div className={classes.root} data-testid="task-edit-loading-shell" aria-busy="true">
+    <div
+      className={`${classes.root} ${classes.rootWithBottomDispatch}`}
+      data-testid="task-edit-loading-shell"
+      aria-busy="true"
+    >
       <div className={classes.shell} data-layout="task-edit-shell">
         <div className={classes.mainColumn} data-panel="task-edit-main-column">
           <section
@@ -26,14 +30,6 @@ export function TaskEditPanelSkeleton() {
               <Skeleton h={40} radius="md" />
             </div>
             <div className={classes.settingsControls}>
-              <Skeleton h={40} radius="md" />
-            </div>
-            <div className={classes.skeletonCommandDispatch}>
-              <Skeleton h={40} radius="md" />
-              <Skeleton h={40} radius="md" />
-              <Skeleton h={40} radius="md" />
-              <Skeleton h={40} radius="md" />
-              <Skeleton h={40} w={44} radius="md" />
               <Skeleton h={40} radius="md" />
             </div>
           </section>
@@ -73,6 +69,16 @@ export function TaskEditPanelSkeleton() {
               <Skeleton radius="md" className={classes.skeletonActivityRow} />
             </Stack>
           </section>
+        </div>
+      </div>
+      <div className={classes.bottomDispatch} data-panel="task-edit-bottom-dispatch">
+        <div className={classes.skeletonBottomDispatch}>
+          <Skeleton h={40} radius="md" />
+          <Skeleton h={40} radius="md" />
+          <Skeleton h={40} radius="md" />
+          <Skeleton h={40} radius="md" />
+          <Skeleton h={40} w={44} radius="md" />
+          <Skeleton h={40} radius="md" />
         </div>
       </div>
     </div>

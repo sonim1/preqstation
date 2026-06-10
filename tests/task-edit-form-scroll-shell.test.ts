@@ -138,7 +138,7 @@ describe('task edit modal scroll-shell rendered layout regressions', () => {
     expect(html).toContain('data-panel="task-edit-main-column"');
     expect(html).toContain('data-panel="task-edit-command-strip"');
     expect(html).not.toContain('data-panel="task-edit-sidebar"');
-    expect(html).not.toContain('data-panel="task-edit-bottom-dispatch"');
+    expect(html).toContain('data-panel="task-edit-bottom-dispatch"');
     expect(html).not.toContain('data-panel="task-edit-dispatch"');
     expect(html).toContain('data-panel="task-edit-metadata"');
     expect(html).toContain('data-panel="task-edit-notes-primary"');
@@ -156,6 +156,12 @@ describe('task edit modal scroll-shell rendered layout regressions', () => {
     );
     expect(html.indexOf('data-panel="task-edit-comments"')).toBeLessThan(
       html.indexOf('data-panel="task-edit-activity"'),
+    );
+    expect(html.indexOf('data-panel="task-edit-activity"')).toBeLessThan(
+      html.indexOf('data-panel="task-edit-bottom-dispatch"'),
+    );
+    expect(html.indexOf('data-panel="task-edit-bottom-dispatch"')).toBeLessThan(
+      html.indexOf('data-slot="task-copy-actions"'),
     );
     expect(html).not.toContain('data-panel="task-edit-overview"');
     expect(html).not.toContain('data-panel="task-edit-settings"');
