@@ -96,7 +96,7 @@ describe('responsive density audit fixes', () => {
       /\.kanban-column\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;/,
     );
     expect(globalsCss).toMatch(
-      /\.kanban-column--hold \.kanban-column-title\s*\{[\s\S]*color:\s*var\(--ui-warning\);/,
+      /\.kanban-column--hold\s+\.kanban-column-title\s*\{[\s\S]*color:\s*var\(--ui-warning\);/,
     );
     expect(globalsCss).toMatch(
       /html\[data-mantine-color-scheme=["']dark["']\]\s+\.kanban-column,\s*html\[data-mantine-color-scheme=["']dark["']\]\s+\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;/,

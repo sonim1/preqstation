@@ -137,7 +137,7 @@
 
 .restoreDraftSummary {
   cursor: pointer;
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-size-mini);
   font-weight: 700;
   line-height: 1.35;
 }
@@ -372,7 +372,7 @@
 
 .taskKeyText {
   color: inherit;
-  font-size: 0.8125rem;
+  font-size: var(--ui-font-size-mini);
   font-weight: 800;
   line-height: 1;
   letter-spacing: 0.08em;

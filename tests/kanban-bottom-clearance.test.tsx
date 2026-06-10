@@ -305,7 +305,7 @@ describe('kanban bottom clearance hooks', () => {
       /\.kanban-mobile-empty-lane\s*\{[\s\S]*justify-content:\s*center;[\s\S]*padding:\s*0 1\.25rem;/,
     );
     expect(globalsCss).toMatch(
-      /\.kanban-mobile-empty-lane-text\s*\{[\s\S]*font-size:\s*13px;[\s\S]*font-weight:\s*600;/,
+      /\.kanban-mobile-empty-lane-text\s*\{[\s\S]*font-size:\s*var\(--ui-font-size-mini\);[\s\S]*font-weight:\s*600;/,
     );
     expect(globalsCss).toMatch(
       /\.kanban-mobile-panel-list\.kanban-bottom-clearance\s*\{[\s\S]*--kanban-bottom-fade-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);[\s\S]*--kanban-bottom-clearance-height:\s*calc\(\s*var\(--kanban-action-island-clearance\)\s*\+\s*var\(--kanban-mobile-tab-bar-height\)\s*\);/,
