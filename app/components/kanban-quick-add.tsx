@@ -77,7 +77,7 @@ export function KanbanQuickAdd({
           ? selectedProject
           : projectOptions.find((project) => project.id === pid)) ?? null;
 
-      if (boardOfflineSync) {
+      if (boardOfflineSync && !boardOfflineSync.online) {
         if (!selectedProjectOption) {
           throw new Error('Project details are required for local task creation.');
         }

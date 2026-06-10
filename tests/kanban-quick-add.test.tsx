@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const boardOfflineSyncMock = vi.hoisted(() => vi.fn());
 const routerPushMock = vi.hoisted(() => vi.fn());
@@ -88,6 +88,10 @@ vi.mock('@/app/components/task-metadata-controls', () => ({
 
 import { KanbanQuickAdd } from '@/app/components/kanban-quick-add';
 
+afterEach(() => {
+  cleanup();
+});
+
 function renderQuickAdd(selectedProject: { id: string; name: string } | null) {
   return renderToStaticMarkup(
     <KanbanQuickAdd
@@ -158,7 +162,7 @@ describe('app/components/kanban-quick-add accessibility', () => {
     );
   });
 
-  it('queues an optimistic task before server persistence when online', async () => {
+  it('posts to the server and opens the returned task key when the sync provider is online', async () => {
     const queueTaskCreate = vi.fn().mockResolvedValue({
       id: 'offline-task:1',
       taskKey: 'OFFLINE-123',
@@ -167,8 +171,72 @@ describe('app/components/kanban-quick-add accessibility', () => {
     });
     const onClose = vi.fn();
     const onTaskCreated = vi.fn();
-    boardOfflineSyncMock.mockReturnValue({ queueTaskCreate });
-    vi.stubGlobal('fetch', vi.fn());
+    const boardTask = {
+      id: 'task-501',
+      taskKey: 'PROJ-501',
+      title: 'Server card',
+      status: 'inbox',
+    };
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ boardTask }),
+    });
+    boardOfflineSyncMock.mockReturnValue({ online: true, queueTaskCreate });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <KanbanQuickAdd
+        selectedProject={{ id: 'project-1', name: 'Alpha', projectKey: 'PROJ' }}
+        projectOptions={[{ id: 'project-1', name: 'Alpha', projectKey: 'PROJ' }]}
+        projectLabelOptionsByProjectId={{
+          'project-1': [{ id: 'label-1', name: 'Bug', color: 'red' }],
+        }}
+        editHrefBase="/board/PROJ"
+        editHrefJoiner="?"
+        onClose={onClose}
+        onTaskCreated={onTaskCreated}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText('Task title'), {
+      target: { value: 'Server card' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Add Task' }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/todos',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            title: 'Server card',
+            note: '',
+            projectId: 'project-1',
+            labelIds: [],
+            taskPriority: 'none',
+            priority: 1,
+          }),
+        }),
+      );
+    });
+    expect(queueTaskCreate).not.toHaveBeenCalled();
+    expect(onTaskCreated).toHaveBeenCalledWith(expect.objectContaining({ taskKey: 'PROJ-501' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(routerPushMock).toHaveBeenCalledWith('/board/PROJ?taskId=PROJ-501');
+  });
+
+  it('queues an optimistic task when the sync provider is offline', async () => {
+    const queueTaskCreate = vi.fn().mockResolvedValue({
+      id: 'offline-task:1',
+      taskKey: 'OFFLINE-123',
+      title: 'Local-first card',
+      status: 'inbox',
+    });
+    const onClose = vi.fn();
+    const onTaskCreated = vi.fn();
+    const fetchMock = vi.fn();
+    boardOfflineSyncMock.mockReturnValue({ online: false, queueTaskCreate });
+    vi.stubGlobal('fetch', fetchMock);
 
     render(
       <KanbanQuickAdd
@@ -199,7 +267,7 @@ describe('app/components/kanban-quick-add accessibility', () => {
         status: 'inbox',
       });
     });
-    expect(fetch).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(onTaskCreated).toHaveBeenCalledWith(expect.objectContaining({ taskKey: 'OFFLINE-123' }));
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(routerPushMock).toHaveBeenCalledWith('/board/PROJ?taskId=OFFLINE-123');
