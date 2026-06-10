@@ -1008,7 +1008,7 @@ describe('app/components/workspace-shell', () => {
 
   it('keeps Mantine root hover and current backgrounds transparent for recent board rows', () => {
     expect(globalsCss).toMatch(
-      /\.workspace-recent-board-link:hover,\s*\.workspace-recent-board-link\[data-active\],\s*\.workspace-recent-board-link\[data-active\]:hover,\s*\.workspace-recent-board-link\[aria-current='page'\],\s*\.workspace-recent-board-link\[aria-current='page'\]:hover\s*\{[\s\S]*background:\s*transparent;[\s\S]*background-color:\s*transparent;/,
+      /\.workspace-recent-board-link:hover,\s*\.workspace-recent-board-link\[data-active\],\s*\.workspace-recent-board-link\[data-active\]:hover,\s*\.workspace-recent-board-link\[aria-current=["']page["']\],\s*\.workspace-recent-board-link\[aria-current=["']page["']\]:hover\s*\{[\s\S]*background:\s*transparent;[\s\S]*background-color:\s*transparent;/,
     );
   });
 
@@ -1067,7 +1067,7 @@ describe('app/components/workspace-shell', () => {
       expect(Array.from(heading.classList)).toContain('workspace-nav-section-label');
     });
     expect(globalsCss).toMatch(
-      /\.workspace-nav-section-label\s*\{[^}]*padding:\s*8px 12px 2px;[^}]*color:\s*var\(--ui-muted-text\);[^}]*font-size:\s*11px;[^}]*font-weight:\s*700;/,
+      /\.workspace-nav-section-label\s*\{[^}]*padding:\s*8px 12px 2px;[^}]*color:\s*var\(--ui-muted-text\);[^}]*font-size:\s*(?:11px|var\(--ui-font-size-micro\));[^}]*font-weight:\s*700;/,
     );
 
     ['Dashboard', 'Projects', 'Boards', 'Settings', 'Connections'].forEach((name) => {
@@ -1097,13 +1097,13 @@ describe('app/components/workspace-shell', () => {
   it('uses flatter token-based sidebar chrome instead of blur-heavy gradients', () => {
     expect(globalsCss).not.toMatch(/\.workspace-navbar\s*\{[^}]*backdrop-filter:/);
     expect(globalsCss).toMatch(
-      /\.workspace-recent-board-link\[data-current-board='true'\]\s*\{[^}]*color:\s*var\(--ui-text\);/,
+      /\.workspace-recent-board-link\[data-current-board=["']true["']\]\s*\{[^}]*color:\s*var\(--ui-text\);/,
     );
     expect(globalsCss).toMatch(
-      /\.workspace-nav-link\[data-active='true'\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*color:\s*var\(--ui-text\);/,
+      /\.workspace-nav-link\[data-active=["']true["']\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*color:\s*var\(--ui-text\);/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-nav-link\[data-active='true'\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*color:\s*var\(--ui-text\);/,
+      /html\[data-mantine-color-scheme=["']dark["']\]\s+\.workspace-nav-link\[data-active=["']true["']\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*color:\s*var\(--ui-text\);/,
     );
   });
 
@@ -1115,7 +1115,7 @@ describe('app/components/workspace-shell', () => {
       /\.workspace-user-menu \.workspace-signout-btn\s*\{[^}]*background:\s*transparent;/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-user-menu\s*\{[^}]*background:\s*var\(--ui-workspace-popover-surface\);/,
+      /html\[data-mantine-color-scheme=["']dark["']\]\s+\.workspace-user-menu\s*\{[^}]*background:\s*var\(--ui-workspace-popover-surface\);/,
     );
   });
 
@@ -1158,10 +1158,10 @@ describe('app/components/workspace-shell', () => {
     expect(globalsCss).toMatch(/--ui-workspace-accent-border:/);
     expect(globalsCss).toMatch(/--ui-workspace-focus-shadow:/);
     expect(globalsCss).toMatch(
-      /\.workspace-project-picker-item\.is-selected,\s*\.workspace-board-picker-item\[data-current-board='true'\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--ui-workspace-accent-border\);/,
+      /\.workspace-project-picker-item\.is-selected,\s*\.workspace-board-picker-item\[data-current-board=["']true["']\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--ui-workspace-accent-border\);/,
     );
     expect(globalsCss).toMatch(
-      /\.workspace-recent-board-link\[data-current-board='true'\]\s*\{[^}]*color:\s*var\(--ui-text\);/,
+      /\.workspace-recent-board-link\[data-current-board=["']true["']\]\s*\{[^}]*color:\s*var\(--ui-text\);/,
     );
     expect(globalsCss).toMatch(
       /\.workspace-recent-board-link:focus-visible\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*var\(--ui-workspace-focus-shadow\);/,
@@ -1186,16 +1186,16 @@ describe('app/components/workspace-shell', () => {
 
   it('keeps the left header chrome on token-driven dark surfaces', () => {
     expect(globalsCss).not.toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-brand-link,\s*html\[data-mantine-color-scheme='dark'\] \.workspace-avatar-trigger\s*\{/,
+      /html\[data-mantine-color-scheme=["']dark["']\]\s+\.workspace-brand-link,\s*html\[data-mantine-color-scheme=["']dark["']\]\s+\.workspace-avatar-trigger\s*\{/,
     );
     expect(globalsCss).not.toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-notification-trigger\s*\{/,
+      /html\[data-mantine-color-scheme=["']dark["']\]\s+\.workspace-notification-trigger\s*\{/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker\s*\{[^}]*border-color:\s*var\(--ui-workspace-control-border\);[^}]*background:\s*var\(--ui-workspace-control-surface\);/,
+      /html\[data-mantine-color-scheme=["']dark["']\]\s+\.workspace-mobile-project-picker\s*\{[^}]*border-color:\s*var\(--ui-workspace-control-border\);[^}]*background:\s*var\(--ui-workspace-control-surface\);/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker:hover,\s*html\[data-mantine-color-scheme='dark'\] \.workspace-mobile-project-picker:focus-visible\s*\{[^}]*border-color:\s*var\(--ui-workspace-accent-border-soft\);[^}]*background:\s*var\(--ui-workspace-control-hover-surface\);/,
+      /html\[data-mantine-color-scheme=["']dark["']\]\s+\.workspace-mobile-project-picker:hover,\s*html\[data-mantine-color-scheme=["']dark["']\]\s+\.workspace-mobile-project-picker:focus-visible\s*\{[^}]*border-color:\s*var\(--ui-workspace-accent-border-soft\);[^}]*background:\s*var\(--ui-workspace-control-hover-surface\);/,
     );
   });
 
@@ -1264,7 +1264,7 @@ describe('app/components/workspace-shell', () => {
       /@media\s*\(max-width:\s*47\.999em\)\s*\{[\s\S]*\.workspace-navbar\s*\{[\s\S]*box-shadow:\s*var\(--ui-elevation-3\);/,
     );
     expect(globalsCss).toMatch(
-      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*html\[data-mantine-color-scheme='dark'\] \.workspace-header,\s*[\s\S]*html\[data-mantine-color-scheme='dark'\] \.workspace-navbar\s*\{[\s\S]*background:\s*var\(--ui-surface-strong\);/,
+      /@media\s*\(max-width:\s*48em\)\s*\{[\s\S]*html\[data-mantine-color-scheme=["']dark["']\]\s+\.workspace-header,\s*[\s\S]*html\[data-mantine-color-scheme=["']dark["']\]\s+\.workspace-navbar\s*\{[\s\S]*background:\s*var\(--ui-surface-strong\);/,
     );
     expect(globalsCss).toMatch(
       /\.workspace-mobile-account\s*\{[^}]*background:\s*var\(--ui-workspace-popover-surface\);[^}]*padding:\s*10px;/,
