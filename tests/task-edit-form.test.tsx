@@ -284,19 +284,22 @@ describe('app/components/task-edit-form', () => {
     vi.stubGlobal('cancelAnimationFrame', vi.fn());
   });
 
-  it('renders dispatch controls in the command strip when branch context is available', () => {
+  it('renders dispatch controls at the bottom of the edit task panel when branch context is available', () => {
     const html = renderTaskEditForm();
 
     expect(html).toContain('task-edit-meta-header');
     expect(html).toContain('data-panel="task-edit-command-strip"');
     expect(html).not.toContain('data-panel="task-edit-sidebar"');
     expect(html).not.toContain('data-layout="with-dispatch"');
-    expect(html).not.toContain('data-panel="task-edit-bottom-dispatch"');
+    expect(html).toContain('data-panel="task-edit-bottom-dispatch"');
     expect(html).not.toContain('data-panel="task-edit-dispatch"');
     expect(html).not.toContain('task-edit-meta-actions');
     expect(html).toContain('Dispatch');
     expect(html).toContain('Notes');
     expect(html).toContain('data-panel="task-edit-activity"');
+    expect(html.indexOf('data-panel="task-edit-activity"')).toBeLessThan(
+      html.indexOf('data-panel="task-edit-bottom-dispatch"'),
+    );
     expect(html).not.toContain('Ticket settings');
     expect(html).not.toContain('Ticket title');
     expect(taskCopyActionsPropsMock.mock.calls[0]?.[0]).toMatchObject({

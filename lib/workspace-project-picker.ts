@@ -10,7 +10,7 @@ export type WorkspaceProjectOption = {
 export const LAST_PROJECT_KEY_STORAGE = 'pm:lastProjectKey';
 export const RECENT_PROJECTS_STORAGE = 'pm:recentProjects';
 export const RECENT_PROJECTS_CHANGED_EVENT = 'pm:recentProjects:changed';
-const RECENT_PROJECTS_MAX = 3;
+const RECENT_PROJECTS_MAX = 5;
 
 const EMPTY_KEYS: string[] = [];
 let _cachedRecentRaw: string | null = null;

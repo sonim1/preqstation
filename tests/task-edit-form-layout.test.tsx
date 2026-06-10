@@ -135,7 +135,7 @@ describe('app/components/task-edit-form layout', () => {
     expect(html).toContain('data-panel="task-edit-main-column"');
     expect(html).toContain('data-panel="task-edit-command-strip"');
     expect(html).not.toContain('data-panel="task-edit-sidebar"');
-    expect(html).not.toContain('data-panel="task-edit-bottom-dispatch"');
+    expect(html).toContain('data-panel="task-edit-bottom-dispatch"');
     expect(html).not.toContain('data-panel="task-edit-dispatch"');
     expect(html).toContain('data-panel="task-edit-metadata"');
     expect(html).toContain('data-panel="task-edit-notes-primary"');
@@ -161,15 +161,18 @@ describe('app/components/task-edit-form layout', () => {
     expect(html.indexOf('data-panel="task-edit-metadata"')).toBeLessThan(
       html.indexOf('data-panel="task-edit-notes-primary"'),
     );
-    expect(html.indexOf('data-slot="task-copy-actions"')).toBeLessThan(
-      html.indexOf('data-panel="task-edit-notes-primary"'),
-    );
     expect(html.indexOf('Notes')).toBeLessThan(html.indexOf('Activity'));
     expect(html.indexOf('data-panel="task-edit-notes-primary"')).toBeLessThan(
       html.indexOf('data-panel="task-edit-comments"'),
     );
     expect(html.indexOf('data-panel="task-edit-comments"')).toBeLessThan(
       html.indexOf('data-panel="task-edit-activity"'),
+    );
+    expect(html.indexOf('data-panel="task-edit-activity"')).toBeLessThan(
+      html.indexOf('data-panel="task-edit-bottom-dispatch"'),
+    );
+    expect(html.indexOf('data-panel="task-edit-bottom-dispatch"')).toBeLessThan(
+      html.indexOf('data-slot="task-copy-actions"'),
     );
     expect(html).not.toContain('data-slot="auto-save-indicator"');
     expect(html).not.toContain('Task content (Markdown)');

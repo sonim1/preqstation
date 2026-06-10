@@ -18,10 +18,8 @@ import { useDisclosure } from '@mantine/hooks';
 import {
   IconChevronLeft,
   IconChevronRight,
-  IconDots,
   IconFolders,
   IconHome2,
-  IconLayoutKanban,
   IconPlugConnected,
   IconSettings,
 } from '@tabler/icons-react';
@@ -88,29 +86,65 @@ function initialFromEmail(email: string) {
 }
 
 const PROJECT_KEY_CHANGED_EVENT = 'pm:lastProjectKey:changed';
+const WORKSPACE_NAVBAR_WIDTH = 280;
+const WORKSPACE_NAVBAR_COLLAPSED_WIDTH = 72;
+const BOARD_SUBNAV_ROW_HEIGHT = 64;
+const BOARD_SUBNAV_COLLAPSED_ROW_HEIGHT = 48;
+const BOARD_SUBNAV_ROW_GAP = 8;
+const BOARD_RECENT_LINK_LIMIT = 5;
 
-type RecentBoardLinkProps = {
+type BoardNavLinkProps = {
   project: WorkspaceProjectOption;
   isCurrentBoard: boolean;
   onSelect: (projectKey: string) => void;
 };
 
-function RecentBoardLink({ project, isCurrentBoard, onSelect }: RecentBoardLinkProps) {
+function getProjectAvatarLabel(project: WorkspaceProjectOption) {
+  const keySegments = project.projectKey.match(/[a-z0-9]+/gi) ?? [];
+  if (keySegments.length >= 2) {
+    const [firstSegment = '', secondSegment = ''] = keySegments;
+    return `${firstSegment.slice(0, 1)}${secondSegment.slice(0, 1)}`.toUpperCase();
+  }
+
+  const fallback = (keySegments[0] || project.name).replace(/[^a-z0-9]/gi, '');
+  return fallback.slice(0, 2).toUpperCase() || 'PR';
+}
+
+function getProjectAvatarTone(project: WorkspaceProjectOption) {
+  const source = project.projectKey || project.name;
+  let hash = 0;
+
+  for (const character of source) {
+    hash = (hash + character.charCodeAt(0)) % 5;
+  }
+
+  return String(hash);
+}
+
+function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) {
   return (
     <NavLink
       component={Link}
       href={`/board/${project.projectKey}`}
       prefetch={false}
       label={
-        <span className="workspace-recent-board-label">
-          <span className="workspace-recent-board-name">{project.name}</span>
+        <span className="workspace-board-subnav-label">
+          <span
+            className="workspace-board-subnav-avatar"
+            data-tone={getProjectAvatarTone(project)}
+            aria-hidden="true"
+          >
+            {getProjectAvatarLabel(project)}
+          </span>
+          <span className="workspace-board-subnav-name">{project.name}</span>
         </span>
       }
       onClick={() => {
         onSelect(project.projectKey);
       }}
-      className="workspace-nav-link workspace-recent-board-link"
+      className="workspace-nav-link workspace-board-subnav-link"
       data-current-board={isCurrentBoard ? 'true' : undefined}
+      aria-label={project.name}
       aria-current={isCurrentBoard ? 'page' : undefined}
     />
   );
@@ -118,13 +152,6 @@ function RecentBoardLink({ project, isCurrentBoard, onSelect }: RecentBoardLinkP
 
 function partitionWorkspaceProjectOptions(projectOptions: WorkspaceProjectOption[]) {
   return projectOptions.filter((project) => project.status === ACTIVE_PROJECT_STATUS);
-}
-
-function getRecentBoardPreview(
-  activeProjectOptions: WorkspaceProjectOption[],
-  currentProject: WorkspaceProjectOption | null,
-) {
-  return currentProject ?? activeProjectOptions[0] ?? null;
 }
 
 function readRememberedProjectKey() {
@@ -245,21 +272,36 @@ export function WorkspaceShell({
   const mobilePickerProject = selectedProject;
   const currentActiveBoardProject =
     currentBoardProject?.status === ACTIVE_PROJECT_STATUS ? currentBoardProject : null;
-  const recentBoardPreview = useMemo(
-    () => getRecentBoardPreview(activeProjectOptions, currentActiveBoardProject),
-    [activeProjectOptions, currentActiveBoardProject],
+  const visibleBoardOptions = useMemo(
+    () => activeProjectOptions.slice(0, BOARD_RECENT_LINK_LIMIT),
+    [activeProjectOptions],
   );
-  const hiddenRecentBoardCount = recentBoardPreview
-    ? Math.max(activeProjectOptions.length - 1, 0)
-    : 0;
-  const hasBoardOverflow = hiddenRecentBoardCount > 0;
+  const currentBoardIndex = currentActiveBoardProject
+    ? visibleBoardOptions.findIndex((project) => project.id === currentActiveBoardProject.id)
+    : -1;
+  const hiddenBoardCount = activeProjectOptions.length - visibleBoardOptions.length;
+  const hasBoardOverflow = hiddenBoardCount > 0;
   const isBoardContext = active === 'kanban';
   const currentScopeLabel = mobilePickerProject?.name || 'Boards';
   const workspaceSubtitle = getWorkspaceProjectSubtitle(currentBoardProject);
   const projectFilterAriaLabel = `${isBoardContext ? 'Board picker' : 'Project picker'}. Current: ${currentScopeLabel}`;
+  const boardSubnavRowHeight = desktopOpened
+    ? BOARD_SUBNAV_ROW_HEIGHT
+    : BOARD_SUBNAV_COLLAPSED_ROW_HEIGHT;
+  const boardSelectionSurfaceStyle = {
+    height: `${boardSubnavRowHeight}px`,
+    transform: `translateY(${Math.max(currentBoardIndex, 0) * (boardSubnavRowHeight + BOARD_SUBNAV_ROW_GAP)}px)`,
+    opacity: currentBoardIndex === -1 ? 0 : 1,
+  };
   const headerInnerClassName = desktopOpened
     ? 'workspace-header-inner'
     : 'workspace-header-inner workspace-header-inner--sidebar-collapsed';
+  const shellClassName = desktopOpened
+    ? 'workspace-shell'
+    : 'workspace-shell workspace-shell--sidebar-collapsed';
+  const navbarClassName = desktopOpened
+    ? 'workspace-navbar'
+    : 'workspace-navbar workspace-navbar--collapsed';
   const handleBoardSelect = useCallback(
     (projectKey: string) => {
       writeRememberedProjectKey(projectKey);
@@ -355,7 +397,7 @@ export function WorkspaceShell({
       </Menu.Dropdown>
     </Menu>
   );
-  const recentBoardOverflowMenu = hasBoardOverflow ? (
+  const desktopBoardShowMoreButton = hasBoardOverflow ? (
     <Menu
       position="right-start"
       shadow="md"
@@ -364,14 +406,11 @@ export function WorkspaceShell({
       classNames={{ dropdown: 'workspace-project-picker-menu' }}
     >
       <Menu.Target>
-        <UnstyledButton
-          className="workspace-recent-board-overflow"
-          aria-label="Open all boards menu"
-        >
-          <span className="workspace-recent-board-count" aria-hidden="true">
-            +{hiddenRecentBoardCount}
+        <UnstyledButton className="workspace-board-subnav-more" aria-label="View all projects">
+          <span className="workspace-board-subnav-more-copy">View all projects</span>
+          <span className="workspace-board-subnav-more-count" aria-hidden="true">
+            {hiddenBoardCount}
           </span>
-          <IconDots size={16} aria-hidden="true" />
         </UnstyledButton>
       </Menu.Target>
       <Menu.Dropdown>
@@ -408,12 +447,12 @@ export function WorkspaceShell({
     <AppShell
       padding={0}
       navbar={{
-        width: 240,
+        width: desktopOpened ? WORKSPACE_NAVBAR_WIDTH : WORKSPACE_NAVBAR_COLLAPSED_WIDTH,
         breakpoint: 'sm',
-        collapsed: { mobile: !mobileOpened, desktop: !desktopOpened },
+        collapsed: { mobile: !mobileOpened, desktop: false },
       }}
       header={{ height: 56 }}
-      className="workspace-shell"
+      className={shellClassName}
     >
       <AppShell.Header className="workspace-header">
         <Group justify="space-between" h="100%" wrap="nowrap" className={headerInnerClassName}>
@@ -505,7 +544,7 @@ export function WorkspaceShell({
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar className="workspace-navbar">
+      <AppShell.Navbar className={navbarClassName}>
         <AppShell.Section grow component={ScrollArea} px="xs">
           <Stack gap={6} py="xs">
             <Text component="h2" className="workspace-nav-section-label">
@@ -516,6 +555,7 @@ export function WorkspaceShell({
               href={dashboardHref}
               prefetch={false}
               active={active === 'dashboard'}
+              aria-label="Dashboard"
               aria-current={active === 'dashboard' ? 'page' : undefined}
               onClick={closeMobile}
               label="Dashboard"
@@ -528,6 +568,7 @@ export function WorkspaceShell({
               href={projectsHref}
               prefetch={false}
               active={active === 'projects'}
+              aria-label="Projects"
               aria-current={active === 'projects' ? 'page' : undefined}
               onClick={closeMobile}
               label="Projects"
@@ -535,18 +576,37 @@ export function WorkspaceShell({
               rightSection={null}
               className="workspace-nav-link"
             />
-            <NavLink
-              component={Link}
-              href={effectiveKanbanHref}
-              prefetch={false}
-              active={active === 'kanban'}
-              aria-current={active === 'kanban' ? 'page' : undefined}
-              onClick={closeMobile}
-              label="Boards"
-              leftSection={<IconLayoutKanban size={16} />}
-              rightSection={null}
-              className="workspace-nav-link"
-            />
+            <Box visibleFrom="md">
+              <Stack gap={6}>
+                {activeProjectOptions.length > 0 ? (
+                  <>
+                    <Text component="h3" className="workspace-board-subnav-heading">
+                      Recent projects
+                    </Text>
+                    <Stack
+                      gap={BOARD_SUBNAV_ROW_GAP}
+                      className="workspace-board-subnav"
+                      data-current-board-index={currentBoardIndex}
+                    >
+                      <span
+                        className="workspace-board-subnav-surface"
+                        aria-hidden="true"
+                        style={boardSelectionSurfaceStyle}
+                      />
+                      {visibleBoardOptions.map((project) => (
+                        <BoardNavLink
+                          key={project.id}
+                          project={project}
+                          isCurrentBoard={currentActiveBoardProject?.id === project.id}
+                          onSelect={handleBoardSelect}
+                        />
+                      ))}
+                      {desktopBoardShowMoreButton}
+                    </Stack>
+                  </>
+                ) : null}
+              </Stack>
+            </Box>
           </Stack>
         </AppShell.Section>
         <AppShell.Section px="xs">
@@ -559,6 +619,7 @@ export function WorkspaceShell({
               href={settingsHref}
               prefetch={false}
               active={active === 'settings'}
+              aria-label="Settings"
               aria-current={active === 'settings' ? 'page' : undefined}
               onClick={closeMobile}
               label="Settings"
@@ -571,6 +632,7 @@ export function WorkspaceShell({
               href={apiKeysHref}
               prefetch={false}
               active={active === 'connections'}
+              aria-label="Connections"
               aria-current={active === 'connections' ? 'page' : undefined}
               onClick={closeMobile}
               label="Connections"
@@ -581,23 +643,6 @@ export function WorkspaceShell({
             {mobileAccountBlock}
           </Stack>
         </AppShell.Section>
-        {recentBoardPreview ? (
-          <AppShell.Section px="xs" pb="xs" className="workspace-recent-boards">
-            <Stack gap={6}>
-              <Text component="h2" className="workspace-nav-section-label">
-                Recent boards
-              </Text>
-              <div className="workspace-recent-board-row">
-                <RecentBoardLink
-                  project={recentBoardPreview}
-                  isCurrentBoard={currentActiveBoardProject?.id === recentBoardPreview.id}
-                  onSelect={handleBoardSelect}
-                />
-                {recentBoardOverflowMenu}
-              </div>
-            </Stack>
-          </AppShell.Section>
-        ) : null}
       </AppShell.Navbar>
 
       <AppShell.Main className="workspace-main">
