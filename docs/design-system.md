@@ -120,13 +120,40 @@ task can still have queued/running dispatch state.
 
 - Use the configured Pretendard-first stack from Mantine.
 - Do not introduce a second display face inside the authenticated app.
-- Use Mantine's type scale for routine UI.
+- Use the Linear-inspired type scale for routine UI. It keeps product chrome
+  compact while giving dashboard/page titles enough authority.
 - Use explicit font sizes only for dense operational surfaces that need stable
   layout.
 - Use monospace for task keys, commands, logs, snippets, token names,
   timestamps, and compact chart labels.
 - Keep letter spacing at `0` for body copy. The wordmark may use slight
   positive tracking.
+
+### Type Scale
+
+The app maps Mantine's `fontSizes` to the same compact scale used by the global
+CSS aliases. Prefer the token name in CSS modules and Mantine size props in
+React components.
+
+| Token                    | Size        | Pixel equivalent | Typical use                                      |
+| ------------------------ | ----------- | ---------------- | ------------------------------------------------ |
+| `--ui-font-size-tiny`    | `0.625rem`  | 10px             | Heatmap labels, ultra-compact chart annotations  |
+| `--ui-font-size-micro`   | `0.75rem`   | 12px             | Eyebrows, timestamps, dense metadata             |
+| `--ui-font-size-mini`    | `0.8125rem` | 13px             | Small buttons, task keys, compact controls       |
+| `--ui-font-size-small`   | `0.875rem`  | 14px             | Secondary body, table rows, card metadata        |
+| `--ui-font-size-regular` | `0.9375rem` | 15px             | Default product body and routine Mantine `md` UI |
+| `--ui-font-size-large`   | `1.0625rem` | 17px             | Emphasized labels and compact card titles        |
+| `--ui-font-size-title-3` | `1.25rem`   | 20px             | Panel titles                                     |
+| `--ui-font-size-title-2` | `1.5rem`    | 24px             | Section and route titles                         |
+| `--ui-font-size-title-1` | `2.25rem`   | 36px             | Primary dashboard or route hero title only       |
+
+Line-height aliases:
+
+| Token                      | Value | Use for                                |
+| -------------------------- | ----- | -------------------------------------- |
+| `--ui-line-height-tight`   | `1.2` | Titles, compact controls, task names   |
+| `--ui-line-height-compact` | `1.4` | Metadata, badges, compact prose        |
+| `--ui-line-height-body`    | `1.6` | Reading surfaces and longer body prose |
 
 ## Spacing, Radius, And Density
 

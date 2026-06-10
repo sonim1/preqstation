@@ -14,9 +14,21 @@ const theme = createTheme({
   defaultRadius: 'md',
   fontFamily:
     'Pretendard, Inter, SF Pro Text, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
+  fontSizes: {
+    xs: '0.75rem',
+    sm: '0.8125rem',
+    md: '0.9375rem',
+    lg: '1.0625rem',
+    xl: '1.25rem',
+  },
   headings: {
     fontFamily:
       'Pretendard, Inter, SF Pro Display, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
+    sizes: {
+      h1: { fontSize: '2.25rem', lineHeight: '1.2' },
+      h2: { fontSize: '1.5rem', lineHeight: '1.25' },
+      h3: { fontSize: '1.25rem', lineHeight: '1.3' },
+    },
   },
   colors: {
     brand: [

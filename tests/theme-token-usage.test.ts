@@ -54,7 +54,9 @@ const taskFormPanelCss = fs.readFileSync(
   'utf8',
 );
 const globalErrorSource = fs.readFileSync(path.join(process.cwd(), 'app/global-error.tsx'), 'utf8');
+const providersSource = fs.readFileSync(path.join(process.cwd(), 'app/providers.tsx'), 'utf8');
 const designSystemPath = path.join(process.cwd(), 'DESIGN.md');
+const designSystemDocsPath = path.join(process.cwd(), 'docs/design-system.md');
 const require = createRequire(import.meta.url);
 const { JSDOM } = require('jsdom') as {
   JSDOM: new (html?: string) => {
@@ -68,6 +70,10 @@ function getDefinedUiTokens(source: string) {
 
 function getReferencedUiTokens(source: string) {
   return new Set(Array.from(source.matchAll(/var\((--ui-[\w-]+)/g), ([, token]) => token));
+}
+
+function normalizeCssWhitespace(value: string) {
+  return value.replace(/\s+/g, ' ').replace(/\(\s+/g, '(').replace(/\s+\)/g, ')').trim();
 }
 
 function renderCssFixture(
@@ -102,7 +108,9 @@ function expectComputedProperties(
   const style = dom.window.getComputedStyle(getFixtureElement(dom, testId));
 
   for (const [property, value] of Object.entries(expectedProperties)) {
-    expect(style.getPropertyValue(property)).toBe(value);
+    expect(normalizeCssWhitespace(style.getPropertyValue(property))).toBe(
+      normalizeCssWhitespace(value),
+    );
   }
 }
 
@@ -132,6 +140,35 @@ describe('theme token usage audit fixes', () => {
     expect(globalsCss).toMatch(/--ui-workflow-status-done:/);
   });
 
+  it('defines a Linear-inspired product type scale in tokens, Mantine, and docs', () => {
+    const designSystemDocs = fs.readFileSync(designSystemDocsPath, 'utf8');
+
+    for (const [token, value] of [
+      ['--ui-font-size-tiny', '0.625rem'],
+      ['--ui-font-size-micro', '0.75rem'],
+      ['--ui-font-size-mini', '0.8125rem'],
+      ['--ui-font-size-small', '0.875rem'],
+      ['--ui-font-size-regular', '0.9375rem'],
+      ['--ui-font-size-large', '1.0625rem'],
+      ['--ui-font-size-title-3', '1.25rem'],
+      ['--ui-font-size-title-2', '1.5rem'],
+      ['--ui-font-size-title-1', '2.25rem'],
+    ]) {
+      expect(globalsCss).toContain(`${token}: ${value};`);
+    }
+
+    expect(providersSource).toContain('fontSizes: {');
+    expect(providersSource).toMatch(/xs:\s*["']0\.75rem["']/);
+    expect(providersSource).toMatch(/sm:\s*["']0\.8125rem["']/);
+    expect(providersSource).toMatch(/md:\s*["']0\.9375rem["']/);
+    expect(providersSource).toMatch(/lg:\s*["']1\.0625rem["']/);
+    expect(providersSource).toMatch(/xl:\s*["']1\.25rem["']/);
+
+    expect(designSystemDocs).toContain('Linear-inspired type scale');
+    expect(designSystemDocs).toContain('`--ui-font-size-regular`');
+    expect(designSystemDocs).toContain('15px');
+  });
+
   it('keeps task dispatch bottom picker menus on theme tokens', () => {
     const pickerRule = globalsCss.match(/\.task-dispatch-bottom-picker\s*\{([^}]*)\}/);
     const menuRule = globalsCss.match(/\.task-dispatch-bottom-menu\s*\{([^}]*)\}/);
@@ -154,26 +191,32 @@ describe('theme token usage audit fixes', () => {
       /\.task-dispatch-bottom-prompt-popover\s*\{([^}]*)\}/,
     );
     const mobileInnerRule = globalsCss.match(
-      /\.task-dispatch-bottom-inner\s*\{\s*grid-template-areas:\s*'engine model target mode'\s*'prompt send send send';([^}]*)\}/,
+      /\.task-dispatch-bottom-inner\s*\{\s*grid-template-areas:\s*["']engine model target mode["']\s*["']prompt send send send["'];([^}]*)\}/,
     );
+    const normalizedInnerRule = normalizeCssWhitespace(innerRule?.[1] ?? '');
+    const normalizedPickerRule = normalizeCssWhitespace(pickerRule?.[1] ?? '');
+    const normalizedPromptTriggerRule = normalizeCssWhitespace(promptTriggerRule?.[1] ?? '');
+    const normalizedPromptPopoverRule = normalizeCssWhitespace(promptPopoverRule?.[1] ?? '');
 
-    expect(innerRule?.[1]).toContain(
+    expect(normalizedInnerRule).toContain(
       '--task-dispatch-control-border: color-mix(in srgb, var(--ui-border), transparent 14%);',
     );
-    expect(innerRule?.[1]).toContain(
+    expect(normalizedInnerRule).toContain(
       '--task-dispatch-control-bg: color-mix(in srgb, var(--ui-surface-strong), transparent 16%);',
     );
-    expect(innerRule?.[1]).toContain(
+    expect(normalizedInnerRule).toContain(
       '--task-dispatch-popover-border: color-mix(in srgb, var(--ui-border), transparent 12%);',
     );
-    expect(pickerRule?.[1]).toMatch(/border:\s*1px solid\s*var\(--task-dispatch-control-border/);
-    expect(pickerRule?.[1]).toMatch(/background:\s*var\(\s*--task-dispatch-control-bg/);
-    expect(promptTriggerRule?.[1]).toContain('width: 2.75rem;');
-    expect(promptTriggerRule?.[1]).toMatch(
+    expect(normalizedPickerRule).toMatch(
       /border:\s*1px solid\s*var\(--task-dispatch-control-border/,
     );
-    expect(promptTriggerRule?.[1]).toMatch(/background:\s*var\(\s*--task-dispatch-control-bg/);
-    expect(promptPopoverRule?.[1]).toMatch(
+    expect(normalizedPickerRule).toMatch(/background:\s*var\(\s*--task-dispatch-control-bg/);
+    expect(normalizedPromptTriggerRule).toContain('width: 2.75rem;');
+    expect(normalizedPromptTriggerRule).toMatch(
+      /border:\s*1px solid\s*var\(--task-dispatch-control-border/,
+    );
+    expect(normalizedPromptTriggerRule).toMatch(/background:\s*var\(\s*--task-dispatch-control-bg/);
+    expect(normalizedPromptPopoverRule).toMatch(
       /border:\s*1px solid\s*var\(--task-dispatch-popover-border/,
     );
     expect(mobileInnerRule?.[1]).toContain('grid-template-columns: repeat(4, minmax(0, 1fr));');
