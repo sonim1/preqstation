@@ -270,7 +270,7 @@ direct links. Background image cards must preserve contrast using
 ### Execution State
 
 ```css
-.task-run-chip[data-state="running"] {
+.task-run-chip[data-state='running'] {
   border-color: var(--ui-status-running-border);
   background: var(--ui-status-running-soft);
   color: var(--ui-status-running-foreground);

@@ -76,7 +76,7 @@ describe('responsive density audit fixes', () => {
     expect(taskNotificationCenterSource).toContain('size={44}');
     expect(mobileProjectPickerRule).toMatch(/height:\s*var\(--ui-hit-touch-min\);/);
     expect(mobileProjectPickerRule).toMatch(/min-height:\s*var\(--ui-hit-touch-min\);/);
-    expect(globalsCss).toMatch(/\.workspace-recent-board-link\s*\{[^}]*min-height:\s*44px;/);
+    expect(globalsCss).toMatch(/\.workspace-board-subnav-link\s*\{[^}]*min-height:\s*64px;/);
   });
 
   it('replaces the worst fixed board and connections widths with more adaptive sizing', () => {
@@ -99,10 +99,10 @@ describe('responsive density audit fixes', () => {
       /\.kanban-column--hold \.kanban-column-title\s*\{[\s\S]*color:\s*var\(--ui-warning\);/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\]\s+\.kanban-column,\s*html\[data-mantine-color-scheme='dark'\]\s+\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;/,
+      /html\[data-mantine-color-scheme=["']dark["']\]\s+\.kanban-column,\s*html\[data-mantine-color-scheme=["']dark["']\]\s+\.kanban-mobile-panel\s*\{[\s\S]*--kanban-bottom-gradient-surface:\s*transparent;/,
     );
     expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme='dark'\]\s+\.kanban-column--hold \.kanban-column-title\s*\{[\s\S]*color:\s*var\(--ui-warning\);/,
+      /html\[data-mantine-color-scheme=["']dark["']\]\s+\.kanban-column--hold\s+\.kanban-column-title\s*\{[\s\S]*color:\s*var\(--ui-warning\);/,
     );
     expect(kanbanColumnSource).toContain('kanban-column-title');
     expect(kanbanColumnSource).toContain('cardStyles.kanbanCardHold');

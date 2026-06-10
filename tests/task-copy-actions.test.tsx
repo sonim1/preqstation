@@ -297,6 +297,7 @@ describe('app/components/task-copy-actions', () => {
     expect(html).toContain('data-placement="bottom"');
     expect(html).toContain('task-dispatch-bottom-picker');
     expect(html).toContain('aria-label="Engine: Codex"');
+    expect(html).toContain('aria-label="Model: Default"');
     expect(html).toContain('aria-label="Target: Hermes Telegram"');
     expect(html).toContain('aria-label="Mode: Implement"');
     expect(html).toContain('Prompt');
@@ -384,6 +385,7 @@ describe('app/components/task-copy-actions', () => {
 
     expect(screen.queryByRole('textbox', { name: 'Message' })).toBeNull();
     expect(screen.queryByRole('combobox', { name: 'Engine' })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: 'Model' })).toBeNull();
 
     fireEvent.click(screen.getByRole('button', { name: 'Engine: Codex' }));
     expect(await screen.findByRole('menuitem', { name: /Claude/, hidden: true })).toBeTruthy();
@@ -416,6 +418,43 @@ describe('app/components/task-copy-actions', () => {
         objective: 'implement',
       },
     });
+  });
+
+  it('renders the bottom model menu with bottom picker styles and dispatches selected model metadata', async () => {
+    const pendingSend = createTelegramSendResponse();
+    const fetchMock = vi.fn<typeof fetch>(() => pendingSend.response);
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderTaskCopyActionsClient({
+      placement: 'bottom',
+      agentModelCatalog: {
+        'claude-code': [],
+        codex: [
+          { label: 'gpt-5.5', value: 'gpt-5.5' },
+          { label: 'gpt-5.4', value: 'gpt-5.4' },
+        ],
+        'gemini-cli': [],
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Model: Default' }));
+    const defaultModel = await screen.findByRole('menuitem', { name: /Default/, hidden: true });
+    const selectedModel = screen.getByRole('menuitem', { name: /gpt-5\.4/, hidden: true });
+
+    expect(defaultModel.classList.contains('task-dispatch-bottom-menu-item')).toBe(true);
+    expect(defaultModel.getAttribute('data-selected')).toBe('true');
+    expect(selectedModel.classList.contains('task-dispatch-bottom-menu-item')).toBe(true);
+
+    fireEvent.click(selectedModel);
+    expect(screen.getByRole('button', { name: 'Model: gpt-5.4' })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preview dispatch prompt' }));
+    expect(await screen.findByText(/model="gpt-5\.4"/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /^send/i }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const [, options] = fetchMock.mock.calls[0] ?? [];
+    expect(String(options?.body)).toContain('model=\\"gpt-5.4\\"');
   });
 
   it('reports the current dispatch selection when the target changes', async () => {

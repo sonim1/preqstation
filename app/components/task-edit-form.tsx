@@ -1070,7 +1070,11 @@ function TaskEditFormContent({
   }, [draftNote, noteRenderKey]);
 
   return (
-    <div className={classes.root}>
+    <div
+      className={
+        showDispatchPanel ? `${classes.root} ${classes.rootWithBottomDispatch}` : classes.root
+      }
+    >
       {saveStatus === 'saving' ? (
         <div
           className={classes.mobileSavingOverlay}
@@ -1168,25 +1172,6 @@ function TaskEditFormContent({
                   onChange={() => triggerSave(0)}
                 />
               </div>
-
-              {showDispatchPanel ? (
-                <div className={classes.commandStripDispatch}>
-                  <TaskCopyActions
-                    placement="bottom"
-                    taskKey={taskKey}
-                    branchName={branchName}
-                    status={status}
-                    engine={engine}
-                    dispatchTarget={editableTodo.dispatchTarget ?? null}
-                    telegramEnabled={telegramEnabled ?? false}
-                    hermesTelegramEnabled={hermesTelegramEnabled}
-                    hermesBotUsername={hermesBotUsername}
-                    suppressShortcut={commentShortcutActive}
-                    onTaskQueued={handleDispatchQueued}
-                    onDispatchSelectionChange={handleDispatchSelectionChange}
-                  />
-                </div>
-              ) : null}
             </section>
 
             <section
@@ -1372,6 +1357,25 @@ function TaskEditFormContent({
           </div>
         </div>
       </form>
+
+      {showDispatchPanel ? (
+        <div className={classes.bottomDispatch} data-panel="task-edit-bottom-dispatch">
+          <TaskCopyActions
+            placement="bottom"
+            taskKey={taskKey}
+            branchName={branchName}
+            status={status}
+            engine={engine}
+            dispatchTarget={editableTodo.dispatchTarget ?? null}
+            telegramEnabled={telegramEnabled ?? false}
+            hermesTelegramEnabled={hermesTelegramEnabled}
+            hermesBotUsername={hermesBotUsername}
+            suppressShortcut={commentShortcutActive}
+            onTaskQueued={handleDispatchQueued}
+            onDispatchSelectionChange={handleDispatchSelectionChange}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
