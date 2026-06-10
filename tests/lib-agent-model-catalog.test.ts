@@ -31,6 +31,15 @@ describe('lib/agent-model-catalog', () => {
     ]);
   });
 
+  it('includes the latest Claude default models', () => {
+    expect(DEFAULT_AGENT_MODEL_CATALOG['claude-code']).toEqual(
+      expect.arrayContaining([
+        { label: 'Claude Fable 5', value: 'claude-fable-5' },
+        { label: 'Claude Opus 4.8', value: 'claude-opus-4-8' },
+      ]),
+    );
+  });
+
   it('normalizes saved catalog options and drops unsupported engines', () => {
     const catalog = resolveAgentModelCatalog(
       JSON.stringify({
