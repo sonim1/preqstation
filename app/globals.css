@@ -1102,8 +1102,10 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .workspace-sidebar-toggle {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: var(--ui-hit-touch-min);
+  height: var(--ui-hit-touch-min);
+  min-width: var(--ui-hit-touch-min);
+  min-height: var(--ui-hit-touch-min);
   border: 1px solid var(--ui-workspace-control-border);
   background: var(--ui-workspace-control-surface);
   color: var(--ui-accent-strong);
