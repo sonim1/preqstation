@@ -52,6 +52,12 @@ function buildOwnerSetupFormData() {
   return formData;
 }
 
+function nextRedirectError(path: string) {
+  const error = new Error(`NEXT_REDIRECT ${path}`) as Error & { digest: string };
+  error.digest = `NEXT_REDIRECT;replace;${path};307;`;
+  return error;
+}
+
 describe('app/login/actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -182,6 +188,25 @@ describe('app/login/actions', () => {
 
   it('redirects to /onboarding after creating the first owner account', async () => {
     await registerOwnerAction({ error: null }, buildOwnerSetupFormData());
+
+    expect(mocked.createOwnerAccount).toHaveBeenCalledWith({
+      email: 'owner@example.com',
+      password: 'plaintext-password-123',
+      path: '/login',
+    });
+    expect(mocked.redirect).toHaveBeenCalledWith('/onboarding');
+  });
+
+  it('does not turn the owner setup redirect into an inline setup error', async () => {
+    mocked.redirect.mockImplementationOnce((path: string) => {
+      throw nextRedirectError(path);
+    });
+
+    await expect(
+      registerOwnerAction({ error: null }, buildOwnerSetupFormData()),
+    ).rejects.toMatchObject({
+      digest: expect.stringContaining('NEXT_REDIRECT'),
+    });
 
     expect(mocked.createOwnerAccount).toHaveBeenCalledWith({
       email: 'owner@example.com',
