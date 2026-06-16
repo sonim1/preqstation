@@ -293,6 +293,49 @@ function expectComputedStyleProperties(
   }
 }
 
+function installElementAnimateMock() {
+  const animateMock = vi.fn(() => ({ cancel: vi.fn() }));
+
+  Object.defineProperty(Element.prototype, 'animate', {
+    configurable: true,
+    writable: true,
+    value: animateMock,
+  });
+
+  return animateMock;
+}
+
+function mockBoardSubnavRects() {
+  return vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
+    this: HTMLElement,
+  ) {
+    if (!this.classList.contains('workspace-board-subnav-link')) {
+      return makeDomRect(0);
+    }
+
+    const siblingLinks = Array.from(
+      this.parentElement?.querySelectorAll<HTMLElement>('.workspace-board-subnav-link') ?? [],
+    );
+    const index = siblingLinks.indexOf(this);
+
+    return makeDomRect(Math.max(index, 0) * 72);
+  });
+}
+
+function makeDomRect(top: number) {
+  return {
+    x: 0,
+    y: top,
+    width: 240,
+    height: 64,
+    top,
+    right: 240,
+    bottom: top + 64,
+    left: 0,
+    toJSON: () => ({}),
+  } as DOMRect;
+}
+
 function normalizeCssZeroTokens(value: string) {
   return value
     .split(/\s+/)
@@ -618,7 +661,7 @@ describe('app/components/workspace-shell', () => {
     const openHtml = renderWorkspaceShell({ desktopOpened: true });
     const collapsedHtml = renderWorkspaceShell({ desktopOpened: false });
 
-    expect(openHtml).toContain('--app-shell-navbar-width:calc(17.5rem * var(--mantine-scale));');
+    expect(openHtml).toContain('--app-shell-navbar-width:calc(20rem * var(--mantine-scale));');
     expect(collapsedHtml).toContain(
       '--app-shell-navbar-width:calc(4.5rem * var(--mantine-scale));',
     );
@@ -1048,6 +1091,98 @@ describe('app/components/workspace-shell', () => {
     } finally {
       window.localStorage.removeItem(RECENT_PROJECTS_STORAGE);
     }
+  });
+
+  it('animates visible recent project rows when recent project order changes', () => {
+    ensureBrowserObservers();
+    ensureMatchMedia();
+
+    const animateMock = installElementAnimateMock();
+    mockBoardSubnavRects();
+    const projectOptions = [
+      { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
+      { id: '2', name: 'Beta', projectKey: 'BETA', status: 'active' },
+      { id: '3', name: 'Gamma', projectKey: 'GAMMA', status: 'active' },
+      { id: '4', name: 'Delta', projectKey: 'DELTA', status: 'active' },
+    ] satisfies WorkspaceProjectOption[];
+    let projectOrderState = 'ALPHA|BETA|GAMMA';
+
+    useDisclosureMock.mockReset();
+    useDisclosureMock.mockImplementation((opened = false) => [
+      opened,
+      { toggle: vi.fn(), close: vi.fn() },
+    ]);
+    usePathnameMock.mockReturnValue('/board/ALPHA');
+    useSyncExternalStoreMock.mockReset();
+    useSyncExternalStoreMock.mockImplementation(() => projectOrderState);
+
+    const { container, rerender } = render(workspaceShellElement(projectOptions));
+    const boardLabels = () =>
+      Array.from(container.querySelectorAll<HTMLElement>('.workspace-board-subnav-link')).map(
+        (link) => link.textContent?.trim(),
+      );
+
+    expect(boardLabels()).toEqual(['BETABeta', 'GAMMAGamma', 'ALPHAAlpha', 'DELTADelta']);
+    expect(animateMock).not.toHaveBeenCalled();
+
+    projectOrderState = 'ALPHA|DELTA|BETA|GAMMA';
+    rerender(workspaceShellElement(projectOptions));
+
+    expect(boardLabels()).toEqual(['DELTADelta', 'BETABeta', 'GAMMAGamma', 'ALPHAAlpha']);
+    expect(animateMock).toHaveBeenCalledWith(
+      [{ transform: 'translate(0px, 216px)' }, { transform: 'translate(0, 0)' }],
+      expect.objectContaining({
+        duration: 220,
+        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      }),
+    );
+    expect(animateMock).toHaveBeenCalledWith(
+      [{ transform: 'translate(0px, -72px)' }, { transform: 'translate(0, 0)' }],
+      expect.objectContaining({
+        duration: 220,
+        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      }),
+    );
+  });
+
+  it('skips recent project row animation when reduced motion is preferred', () => {
+    ensureBrowserObservers();
+    ensureMatchMedia();
+
+    const animateMock = installElementAnimateMock();
+    mockBoardSubnavRects();
+    vi.mocked(window.matchMedia).mockImplementation((query: string) => ({
+      matches: query === '(prefers-reduced-motion: reduce)',
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+    const projectOptions = [
+      { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
+      { id: '2', name: 'Beta', projectKey: 'BETA', status: 'active' },
+      { id: '3', name: 'Gamma', projectKey: 'GAMMA', status: 'active' },
+    ] satisfies WorkspaceProjectOption[];
+    let projectOrderState = 'ALPHA|BETA|GAMMA';
+
+    useDisclosureMock.mockReset();
+    useDisclosureMock.mockImplementation((opened = false) => [
+      opened,
+      { toggle: vi.fn(), close: vi.fn() },
+    ]);
+    usePathnameMock.mockReturnValue('/board/ALPHA');
+    useSyncExternalStoreMock.mockReset();
+    useSyncExternalStoreMock.mockImplementation(() => projectOrderState);
+
+    const { rerender } = render(workspaceShellElement(projectOptions));
+
+    projectOrderState = 'ALPHA|GAMMA|BETA';
+    rerender(workspaceShellElement(projectOptions));
+
+    expect(animateMock).not.toHaveBeenCalled();
   });
 
   it('keeps the board selection surface hidden when no board is selected', () => {
