@@ -851,6 +851,9 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 }
 
 .workspace-navbar {
+  position: relative;
+  overflow: visible;
+  z-index: 121;
   border-right: 1px solid var(--ui-border);
   background: var(--ui-surface);
   box-shadow: var(--ui-elevation-1);
@@ -1181,14 +1184,12 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   padding-bottom: 12px;
 }
 
-.workspace-sidebar-toggle-row {
-  display: none;
-  justify-content: flex-end;
-  padding-top: 10px;
-  padding-bottom: 4px;
-}
-
 .workspace-sidebar-toggle {
+  display: none;
+  position: absolute;
+  top: -50px;
+  right: 8px;
+  z-index: 121;
   flex-shrink: 0;
   width: var(--ui-hit-touch-min);
   height: var(--ui-hit-touch-min);
@@ -1227,10 +1228,6 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .workspace-shell--sidebar-collapsed .workspace-navbar .mantine-AppShell-section {
   padding-inline: 8px;
-}
-
-.workspace-shell--sidebar-collapsed .workspace-sidebar-toggle-row {
-  justify-content: center;
 }
 
 .workspace-shell--sidebar-collapsed .workspace-nav-link:not(.workspace-board-subnav-link) {
@@ -3513,8 +3510,8 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
 }
 
 @media (min-width: 48em) {
-  .workspace-sidebar-toggle-row {
-    display: flex;
+  .workspace-sidebar-toggle {
+    display: inline-flex;
   }
 }
 

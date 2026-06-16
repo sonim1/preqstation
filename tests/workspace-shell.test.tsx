@@ -591,27 +591,31 @@ describe('app/components/workspace-shell', () => {
     );
   });
 
-  it('shows the collapse toggle inside the desktop sidebar header while open', () => {
-    const html = renderWorkspaceShell({ desktopOpened: true });
+  it('shows the collapse toggle as desktop sidebar chrome while open', () => {
+    const { container } = renderWorkspaceShellDom({ desktopOpened: true });
+    const navbar = getWorkspaceNavbar(container);
+    const toggle = within(navbar).getByRole('button', { name: 'Collapse sidebar' });
 
-    expect(html).toContain('workspace-sidebar-toggle-row');
-    expect(html).toContain('workspace-sidebar-toggle');
-    expect(html).toContain('Collapse sidebar');
+    expect(Array.from(toggle.classList)).toContain('workspace-sidebar-toggle');
+    expect(navbar.querySelector('.workspace-sidebar-toggle-row')).toBeNull();
+    expect(toggle.closest('.mantine-AppShell-section')).toBeNull();
     expect(workspaceShellSource).toContain('IconLayoutSidebarLeftCollapse');
     expect(workspaceShellSource).not.toContain('IconChevronLeft');
-    expect(html).not.toContain('workspace-divider-rail');
+    expect(container.innerHTML).not.toContain('workspace-divider-rail');
   });
 
-  it('keeps the expand toggle inside the desktop sidebar header while collapsed', () => {
-    const html = renderWorkspaceShell({ desktopOpened: false });
+  it('keeps the expand toggle as desktop sidebar chrome while collapsed', () => {
+    const { container } = renderWorkspaceShellDom({ desktopOpened: false });
+    const navbar = getWorkspaceNavbar(container);
+    const toggle = within(navbar).getByRole('button', { name: 'Expand sidebar' });
 
-    expect(html).toContain('workspace-sidebar-toggle-row');
-    expect(html).toContain('workspace-sidebar-toggle');
-    expect(html).toContain('Expand sidebar');
+    expect(Array.from(toggle.classList)).toContain('workspace-sidebar-toggle');
+    expect(navbar.querySelector('.workspace-sidebar-toggle-row')).toBeNull();
+    expect(toggle.closest('.mantine-AppShell-section')).toBeNull();
     expect(workspaceShellSource).toContain('IconLayoutSidebarLeftExpand');
     expect(workspaceShellSource).not.toContain('IconChevronRight');
-    expect(html).not.toContain('workspace-divider-rail');
-    expect(html).not.toContain('workspace-header-sidebar-toggle');
+    expect(container.innerHTML).not.toContain('workspace-divider-rail');
+    expect(container.innerHTML).not.toContain('workspace-header-sidebar-toggle');
   });
 
   it('uses a wider desktop sidebar and keeps a compact sidebar when collapsed', () => {
@@ -1192,6 +1196,26 @@ describe('app/components/workspace-shell', () => {
     expect(globalsCss).toMatch(
       /\.workspace-notification-trigger:focus-visible,\s*\.workspace-avatar-trigger:focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*background:\s*var\(--ui-workspace-control-hover-surface\);[\s\S]*box-shadow:\s*var\(--ui-workspace-outer-focus-shadow\);/,
     );
+  });
+
+  it('positions the desktop sidebar toggle without reserving navbar content space', () => {
+    expect(workspaceShellSource).toMatch(
+      /<ActionIcon[\s\S]*?size=\{44\}[\s\S]*?className="workspace-sidebar-toggle"/,
+    );
+    expect(getCssRuleProperties('.workspace-navbar', ['position', 'overflow', 'z-index'])).toEqual({
+      position: 'relative',
+      overflow: 'visible',
+      'z-index': '121',
+    });
+    expect(
+      getCssRuleProperties('.workspace-sidebar-toggle', ['position', 'top', 'right', 'z-index']),
+    ).toEqual({
+      position: 'absolute',
+      top: '-50px',
+      right: '8px',
+      'z-index': '121',
+    });
+    expect(globalsCss).not.toContain('.workspace-sidebar-toggle-row');
   });
 
   it('reduces the nested board list inset and removes the selected pulse decoration', () => {

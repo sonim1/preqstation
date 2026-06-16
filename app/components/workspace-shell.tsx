@@ -513,22 +513,20 @@ export function WorkspaceShell({
       </AppShell.Header>
 
       <AppShell.Navbar className={navbarClassName}>
-        <AppShell.Section px="xs" className="workspace-sidebar-toggle-row">
-          <ActionIcon
-            size={36}
-            radius="md"
-            variant="default"
-            className="workspace-sidebar-toggle"
-            aria-label={desktopOpened ? 'Collapse sidebar' : 'Expand sidebar'}
-            onClick={toggleDesktop}
-          >
-            {desktopOpened ? (
-              <IconLayoutSidebarLeftCollapse size={18} />
-            ) : (
-              <IconLayoutSidebarLeftExpand size={18} />
-            )}
-          </ActionIcon>
-        </AppShell.Section>
+        <ActionIcon
+          size={44}
+          radius="md"
+          variant="default"
+          className="workspace-sidebar-toggle"
+          aria-label={desktopOpened ? 'Collapse sidebar' : 'Expand sidebar'}
+          onClick={toggleDesktop}
+        >
+          {desktopOpened ? (
+            <IconLayoutSidebarLeftCollapse size={18} />
+          ) : (
+            <IconLayoutSidebarLeftExpand size={18} />
+          )}
+        </ActionIcon>
         <AppShell.Section grow component={ScrollArea} px="xs">
           <Stack gap={6} py="xs">
             <NavLink
