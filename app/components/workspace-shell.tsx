@@ -16,10 +16,10 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
-  IconChevronLeft,
-  IconChevronRight,
   IconFolders,
   IconHome2,
+  IconLayoutSidebarLeftCollapse,
+  IconLayoutSidebarLeftExpand,
   IconPlugConnected,
   IconSettings,
 } from '@tabler/icons-react';
@@ -30,6 +30,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { outfit } from '@/app/fonts';
+import { getProjectCardBgUrl } from '@/lib/project-backgrounds';
 import { ACTIVE_PROJECT_STATUS } from '@/lib/project-meta';
 import {
   findProjectByKey,
@@ -99,29 +100,14 @@ type BoardNavLinkProps = {
   onSelect: (projectKey: string) => void;
 };
 
-function getProjectAvatarLabel(project: WorkspaceProjectOption) {
-  const keySegments = project.projectKey.match(/[a-z0-9]+/gi) ?? [];
-  if (keySegments.length >= 2) {
-    const [firstSegment = '', secondSegment = ''] = keySegments;
-    return `${firstSegment.slice(0, 1)}${secondSegment.slice(0, 1)}`.toUpperCase();
-  }
-
-  const fallback = (keySegments[0] || project.name).replace(/[^a-z0-9]/gi, '');
-  return fallback.slice(0, 2).toUpperCase() || 'PR';
-}
-
-function getProjectAvatarTone(project: WorkspaceProjectOption) {
-  const source = project.projectKey || project.name;
-  let hash = 0;
-
-  for (const character of source) {
-    hash = (hash + character.charCodeAt(0)) % 5;
-  }
-
-  return String(hash);
-}
-
 function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) {
+  const backgroundUrl = getProjectCardBgUrl(project.bgImage);
+  const backgroundStyle = backgroundUrl
+    ? ({
+        '--workspace-board-card-bg-image': `url("${backgroundUrl}")`,
+      } as React.CSSProperties)
+    : undefined;
+
   return (
     <NavLink
       component={Link}
@@ -129,13 +115,7 @@ function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) 
       prefetch={false}
       label={
         <span className="workspace-board-subnav-label">
-          <span
-            className="workspace-board-subnav-avatar"
-            data-tone={getProjectAvatarTone(project)}
-            aria-hidden="true"
-          >
-            {getProjectAvatarLabel(project)}
-          </span>
+          <span className="workspace-board-subnav-key">{project.projectKey}</span>
           <span className="workspace-board-subnav-name">{project.name}</span>
         </span>
       }
@@ -144,8 +124,9 @@ function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) 
       }}
       className="workspace-nav-link workspace-board-subnav-link"
       data-current-board={isCurrentBoard ? 'true' : undefined}
-      aria-label={project.name}
       aria-current={isCurrentBoard ? 'page' : undefined}
+      title={`${project.projectKey} - ${project.name}`}
+      style={backgroundStyle}
     />
   );
 }
@@ -464,19 +445,6 @@ export function WorkspaceShell({
               size="sm"
               aria-label={mobileOpened ? 'Close navigation' : 'Open navigation'}
             />
-            {!desktopOpened ? (
-              <ActionIcon
-                visibleFrom="sm"
-                size={44}
-                radius="xl"
-                variant="default"
-                className="workspace-header-sidebar-toggle"
-                aria-label="Expand navigation"
-                onClick={toggleDesktop}
-              >
-                <IconChevronRight size={16} />
-              </ActionIcon>
-            ) : null}
           </Group>
 
           <Link
@@ -545,6 +513,22 @@ export function WorkspaceShell({
       </AppShell.Header>
 
       <AppShell.Navbar className={navbarClassName}>
+        <AppShell.Section px="xs" className="workspace-sidebar-toggle-row">
+          <ActionIcon
+            size={36}
+            radius="md"
+            variant="default"
+            className="workspace-sidebar-toggle"
+            aria-label={desktopOpened ? 'Collapse sidebar' : 'Expand sidebar'}
+            onClick={toggleDesktop}
+          >
+            {desktopOpened ? (
+              <IconLayoutSidebarLeftCollapse size={18} />
+            ) : (
+              <IconLayoutSidebarLeftExpand size={18} />
+            )}
+          </ActionIcon>
+        </AppShell.Section>
         <AppShell.Section grow component={ScrollArea} px="xs">
           <Stack gap={6} py="xs">
             <NavLink
@@ -640,20 +624,6 @@ export function WorkspaceShell({
       </AppShell.Navbar>
 
       <AppShell.Main id="main-content" tabIndex={-1} className="workspace-main">
-        {desktopOpened ? (
-          <div className="workspace-divider-rail">
-            <ActionIcon
-              size={44}
-              radius="xl"
-              variant="default"
-              className="workspace-divider-rail-button"
-              aria-label="Collapse navigation"
-              onClick={toggleDesktop}
-            >
-              <IconChevronLeft size={16} />
-            </ActionIcon>
-          </div>
-        ) : null}
         {children}
       </AppShell.Main>
 

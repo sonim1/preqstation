@@ -398,6 +398,7 @@ export default async function ProjectsPage({ searchParams }: ProjectsPageProps) 
       repoLabel: getRepoLabel(summary.project.repoUrl, summary.project.projectKey),
       repoUrl: summary.project.repoUrl,
       vercelUrl: summary.project.vercelUrl,
+      bgImage: summary.project.bgImage,
       detailsHref: `/project/${summary.project.projectKey}`,
       editHref: `/projects?panel=project-edit&projectKey=${summary.project.projectKey}`,
       lastActivityLabel: `Last activity ${formatRelativeActivity(summary.lastActivityAt, now)}`,

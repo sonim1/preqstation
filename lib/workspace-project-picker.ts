@@ -5,6 +5,7 @@ export type WorkspaceProjectOption = {
   name: string;
   projectKey: string;
   status: ProjectStatus;
+  bgImage?: string | null;
 };
 
 export const LAST_PROJECT_KEY_STORAGE = 'pm:lastProjectKey';

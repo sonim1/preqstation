@@ -199,6 +199,71 @@
     inset 0 0 0 2px var(--ui-focus-ring), inset 0 0 0 3px var(--ui-accent-soft);
   --ui-workspace-outer-focus-shadow: 0 0 0 3px
     color-mix(in srgb, var(--ui-focus-ring), transparent 45%);
+  --ui-workspace-board-card-surface: color-mix(in srgb, var(--ui-surface-muted), transparent 12%);
+  --ui-workspace-board-card-overlay-start: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    transparent 8%
+  );
+  --ui-workspace-board-card-overlay-end: color-mix(
+    in srgb,
+    var(--ui-surface-muted),
+    transparent 18%
+  );
+  --ui-workspace-board-card-text: color-mix(in srgb, var(--ui-text), var(--ui-muted-text) 28%);
+  --ui-workspace-board-card-hover-surface: color-mix(
+    in srgb,
+    var(--ui-workspace-control-hover-surface),
+    var(--ui-accent) 6%
+  );
+  --ui-workspace-board-card-hover-overlay-start: color-mix(
+    in srgb,
+    var(--ui-workspace-control-hover-surface),
+    transparent 6%
+  );
+  --ui-workspace-board-card-hover-overlay-end: color-mix(
+    in srgb,
+    var(--ui-accent-soft),
+    transparent 16%
+  );
+  --ui-workspace-board-card-focus-overlay-start: color-mix(
+    in srgb,
+    var(--ui-workspace-accent-surface),
+    transparent 4%
+  );
+  --ui-workspace-board-card-focus-overlay-end: color-mix(
+    in srgb,
+    var(--ui-accent-soft),
+    transparent 18%
+  );
+  --ui-workspace-board-card-key-border: color-mix(in srgb, var(--ui-border), transparent 12%);
+  --ui-workspace-board-card-key-surface: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    transparent 16%
+  );
+  --ui-workspace-board-card-key-highlight: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    transparent 16%
+  );
+  --ui-workspace-board-card-current-surface: color-mix(
+    in srgb,
+    var(--ui-workspace-accent-surface),
+    var(--ui-accent) 10%
+  );
+  --ui-workspace-board-card-current-overlay-start: color-mix(
+    in srgb,
+    var(--ui-workspace-accent-surface),
+    transparent 2%
+  );
+  --ui-workspace-board-card-current-overlay-end: color-mix(
+    in srgb,
+    var(--ui-accent-soft),
+    transparent 12%
+  );
+  --ui-workspace-board-card-current-border: color-mix(in srgb, var(--ui-accent), white 20%);
+  --ui-workspace-board-card-current-shadow: color-mix(in srgb, var(--ui-accent), transparent 78%);
   --ui-admin-surface:
     linear-gradient(
       180deg,
@@ -922,14 +987,25 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 }
 
 .workspace-board-subnav-link {
+  --workspace-board-card-bg-image: none;
+  --workspace-board-card-surface: var(--ui-workspace-board-card-surface);
+  --workspace-board-card-overlay: linear-gradient(
+    135deg,
+    var(--ui-workspace-board-card-overlay-start),
+    var(--ui-workspace-board-card-overlay-end)
+  );
   position: relative;
   z-index: 1;
   min-height: 64px;
   padding: 8px 10px;
   border: 1px solid var(--ui-border);
   border-radius: 12px;
-  background: color-mix(in srgb, var(--ui-surface-muted), transparent 12%);
-  color: color-mix(in srgb, var(--ui-text), var(--ui-muted-text) 28%);
+  background:
+    var(--workspace-board-card-overlay), var(--workspace-board-card-bg-image),
+    var(--workspace-board-card-surface);
+  background-position: center;
+  background-size: cover;
+  color: var(--ui-workspace-board-card-text);
   transition:
     background 140ms ease,
     border-color 140ms ease,
@@ -942,11 +1018,11 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 .workspace-board-subnav-link[data-active]:hover,
 .workspace-board-subnav-link[aria-current='page'],
 .workspace-board-subnav-link[aria-current='page']:hover {
-  background: color-mix(in srgb, var(--ui-workspace-control-hover-surface), var(--ui-accent) 6%);
-  background-color: color-mix(
-    in srgb,
-    var(--ui-workspace-control-hover-surface),
-    var(--ui-accent) 6%
+  --workspace-board-card-surface: var(--ui-workspace-board-card-hover-surface);
+  --workspace-board-card-overlay: linear-gradient(
+    135deg,
+    var(--ui-workspace-board-card-hover-overlay-start),
+    var(--ui-workspace-board-card-hover-overlay-end)
   );
 }
 
@@ -968,7 +1044,12 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .workspace-board-subnav-link:focus-visible {
   outline: none;
-  background: var(--ui-workspace-accent-surface);
+  --workspace-board-card-surface: var(--ui-workspace-accent-surface);
+  --workspace-board-card-overlay: linear-gradient(
+    135deg,
+    var(--ui-workspace-board-card-focus-overlay-start),
+    var(--ui-workspace-board-card-focus-overlay-end)
+  );
   color: var(--ui-text);
   box-shadow: var(--ui-workspace-focus-shadow);
 }
@@ -990,41 +1071,25 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   min-width: 0;
 }
 
-.workspace-board-subnav-avatar {
+.workspace-board-subnav-key {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  min-width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  color: white;
+  min-width: 0;
+  max-width: 96px;
+  min-height: 26px;
+  padding: 0 7px;
+  border-radius: 7px;
+  border: 1px solid var(--ui-workspace-board-card-key-border);
+  background: var(--ui-workspace-board-card-key-surface);
+  color: var(--ui-text);
   font-size: var(--ui-font-size-micro);
   font-weight: 800;
   line-height: 1;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.24),
-    0 8px 18px rgba(15, 23, 42, 0.16);
-}
-
-.workspace-board-subnav-avatar[data-tone='0'] {
-  background: linear-gradient(135deg, #3b82f6, #60a5fa);
-}
-
-.workspace-board-subnav-avatar[data-tone='1'] {
-  background: linear-gradient(135deg, #22c55e, #86efac);
-}
-
-.workspace-board-subnav-avatar[data-tone='2'] {
-  background: linear-gradient(135deg, #d97706, #fbbf24);
-}
-
-.workspace-board-subnav-avatar[data-tone='3'] {
-  background: linear-gradient(135deg, #7c3aed, #c084fc);
-}
-
-.workspace-board-subnav-avatar[data-tone='4'] {
-  background: linear-gradient(135deg, #dc2626, #fb7185);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 var(--ui-workspace-board-card-key-highlight);
 }
 
 .workspace-board-subnav-name {
@@ -1047,12 +1112,17 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 }
 
 .workspace-board-subnav-link[data-current-board='true'] {
-  border-color: color-mix(in srgb, var(--ui-accent), white 20%);
-  background: color-mix(in srgb, var(--ui-workspace-accent-surface), var(--ui-accent) 10%);
+  --workspace-board-card-surface: var(--ui-workspace-board-card-current-surface);
+  --workspace-board-card-overlay: linear-gradient(
+    135deg,
+    var(--ui-workspace-board-card-current-overlay-start),
+    var(--ui-workspace-board-card-current-overlay-end)
+  );
+  border-color: var(--ui-workspace-board-card-current-border);
   color: var(--ui-text);
   box-shadow:
     inset 0 0 0 1px var(--ui-accent),
-    0 8px 20px color-mix(in srgb, var(--ui-accent), transparent 78%);
+    0 8px 20px var(--ui-workspace-board-card-current-shadow);
 }
 
 .workspace-board-subnav-link:hover {
@@ -1110,6 +1180,42 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   padding-bottom: 12px;
 }
 
+.workspace-sidebar-toggle-row {
+  display: none;
+  justify-content: flex-end;
+  padding-top: 10px;
+  padding-bottom: 4px;
+}
+
+.workspace-sidebar-toggle {
+  flex-shrink: 0;
+  width: var(--ui-hit-touch-min);
+  height: var(--ui-hit-touch-min);
+  min-width: var(--ui-hit-touch-min);
+  min-height: var(--ui-hit-touch-min);
+  border: 1px solid var(--ui-workspace-control-border);
+  background: var(--ui-workspace-control-surface);
+  color: var(--ui-accent-strong);
+  box-shadow: var(--ui-workspace-control-shadow);
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    transform 150ms ease;
+}
+
+.workspace-sidebar-toggle:hover,
+.workspace-sidebar-toggle:focus-visible {
+  border-color: var(--ui-accent);
+  background: var(--ui-workspace-control-hover-surface);
+}
+
+.workspace-brand-link:focus-visible,
+.workspace-sidebar-toggle:focus-visible {
+  outline: none;
+  border-color: var(--ui-accent);
+  box-shadow: var(--ui-workspace-outer-focus-shadow);
+}
+
 .workspace-nav-link[data-active='true'] {
   background: var(--ui-workspace-accent-surface);
   border-color: var(--ui-workspace-accent-border);
@@ -1120,6 +1226,10 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .workspace-shell--sidebar-collapsed .workspace-navbar .mantine-AppShell-section {
   padding-inline: 8px;
+}
+
+.workspace-shell--sidebar-collapsed .workspace-sidebar-toggle-row {
+  justify-content: center;
 }
 
 .workspace-shell--sidebar-collapsed .workspace-nav-link:not(.workspace-board-subnav-link) {
@@ -1169,6 +1279,13 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   justify-content: center;
 }
 
+.workspace-shell--sidebar-collapsed .workspace-board-subnav-key {
+  max-width: 36px;
+  min-height: 24px;
+  padding: 0 4px;
+  font-size: var(--ui-font-size-tiny);
+}
+
 .workspace-shell--sidebar-collapsed .workspace-board-subnav-name,
 .workspace-shell--sidebar-collapsed .workspace-board-subnav-heading,
 .workspace-shell--sidebar-collapsed .workspace-board-subnav-more {
@@ -1177,69 +1294,6 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .workspace-main {
   position: relative;
-}
-
-.workspace-divider-rail {
-  position: fixed;
-  top: 50%;
-  left: var(--app-shell-navbar-offset, 240px);
-  transform: translate(-50%, -50%);
-  z-index: 210;
-  width: 24px;
-  height: 104px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.workspace-divider-rail-button,
-.workspace-header-sidebar-toggle {
-  width: var(--ui-hit-touch-min);
-  height: var(--ui-hit-touch-min);
-  border: 1px solid var(--ui-workspace-control-border);
-  background: var(--ui-workspace-control-surface);
-  color: var(--ui-accent-strong);
-  box-shadow: var(--ui-workspace-control-shadow);
-  transition:
-    border-color 150ms ease,
-    background-color 150ms ease,
-    opacity 150ms ease,
-    transform 150ms ease;
-}
-
-.workspace-divider-rail-button {
-  opacity: 0;
-  transform: scale(0.88);
-  pointer-events: none;
-}
-
-.workspace-divider-rail:hover .workspace-divider-rail-button,
-.workspace-divider-rail:focus-within .workspace-divider-rail-button {
-  opacity: 1;
-  transform: scale(1);
-  pointer-events: auto;
-}
-
-.workspace-divider-rail-button:hover,
-.workspace-divider-rail-button:focus-visible,
-.workspace-header-sidebar-toggle:hover,
-.workspace-header-sidebar-toggle:focus-visible {
-  border-color: var(--ui-accent);
-  background: var(--ui-workspace-control-hover-surface);
-}
-
-.workspace-brand-link:focus-visible,
-.workspace-divider-rail-button:focus-visible,
-.workspace-header-sidebar-toggle:focus-visible {
-  outline: none;
-  border-color: var(--ui-accent);
-  box-shadow: var(--ui-workspace-outer-focus-shadow);
-}
-
-.workspace-header-sidebar-toggle {
-  flex-shrink: 0;
-  width: var(--ui-hit-touch-min);
-  height: var(--ui-hit-touch-min);
 }
 
 .workspace-signout-btn {
@@ -3229,17 +3283,14 @@ html[data-mantine-color-scheme='dark'] .mantine-Badge-root[data-variant='light']
   color: var(--ui-text);
 }
 
-html[data-mantine-color-scheme='dark'] .workspace-divider-rail-button,
-html[data-mantine-color-scheme='dark'] .workspace-header-sidebar-toggle {
+html[data-mantine-color-scheme='dark'] .workspace-sidebar-toggle {
   border-color: var(--ui-workspace-control-border);
   background: var(--ui-workspace-control-surface);
   box-shadow: var(--ui-workspace-control-shadow);
 }
 
-html[data-mantine-color-scheme='dark'] .workspace-divider-rail-button:hover,
-html[data-mantine-color-scheme='dark'] .workspace-divider-rail-button:focus-visible,
-html[data-mantine-color-scheme='dark'] .workspace-header-sidebar-toggle:hover,
-html[data-mantine-color-scheme='dark'] .workspace-header-sidebar-toggle:focus-visible {
+html[data-mantine-color-scheme='dark'] .workspace-sidebar-toggle:hover,
+html[data-mantine-color-scheme='dark'] .workspace-sidebar-toggle:focus-visible {
   border-color: var(--ui-workspace-accent-border-soft);
   background: var(--ui-workspace-control-hover-surface);
 }
@@ -3459,14 +3510,16 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
   }
 }
 
+@media (min-width: 48em) {
+  .workspace-sidebar-toggle-row {
+    display: flex;
+  }
+}
+
 @media (max-width: 62em) {
   .kanban-column {
     flex-basis: min(78vw, 320px);
     width: min(78vw, 320px);
-  }
-
-  .workspace-divider-rail {
-    display: none;
   }
 }
 

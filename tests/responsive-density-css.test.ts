@@ -61,10 +61,10 @@ describe('responsive density audit fixes', () => {
       /\.workspace-header-start\s+\.mantine-Burger-root\s*\{[^}]*width:\s*var\(--ui-hit-touch-min\);[^}]*min-width:\s*var\(--ui-hit-touch-min\);[^}]*height:\s*var\(--ui-hit-touch-min\);/,
     );
     expect(globalsCss).toMatch(
-      /\.workspace-divider-rail-button,\s*\.workspace-header-sidebar-toggle\s*\{[^}]*width:\s*var\(--ui-hit-touch-min\);[^}]*height:\s*var\(--ui-hit-touch-min\);/,
+      /\.workspace-sidebar-toggle\s*\{[^}]*width:\s*var\(--ui-hit-touch-min\);[^}]*height:\s*var\(--ui-hit-touch-min\);/,
     );
     expect(globalsCss).toMatch(
-      /\.workspace-header-sidebar-toggle\s*\{[^}]*width:\s*var\(--ui-hit-touch-min\);[^}]*height:\s*var\(--ui-hit-touch-min\);/,
+      /\.workspace-sidebar-toggle\s*\{[^}]*min-width:\s*var\(--ui-hit-touch-min\);[^}]*min-height:\s*var\(--ui-hit-touch-min\);/,
     );
     expect(globalsCss).toMatch(
       /\.workspace-brand-link\s*\{[^}]*min-height:\s*var\(--ui-hit-touch-min\);/,

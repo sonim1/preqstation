@@ -591,23 +591,30 @@ describe('app/components/workspace-shell', () => {
     );
   });
 
-  it('shows the divider rail toggle while the desktop sidebar is open', () => {
+  it('shows the collapse toggle inside the desktop sidebar header while open', () => {
     const html = renderWorkspaceShell({ desktopOpened: true });
 
-    expect(html).toContain('workspace-divider-rail');
-    expect(html).toContain('Collapse navigation');
-    expect(html).not.toContain('workspace-header-sidebar-toggle');
-  });
-
-  it('moves the reopen toggle into the header while the desktop sidebar is collapsed', () => {
-    const html = renderWorkspaceShell({ desktopOpened: false });
-
-    expect(html).toContain('workspace-header-sidebar-toggle');
-    expect(html).toContain('Expand navigation');
+    expect(html).toContain('workspace-sidebar-toggle-row');
+    expect(html).toContain('workspace-sidebar-toggle');
+    expect(html).toContain('Collapse sidebar');
+    expect(workspaceShellSource).toContain('IconLayoutSidebarLeftCollapse');
+    expect(workspaceShellSource).not.toContain('IconChevronLeft');
     expect(html).not.toContain('workspace-divider-rail');
   });
 
-  it('uses a wider desktop sidebar and keeps a compact rail when collapsed', () => {
+  it('keeps the expand toggle inside the desktop sidebar header while collapsed', () => {
+    const html = renderWorkspaceShell({ desktopOpened: false });
+
+    expect(html).toContain('workspace-sidebar-toggle-row');
+    expect(html).toContain('workspace-sidebar-toggle');
+    expect(html).toContain('Expand sidebar');
+    expect(workspaceShellSource).toContain('IconLayoutSidebarLeftExpand');
+    expect(workspaceShellSource).not.toContain('IconChevronRight');
+    expect(html).not.toContain('workspace-divider-rail');
+    expect(html).not.toContain('workspace-header-sidebar-toggle');
+  });
+
+  it('uses a wider desktop sidebar and keeps a compact sidebar when collapsed', () => {
     const openHtml = renderWorkspaceShell({ desktopOpened: true });
     const collapsedHtml = renderWorkspaceShell({ desktopOpened: false });
 
@@ -702,7 +709,7 @@ describe('app/components/workspace-shell', () => {
     const dashboardLink = navbar.getByRole('link', { name: 'Dashboard' });
     const projectsLink = navbar.getByRole('link', { name: 'Projects' });
     const recentLabel = navbar.getByText('Recent projects');
-    const alphaBoardLink = navbar.getByRole('link', { name: 'Alpha' });
+    const alphaBoardLink = navbar.getByRole('link', { name: /ALPHA\s*Alpha/ });
 
     expect(navbar.queryByRole('link', { name: 'Boards' })).toBeNull();
     expectBefore(dashboardLink, projectsLink);
@@ -723,6 +730,9 @@ describe('app/components/workspace-shell', () => {
     expectBefore(dashboardLink, recentLabel);
     expectBefore(recentLabel, settingsLink);
     expectBefore(settingsLink, connectionsLink);
+    expect(navbar.queryByText('Workspace')).toBeNull();
+    expect(navbar.queryByText('Manage')).toBeNull();
+    expect(navbar.queryAllByRole('heading', { level: 2 })).toHaveLength(0);
   });
 
   it('renders only active boards in the desktop board list', () => {
@@ -763,16 +773,44 @@ describe('app/components/workspace-shell', () => {
     expect(navbar.queryByRole('link', { name: 'Boards' })).toBeNull();
     expectBefore(projectsLink, recentLabel);
     expect(quickBoardLinks.map((link) => link.textContent?.trim())).toEqual([
-      'P6Project 6',
-      'P5Project 5',
-      'P4Project 4',
-      'P3Project 3',
-      'P2Project 2',
+      'PROJECT-6Project 6',
+      'PROJECT-5Project 5',
+      'PROJECT-4Project 4',
+      'PROJECT-3Project 3',
+      'PROJECT-2Project 2',
     ]);
-    expect(quickBoardLinks[0]?.querySelector('.workspace-board-subnav-avatar')?.textContent).toBe(
-      'P6',
+    expect(quickBoardLinks[0]?.querySelector('.workspace-board-subnav-key')?.textContent).toBe(
+      'PROJECT-6',
     );
     expect(container.querySelector('[href="/board/PROJECT-7"]')).toBeNull();
+  });
+
+  it('uses project card backgrounds for recent board cards without colored initials', () => {
+    const { container } = renderWorkspaceShellDom({
+      desktopOpened: true,
+      pathname: '/board/ALPHA',
+      rememberedProjectKey: 'ALPHA',
+      projectOptions: [
+        {
+          id: '1',
+          name: 'Alpha',
+          projectKey: 'ALPHA',
+          status: 'active',
+          bgImage: 'forest',
+        },
+      ],
+    });
+    const boardLink = container.querySelector<HTMLElement>('.workspace-board-subnav-link');
+    const keyBadge = boardLink?.querySelector<HTMLElement>('.workspace-board-subnav-key');
+    const boardCardBgStyle =
+      boardLink?.style.getPropertyValue('--workspace-board-card-bg-image') ?? '';
+
+    expect(boardCardBgStyle).toContain('images.unsplash.com');
+    expect(boardLink?.getAttribute('aria-label')).toBeNull();
+    expect(keyBadge?.textContent).toBe('ALPHA');
+    expect(keyBadge?.hasAttribute('aria-hidden')).toBe(false);
+    expect(boardLink?.querySelector('.workspace-board-subnav-avatar')).toBeNull();
+    expect(keyBadge?.hasAttribute('data-tone')).toBe(false);
   });
 
   it('marks the current board when it is in the recent projects list', () => {
@@ -836,22 +874,22 @@ describe('app/components/workspace-shell', () => {
       );
 
     expect(boardLabels()).toEqual([
-      'P6Project 6',
-      'P5Project 5',
-      'P4Project 4',
-      'P3Project 3',
-      'P2Project 2',
+      'PROJECT-6Project 6',
+      'PROJECT-5Project 5',
+      'PROJECT-4Project 4',
+      'PROJECT-3Project 3',
+      'PROJECT-2Project 2',
     ]);
     fireEvent.click(
       within(getWorkspaceNavbar(container)).getByRole('button', { name: 'View all projects' }),
     );
 
     expect(boardLabels()).toEqual([
-      'P6Project 6',
-      'P5Project 5',
-      'P4Project 4',
-      'P3Project 3',
-      'P2Project 2',
+      'PROJECT-6Project 6',
+      'PROJECT-5Project 5',
+      'PROJECT-4Project 4',
+      'PROJECT-3Project 3',
+      'PROJECT-2Project 2',
     ]);
     expect(workspaceShellSource).toMatch(
       /<Menu[\s\S]*position="right-start"[\s\S]*className="workspace-board-subnav-more"[\s\S]*<ProjectPickerMenuItems\s+projectOptions=\{orderedProjectOptions\}/,
@@ -1000,13 +1038,13 @@ describe('app/components/workspace-shell', () => {
           (link) => link.textContent?.trim(),
         );
 
-      expect(boardLabels()).toEqual(['BEBeta', 'GAGamma', 'ALAlpha', 'DEDelta']);
+      expect(boardLabels()).toEqual(['BETABeta', 'GAMMAGamma', 'ALPHAAlpha', 'DELTADelta']);
 
       window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(['BETA', 'DELTA']));
       projectOrderState = 'ALPHA|BETA|DELTA';
       rerender(workspaceShellElement(projectOptions));
 
-      expect(boardLabels()).toEqual(['BEBeta', 'DEDelta', 'ALAlpha', 'GAGamma']);
+      expect(boardLabels()).toEqual(['BETABeta', 'DELTADelta', 'ALPHAAlpha', 'GAMMAGamma']);
     } finally {
       window.localStorage.removeItem(RECENT_PROJECTS_STORAGE);
     }
@@ -1049,30 +1087,59 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('matches the nested board row height to the larger selection surface by removing vertical padding', () => {
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link\s*\{[^}]*min-height:\s*64px;[^}]*padding:\s*8px 10px;/,
-    );
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <a class="workspace-board-subnav-link" data-testid="board-link"></a>
+    `);
+
+    try {
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'board-link'), {
+        'min-height': '64px',
+        'padding-top': '8px',
+        'padding-right': '10px',
+        'padding-bottom': '8px',
+        'padding-left': '10px',
+      });
+    } finally {
+      cleanup();
+    }
   });
 
   it('keeps Mantine root hover and current backgrounds on project-card surfaces', () => {
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link:hover,\s*\.workspace-board-subnav-link\[data-active\],\s*\.workspace-board-subnav-link\[data-active\]:hover,\s*\.workspace-board-subnav-link\[aria-current=["']page["']\],\s*\.workspace-board-subnav-link\[aria-current=["']page["']\]:hover\s*\{[\s\S]*background:\s*color-mix\(in srgb, var\(--ui-workspace-control-hover-surface\), var\(--ui-accent\) 6%\);/,
-    );
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <a class="workspace-board-subnav-link" data-active="true" data-testid="active"></a>
+      <a class="workspace-board-subnav-link" aria-current="page" data-testid="current"></a>
+    `);
+
+    try {
+      for (const testId of ['active', 'current']) {
+        expectComputedStyleProperties(getRequiredFixtureElement(fixture, testId), {
+          '--workspace-board-card-surface': 'var(--ui-workspace-board-card-hover-surface)',
+          '--workspace-board-card-overlay':
+            'linear-gradient(135deg,var(--ui-workspace-board-card-hover-overlay-start),var(--ui-workspace-board-card-hover-overlay-end))',
+        });
+      }
+    } finally {
+      cleanup();
+    }
   });
 
   it('defines an in-bounds focus treatment for nested board links', () => {
-    const nestedBoardFocusRule =
-      globalsCss.match(/\.workspace-board-subnav-link:focus-visible\s*\{([\s\S]*?)\}/)?.[1] ?? '';
-    const nestedBoardBodyFocusRule =
-      globalsCss.match(
-        /\.workspace-board-subnav-link:focus-visible\s+\.mantine-NavLink-body\s*\{([\s\S]*?)\}/,
-      )?.[1] ?? '';
+    const nestedBoardFocusRule = getCssRuleProperties(
+      '.workspace-board-subnav-link:focus-visible',
+      ['outline', '--workspace-board-card-surface', 'color', 'box-shadow'],
+    );
+    const nestedBoardBodyFocusRule = getCssRuleProperties(
+      '.workspace-board-subnav-link:focus-visible .mantine-NavLink-body',
+      ['background'],
+    );
 
-    expect(nestedBoardFocusRule).toMatch(/outline:\s*none;/);
-    expect(nestedBoardFocusRule).toMatch(/color:\s*var\(--ui-text\);/);
-    expect(nestedBoardFocusRule).toMatch(/background:\s*var\(--ui-workspace-accent-surface\);/);
-    expect(nestedBoardFocusRule).toMatch(/box-shadow:\s*var\(--ui-workspace-focus-shadow\);/);
-    expect(nestedBoardBodyFocusRule).toBe('');
+    expect(nestedBoardFocusRule).toEqual({
+      outline: 'none',
+      '--workspace-board-card-surface': 'var(--ui-workspace-accent-surface)',
+      color: 'var(--ui-text)',
+      'box-shadow': 'var(--ui-workspace-focus-shadow)',
+    });
+    expect(nestedBoardBodyFocusRule).toBeNull();
   });
 
   it('defines a custom focus-visible treatment for top-level workspace nav links', () => {
@@ -1082,7 +1149,7 @@ describe('app/components/workspace-shell', () => {
       rememberedProjectKey: 'ALPHA',
     });
     const navbar = within(getWorkspaceNavbar(container));
-    const currentBoardLink = navbar.getByRole('link', { name: 'Alpha' });
+    const currentBoardLink = navbar.getByRole('link', { name: /ALPHA\s*Alpha/ });
     const focusRule = getCssRuleProperties(
       '.workspace-nav-link:not(.workspace-board-subnav-link):focus-visible',
       ['outline', 'background', 'color', 'box-shadow'],
@@ -1105,6 +1172,9 @@ describe('app/components/workspace-shell', () => {
 
     expect(navbar.queryByRole('heading', { level: 2, name: 'Workspace' })).toBeNull();
     expect(navbar.queryByRole('heading', { level: 2, name: 'Manage' })).toBeNull();
+    expect(navbar.queryAllByRole('heading', { level: 2 })).toHaveLength(0);
+    expect(workspaceShellSource).not.toContain('workspace-nav-section-label');
+    expect(globalsCss).not.toContain('.workspace-nav-section-label');
 
     ['Dashboard', 'Projects', 'Settings', 'Connections'].forEach((name) => {
       const link = navbar.getByRole('link', { name });
@@ -1115,9 +1185,9 @@ describe('app/components/workspace-shell', () => {
     expect(navbar.queryByRole('link', { name: 'Boards' })).toBeNull();
   });
 
-  it('defines a shared focus-visible treatment for header and rail controls', () => {
+  it('defines a shared focus-visible treatment for header and sidebar controls', () => {
     expect(globalsCss).toMatch(
-      /\.workspace-brand-link:focus-visible,\s*\.workspace-divider-rail-button:focus-visible,\s*\.workspace-header-sidebar-toggle:focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*border-color:\s*var\(--ui-accent\);[\s\S]*box-shadow:\s*var\(--ui-workspace-outer-focus-shadow\);/,
+      /\.workspace-brand-link:focus-visible,\s*\.workspace-sidebar-toggle:focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*border-color:\s*var\(--ui-accent\);[\s\S]*box-shadow:\s*var\(--ui-workspace-outer-focus-shadow\);/,
     );
     expect(globalsCss).toMatch(
       /\.workspace-notification-trigger:focus-visible,\s*\.workspace-avatar-trigger:focus-visible\s*\{[\s\S]*outline:\s*none;[\s\S]*background:\s*var\(--ui-workspace-control-hover-surface\);[\s\S]*box-shadow:\s*var\(--ui-workspace-outer-focus-shadow\);/,
@@ -1135,10 +1205,18 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('uses flatter token-based sidebar chrome instead of blur-heavy gradients', () => {
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <a class="workspace-board-subnav-link" data-current-board="true" data-testid="current-board"></a>
+    `);
+
     expect(globalsCss).not.toMatch(/\.workspace-navbar\s*\{[^}]*backdrop-filter:/);
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link\[data-current-board=["']true["']\]\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--ui-workspace-accent-surface\), var\(--ui-accent\) 10%\);/,
-    );
+    try {
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'current-board'), {
+        '--workspace-board-card-surface': 'var(--ui-workspace-board-card-current-surface)',
+      });
+    } finally {
+      cleanup();
+    }
     expect(globalsCss).toMatch(
       /\.workspace-nav-link\[data-active=["']true["']\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*color:\s*var\(--ui-text\);/,
     );
@@ -1194,17 +1272,32 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('shares accent state tokens between project picker items and board subnav', () => {
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <button class="workspace-project-picker-item is-selected" data-testid="project-picker"></button>
+      <button class="workspace-board-picker-item" data-current-board="true" data-testid="board-picker"></button>
+      <a class="workspace-board-subnav-link" data-current-board="true" data-testid="current-board-link"></a>
+    `);
+
     expect(globalsCss).toMatch(/--ui-workspace-accent-surface:/);
     expect(globalsCss).toMatch(/--ui-workspace-accent-border:/);
     expect(globalsCss).toMatch(/--ui-workspace-focus-shadow:/);
+    try {
+      for (const testId of ['project-picker', 'board-picker']) {
+        expectComputedStyleProperties(getRequiredFixtureElement(fixture, testId), {
+          background: 'var(--ui-workspace-accent-surface)',
+          'box-shadow': 'inset 0 0 0 1px var(--ui-workspace-accent-border)',
+        });
+      }
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'current-board-link'), {
+        '--workspace-board-card-surface': 'var(--ui-workspace-board-card-current-surface)',
+        '--workspace-board-card-overlay':
+          'linear-gradient(135deg,var(--ui-workspace-board-card-current-overlay-start),var(--ui-workspace-board-card-current-overlay-end))',
+      });
+    } finally {
+      cleanup();
+    }
     expect(globalsCss).toMatch(
-      /\.workspace-project-picker-item\.is-selected,\s*\.workspace-board-picker-item\[data-current-board=["']true["']\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--ui-workspace-accent-border\);/,
-    );
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link\[data-current-board=["']true["']\]\s*\{[^}]*background:\s*color-mix\(in srgb, var\(--ui-workspace-accent-surface\), var\(--ui-accent\) 10%\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--ui-accent\),/,
-    );
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link:focus-visible\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*var\(--ui-workspace-focus-shadow\);/,
+      /\.workspace-board-subnav-link:focus-visible\s*\{[\s\S]*--workspace-board-card-surface:\s*var\(--ui-workspace-accent-surface\);[\s\S]*box-shadow:\s*var\(--ui-workspace-focus-shadow\);/,
     );
   });
 
@@ -1224,21 +1317,24 @@ describe('app/components/workspace-shell', () => {
     }
   });
 
-  it('styles recent project rows as project cards with avatars', () => {
-    expect(workspaceShellSource).toContain('workspace-board-subnav-avatar');
+  it('styles recent project rows as project cards with key badges', () => {
+    expect(workspaceShellSource).toContain('workspace-board-subnav-key');
+    expect(workspaceShellSource).not.toContain('workspace-board-subnav-avatar');
     expect(workspaceShellSource).toContain('View all projects');
     expect(globalsCss).toMatch(
       /\.workspace-board-subnav-link\s*\{[^}]*min-height:\s*64px;[^}]*padding:\s*8px 10px;/,
     );
     expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-avatar\s*\{[^}]*width:\s*34px;[^}]*height:\s*34px;[^}]*border-radius:\s*999px;/,
+      /\.workspace-board-subnav-key\s*\{[^}]*min-width:\s*0;[^}]*max-width:\s*96px;[^}]*border-radius:\s*7px;/,
     );
+    expect(globalsCss).not.toContain('.workspace-board-subnav-avatar');
+    expect(globalsCss).not.toContain('[data-tone');
     expect(globalsCss).toMatch(
       /\.workspace-board-subnav-link\[data-current-board=["']true["']\]\s*\{[^}]*box-shadow:\s*[\s\S]*inset 0 0 0 1px var\(--ui-accent\),/,
     );
   });
 
-  it('collapses the desktop sidebar to icon and project-initial rows', () => {
+  it('collapses the desktop sidebar to icons and compact project key rows', () => {
     expect(workspaceShellSource).toMatch(
       /navbar=\{\{\s*width:\s*desktopOpened\s*\?\s*WORKSPACE_NAVBAR_WIDTH\s*:\s*WORKSPACE_NAVBAR_COLLAPSED_WIDTH,[\s\S]*desktop:\s*false\s*\}/,
     );
@@ -1251,6 +1347,9 @@ describe('app/components/workspace-shell', () => {
     );
     expect(globalsCss).toMatch(
       /\.workspace-shell--sidebar-collapsed \.workspace-board-subnav-link\s*\{[^}]*width:\s*48px;[^}]*min-height:\s*48px;[^}]*padding:\s*6px;/,
+    );
+    expect(globalsCss).toMatch(
+      /\.workspace-shell--sidebar-collapsed \.workspace-board-subnav-key\s*\{[^}]*max-width:\s*36px;/,
     );
   });
 

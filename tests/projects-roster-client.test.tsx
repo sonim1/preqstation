@@ -46,6 +46,7 @@ function card(overrides: Partial<ProjectPortfolioCardSummary>): ProjectPortfolio
     repoUrl: overrides.repoUrl ?? 'https://github.com/sonim1/active-project',
     vercelUrl:
       overrides.vercelUrl === undefined ? 'https://active-project.vercel.app' : overrides.vercelUrl,
+    bgImage: overrides.bgImage ?? null,
     detailsHref: overrides.detailsHref ?? '/project/ACTV',
     editHref: overrides.editHref ?? '/projects?panel=project-edit&projectKey=ACTV',
     lastActivityLabel: overrides.lastActivityLabel ?? 'Last activity 1h ago',

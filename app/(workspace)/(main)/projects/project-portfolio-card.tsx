@@ -1,8 +1,10 @@
 import { Badge } from '@mantine/core';
 import { IconClock, IconGitBranch } from '@tabler/icons-react';
 import Link from 'next/link';
+import type { CSSProperties } from 'react';
 
 import { ProjectCardMenu } from '@/app/components/project-card-menu';
+import { getProjectPortfolioBgUrl } from '@/lib/project-backgrounds';
 
 import styles from './projects-page.module.css';
 
@@ -25,6 +27,7 @@ export type ProjectPortfolioCardSummary = {
   repoLabel: string;
   repoUrl: string | null;
   vercelUrl: string | null;
+  bgImage: string | null;
   detailsHref: string;
   editHref: string;
   lastActivityLabel: string;
@@ -49,13 +52,21 @@ export function ProjectPortfolioCard({
       : card.runningCount > 0
         ? 'live'
         : 'active';
+  const backgroundUrl = getProjectPortfolioBgUrl(card.bgImage);
+  const backgroundStyle = backgroundUrl
+    ? ({
+        '--project-card-bg-image': `url("${backgroundUrl}")`,
+      } as CSSProperties)
+    : undefined;
 
   return (
     <article
       id={`project-${card.projectKey}`}
       className={styles.projectCard}
+      data-project-card-background={backgroundUrl ? 'image' : 'none'}
       data-project-card-tone={card.tone}
       data-project-roster-card="true"
+      style={backgroundStyle}
     >
       <Link
         href={card.detailsHref}

@@ -505,7 +505,10 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(html).toContain('data-project-section="roster"');
     expect(html).not.toContain('data-portfolio-featured="true"');
     expect(html).not.toContain('Quiet edge');
-    expect(html).not.toContain('data-project-card-background="image"');
+    expect(html).toContain('data-project-card-background="image"');
+    expect(html).toContain('--project-card-bg-image:url(&quot;https://images.unsplash.com/');
+    expect(projectsPageSource).toContain('bgImage: summary.project.bgImage');
+    expect(projectPortfolioCardSource).toContain('getProjectPortfolioBgUrl(card.bgImage)');
   });
 
   it('filters the roster by fuzzy search across project fields and status query params', async () => {
@@ -868,6 +871,10 @@ describe('app/(workspace)/(main)/projects/page', () => {
     expect(projectsPageCss).toMatch(/\.projectCard\[data-project-card-tone=['"]paused['"]\]/);
     expect(projectsPageCss).toMatch(
       /\.projectCard\[data-project-card-tone=['"]paused['"]\]:has\(\.cardLink:hover\),[\s\S]*\.projectCard\[data-project-card-tone=['"]archived['"]\]:focus-within\s*\{[\s\S]*box-shadow:\s*none;[\s\S]*transform:\s*none;/,
+    );
+    expect(projectsPageCss).toContain('--project-card-bg-image');
+    expect(projectsPageCss).toMatch(
+      /\.projectCard\[data-project-card-background=['"]image['"]\]\s*\{[\s\S]*--project-card-overlay:/,
     );
     expect(projectsPageCss).not.toContain('--card-image');
     expect(projectsPageCss).not.toMatch(/\.projectCard::before\s*\{/);
