@@ -96,6 +96,8 @@ function initialFromEmail(email: string) {
 
 const PROJECT_KEY_CHANGED_EVENT = 'pm:lastProjectKey:changed';
 const WORKSPACE_NAVBAR_WIDTH = 320;
+const useIsomorphicLayoutEffect =
+  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 const WORKSPACE_NAVBAR_COLLAPSED_WIDTH = 72;
 const BOARD_SUBNAV_ROW_HEIGHT = 64;
 const BOARD_SUBNAV_COLLAPSED_ROW_HEIGHT = 48;
@@ -356,7 +358,7 @@ export function WorkspaceShell({
     router.replace(`/board/${project.projectKey}`);
   }, [pathname, rememberedProjectKey, orderedProjectOptions, router]);
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (typeof window === 'undefined') return;
 
     const nextRects = new Map<string, DOMRect>();
@@ -382,6 +384,8 @@ export function WorkspaceShell({
       const deltaX = previousRect.left - nextRect.left;
       const deltaY = previousRect.top - nextRect.top;
       if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5) continue;
+
+      node.getAnimations?.().forEach((anim) => anim.cancel());
 
       node.animate(
         [{ transform: `translate(${deltaX}px, ${deltaY}px)` }, { transform: 'translate(0, 0)' }],
