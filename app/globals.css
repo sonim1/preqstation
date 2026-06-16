@@ -853,6 +853,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 .workspace-navbar {
   position: relative;
   overflow: visible;
+  z-index: 121;
   border-right: 1px solid var(--ui-border);
   background: var(--ui-surface);
   box-shadow: var(--ui-elevation-1);

@@ -1199,9 +1199,13 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('positions the desktop sidebar toggle without reserving navbar content space', () => {
-    expect(getCssRuleProperties('.workspace-navbar', ['position', 'overflow'])).toEqual({
+    expect(workspaceShellSource).toMatch(
+      /<ActionIcon[\s\S]*?size=\{44\}[\s\S]*?className="workspace-sidebar-toggle"/,
+    );
+    expect(getCssRuleProperties('.workspace-navbar', ['position', 'overflow', 'z-index'])).toEqual({
       position: 'relative',
       overflow: 'visible',
+      'z-index': '121',
     });
     expect(
       getCssRuleProperties('.workspace-sidebar-toggle', ['position', 'top', 'right', 'z-index']),

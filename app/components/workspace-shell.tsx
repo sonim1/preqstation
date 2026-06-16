@@ -514,7 +514,7 @@ export function WorkspaceShell({
 
       <AppShell.Navbar className={navbarClassName}>
         <ActionIcon
-          size={36}
+          size={44}
           radius="md"
           variant="default"
           className="workspace-sidebar-toggle"
