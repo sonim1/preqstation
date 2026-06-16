@@ -800,7 +800,8 @@ describe('app/components/workspace-shell', () => {
     });
     const boardLink = container.querySelector<HTMLElement>('.workspace-board-subnav-link');
     const keyBadge = boardLink?.querySelector<HTMLElement>('.workspace-board-subnav-key');
-    const boardCardBgStyle = boardLink?.style.getPropertyValue('--workspace-board-card-bg-image') ?? '';
+    const boardCardBgStyle =
+      boardLink?.style.getPropertyValue('--workspace-board-card-bg-image') ?? '';
 
     expect(boardCardBgStyle).toContain('images.unsplash.com');
     expect(boardLink?.getAttribute('aria-label')).toBeNull();
@@ -1084,9 +1085,21 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('matches the nested board row height to the larger selection surface by removing vertical padding', () => {
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link\s*\{[^}]*min-height:\s*64px;[^}]*padding:\s*8px 10px;/,
-    );
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <a class="workspace-board-subnav-link" data-testid="board-link"></a>
+    `);
+
+    try {
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'board-link'), {
+        'min-height': '64px',
+        'padding-top': '8px',
+        'padding-right': '10px',
+        'padding-bottom': '8px',
+        'padding-left': '10px',
+      });
+    } finally {
+      cleanup();
+    }
   });
 
   it('keeps Mantine root hover and current backgrounds on project-card surfaces', () => {
@@ -1109,20 +1122,22 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('defines an in-bounds focus treatment for nested board links', () => {
-    const nestedBoardFocusRule =
-      globalsCss.match(/\.workspace-board-subnav-link:focus-visible\s*\{([\s\S]*?)\}/)?.[1] ?? '';
-    const nestedBoardBodyFocusRule =
-      globalsCss.match(
-        /\.workspace-board-subnav-link:focus-visible\s+\.mantine-NavLink-body\s*\{([\s\S]*?)\}/,
-      )?.[1] ?? '';
-
-    expect(nestedBoardFocusRule).toMatch(/outline:\s*none;/);
-    expect(nestedBoardFocusRule).toMatch(/color:\s*var\(--ui-text\);/);
-    expect(nestedBoardFocusRule).toMatch(
-      /--workspace-board-card-surface:\s*var\(--ui-workspace-accent-surface\);/,
+    const nestedBoardFocusRule = getCssRuleProperties(
+      '.workspace-board-subnav-link:focus-visible',
+      ['outline', '--workspace-board-card-surface', 'color', 'box-shadow'],
     );
-    expect(nestedBoardFocusRule).toMatch(/box-shadow:\s*var\(--ui-workspace-focus-shadow\);/);
-    expect(nestedBoardBodyFocusRule).toBe('');
+    const nestedBoardBodyFocusRule = getCssRuleProperties(
+      '.workspace-board-subnav-link:focus-visible .mantine-NavLink-body',
+      ['background'],
+    );
+
+    expect(nestedBoardFocusRule).toEqual({
+      outline: 'none',
+      '--workspace-board-card-surface': 'var(--ui-workspace-accent-surface)',
+      color: 'var(--ui-text)',
+      'box-shadow': 'var(--ui-workspace-focus-shadow)',
+    });
+    expect(nestedBoardBodyFocusRule).toBeNull();
   });
 
   it('defines a custom focus-visible treatment for top-level workspace nav links', () => {
