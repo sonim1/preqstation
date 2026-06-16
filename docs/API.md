@@ -13,18 +13,18 @@ PreqStation exposes two agent integration surfaces.
 
 Bearer-token endpoints:
 
-| Method   | Path                         | Description                                                        |
-| -------- | ---------------------------- | ------------------------------------------------------------------ |
-| `GET`    | `/api/tasks`                 | List tasks; filter by `status`, `engine`, `label`, or `projectKey` |
-| `POST`   | `/api/tasks`                 | Create a task                                                      |
-| `GET`    | `/api/tasks/:id`             | Get a task by task key or UUID                                     |
-| `PATCH`  | `/api/tasks/:id`             | Update a task                                                      |
-| `DELETE` | `/api/tasks/:id`             | Delete a task                                                      |
-| `PATCH`  | `/api/tasks/:id/status`      | Update task workflow status                                        |
-| `GET`    | `/api/projects`              | List projects                                                      |
-| `GET`    | `/api/projects/:id/settings` | Get deploy and agent-instruction settings by project key or UUID   |
-| `PATCH`  | `/api/qa-runs/:id`           | Update a QA run                                                    |
-| `GET`    | `/api/health`                | Public health check                                                |
+| Method   | Path                                 | Description                                                         |
+| -------- | ------------------------------------ | ------------------------------------------------------------------- |
+| `GET`    | `/api/tasks`                         | List tasks; filter by `status`, `engine`, `label`, or `project_key` |
+| `POST`   | `/api/tasks`                         | Create a task                                                       |
+| `GET`    | `/api/tasks/:id`                     | Get a task by task key or UUID                                      |
+| `PATCH`  | `/api/tasks/:id`                     | Update a task                                                       |
+| `DELETE` | `/api/tasks/:id`                     | Delete a task                                                       |
+| `PATCH`  | `/api/tasks/:id/status`              | Update task workflow status                                         |
+| `GET`    | `/api/projects`                      | List projects                                                       |
+| `GET`    | `/api/projects/:projectKey/settings` | Get deploy and agent-instruction settings by project key            |
+| `PATCH`  | `/api/qa-runs/:id`                   | Update a QA run                                                     |
+| `GET`    | `/api/health`                        | Public health check                                                 |
 
 Session-authenticated app endpoints include `/api/todos*`, `/api/events*`, `/api/settings`,
 `/api/notifications`, `/api/projects*` write routes, `/api/work-logs*`,

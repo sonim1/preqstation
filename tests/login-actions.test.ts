@@ -216,6 +216,21 @@ describe('app/login/actions', () => {
     expect(mocked.redirect).toHaveBeenCalledWith('/onboarding');
   });
 
+  it('logs unexpected owner setup errors before returning a generic setup error', async () => {
+    const error = new Error('database unavailable');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocked.createOwnerAccount.mockRejectedValueOnce(error);
+
+    try {
+      const result = await registerOwnerAction({ error: null }, buildOwnerSetupFormData());
+
+      expect(result).toEqual({ error: 'An error occurred during setup. Please try again later.' });
+      expect(consoleError).toHaveBeenCalledWith('Failed to register owner:', error);
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
   it('continues oauth login after creating the first owner account', async () => {
     mocked.consumeMcpLoginRequestCookie.mockResolvedValueOnce({
       clientId: 'client-123',

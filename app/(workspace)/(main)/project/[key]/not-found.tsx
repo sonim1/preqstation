@@ -5,13 +5,7 @@ import Link from 'next/link';
 
 export default function ProjectNotFoundPage() {
   return (
-    <Container
-      component="main"
-      id="main-content"
-      size="sm"
-      py={{ base: 'lg', sm: 'xl' }}
-      className="route-state-page"
-    >
+    <Container size="sm" py={{ base: 'lg', sm: 'xl' }} className="route-state-page">
       <Paper withBorder radius="lg" p={{ base: 'lg', sm: 'xl' }} className="route-state-card">
         <Stack gap="sm">
           <Text size="sm" fw={700} className="route-state-eyebrow">

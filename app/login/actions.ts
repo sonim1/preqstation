@@ -127,6 +127,7 @@ export async function registerOwnerAction(
     await continueSuccessfulAuth(result.user, '/onboarding');
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
+    console.error('Failed to register owner:', error);
     return { error: 'An error occurred during setup. Please try again later.' };
   }
 
