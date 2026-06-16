@@ -140,6 +140,7 @@ describe('BoardContent background image handling', () => {
 
     expect(html).toContain('data-testid="kanban-board"');
     expect(html).toContain('data-testid="kanban-store-provider"');
+    expect(html).toContain('Workspace board');
     expect(html).toContain('class="kanban-stage"');
     expect(html).not.toContain('has-bg-image');
     expect(html).not.toContain('--kanban-bg-image');
@@ -199,6 +200,7 @@ describe('BoardContent background image handling', () => {
 
     expect(html).toContain('data-testid="task-panel-modal"');
     expect(html).toContain('data-testid="kanban-store-provider"');
+    expect(html).toContain('Preq Station board');
     expect(html).toContain('data-title="Edit Task"');
     expect(html).toContain('data-close-href="/board"');
     expect(html).toContain('data-size="80rem"');

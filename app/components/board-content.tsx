@@ -187,6 +187,9 @@ export function BoardContent({
           <Stack gap="md" className="dashboard-stack is-board">
             <section className="kanban-stage">
               <div className="kanban-stage-content">
+                <h1 className="visually-hidden">
+                  {selectedProject ? `${selectedProject.name} board` : 'Workspace board'}
+                </h1>
                 <BoardEventSync
                   projectId={selectedProject?.id ?? null}
                   onArchivedCountRefresh={refreshArchivedCount}

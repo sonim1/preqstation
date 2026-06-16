@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { MantineProvider, Menu } from '@mantine/core';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -1044,6 +1044,31 @@ describe('app/components/kanban-card', () => {
       /data-kanban-top-row="true"[\s\S]*data-kanban-key-row="true"[\s\S]*PROJ-211[\s\S]*data-kanban-title-priority="true"[\s\S]*data-kanban-task-copy="true"[\s\S]*Label color update/,
     );
     expect(html).not.toContain('data-kanban-chip="priority"');
+  });
+
+  it('opens desktop cards from keyboard events bubbling from card text', () => {
+    const onOpenTaskEditor = vi.fn();
+    render(
+      <MantineProvider>
+        <KanbanColumn
+          status="todo"
+          tasks={[BASE_TASK]}
+          isPending={false}
+          isMobile={false}
+          editHrefBase="/board"
+          editHrefJoiner="?"
+          router={{ push: vi.fn() } as any}
+          onOpenTaskEditor={onOpenTaskEditor}
+          onQuickMoveTask={vi.fn()}
+          onDeleteTask={vi.fn()}
+          enginePresets={null}
+        />
+      </MantineProvider>,
+    );
+
+    fireEvent.keyDown(screen.getByText(BASE_TASK.title), { key: ' ', code: 'Space' });
+
+    expect(onOpenTaskEditor).toHaveBeenCalledWith(BASE_TASK);
   });
 
   it('renders the first label in the footer as hash-prefixed text and moves labels to the right side', () => {

@@ -13,6 +13,7 @@ import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.
 import {
   type ComponentType,
   type CSSProperties,
+  type KeyboardEvent,
   memo,
   type ReactNode,
   useCallback,
@@ -43,6 +44,12 @@ import { useTerminology } from './terminology-provider';
 function shouldIgnoreCardSurfaceEvent(target: HTMLElement) {
   return Boolean(
     target.closest("button, a, input, select, textarea, [role='menu'], .mantine-Menu-dropdown"),
+  );
+}
+
+function isCardOpenKey(event: KeyboardEvent<HTMLElement>) {
+  return (
+    event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar' || event.code === 'Space'
   );
 }
 
@@ -149,6 +156,17 @@ const KanbanBoardMobileTaskCard = memo(function KanbanBoardMobileTaskCard({
   const isStaleQueued = useStaleQueuedTask(task.runState, task.runStateUpdatedAt);
   const hasUnreadNotification = Boolean(task.hasUnreadNotification);
   const cardRef = useRef<HTMLDivElement>(null);
+  const openTaskCard = (newTab = false) => {
+    if (newTab) {
+      window.open(editHref, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (onOpenTaskEditor) {
+      onOpenTaskEditor(task);
+      return;
+    }
+    router.push(editHref);
+  };
 
   useEffect(() => {
     if (isFocused && cardRef.current) {
@@ -175,25 +193,26 @@ const KanbanBoardMobileTaskCard = memo(function KanbanBoardMobileTaskCard({
       data-run-state={task.runState ?? undefined}
       data-has-unread-notification={hasUnreadNotification ? 'true' : undefined}
       role="link"
+      aria-label={`Open ${task.taskKey}: ${task.title}`}
       tabIndex={0}
       onClick={(e) => {
         const target = e.target as HTMLElement;
         if (shouldIgnoreCardSurfaceEvent(target)) return;
-        if (onOpenTaskEditor) {
-          onOpenTaskEditor(task);
-          return;
-        }
-        router.push(editHref);
+        openTaskCard(e.metaKey || e.ctrlKey);
       }}
-      onKeyDown={(event) => {
-        if (event.currentTarget !== event.target) return;
-        if (event.key !== 'Enter') return;
+      onAuxClick={(e) => {
+        if (e.button !== 1) return;
+        const target = e.target as HTMLElement;
+        if (shouldIgnoreCardSurfaceEvent(target)) return;
+        openTaskCard(true);
+      }}
+      onKeyDownCapture={(event) => {
+        if (!isCardOpenKey(event)) return;
+        const target = event.target as HTMLElement;
+        if (shouldIgnoreCardSurfaceEvent(target)) return;
         event.preventDefault();
-        if (onOpenTaskEditor) {
-          onOpenTaskEditor(task);
-          return;
-        }
-        router.push(editHref);
+        event.stopPropagation();
+        openTaskCard();
       }}
     >
       <KanbanCardContent

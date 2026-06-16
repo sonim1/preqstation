@@ -25,6 +25,7 @@ import { DashboardYearlyHeatmap } from '@/app/components/dashboard-yearly-heatma
 import { EmptyState } from '@/app/components/empty-state';
 import { LinkButton } from '@/app/components/link-button';
 import panelStyles from '@/app/components/panels.module.css';
+import { ProjectEditModal } from '@/app/components/project-edit-modal';
 import { ProjectWorkLogTimeline } from '@/app/components/project-work-log-timeline';
 import { SectionTitleWithIcon } from '@/app/components/section-title-with-icon';
 import { TaskStatusBar } from '@/app/components/task-status-bar';
@@ -62,10 +63,6 @@ import { getUserSetting, SETTING_KEYS } from '@/lib/user-settings';
 import { listProjectWorkLogYearActivity, listWorkLogsPage } from '@/lib/work-log-list';
 import { PROJECT_WORK_LOG_PAGE_SIZE } from '@/lib/work-log-pagination';
 
-import {
-  ProjectDetailEditPanelButton,
-  ProjectDetailEditPanelProvider,
-} from './project-detail-edit-panel';
 import styles from './project-detail-page.module.css';
 
 type ProjectDetailPageProps = {
@@ -165,11 +162,13 @@ function describeDeployStrategy(
     : `${strategyLabel} ${copy.deployCopy.toBranch} ${config.default_branch}. ${copy.deployCopy.reviewBeforePush}`;
 }
 
-export default async function ProjectDetailPage({ params }: ProjectDetailPageProps) {
+export default async function ProjectDetailPage({ params, searchParams }: ProjectDetailPageProps) {
   const owner = await getOwnerUserOrNull();
   if (!owner) redirect('/login?reason=auth');
 
   const { key } = await params;
+  const query = (await searchParams) ?? {};
+  const editPanelOpen = query.panel === 'project-edit';
   const resolved = await withOwnerDb(owner.id, async (client) =>
     resolveProjectByKey(owner.id, key, client),
   );
@@ -240,6 +239,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   const projectId = project.id;
   const projectKey = project.projectKey;
   const closeHref = `/project/${projectKey}`;
+  const editProjectHref = `${closeHref}?panel=project-edit`;
   const projectStatus = projectStatusBadge(project.status);
   const dashboardClassName = 'dashboard-root';
   const terminology = resolveTerminology(kitchenMode === 'true');
@@ -687,18 +687,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
   }
 
   return (
-    <ProjectDetailEditPanelProvider
-      closeHref={closeHref}
-      selectedProject={selectedProjectForEdit}
-      updateProjectAction={updateProject}
-      labelManagement={labelManagement}
-      createLabelAction={createLabel}
-      updateLabelAction={updateLabel}
-      deleteLabelAction={deleteLabel}
-      configurationManagement={configurationManagement}
-      updateAgentInstructionsAction={updateAgentInstructions}
-      updateDeploySettingsAction={updateDeploySettings}
-    >
+    <>
       <Container
         className={dashboardClassName}
         fluid
@@ -749,7 +738,7 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                         {projectStatus.label}
                       </Badge>
                     </Group>
-                    <Title order={1} className={styles.detailHeroTitle}>
+                    <Title component="h1" order={1} className={styles.detailHeroTitle}>
                       {project.name}
                     </Title>
                     <Text className={styles.detailHeroDescription}>{projectHeroDescription}</Text>
@@ -782,12 +771,14 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                         Open repo
                       </Button>
                     ) : (
-                      <ProjectDetailEditPanelButton
+                      <LinkButton
+                        href={editProjectHref}
+                        scroll={false}
                         variant="subtle"
                         leftSection={<IconExternalLink size={16} />}
                       >
                         Add repo
-                      </ProjectDetailEditPanelButton>
+                      </LinkButton>
                     )}
                   </Group>
                 </Stack>
@@ -908,13 +899,23 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
                           Open repo
                         </Button>
                       ) : (
-                        <ProjectDetailEditPanelButton variant="subtle" size="compact-xs">
+                        <LinkButton
+                          href={editProjectHref}
+                          scroll={false}
+                          variant="subtle"
+                          size="compact-xs"
+                        >
                           Add repo
-                        </ProjectDetailEditPanelButton>
+                        </LinkButton>
                       )}
-                      <ProjectDetailEditPanelButton variant="subtle" size="compact-xs">
+                      <LinkButton
+                        href={editProjectHref}
+                        scroll={false}
+                        variant="subtle"
+                        size="compact-xs"
+                      >
                         Edit Details
-                      </ProjectDetailEditPanelButton>
+                      </LinkButton>
                     </Group>
                   </Stack>
                 </Paper>
@@ -952,6 +953,20 @@ export default async function ProjectDetailPage({ params }: ProjectDetailPagePro
           </section>
         </Stack>
       </Container>
-    </ProjectDetailEditPanelProvider>
+      {editPanelOpen ? (
+        <ProjectEditModal
+          closeHref={closeHref}
+          selectedProject={selectedProjectForEdit}
+          updateProjectAction={updateProject}
+          labelManagement={labelManagement}
+          createLabelAction={createLabel}
+          updateLabelAction={updateLabel}
+          deleteLabelAction={deleteLabel}
+          configurationManagement={configurationManagement}
+          updateAgentInstructionsAction={updateAgentInstructions}
+          updateDeploySettingsAction={updateDeploySettings}
+        />
+      ) : null}
+    </>
   );
 }

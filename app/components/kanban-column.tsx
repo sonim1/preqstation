@@ -3,7 +3,7 @@
 import { Draggable, Droppable } from '@hello-pangea/dnd';
 import { Badge, Group, Paper, Title } from '@mantine/core';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import { memo, type ReactNode, useEffect, useRef } from 'react';
+import { type KeyboardEvent, memo, type ReactNode, useEffect, useRef } from 'react';
 
 import { KanbanEmptyLane } from '@/app/components/kanban-empty-lane';
 import type { EnginePresets, KanbanStatus, KanbanTask } from '@/lib/kanban-helpers';
@@ -16,6 +16,12 @@ import { useTerminology } from './terminology-provider';
 function shouldIgnoreCardSurfaceEvent(target: HTMLElement) {
   return Boolean(
     target.closest("button, a, input, select, textarea, [role='menu'], .mantine-Menu-dropdown"),
+  );
+}
+
+function isCardOpenKey(event: KeyboardEvent<HTMLElement>) {
+  return (
+    event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar' || event.code === 'Space'
   );
 }
 
@@ -112,6 +118,17 @@ const KanbanColumnTaskCard = memo(function KanbanColumnTaskCard({
   const hasUnreadNotification = Boolean(task.hasUnreadNotification);
   const editHref = `${editHrefBase}${editHrefJoiner}taskId=${encodeURIComponent(task.taskKey)}`;
   const cardRef = useRef<HTMLDivElement>(null);
+  const openTaskCard = (newTab = false) => {
+    if (newTab) {
+      window.open(editHref, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    if (onOpenTaskEditor) {
+      onOpenTaskEditor(task);
+      return;
+    }
+    router.push(editHref);
+  };
 
   useEffect(() => {
     if (isFocused && cardRef.current) {
@@ -159,27 +176,28 @@ const KanbanColumnTaskCard = memo(function KanbanColumnTaskCard({
           data-kanban-dragging={snapshot.isDragging ? 'true' : undefined}
           data-kanban-drop-animating={snapshot.isDropAnimating ? 'true' : undefined}
           role="link"
+          aria-label={`Open ${task.taskKey}: ${task.title}`}
           tabIndex={snapshot.isDragging ? -1 : 0}
           onClick={(e) => {
             if (snapshot.isDragging) return;
             const target = e.target as HTMLElement;
             if (shouldIgnoreCardSurfaceEvent(target)) return;
-            if (onOpenTaskEditor) {
-              onOpenTaskEditor(task);
-              return;
-            }
-            router.push(editHref);
+            openTaskCard(e.metaKey || e.ctrlKey);
           }}
-          onKeyDown={(event) => {
+          onAuxClick={(e) => {
+            if (snapshot.isDragging || e.button !== 1) return;
+            const target = e.target as HTMLElement;
+            if (shouldIgnoreCardSurfaceEvent(target)) return;
+            openTaskCard(true);
+          }}
+          onKeyDownCapture={(event) => {
             if (snapshot.isDragging) return;
-            if (event.currentTarget !== event.target) return;
-            if (event.key !== 'Enter') return;
+            if (!isCardOpenKey(event)) return;
+            const target = event.target as HTMLElement;
+            if (shouldIgnoreCardSurfaceEvent(target)) return;
             event.preventDefault();
-            if (onOpenTaskEditor) {
-              onOpenTaskEditor(task);
-              return;
-            }
-            router.push(editHref);
+            event.stopPropagation();
+            openTaskCard();
           }}
         >
           <KanbanCardContent

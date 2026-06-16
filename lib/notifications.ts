@@ -14,6 +14,7 @@ export function showErrorNotification(message: string) {
     message,
     color: 'red',
     autoClose: 5000,
+    closeButtonProps: { 'aria-label': 'Dismiss notification' },
   });
 }
 
@@ -23,6 +24,7 @@ export function showSuccessNotification(message: string) {
     message,
     color: 'green',
     autoClose: 3000,
+    closeButtonProps: { 'aria-label': 'Dismiss notification' },
   });
 }
 
@@ -39,5 +41,6 @@ export function showTaskCompletionNotification(notification: TaskCompletionNotif
     message: notification.taskTitle,
     color: statusLabel === 'Done' ? 'green' : 'orange',
     autoClose: 4000,
+    closeButtonProps: { 'aria-label': 'Dismiss notification' },
   });
 }

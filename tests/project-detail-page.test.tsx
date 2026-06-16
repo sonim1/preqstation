@@ -521,8 +521,8 @@ describe('project detail page', () => {
     );
     expect(html).toContain('Activity · last 365 days');
     expect(html).toContain('Edit Details');
-    expect(html).toContain('data-project-edit-panel-trigger="true"');
-    expect(html).not.toContain('href="/project/PROJ?panel=project-edit"');
+    expect(html).not.toContain('data-project-edit-panel-trigger="true"');
+    expect(html).toContain('href="/project/PROJ?panel=project-edit"');
     expect(html).toContain('href="/board/PROJ"');
     expect(html).toContain('href="/dashboard?panel=task&amp;projectId=project-1"');
   });
@@ -824,8 +824,8 @@ describe('project detail page', () => {
     expect(html).toContain('Direct Commit to main. Push before review.');
     expect(html).toContain('Add agent instructions so workers inherit project-specific rules.');
     expect(html).toContain('No work logs yet. Last project update 2026-04-24.');
-    expect(html).toContain('data-project-edit-panel-trigger="true"');
-    expect(html).not.toContain('href="/project/PROJ?panel=project-edit"');
+    expect(html).not.toContain('data-project-edit-panel-trigger="true"');
+    expect(html).toContain('href="/project/PROJ?panel=project-edit"');
     expect(html).not.toContain('Review settings');
   });
 
