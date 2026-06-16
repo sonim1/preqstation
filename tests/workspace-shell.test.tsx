@@ -800,9 +800,10 @@ describe('app/components/workspace-shell', () => {
     });
     const boardLink = container.querySelector<HTMLElement>('.workspace-board-subnav-link');
     const keyBadge = boardLink?.querySelector<HTMLElement>('.workspace-board-subnav-key');
+    const boardCardBgStyle = boardLink?.style.getPropertyValue('--workspace-board-card-bg-image') ?? '';
 
-    expect(boardLink?.getAttribute('style')).toContain('--workspace-board-card-bg-image:');
-    expect(boardLink?.getAttribute('style')).toContain('photo-1441974231531-c6227db76b6e');
+    expect(boardCardBgStyle).toContain('images.unsplash.com');
+    expect(boardCardBgStyle).toContain('w=640');
     expect(boardLink?.getAttribute('aria-label')).toBeNull();
     expect(keyBadge?.textContent).toBe('ALPHA');
     expect(keyBadge?.hasAttribute('aria-hidden')).toBe(false);
