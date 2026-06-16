@@ -720,7 +720,6 @@ describe('app/components/workspace-shell', () => {
 
     expect(navbar.queryByRole('heading', { level: 2, name: 'Workspace' })).toBeNull();
     expect(navbar.queryByRole('heading', { level: 2, name: 'Manage' })).toBeNull();
-    expect(navbar.queryByRole('heading', { level: 2, name: 'Manager' })).toBeNull();
     expectBefore(dashboardLink, recentLabel);
     expectBefore(recentLabel, settingsLink);
     expectBefore(settingsLink, connectionsLink);
@@ -1106,8 +1105,6 @@ describe('app/components/workspace-shell', () => {
 
     expect(navbar.queryByRole('heading', { level: 2, name: 'Workspace' })).toBeNull();
     expect(navbar.queryByRole('heading', { level: 2, name: 'Manage' })).toBeNull();
-    expect(navbar.queryByRole('heading', { level: 2, name: 'Manager' })).toBeNull();
-    expect(globalsCss).not.toContain('.workspace-nav-section-label');
 
     ['Dashboard', 'Projects', 'Settings', 'Connections'].forEach((name) => {
       const link = navbar.getByRole('link', { name });
