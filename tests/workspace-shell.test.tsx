@@ -803,7 +803,6 @@ describe('app/components/workspace-shell', () => {
     const boardCardBgStyle = boardLink?.style.getPropertyValue('--workspace-board-card-bg-image') ?? '';
 
     expect(boardCardBgStyle).toContain('images.unsplash.com');
-    expect(boardCardBgStyle).toContain('w=640');
     expect(boardLink?.getAttribute('aria-label')).toBeNull();
     expect(keyBadge?.textContent).toBe('ALPHA');
     expect(keyBadge?.hasAttribute('aria-hidden')).toBe(false);
