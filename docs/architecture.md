@@ -22,7 +22,7 @@ Important naming note:
 ┌──────────────────────────────────────────────────────────────┐
 │                    preqstation (Web Service)                 │
 │                                                              │
-│  Next.js 16 · React 19 · Mantine 8 · Drizzle · Neon PG     │
+│  Next.js 16 · React 19 · Mantine 9 · Drizzle · PostgreSQL  │
 │                                                              │
 │  ┌────────────┐  ┌──────────────┐  ┌───────────────────┐    │
 │  │ Kanban UI  │  │  REST API    │  │  Telegram Client  │    │
@@ -120,7 +120,7 @@ Coding agent checks task status via preq_get_task, then:
 | Layer      | Technology                                                 |
 | ---------- | ---------------------------------------------------------- |
 | Framework  | Next.js 16 (App Router)                                    |
-| UI         | React 19, Mantine 8, Tabler Icons, Recharts                |
+| UI         | React 19, Mantine 9, Tabler Icons, Recharts                |
 | Editor     | Lexical                                                    |
 | ORM        | Drizzle ORM                                                |
 | Database   | PostgreSQL                                                 |
@@ -169,14 +169,10 @@ Coding agent checks task status via preq_get_task, then:
 | `DELETE` | `/api/tasks/:id`             | Delete task                                                            |
 | `PATCH`  | `/api/tasks/:id/status`      | Update status only                                                     |
 | `GET`    | `/api/projects`              | List projects                                                          |
-| `POST`   | `/api/projects`              | Create project                                                         |
 | `GET`    | `/api/projects/:id/settings` | Get project settings for deploy strategy and agent guidance            |
-| `PATCH`  | `/api/projects/:id`          | Update project                                                         |
-| `DELETE` | `/api/projects/:id`          | Delete project                                                         |
 | `POST`   | `/api/api-keys`              | Legacy compatibility: issue new API token                              |
 | `GET`    | `/api/api-keys`              | Legacy compatibility: list tokens                                      |
 | `DELETE` | `/api/api-keys/:id`          | Legacy compatibility: revoke token                                     |
-| `POST`   | `/api/work-logs`             | Create work log entry                                                  |
 | `GET`    | `/api/health`                | Health check (no auth)                                                 |
 
 Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `archived`. External task payloads can also include `run_state` (`queued` / `running` / `null`) plus `run_state_updated_at`. Task APIs reject legacy status aliases, and internal todo APIs accept `labelIds` only.
@@ -236,12 +232,21 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 | `POST`   | `/api/todos`                        | Create todo                                                           |
 | `PATCH`  | `/api/todos/:id`                    | Update todo                                                           |
 | `DELETE` | `/api/todos/:id`                    | Delete todo                                                           |
+| `GET`    | `/api/todos/search`                 | Search tasks for command palette and offline-aware lookup             |
+| `GET`    | `/api/todos/snapshots`              | Return board/task snapshots for offline hydration                     |
+| `GET`    | `/api/todos/archived`               | Page archived tasks for the archive drawer                            |
+| `POST`   | `/api/todos/move`                   | Move a todo with relative ordering                                    |
 | `POST`   | `/api/todos/rebalance`              | Rebalance sort order                                                  |
 | `POST`   | `/api/todos/archive-done`           | Archive completed todos                                               |
+| `GET`    | `/api/todos/:id/comments`           | List comments for one dashboard todo                                  |
+| `GET`    | `/api/events`                       | Poll owner-scoped event outbox entries                                |
+| `POST`   | `/api/projects`                     | Create a project from an owner session                                |
+| `PATCH`  | `/api/projects/:id`                 | Update a project from an owner session                                |
 | `GET`    | `/api/projects/:id/labels`          | List labels for one project                                           |
 | `POST`   | `/api/projects/:id/labels`          | Create a label for one project                                        |
 | `PATCH`  | `/api/projects/:id/labels/:labelId` | Update one project label                                              |
 | `DELETE` | `/api/projects/:id/labels/:labelId` | Delete one project label                                              |
+| `POST`   | `/api/projects/:id/ready/complete`  | Complete selected ready tasks in board order                          |
 | `POST`   | `/api/events/cleanup`               | Clean up old outbox entries                                           |
 | `GET`    | `/api/settings`                     | Get user settings                                                     |
 | `PATCH`  | `/api/settings`                     | Update user settings                                                  |
@@ -249,12 +254,21 @@ Authenticated REST handlers await the scoped DB call inside their route `try` bl
 | `PATCH`  | `/api/notifications`                | Mark selected or all notification drawer items as read                |
 | `GET`    | `/api/tasks/:id/comments`           | List comments for one task                                            |
 | `POST`   | `/api/tasks/:id/comments`           | Add a task comment and optionally dispatch an agent follow-up         |
+| `GET`    | `/api/task-comments/:id`            | Get one task comment                                                  |
+| `PATCH`  | `/api/task-comments/:id`            | Update one task comment                                               |
+| `DELETE` | `/api/task-comments/:id`            | Delete one task comment                                               |
+| `POST`   | `/api/task-comments/:id/reply`      | Add a reply and optionally dispatch an agent follow-up                |
+| `GET`    | `/api/project-backgrounds/search`   | Search Openverse photos for project backgrounds                       |
+| `POST`   | `/api/project-backgrounds/select`   | Persist a selected project background                                 |
 | `POST`   | `/api/projects/:id/qa-runs/trigger` | Queue selected ready task keys for QA via OpenClaw or Hermes Telegram |
 | `POST`   | `/api/telegram/send`                | Send task Telegram message to OpenClaw or Hermes                      |
 | `POST`   | `/api/telegram/send/insight`        | Send project insight to the OpenClaw or Hermes Telegram channel       |
 | `POST`   | `/api/telegram/test`                | Test Telegram connection                                              |
 | `POST`   | `/api/send-to-openclaw`             | Legacy OpenClaw message relay                                         |
+| `GET`    | `/api/work-logs`                    | List work logs                                                        |
+| `POST`   | `/api/work-logs`                    | Create work log entry                                                 |
 | `GET`    | `/api/work-logs/:id`                | Get work log entry                                                    |
+| `PATCH`  | `/api/work-logs/:id`                | Update work log entry                                                 |
 | `DELETE` | `/api/work-logs/:id`                | Delete work log entry                                                 |
 
 Legacy `/api/task-labels` and `/api/task-labels/:id` handlers are compatibility tombstones only: they return `410 Gone` and point callers to the canonical `/api/projects/:id/labels*` routes.

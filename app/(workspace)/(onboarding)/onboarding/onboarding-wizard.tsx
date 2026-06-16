@@ -114,17 +114,22 @@ export function OnboardingWizard({
   return (
     <Stack gap="xl">
       <Stepper active={active} size="sm" className="onboarding-stepper">
-        <Stepper.Step label="Model" />
-        <Stepper.Step label="Project" />
-        <Stepper.Step label={terminology.task.singular} />
-        <Stepper.Step label="Worker" />
+        <Stepper.Step aria-label="Model setup step" label="Model" />
+        <Stepper.Step aria-label="Project setup step" label="Project" />
+        <Stepper.Step
+          aria-label={`${terminology.task.singular} setup step`}
+          label={terminology.task.singular}
+        />
+        <Stepper.Step aria-label="Worker setup step" label="Worker" />
       </Stepper>
 
       {taskDone ? dashboardActions : null}
 
       <Paper withBorder radius="lg" p="lg" className="onboarding-card">
         <Stack gap="md">
-          <Title order={3}>Start with a worker-first system.</Title>
+          <Title component="h1" order={2}>
+            Start with a worker-first system.
+          </Title>
           <Text c="dimmed" size="sm">
             Preqstation is the control plane: it stores projects, tasks, state, and work logs. A
             worker is the execution path that gets tasks done. The dispatcher is optional advanced

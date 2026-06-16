@@ -80,6 +80,17 @@ describe('proxy bearer API allowlist', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
+  it('allows bearer-auth project listing without owner session cookies', async () => {
+    const response = await proxy(
+      makeRequest('/api/projects', {
+        headers: { authorization: 'Bearer preq_test_token' },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('location')).toBeNull();
+  });
+
   it('allows bearer-auth mcp requests without owner session cookies', async () => {
     const response = await proxy(
       makeRequest('/mcp', {

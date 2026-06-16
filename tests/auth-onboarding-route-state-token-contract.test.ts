@@ -278,23 +278,36 @@ describe('auth onboarding and route state token contract', () => {
 
   it('uses the shared route-state shell for not-found and error routes', () => {
     const routeStates = [
-      React.createElement(AppErrorPage, {
-        error: Object.assign(new Error('Boom'), { digest: 'app-digest' }),
-        reset: vi.fn(),
-      }),
-      React.createElement(AppNotFoundPage),
-      React.createElement(WorkspaceErrorPage, {
-        error: Object.assign(new Error('Boom'), { digest: 'workspace-digest' }),
-        reset: vi.fn(),
-      }),
-      React.createElement(ProjectNotFoundPage),
+      {
+        element: React.createElement(AppErrorPage, {
+          error: Object.assign(new Error('Boom'), { digest: 'app-digest' }),
+          reset: vi.fn(),
+        }),
+        rootMain: true,
+      },
+      { element: React.createElement(AppNotFoundPage), rootMain: true },
+      {
+        element: React.createElement(WorkspaceErrorPage, {
+          error: Object.assign(new Error('Boom'), { digest: 'workspace-digest' }),
+          reset: vi.fn(),
+        }),
+        rootMain: false,
+      },
+      { element: React.createElement(ProjectNotFoundPage), rootMain: false },
     ];
 
     for (const routeState of routeStates) {
-      const view = renderWithMantine(routeState);
+      const view = renderWithMantine(routeState.element);
       const page = getElement(view.container, '.route-state-page');
       const card = getElement(view.container, '.route-state-card');
 
+      if (routeState.rootMain) {
+        expect(page.tagName).toBe('MAIN');
+        expect(page.getAttribute('id')).toBe('main-content');
+      } else {
+        expect(page.tagName).not.toBe('MAIN');
+        expect(page.getAttribute('id')).toBeNull();
+      }
       expectComputedToken(page, 'color', '--ui-text');
       expectComputedToken(card, 'background', '--ui-state-shell-surface');
       expectComputedToken(

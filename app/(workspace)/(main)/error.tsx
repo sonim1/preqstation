@@ -21,7 +21,7 @@ export default function WorkspaceErrorPage({ error, reset }: WorkspaceErrorPageP
           <Text size="sm" fw={700} className="route-state-eyebrow">
             ERROR
           </Text>
-          <Title order={2} className="route-state-title">
+          <Title component="h1" order={2} className="route-state-title">
             Something went wrong
           </Title>
           <Text className="route-state-description">

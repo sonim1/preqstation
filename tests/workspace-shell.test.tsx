@@ -710,20 +710,18 @@ describe('app/components/workspace-shell', () => {
     expectBefore(recentLabel, alphaBoardLink);
   });
 
-  it('groups primary workspace links separately from management links', () => {
+  it('keeps primary and settings links ordered without redundant section labels', () => {
     const { container } = renderWorkspaceShellDom({ desktopOpened: true });
     const navbar = within(getWorkspaceNavbar(container));
-    const workspaceHeading = navbar.getByRole('heading', { level: 2, name: 'Workspace' });
     const dashboardLink = navbar.getByRole('link', { name: 'Dashboard' });
     const recentLabel = navbar.getByText('Recent projects');
-    const manageHeading = navbar.getByRole('heading', { level: 2, name: 'Manage' });
     const settingsLink = navbar.getByRole('link', { name: 'Settings' });
     const connectionsLink = navbar.getByRole('link', { name: 'Connections' });
 
-    expectBefore(workspaceHeading, dashboardLink);
+    expect(navbar.queryByRole('heading', { level: 2, name: 'Workspace' })).toBeNull();
+    expect(navbar.queryByRole('heading', { level: 2, name: 'Manage' })).toBeNull();
     expectBefore(dashboardLink, recentLabel);
-    expectBefore(recentLabel, manageHeading);
-    expectBefore(manageHeading, settingsLink);
+    expectBefore(recentLabel, settingsLink);
     expectBefore(settingsLink, connectionsLink);
   });
 
@@ -1101,18 +1099,12 @@ describe('app/components/workspace-shell', () => {
     expect(getCssRuleProperties('.workspace-nav-link:focus-visible', ['background'])).toBeNull();
   });
 
-  it('applies grouped nav label and top-level nav link hooks in the rendered sidebar', () => {
+  it('keeps top-level nav link hooks without sidebar section labels', () => {
     const { container } = renderWorkspaceShellDom({ desktopOpened: true });
     const navbar = within(getWorkspaceNavbar(container));
-    const sectionHeadings = navbar.getAllByRole('heading', { level: 2 });
 
-    expect(sectionHeadings.map((heading) => heading.textContent)).toEqual(['Workspace', 'Manage']);
-    sectionHeadings.forEach((heading) => {
-      expect(Array.from(heading.classList)).toContain('workspace-nav-section-label');
-    });
-    expect(globalsCss).toMatch(
-      /\.workspace-nav-section-label\s*\{[^}]*padding:\s*8px 12px 2px;[^}]*color:\s*var\(--ui-muted-text\);[^}]*font-size:\s*(?:11px|var\(--ui-font-size-micro\));[^}]*font-weight:\s*700;/,
-    );
+    expect(navbar.queryByRole('heading', { level: 2, name: 'Workspace' })).toBeNull();
+    expect(navbar.queryByRole('heading', { level: 2, name: 'Manage' })).toBeNull();
 
     ['Dashboard', 'Projects', 'Settings', 'Connections'].forEach((name) => {
       const link = navbar.getByRole('link', { name });
