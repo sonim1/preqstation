@@ -27,7 +27,7 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@js-temporal/polyfill": "^0.5.1",
     "@lexical/code": "^0.44.0",
-    "@lexical/code-core": "^0.44.0",
+    "@lexical/code-core": "^0.45.0",
     "@lexical/link": "^0.44.0",
     "@lexical/list": "^0.44.0",
     "@lexical/markdown": "^0.44.0",
