@@ -199,6 +199,71 @@
     inset 0 0 0 2px var(--ui-focus-ring), inset 0 0 0 3px var(--ui-accent-soft);
   --ui-workspace-outer-focus-shadow: 0 0 0 3px
     color-mix(in srgb, var(--ui-focus-ring), transparent 45%);
+  --ui-workspace-board-card-surface: color-mix(in srgb, var(--ui-surface-muted), transparent 12%);
+  --ui-workspace-board-card-overlay-start: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    transparent 8%
+  );
+  --ui-workspace-board-card-overlay-end: color-mix(
+    in srgb,
+    var(--ui-surface-muted),
+    transparent 18%
+  );
+  --ui-workspace-board-card-text: color-mix(in srgb, var(--ui-text), var(--ui-muted-text) 28%);
+  --ui-workspace-board-card-hover-surface: color-mix(
+    in srgb,
+    var(--ui-workspace-control-hover-surface),
+    var(--ui-accent) 6%
+  );
+  --ui-workspace-board-card-hover-overlay-start: color-mix(
+    in srgb,
+    var(--ui-workspace-control-hover-surface),
+    transparent 6%
+  );
+  --ui-workspace-board-card-hover-overlay-end: color-mix(
+    in srgb,
+    var(--ui-accent-soft),
+    transparent 16%
+  );
+  --ui-workspace-board-card-focus-overlay-start: color-mix(
+    in srgb,
+    var(--ui-workspace-accent-surface),
+    transparent 4%
+  );
+  --ui-workspace-board-card-focus-overlay-end: color-mix(
+    in srgb,
+    var(--ui-accent-soft),
+    transparent 18%
+  );
+  --ui-workspace-board-card-key-border: color-mix(in srgb, var(--ui-border), transparent 12%);
+  --ui-workspace-board-card-key-surface: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    transparent 16%
+  );
+  --ui-workspace-board-card-key-highlight: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    transparent 16%
+  );
+  --ui-workspace-board-card-current-surface: color-mix(
+    in srgb,
+    var(--ui-workspace-accent-surface),
+    var(--ui-accent) 10%
+  );
+  --ui-workspace-board-card-current-overlay-start: color-mix(
+    in srgb,
+    var(--ui-workspace-accent-surface),
+    transparent 2%
+  );
+  --ui-workspace-board-card-current-overlay-end: color-mix(
+    in srgb,
+    var(--ui-accent-soft),
+    transparent 12%
+  );
+  --ui-workspace-board-card-current-border: color-mix(in srgb, var(--ui-accent), white 20%);
+  --ui-workspace-board-card-current-shadow: color-mix(in srgb, var(--ui-accent), transparent 78%);
   --ui-admin-surface:
     linear-gradient(
       180deg,
@@ -893,11 +958,11 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .workspace-board-subnav-link {
   --workspace-board-card-bg-image: none;
-  --workspace-board-card-surface: color-mix(in srgb, var(--ui-surface-muted), transparent 12%);
+  --workspace-board-card-surface: var(--ui-workspace-board-card-surface);
   --workspace-board-card-overlay: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--ui-surface-strong), transparent 8%),
-    color-mix(in srgb, var(--ui-surface-muted), transparent 18%)
+    var(--ui-workspace-board-card-overlay-start),
+    var(--ui-workspace-board-card-overlay-end)
   );
   position: relative;
   z-index: 1;
@@ -910,7 +975,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
     var(--workspace-board-card-surface);
   background-position: center;
   background-size: cover;
-  color: color-mix(in srgb, var(--ui-text), var(--ui-muted-text) 28%);
+  color: var(--ui-workspace-board-card-text);
   transition:
     background 140ms ease,
     border-color 140ms ease,
@@ -923,15 +988,11 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 .workspace-board-subnav-link[data-active]:hover,
 .workspace-board-subnav-link[aria-current='page'],
 .workspace-board-subnav-link[aria-current='page']:hover {
-  --workspace-board-card-surface: color-mix(
-    in srgb,
-    var(--ui-workspace-control-hover-surface),
-    var(--ui-accent) 6%
-  );
+  --workspace-board-card-surface: var(--ui-workspace-board-card-hover-surface);
   --workspace-board-card-overlay: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--ui-workspace-control-hover-surface), transparent 6%),
-    color-mix(in srgb, var(--ui-accent-soft), transparent 16%)
+    var(--ui-workspace-board-card-hover-overlay-start),
+    var(--ui-workspace-board-card-hover-overlay-end)
   );
 }
 
@@ -956,8 +1017,8 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   --workspace-board-card-surface: var(--ui-workspace-accent-surface);
   --workspace-board-card-overlay: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--ui-workspace-accent-surface), transparent 4%),
-    color-mix(in srgb, var(--ui-accent-soft), transparent 18%)
+    var(--ui-workspace-board-card-focus-overlay-start),
+    var(--ui-workspace-board-card-focus-overlay-end)
   );
   color: var(--ui-text);
   box-shadow: var(--ui-workspace-focus-shadow);
@@ -989,8 +1050,8 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   min-height: 26px;
   padding: 0 7px;
   border-radius: 7px;
-  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 12%);
-  background: color-mix(in srgb, var(--ui-surface-strong), transparent 16%);
+  border: 1px solid var(--ui-workspace-board-card-key-border);
+  background: var(--ui-workspace-board-card-key-surface);
   color: var(--ui-text);
   font-size: var(--ui-font-size-micro);
   font-weight: 800;
@@ -998,7 +1059,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ui-surface-strong), transparent 16%);
+  box-shadow: inset 0 1px 0 var(--ui-workspace-board-card-key-highlight);
 }
 
 .workspace-board-subnav-name {
@@ -1021,21 +1082,17 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 }
 
 .workspace-board-subnav-link[data-current-board='true'] {
-  --workspace-board-card-surface: color-mix(
-    in srgb,
-    var(--ui-workspace-accent-surface),
-    var(--ui-accent) 10%
-  );
+  --workspace-board-card-surface: var(--ui-workspace-board-card-current-surface);
   --workspace-board-card-overlay: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--ui-workspace-accent-surface), transparent 2%),
-    color-mix(in srgb, var(--ui-accent-soft), transparent 12%)
+    var(--ui-workspace-board-card-current-overlay-start),
+    var(--ui-workspace-board-card-current-overlay-end)
   );
-  border-color: color-mix(in srgb, var(--ui-accent), white 20%);
+  border-color: var(--ui-workspace-board-card-current-border);
   color: var(--ui-text);
   box-shadow:
     inset 0 0 0 1px var(--ui-accent),
-    0 8px 20px color-mix(in srgb, var(--ui-accent), transparent 78%);
+    0 8px 20px var(--ui-workspace-board-card-current-shadow);
 }
 
 .workspace-board-subnav-link:hover {

@@ -115,9 +115,7 @@ function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) 
       prefetch={false}
       label={
         <span className="workspace-board-subnav-label">
-          <span className="workspace-board-subnav-key" aria-hidden="true">
-            {project.projectKey}
-          </span>
+          <span className="workspace-board-subnav-key">{project.projectKey}</span>
           <span className="workspace-board-subnav-name">{project.name}</span>
         </span>
       }
@@ -126,7 +124,6 @@ function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) 
       }}
       className="workspace-nav-link workspace-board-subnav-link"
       data-current-board={isCurrentBoard ? 'true' : undefined}
-      aria-label={project.name}
       aria-current={isCurrentBoard ? 'page' : undefined}
       title={`${project.projectKey} - ${project.name}`}
       style={backgroundStyle}

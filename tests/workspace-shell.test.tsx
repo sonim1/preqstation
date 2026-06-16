@@ -709,7 +709,7 @@ describe('app/components/workspace-shell', () => {
     const dashboardLink = navbar.getByRole('link', { name: 'Dashboard' });
     const projectsLink = navbar.getByRole('link', { name: 'Projects' });
     const recentLabel = navbar.getByText('Recent projects');
-    const alphaBoardLink = navbar.getByRole('link', { name: 'Alpha' });
+    const alphaBoardLink = navbar.getByRole('link', { name: /ALPHA\s*Alpha/ });
 
     expect(navbar.queryByRole('link', { name: 'Boards' })).toBeNull();
     expectBefore(dashboardLink, projectsLink);
@@ -803,7 +803,9 @@ describe('app/components/workspace-shell', () => {
 
     expect(boardLink?.getAttribute('style')).toContain('--workspace-board-card-bg-image:');
     expect(boardLink?.getAttribute('style')).toContain('photo-1441974231531-c6227db76b6e');
+    expect(boardLink?.getAttribute('aria-label')).toBeNull();
     expect(keyBadge?.textContent).toBe('ALPHA');
+    expect(keyBadge?.hasAttribute('aria-hidden')).toBe(false);
     expect(boardLink?.querySelector('.workspace-board-subnav-avatar')).toBeNull();
     expect(keyBadge?.hasAttribute('data-tone')).toBe(false);
   });
@@ -1088,9 +1090,22 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('keeps Mantine root hover and current backgrounds on project-card surfaces', () => {
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link:hover,\s*\.workspace-board-subnav-link\[data-active\],\s*\.workspace-board-subnav-link\[data-active\]:hover,\s*\.workspace-board-subnav-link\[aria-current=["']page["']\],\s*\.workspace-board-subnav-link\[aria-current=["']page["']\]:hover\s*\{[\s\S]*--workspace-board-card-surface:\s*color-mix\(\s*in srgb,\s*var\(--ui-workspace-control-hover-surface\),\s*var\(--ui-accent\) 6%/,
-    );
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <a class="workspace-board-subnav-link" data-active="true" data-testid="active"></a>
+      <a class="workspace-board-subnav-link" aria-current="page" data-testid="current"></a>
+    `);
+
+    try {
+      for (const testId of ['active', 'current']) {
+        expectComputedStyleProperties(getRequiredFixtureElement(fixture, testId), {
+          '--workspace-board-card-surface': 'var(--ui-workspace-board-card-hover-surface)',
+          '--workspace-board-card-overlay':
+            'linear-gradient(135deg,var(--ui-workspace-board-card-hover-overlay-start),var(--ui-workspace-board-card-hover-overlay-end))',
+        });
+      }
+    } finally {
+      cleanup();
+    }
   });
 
   it('defines an in-bounds focus treatment for nested board links', () => {
@@ -1117,7 +1132,7 @@ describe('app/components/workspace-shell', () => {
       rememberedProjectKey: 'ALPHA',
     });
     const navbar = within(getWorkspaceNavbar(container));
-    const currentBoardLink = navbar.getByRole('link', { name: 'Alpha' });
+    const currentBoardLink = navbar.getByRole('link', { name: /ALPHA\s*Alpha/ });
     const focusRule = getCssRuleProperties(
       '.workspace-nav-link:not(.workspace-board-subnav-link):focus-visible',
       ['outline', 'background', 'color', 'box-shadow'],
@@ -1171,10 +1186,18 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('uses flatter token-based sidebar chrome instead of blur-heavy gradients', () => {
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <a class="workspace-board-subnav-link" data-current-board="true" data-testid="current-board"></a>
+    `);
+
     expect(globalsCss).not.toMatch(/\.workspace-navbar\s*\{[^}]*backdrop-filter:/);
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link\[data-current-board=["']true["']\]\s*\{[\s\S]*--workspace-board-card-surface:\s*color-mix\(\s*in srgb,\s*var\(--ui-workspace-accent-surface\),\s*var\(--ui-accent\) 10%/,
-    );
+    try {
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'current-board'), {
+        '--workspace-board-card-surface': 'var(--ui-workspace-board-card-current-surface)',
+      });
+    } finally {
+      cleanup();
+    }
     expect(globalsCss).toMatch(
       /\.workspace-nav-link\[data-active=["']true["']\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*color:\s*var\(--ui-text\);/,
     );
@@ -1230,15 +1253,30 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('shares accent state tokens between project picker items and board subnav', () => {
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <button class="workspace-project-picker-item is-selected" data-testid="project-picker"></button>
+      <button class="workspace-board-picker-item" data-current-board="true" data-testid="board-picker"></button>
+      <a class="workspace-board-subnav-link" data-current-board="true" data-testid="current-board-link"></a>
+    `);
+
     expect(globalsCss).toMatch(/--ui-workspace-accent-surface:/);
     expect(globalsCss).toMatch(/--ui-workspace-accent-border:/);
     expect(globalsCss).toMatch(/--ui-workspace-focus-shadow:/);
-    expect(globalsCss).toMatch(
-      /\.workspace-project-picker-item\.is-selected,\s*\.workspace-board-picker-item\[data-current-board=["']true["']\]\s*\{[^}]*background:\s*var\(--ui-workspace-accent-surface\);[^}]*box-shadow:\s*inset 0 0 0 1px var\(--ui-workspace-accent-border\);/,
-    );
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link\[data-current-board=["']true["']\]\s*\{[\s\S]*--workspace-board-card-surface:\s*color-mix\(\s*in srgb,\s*var\(--ui-workspace-accent-surface\),\s*var\(--ui-accent\) 10%[\s\S]*box-shadow:\s*inset 0 0 0 1px var\(--ui-accent\),/,
-    );
+    try {
+      for (const testId of ['project-picker', 'board-picker']) {
+        expectComputedStyleProperties(getRequiredFixtureElement(fixture, testId), {
+          background: 'var(--ui-workspace-accent-surface)',
+          'box-shadow': 'inset 0 0 0 1px var(--ui-workspace-accent-border)',
+        });
+      }
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'current-board-link'), {
+        '--workspace-board-card-surface': 'var(--ui-workspace-board-card-current-surface)',
+        '--workspace-board-card-overlay':
+          'linear-gradient(135deg,var(--ui-workspace-board-card-current-overlay-start),var(--ui-workspace-board-card-current-overlay-end))',
+      });
+    } finally {
+      cleanup();
+    }
     expect(globalsCss).toMatch(
       /\.workspace-board-subnav-link:focus-visible\s*\{[\s\S]*--workspace-board-card-surface:\s*var\(--ui-workspace-accent-surface\);[\s\S]*box-shadow:\s*var\(--ui-workspace-focus-shadow\);/,
     );
