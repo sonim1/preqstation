@@ -39,7 +39,9 @@ npm run db:migrate
 npm run db:migrate
 ```
 
-## 4) Connect Vercel
+## 4) Connect a Deployment Target
+
+### Vercel
 
 1. Import the GitHub repo in Vercel.
 2. Framework: Next.js (auto-detected).
@@ -75,10 +77,29 @@ Recommended Vercel setup:
 - Preview env: set `DATABASE_URL` to the preview database
 - Preview env: set `MIGRATE_ON_PREVIEW=true` once that preview database is ready to receive migrations
 
-## 5) Provision the Owner User
+### Cloudflare / OpenNext
 
-Owner credentials now live in PostgreSQL, not env vars.
-Generate a bcrypt hash locally, then update or insert the owner row.
+This repo also includes OpenNext Cloudflare scripts:
+
+```bash
+npm run build:cloudflare
+npm run upload:cloudflare
+npm run deploy:cloudflare
+```
+
+Set the same required runtime variables in Cloudflare before upload/deploy:
+`AUTH_SECRET`, `DATABASE_URL`, and any `ALLOWED_ORIGINS` entries for custom domains or previews.
+Use Cloudflare as the deployment target only after PostgreSQL migrations have been applied to the
+database that `DATABASE_URL` points at.
+
+## 5) Create the Owner Account
+
+Owner credentials live in PostgreSQL, not env vars.
+
+Fresh installs with no owner row show the owner setup form on `/login`. Use that form unless you
+need headless setup or are migrating an existing deployment.
+
+For manual setup, generate a bcrypt hash locally, then update or insert the owner row.
 
 Generate a hash:
 

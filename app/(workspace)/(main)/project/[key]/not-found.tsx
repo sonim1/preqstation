@@ -11,7 +11,7 @@ export default function ProjectNotFoundPage() {
           <Text size="sm" fw={700} className="route-state-eyebrow">
             404
           </Text>
-          <Title order={2} className="route-state-title">
+          <Title component="h1" order={2} className="route-state-title">
             Project Not Found
           </Title>
           <Text className="route-state-description">

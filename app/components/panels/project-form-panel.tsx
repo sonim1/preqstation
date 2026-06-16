@@ -27,7 +27,6 @@ export function ProjectFormPanel({ createProjectAction }: ProjectFormPanelProps)
     }
     if (state?.ok) {
       router.replace(state.projectKey ? `/project/${state.projectKey}` : '/projects');
-      router.refresh();
     }
   }, [router, state]);
 

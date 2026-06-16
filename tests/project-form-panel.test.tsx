@@ -71,7 +71,7 @@ describe('app/components/panels/project-form-panel', () => {
     await waitFor(() => {
       expect(replaceMock).toHaveBeenCalledWith('/project/QAD');
     });
-    expect(refreshMock).toHaveBeenCalledTimes(1);
+    expect(refreshMock).not.toHaveBeenCalled();
   });
 
   it('places the submit action after the description and background fields', () => {

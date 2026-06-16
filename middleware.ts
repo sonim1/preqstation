@@ -19,12 +19,13 @@ function isPublicPath(pathname: string) {
   );
 }
 
-function isBearerApiPath(pathname: string) {
+function isBearerApiPath(pathname: string, method: string) {
   return (
     pathname === '/mcp' ||
     pathname.startsWith('/api/tasks') ||
     pathname.startsWith('/api/qa-runs/') ||
-    /^\/api\/projects\/[^/]+\/settings$/.test(pathname)
+    (pathname === '/api/projects' && method === 'GET') ||
+    (method === 'GET' && /^\/api\/projects\/[^/]+\/settings$/.test(pathname))
   );
 }
 
@@ -89,7 +90,7 @@ export default async function middleware(req: NextRequest) {
 
   // PREQSTATION bearer-token APIs authenticate in the route handlers.
   // Defense-in-depth: require an Authorization: Bearer header at the middleware layer too.
-  if (isBearerApiPath(pathname)) {
+  if (isBearerApiPath(pathname, method)) {
     const authHeader = req.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       const headers =

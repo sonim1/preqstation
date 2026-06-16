@@ -20,7 +20,9 @@
 
 ## 2) Authorization
 
-- `middleware.ts` checks all requests except public login, health, and OAuth discovery routes.
+- `middleware.ts` checks all workspace routes and protected APIs. Public exceptions are limited to
+  `/`, `/login`, `/api/health`, `/api/ping`, OAuth register/authorize/token endpoints, `/mcp`
+  bearer challenges, and favicon handling.
 - Missing/invalid owner session redirects to `/login`.
 - Rate limiting is applied to auth and protected APIs (`429`).
 

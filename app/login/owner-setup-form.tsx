@@ -29,6 +29,7 @@ export function OwnerSetupForm() {
           label="Owner Email"
           placeholder="owner@example.com"
           autoComplete="username"
+          suppressHydrationWarning
           required
         />
         <PasswordInput
@@ -37,6 +38,7 @@ export function OwnerSetupForm() {
           label="Password"
           placeholder="Choose a strong password"
           autoComplete="new-password"
+          suppressHydrationWarning
           required
         />
         <PasswordInput
@@ -45,6 +47,7 @@ export function OwnerSetupForm() {
           label="Confirm Password"
           placeholder="Repeat password"
           autoComplete="new-password"
+          suppressHydrationWarning
           required
         />
 

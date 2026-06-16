@@ -63,6 +63,9 @@ npm run lint         # Run ESLint
 npm run typecheck    # Run tsc --noEmit
 npm run test:unit    # Run Vitest unit tests
 npm run build        # Production build
+npm run build:cloudflare   # Production build through OpenNext Cloudflare
+npm run upload:cloudflare  # Upload the Cloudflare build without deploying
+npm run deploy:cloudflare  # Build/upload/deploy through OpenNext Cloudflare
 ```
 
 Additional database commands:
