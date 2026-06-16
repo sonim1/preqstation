@@ -717,7 +717,7 @@ describe('app/components/workspace-shell', () => {
     expectBefore(recentLabel, alphaBoardLink);
   });
 
-  it('keeps primary workspace links before management links without section labels', () => {
+  it('keeps primary and settings links ordered without redundant section labels', () => {
     const { container } = renderWorkspaceShellDom({ desktopOpened: true });
     const navbar = within(getWorkspaceNavbar(container));
     const dashboardLink = navbar.getByRole('link', { name: 'Dashboard' });
@@ -725,6 +725,8 @@ describe('app/components/workspace-shell', () => {
     const settingsLink = navbar.getByRole('link', { name: 'Settings' });
     const connectionsLink = navbar.getByRole('link', { name: 'Connections' });
 
+    expect(navbar.queryByRole('heading', { level: 2, name: 'Workspace' })).toBeNull();
+    expect(navbar.queryByRole('heading', { level: 2, name: 'Manage' })).toBeNull();
     expectBefore(dashboardLink, recentLabel);
     expectBefore(recentLabel, settingsLink);
     expectBefore(settingsLink, connectionsLink);
@@ -1164,10 +1166,12 @@ describe('app/components/workspace-shell', () => {
     expect(getCssRuleProperties('.workspace-nav-link:focus-visible', ['background'])).toBeNull();
   });
 
-  it('applies top-level nav link hooks in the rendered sidebar without group labels', () => {
+  it('keeps top-level nav link hooks without sidebar section labels', () => {
     const { container } = renderWorkspaceShellDom({ desktopOpened: true });
     const navbar = within(getWorkspaceNavbar(container));
 
+    expect(navbar.queryByRole('heading', { level: 2, name: 'Workspace' })).toBeNull();
+    expect(navbar.queryByRole('heading', { level: 2, name: 'Manage' })).toBeNull();
     expect(navbar.queryAllByRole('heading', { level: 2 })).toHaveLength(0);
     expect(workspaceShellSource).not.toContain('workspace-nav-section-label');
     expect(globalsCss).not.toContain('.workspace-nav-section-label');

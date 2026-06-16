@@ -13,7 +13,7 @@ import { COLOR_SCHEME_STORAGE_KEY, DEFAULT_COLOR_SCHEME } from './theme-config';
 
 export const metadata: Metadata = {
   title: 'Preq Station',
-  description: 'Owner-only personal projects manager',
+  description: 'Owner-only task control plane for Kanban, agent APIs, MCP, and execution logs',
   manifest: '/manifest.webmanifest',
   robots: {
     index: false,
@@ -40,6 +40,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body suppressHydrationWarning>
+        <a href="#main-content" className="skip-link">
+          Skip to main content
+        </a>
         <Providers>{children}</Providers>
         <PwaRegistration />
       </body>

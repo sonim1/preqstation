@@ -1,4 +1,4 @@
-import { Alert, Container, Group, Paper, Stack, Text } from '@mantine/core';
+import { Alert, Container, Group, Paper, Stack, Text, Title } from '@mantine/core';
 import { IconInfoCircle } from '@tabler/icons-react';
 import Image from 'next/image';
 
@@ -19,7 +19,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const ownerExists = await hasOwnerAccount();
 
   return (
-    <Container size="xs" className="login-container auth-shell">
+    <Container component="main" id="main-content" size="xs" className="login-container auth-shell">
       <Group justify="flex-end" mb="sm" gap="xs">
         {!needsAuth && ownerExists ? (
           <LinkButton href="/dashboard" variant="default" size="xs">
@@ -49,13 +49,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               priority
             />
             <div className="auth-brand-lockup">
-              <Text
+              <Title
+                component="h1"
+                order={2}
                 className={`brand-wordmark auth-card-title ${outfit.className}`}
                 fw={800}
-                size="xl"
               >
                 PREQSTATION
-              </Text>
+              </Title>
               <Text className="auth-card-subtitle" size="sm" mt={4}>
                 AI Command Center
               </Text>

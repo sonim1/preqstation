@@ -52,6 +52,12 @@ function buildOwnerSetupFormData() {
   return formData;
 }
 
+function nextRedirectError(path: string) {
+  const error = new Error(`NEXT_REDIRECT ${path}`) as Error & { digest: string };
+  error.digest = `NEXT_REDIRECT;replace;${path};307;`;
+  return error;
+}
+
 describe('app/login/actions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -189,6 +195,40 @@ describe('app/login/actions', () => {
       path: '/login',
     });
     expect(mocked.redirect).toHaveBeenCalledWith('/onboarding');
+  });
+
+  it('does not turn the owner setup redirect into an inline setup error', async () => {
+    mocked.redirect.mockImplementationOnce((path: string) => {
+      throw nextRedirectError(path);
+    });
+
+    await expect(
+      registerOwnerAction({ error: null }, buildOwnerSetupFormData()),
+    ).rejects.toMatchObject({
+      digest: expect.stringContaining('NEXT_REDIRECT'),
+    });
+
+    expect(mocked.createOwnerAccount).toHaveBeenCalledWith({
+      email: 'owner@example.com',
+      password: 'plaintext-password-123',
+      path: '/login',
+    });
+    expect(mocked.redirect).toHaveBeenCalledWith('/onboarding');
+  });
+
+  it('logs unexpected owner setup errors before returning a generic setup error', async () => {
+    const error = new Error('database unavailable');
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mocked.createOwnerAccount.mockRejectedValueOnce(error);
+
+    try {
+      const result = await registerOwnerAction({ error: null }, buildOwnerSetupFormData());
+
+      expect(result).toEqual({ error: 'An error occurred during setup. Please try again later.' });
+      expect(consoleError).toHaveBeenCalledWith('Failed to register owner:', error);
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 
   it('continues oauth login after creating the first owner account', async () => {

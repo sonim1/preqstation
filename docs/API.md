@@ -11,14 +11,26 @@ PreqStation exposes two agent integration surfaces.
 - Auth: `Authorization: Bearer <token>` for direct REST automation and legacy shell-helper flows
 - Manage OAuth-backed agent installs from `/connections`
 
-Endpoints:
+Bearer-token endpoints:
 
-| Method   | Path             | Description                                  |
-| -------- | ---------------- | -------------------------------------------- |
-| `GET`    | `/api/tasks`     | List tasks (filter by status, label, engine) |
-| `POST`   | `/api/tasks`     | Create a task                                |
-| `PATCH`  | `/api/tasks/:id` | Update a task                                |
-| `DELETE` | `/api/tasks/:id` | Delete a task                                |
+| Method   | Path                                 | Description                                                         |
+| -------- | ------------------------------------ | ------------------------------------------------------------------- |
+| `GET`    | `/api/tasks`                         | List tasks; filter by `status`, `engine`, `label`, or `project_key` |
+| `POST`   | `/api/tasks`                         | Create a task                                                       |
+| `GET`    | `/api/tasks/:id`                     | Get a task by task key or UUID                                      |
+| `PATCH`  | `/api/tasks/:id`                     | Update a task                                                       |
+| `DELETE` | `/api/tasks/:id`                     | Delete a task                                                       |
+| `PATCH`  | `/api/tasks/:id/status`              | Update task workflow status                                         |
+| `GET`    | `/api/projects`                      | List projects                                                       |
+| `GET`    | `/api/projects/:projectKey/settings` | Get deploy and agent-instruction settings by project key            |
+| `PATCH`  | `/api/qa-runs/:id`                   | Update a QA run                                                     |
+| `GET`    | `/api/health`                        | Public health check                                                 |
+
+Session-authenticated app endpoints include `/api/todos*`, `/api/events*`, `/api/settings`,
+`/api/notifications`, `/api/projects*` write routes, `/api/work-logs*`,
+`/api/project-backgrounds/*`, `/api/task-comments/*`, Telegram dispatch routes, project labels,
+selected-ready QA triggers, and legacy `/api/api-keys*` compatibility routes. See
+[`architecture.md`](architecture.md) for the complete internal route table.
 
 Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `archived`. Task payloads can also include execution fields `run_state` and `run_state_updated_at` so API clients can distinguish workflow position from live agent activity. Full task payloads include an `artifacts` array for persisted task outputs such as screenshots, videos, documents, and links; `POST /api/tasks`, `PATCH /api/tasks/:id`, and QA-run updates accept up to 50 artifact objects.
 

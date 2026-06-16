@@ -64,14 +64,14 @@ If you are new to the system, start with the [public guide](https://preqstation.
 | Layer      | Technology                        |
 | ---------- | --------------------------------- |
 | Framework  | Next.js 16                        |
-| UI         | React 19, Mantine 8, Tabler Icons |
+| UI         | React 19, Mantine 9, Tabler Icons |
 | Charts     | Recharts, @mantine/charts         |
 | ORM        | Drizzle ORM                       |
 | Database   | PostgreSQL                        |
 | Validation | Zod                               |
 | Editor     | Lexical                           |
 | Testing    | Vitest, Playwright                |
-| Language   | TypeScript 5                      |
+| Language   | TypeScript 6                      |
 
 ---
 
@@ -110,7 +110,9 @@ Key policies:
 - Authenticated pages, server actions, and APIs use `withOwnerDb(ownerId, ...)` instead of ambient access to the global `db`
 - Bootstrap/login/OAuth flows and security-event writes use explicit admin access via `withAdminDb(...)`
 - `/mcp` uses OAuth discovery + bearer access tokens instead of raw API keys
-- Middleware enforces authentication on every route except public health/login/OAuth discovery routes
+- Middleware enforces authentication on workspace routes and protected APIs. Public exceptions are
+  limited to `/`, `/login`, health/ping, OAuth registration/authorization/token endpoints, `/mcp`
+  bearer challenges, and favicon handling.
 - Rate limiting is applied to auth and protected API routes
 - Mutating APIs enforce same-origin verification
 - Login and authorization failures are recorded in `security_events`

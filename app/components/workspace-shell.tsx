@@ -623,7 +623,9 @@ export function WorkspaceShell({
         </AppShell.Section>
       </AppShell.Navbar>
 
-      <AppShell.Main className="workspace-main">{children}</AppShell.Main>
+      <AppShell.Main id="main-content" tabIndex={-1} className="workspace-main">
+        {children}
+      </AppShell.Main>
 
       {commandPaletteRequested ? (
         <CommandPalette

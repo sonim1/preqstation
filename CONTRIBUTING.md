@@ -29,8 +29,8 @@ cp .env.example .env.local
 # 4. Run database migrations
 npm run db:migrate
 
-# 5. Provision the owner user in PostgreSQL
-# See docs/setup.md for the bcrypt + SQL steps
+# 5. Create the owner account
+# Fresh installs show owner setup on /login; see docs/setup.md for manual SQL setup
 
 # 6. Start the dev server
 npm run dev

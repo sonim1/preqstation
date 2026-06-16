@@ -32,6 +32,7 @@ export function LoginForm() {
               inputMode="numeric"
               autoComplete="one-time-code"
               maxLength={6}
+              suppressHydrationWarning
               required
             />
           </>
@@ -44,6 +45,7 @@ export function LoginForm() {
               label="Email"
               placeholder="owner@example.com"
               autoComplete="username"
+              suppressHydrationWarning
               required
             />
             <PasswordInput
@@ -52,6 +54,7 @@ export function LoginForm() {
               label="Password"
               placeholder="Enter password"
               autoComplete="current-password"
+              suppressHydrationWarning
               required
             />
           </>
