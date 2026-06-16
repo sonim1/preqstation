@@ -1334,6 +1334,30 @@ describe('app/components/workspace-shell', () => {
     );
   });
 
+  it('keeps the project key badge border inside compact recent project rows', () => {
+    const { fixture, cleanup } = renderWorkspaceCssFixture(`
+      <div class="workspace-shell--sidebar-collapsed">
+        <span class="workspace-board-subnav-key" data-testid="project-key">PQST</span>
+      </div>
+    `);
+
+    try {
+      expect(
+        getCssRuleProperties('.workspace-board-subnav-key', ['border', 'border-radius']),
+      ).toEqual({
+        border: '1px solid var(--ui-workspace-board-card-key-border)',
+        'border-radius': '7px',
+      });
+      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'project-key'), {
+        'box-sizing': 'border-box',
+        width: '36px',
+        'max-width': '36px',
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
   it('collapses the desktop sidebar to icons and compact project key rows', () => {
     expect(workspaceShellSource).toMatch(
       /navbar=\{\{\s*width:\s*desktopOpened\s*\?\s*WORKSPACE_NAVBAR_WIDTH\s*:\s*WORKSPACE_NAVBAR_COLLAPSED_WIDTH,[\s\S]*desktop:\s*false\s*\}/,
