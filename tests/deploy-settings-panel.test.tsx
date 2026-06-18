@@ -101,6 +101,9 @@ describe('app/components/panels/deploy-settings-panel', () => {
       expect(node).toBeTruthy();
       return node;
     });
+    if (!preview) {
+      throw new Error('Expected prompt preview to render');
+    }
 
     expect(preview.style.maxWidth).toBe('100%');
     expect(preview.style.whiteSpace).toBe('pre-wrap');
