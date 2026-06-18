@@ -102,7 +102,7 @@ describe('app/components/panels/deploy-settings-panel', () => {
     );
 
     expect(html).toContain('Changes stay local until you save.');
-    expect(html).toContain('max-width:100%');
+    expect(html).toContain(controlClasses.panelCode);
     expect(html).toContain('white-space:pre-wrap');
     expect(html).toContain('overflow-wrap:anywhere');
   });
