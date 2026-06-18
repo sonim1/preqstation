@@ -374,6 +374,14 @@ describe('kanban bottom clearance hooks', () => {
   });
 
   it('anchors the action island to the board region instead of the viewport center', () => {
+    const boardRootRule = globalsCss.match(/\.dashboard-root\.is-board\s*\{([^}]*)\}/)?.[1] ?? '';
+
+    expect(globalsCss).toMatch(
+      /\.workspace-shell \.mantine-AppShell-main\s*\{[\s\S]*height:\s*calc\(\s*100dvh - var\(--app-shell-header-offset,\s*0px\) - var\(--app-shell-footer-offset,\s*0px\)\s*\);/,
+    );
+    expect(boardRootRule).toContain('height: 100%;');
+    expect(boardRootRule).toContain('overflow: hidden;');
+    expect(boardRootRule).not.toContain('100dvh');
     expect(globalsCss).toMatch(
       /\.kanban-board-region\s*\{[\s\S]*position:\s*relative;[\s\S]*flex:\s*1(?: 1 auto| 1)?;[\s\S]*min-height:\s*0;/,
     );
