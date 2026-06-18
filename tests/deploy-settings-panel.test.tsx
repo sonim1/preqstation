@@ -89,22 +89,25 @@ describe('app/components/panels/deploy-settings-panel', () => {
     });
   });
 
-  it('shows manual-save guidance and keeps the prompt preview wrapped inside mobile cards', () => {
-    const html = renderToStaticMarkup(
-      <MantineProvider>
-        <DeploySettingsPanel
-          action={vi.fn(async () => null)}
-          singleProject
-          defaultProjectId="project-1"
-          projects={singleProject}
-        />
-      </MantineProvider>,
-    );
+  it('shows manual-save guidance and keeps the prompt preview wrapped inside mobile cards', async () => {
+    renderPanel();
 
-    expect(html).toContain('Changes stay local until you save.');
-    expect(html).toContain('max-width:100%');
-    expect(html).toContain('white-space:pre-wrap');
-    expect(html).toContain('overflow-wrap:anywhere');
+    expect(screen.getByText('Changes stay local until you save.')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: /Agent prompt preview/i }));
+
+    const preview = await waitFor(() => {
+      const node = document.querySelector(`.${controlClasses.panelCode}`) as HTMLElement | null;
+      expect(node).toBeTruthy();
+      return node;
+    });
+    if (!preview) {
+      throw new Error('Expected prompt preview to render');
+    }
+
+    expect(preview.style.maxWidth).toBe('100%');
+    expect(preview.style.whiteSpace).toBe('pre-wrap');
+    expect(preview.style.overflowWrap).toBe('anywhere');
   });
 
   it('applies the shared settings panel form class to the rendered form', () => {
