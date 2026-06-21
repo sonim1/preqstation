@@ -566,7 +566,7 @@ select:focus-visible,
 .dashboard-root.is-board {
   display: flex;
   flex-direction: column;
-  height: calc(100dvh - var(--app-shell-header-offset, 0px) - var(--app-shell-footer-offset, 0px));
+  height: 100%;
   min-height: 0;
   overflow: hidden;
 }
@@ -589,7 +589,7 @@ select:focus-visible,
   position: relative;
   overflow-y: auto;
   overflow-x: hidden;
-  height: 100dvh;
+  height: calc(100dvh - var(--app-shell-header-offset, 0px) - var(--app-shell-footer-offset, 0px));
 }
 
 html[data-mantine-color-scheme='dark'] .workspace-shell .mantine-AppShell-main,
@@ -851,7 +851,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 }
 
 .workspace-navbar {
-  position: relative;
+  position: fixed;
   overflow: visible;
   z-index: 121;
   border-right: 1px solid var(--ui-border);
@@ -3979,9 +3979,7 @@ html[data-mantine-color-scheme='dark'] .live-editor-link {
   }
 
   .dashboard-root.is-board {
-    height: calc(
-      100dvh - var(--app-shell-header-offset, 0px) - var(--app-shell-footer-offset, 0px)
-    );
+    height: 100%;
   }
 }
 
