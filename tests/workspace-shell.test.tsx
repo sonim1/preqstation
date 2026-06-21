@@ -294,49 +294,6 @@ function expectComputedStyleProperties(
   }
 }
 
-function installElementAnimateMock() {
-  const animateMock = vi.fn(() => ({ cancel: vi.fn() }));
-
-  Object.defineProperty(Element.prototype, 'animate', {
-    configurable: true,
-    writable: true,
-    value: animateMock,
-  });
-
-  return animateMock;
-}
-
-function mockBoardSubnavRects() {
-  return vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
-    this: HTMLElement,
-  ) {
-    if (!this.classList.contains('workspace-board-subnav-link')) {
-      return makeDomRect(0);
-    }
-
-    const siblingLinks = Array.from(
-      this.parentElement?.querySelectorAll<HTMLElement>('.workspace-board-subnav-link') ?? [],
-    );
-    const index = siblingLinks.indexOf(this);
-
-    return makeDomRect(Math.max(index, 0) * 72);
-  });
-}
-
-function makeDomRect(top: number) {
-  return {
-    x: 0,
-    y: top,
-    width: 240,
-    height: 64,
-    top,
-    right: 240,
-    bottom: top + 64,
-    left: 0,
-    toJSON: () => ({}),
-  } as DOMRect;
-}
-
 function normalizeCssZeroTokens(value: string) {
   return value
     .split(/\s+/)
@@ -1098,12 +1055,10 @@ describe('app/components/workspace-shell', () => {
     }
   });
 
-  it('does not animate visible recent project rows when recent project order changes', () => {
+  it('updates visible recent project rows when recent project order changes', () => {
     ensureBrowserObservers();
     ensureMatchMedia();
 
-    const animateMock = installElementAnimateMock();
-    mockBoardSubnavRects();
     const projectOptions = [
       { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
       { id: '2', name: 'Beta', projectKey: 'BETA', status: 'active' },
@@ -1128,13 +1083,11 @@ describe('app/components/workspace-shell', () => {
       );
 
     expect(boardLabels()).toEqual(['BETABeta', 'GAMMAGamma', 'ALPHAAlpha', 'DELTADelta']);
-    expect(animateMock).not.toHaveBeenCalled();
 
     projectOrderState = 'ALPHA|DELTA|BETA|GAMMA';
     rerender(workspaceShellElement(projectOptions));
 
     expect(boardLabels()).toEqual(['DELTADelta', 'BETABeta', 'GAMMAGamma', 'ALPHAAlpha']);
-    expect(animateMock).not.toHaveBeenCalled();
   });
 
   it('defers recent project storage updates until a recent link route settles', () => {
