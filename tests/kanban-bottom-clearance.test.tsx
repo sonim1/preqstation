@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 
 import { MantineProvider } from '@mantine/core';
@@ -55,6 +56,12 @@ function makeTask(status: KanbanTask['status']): KanbanTask {
 }
 
 const globalsCss = fs.readFileSync(path.join(process.cwd(), 'app/globals.css'), 'utf8');
+const require = createRequire(import.meta.url);
+const { JSDOM } = require('jsdom') as {
+  JSDOM: new (html?: string) => {
+    window: Window & typeof globalThis;
+  };
+};
 
 describe('kanban bottom clearance hooks', () => {
   it('renders the bottom-clearance and bottom-gradient hooks for mobile panels, desktop columns, and loading shell', () => {
@@ -374,14 +381,32 @@ describe('kanban bottom clearance hooks', () => {
   });
 
   it('anchors the action island to the board region instead of the viewport center', () => {
-    const boardRootRule = globalsCss.match(/\.dashboard-root\.is-board\s*\{([^}]*)\}/)?.[1] ?? '';
+    const dom = new JSDOM('<!doctype html><html><head></head><body></body></html>');
+    const { document } = dom.window;
+    const style = document.createElement('style');
+    style.textContent = globalsCss;
+    document.head.append(style);
 
-    expect(globalsCss).toMatch(
-      /\.workspace-shell \.mantine-AppShell-main\s*\{[\s\S]*height:\s*calc\(\s*100dvh - var\(--app-shell-header-offset,\s*0px\) - var\(--app-shell-footer-offset,\s*0px\)\s*\);/,
-    );
-    expect(boardRootRule).toContain('height: 100%;');
-    expect(boardRootRule).toContain('overflow: hidden;');
-    expect(boardRootRule).not.toContain('100dvh');
+    const fixture = document.createElement('div');
+    fixture.innerHTML =
+      '<div class="workspace-shell"><div class="mantine-AppShell-main" data-testid="main"></div></div><div class="dashboard-root is-board" data-testid="board-root"></div>';
+    document.body.append(fixture);
+
+    try {
+      const main = fixture.querySelector("[data-testid='main']") as HTMLElement;
+      const boardRoot = fixture.querySelector("[data-testid='board-root']") as HTMLElement;
+
+      const mainStyle = dom.window.getComputedStyle(main);
+      const boardRootStyle = dom.window.getComputedStyle(boardRoot);
+
+      expect(mainStyle.height).toBe(
+        'calc(100dvh - var(--app-shell-header-offset, 0px) - var(--app-shell-footer-offset, 0px))',
+      );
+      expect(boardRootStyle.height).toBe('100%');
+      expect(boardRootStyle.overflow).toBe('hidden');
+    } finally {
+      dom.window.close();
+    }
     expect(globalsCss).toMatch(
       /\.kanban-board-region\s*\{[\s\S]*position:\s*relative;[\s\S]*flex:\s*1(?: 1 auto| 1)?;[\s\S]*min-height:\s*0;/,
     );
