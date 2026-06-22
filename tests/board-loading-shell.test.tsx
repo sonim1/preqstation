@@ -109,6 +109,21 @@ describe('app/components/board-loading-shell', () => {
     }
   });
 
+  it('scopes skeleton colors to the board loading shell', () => {
+    expect(globalsCss).toMatch(
+      /\[data-board-loading-shell=['"]true['"]\]\s*\{[\s\S]*--board-loading-skeleton-surface:\s*color-mix\([\s\S]*var\(--ui-surface-strong\),[\s\S]*var\(--ui-accent-soft\)\s*42%[\s\S]*--board-loading-skeleton-highlight:/,
+    );
+    expect(globalsCss).toMatch(
+      /\[data-board-loading-shell=['"]true['"]\]\s+\.mantine-Skeleton-root\s*\{[\s\S]*background:\s*var\(--board-loading-skeleton-surface\);/,
+    );
+    expect(globalsCss).toMatch(
+      /\[data-board-loading-shell=['"]true['"]\]\s+\.mantine-Skeleton-root::after\s*\{[\s\S]*background:\s*linear-gradient\([\s\S]*var\(--board-loading-skeleton-highlight\)[\s\S]*\);/,
+    );
+    expect(globalsCss).toMatch(
+      /html\[data-mantine-color-scheme=['"]dark['"]\]\s+\[data-board-loading-shell=['"]true['"]\]\s*\{[\s\S]*--board-loading-skeleton-surface:\s*color-mix\([\s\S]*var\(--ui-surface-soft\),[\s\S]*var\(--ui-accent\)\s*14%[\s\S]*--board-loading-skeleton-highlight:/,
+    );
+  });
+
   it('board route loading uses the board-specific loading shell', () => {
     const html = render(<BoardLoading />);
 

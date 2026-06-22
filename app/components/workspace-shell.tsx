@@ -89,8 +89,8 @@ function initialFromEmail(email: string) {
 const PROJECT_KEY_CHANGED_EVENT = 'pm:lastProjectKey:changed';
 const WORKSPACE_NAVBAR_WIDTH = 320;
 const WORKSPACE_NAVBAR_COLLAPSED_WIDTH = 72;
-const BOARD_SUBNAV_ROW_HEIGHT = 64;
-const BOARD_SUBNAV_COLLAPSED_ROW_HEIGHT = 48;
+const BOARD_SUBNAV_ROW_HEIGHT = 52;
+const BOARD_SUBNAV_COLLAPSED_ROW_HEIGHT = 44;
 const BOARD_SUBNAV_ROW_GAP = 8;
 const BOARD_RECENT_LINK_LIMIT = 5;
 
@@ -115,7 +115,6 @@ function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) 
       prefetch={false}
       label={
         <span className="workspace-board-subnav-label">
-          <span className="workspace-board-subnav-key">{project.projectKey}</span>
           <span className="workspace-board-subnav-name">{project.name}</span>
         </span>
       }

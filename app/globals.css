@@ -999,8 +999,8 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   );
   position: relative;
   z-index: 1;
-  min-height: 64px;
-  padding: 8px 10px;
+  min-height: 52px;
+  padding: 6px 10px;
   border: 1px solid var(--ui-border);
   border-radius: 12px;
   background:
@@ -1066,30 +1066,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 .workspace-board-subnav-label {
   display: flex;
   align-items: center;
-  gap: 10px;
   min-width: 0;
-}
-
-.workspace-board-subnav-key {
-  box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-  max-width: 96px;
-  min-height: 26px;
-  padding: 0 7px;
-  border-radius: 7px;
-  border: 1px solid var(--ui-workspace-board-card-key-border);
-  background: var(--ui-workspace-board-card-key-surface);
-  color: var(--ui-text);
-  font-size: var(--ui-font-size-micro);
-  font-weight: 800;
-  line-height: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  box-shadow: inset 0 1px 0 var(--ui-workspace-board-card-key-highlight);
 }
 
 .workspace-board-subnav-name {
@@ -1259,8 +1236,8 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .workspace-shell--sidebar-collapsed .workspace-board-subnav-link {
   width: 48px;
-  min-height: 48px;
-  padding: 6px;
+  min-height: 44px;
+  padding: 5px 6px;
   border-radius: 16px;
 }
 
@@ -1271,14 +1248,6 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .workspace-shell--sidebar-collapsed .workspace-board-subnav-label {
   justify-content: center;
-}
-
-.workspace-shell--sidebar-collapsed .workspace-board-subnav-key {
-  width: 36px;
-  max-width: 36px;
-  min-height: 24px;
-  padding: 0 4px;
-  font-size: var(--ui-font-size-tiny);
 }
 
 .workspace-shell--sidebar-collapsed .workspace-board-subnav-name,
@@ -2036,6 +2005,45 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .board-loading-shell-desktop {
   display: none;
+}
+
+[data-board-loading-shell='true'] {
+  --board-loading-skeleton-surface: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    var(--ui-accent-soft) 42%
+  );
+  --board-loading-skeleton-highlight: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    var(--ui-on-accent) 36%
+  );
+}
+
+[data-board-loading-shell='true'] .mantine-Skeleton-root {
+  background: var(--board-loading-skeleton-surface);
+}
+
+[data-board-loading-shell='true'] .mantine-Skeleton-root::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--board-loading-skeleton-highlight),
+    transparent
+  );
+}
+
+html[data-mantine-color-scheme='dark'] [data-board-loading-shell='true'] {
+  --board-loading-skeleton-surface: color-mix(
+    in srgb,
+    var(--ui-surface-soft),
+    var(--ui-accent) 14%
+  );
+  --board-loading-skeleton-highlight: color-mix(
+    in srgb,
+    var(--ui-surface-strong),
+    var(--ui-text) 16%
+  );
 }
 
 .kanban-stage.has-bg-image {

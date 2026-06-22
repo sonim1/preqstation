@@ -714,7 +714,7 @@ describe('app/components/workspace-shell', () => {
     const dashboardLink = navbar.getByRole('link', { name: 'Dashboard' });
     const projectsLink = navbar.getByRole('link', { name: 'Projects' });
     const recentLabel = navbar.getByText('Recent projects');
-    const alphaBoardLink = navbar.getByRole('link', { name: /ALPHA\s*Alpha/ });
+    const alphaBoardLink = navbar.getByRole('link', { name: 'Alpha' });
 
     expect(navbar.queryByRole('link', { name: 'Boards' })).toBeNull();
     expectBefore(dashboardLink, projectsLink);
@@ -778,19 +778,17 @@ describe('app/components/workspace-shell', () => {
     expect(navbar.queryByRole('link', { name: 'Boards' })).toBeNull();
     expectBefore(projectsLink, recentLabel);
     expect(quickBoardLinks.map((link) => link.textContent?.trim())).toEqual([
-      'PROJECT-6Project 6',
-      'PROJECT-5Project 5',
-      'PROJECT-4Project 4',
-      'PROJECT-3Project 3',
-      'PROJECT-2Project 2',
+      'Project 6',
+      'Project 5',
+      'Project 4',
+      'Project 3',
+      'Project 2',
     ]);
-    expect(quickBoardLinks[0]?.querySelector('.workspace-board-subnav-key')?.textContent).toBe(
-      'PROJECT-6',
-    );
+    expect(quickBoardLinks[0]?.querySelector('.workspace-board-subnav-key')).toBeNull();
     expect(container.querySelector('[href="/board/PROJECT-7"]')).toBeNull();
   });
 
-  it('uses project card backgrounds for recent board cards without colored initials', () => {
+  it('uses project card backgrounds for recent board cards without visible project keys', () => {
     const { container } = renderWorkspaceShellDom({
       desktopOpened: true,
       pathname: '/board/ALPHA',
@@ -806,16 +804,14 @@ describe('app/components/workspace-shell', () => {
       ],
     });
     const boardLink = container.querySelector<HTMLElement>('.workspace-board-subnav-link');
-    const keyBadge = boardLink?.querySelector<HTMLElement>('.workspace-board-subnav-key');
     const boardCardBgStyle =
       boardLink?.style.getPropertyValue('--workspace-board-card-bg-image') ?? '';
 
     expect(boardCardBgStyle).toContain('images.unsplash.com');
     expect(boardLink?.getAttribute('aria-label')).toBeNull();
-    expect(keyBadge?.textContent).toBe('ALPHA');
-    expect(keyBadge?.hasAttribute('aria-hidden')).toBe(false);
+    expect(boardLink?.querySelector('.workspace-board-subnav-key')).toBeNull();
+    expect(boardLink?.textContent?.trim()).toBe('Alpha');
     expect(boardLink?.querySelector('.workspace-board-subnav-avatar')).toBeNull();
-    expect(keyBadge?.hasAttribute('data-tone')).toBe(false);
   });
 
   it('marks the current board when it is in the recent projects list', () => {
@@ -879,22 +875,22 @@ describe('app/components/workspace-shell', () => {
       );
 
     expect(boardLabels()).toEqual([
-      'PROJECT-6Project 6',
-      'PROJECT-5Project 5',
-      'PROJECT-4Project 4',
-      'PROJECT-3Project 3',
-      'PROJECT-2Project 2',
+      'Project 6',
+      'Project 5',
+      'Project 4',
+      'Project 3',
+      'Project 2',
     ]);
     fireEvent.click(
       within(getWorkspaceNavbar(container)).getByRole('button', { name: 'View all projects' }),
     );
 
     expect(boardLabels()).toEqual([
-      'PROJECT-6Project 6',
-      'PROJECT-5Project 5',
-      'PROJECT-4Project 4',
-      'PROJECT-3Project 3',
-      'PROJECT-2Project 2',
+      'Project 6',
+      'Project 5',
+      'Project 4',
+      'Project 3',
+      'Project 2',
     ]);
     expect(workspaceShellSource).toMatch(
       /<Menu[\s\S]*position="right-start"[\s\S]*className="workspace-board-subnav-more"[\s\S]*<ProjectPickerMenuItems\s+projectOptions=\{orderedProjectOptions\}/,
@@ -1010,7 +1006,7 @@ describe('app/components/workspace-shell', () => {
 
     expect(html).toContain('workspace-board-subnav-surface');
     expect(html).toContain('data-current-board-index="1"');
-    expect(html).toContain('transform:translateY(72px)');
+    expect(html).toContain('transform:translateY(60px)');
     expect(html).not.toContain('workspace-board-subnav-pulse');
   });
 
@@ -1043,13 +1039,13 @@ describe('app/components/workspace-shell', () => {
           (link) => link.textContent?.trim(),
         );
 
-      expect(boardLabels()).toEqual(['BETABeta', 'GAMMAGamma', 'ALPHAAlpha', 'DELTADelta']);
+      expect(boardLabels()).toEqual(['Beta', 'Gamma', 'Alpha', 'Delta']);
 
       window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(['BETA', 'DELTA']));
       projectOrderState = 'ALPHA|BETA|DELTA';
       rerender(workspaceShellElement(projectOptions));
 
-      expect(boardLabels()).toEqual(['BETABeta', 'DELTADelta', 'ALPHAAlpha', 'GAMMAGamma']);
+      expect(boardLabels()).toEqual(['Beta', 'Delta', 'Alpha', 'Gamma']);
     } finally {
       window.localStorage.removeItem(RECENT_PROJECTS_STORAGE);
     }
@@ -1082,12 +1078,12 @@ describe('app/components/workspace-shell', () => {
         (link) => link.textContent?.trim(),
       );
 
-    expect(boardLabels()).toEqual(['BETABeta', 'GAMMAGamma', 'ALPHAAlpha', 'DELTADelta']);
+    expect(boardLabels()).toEqual(['Beta', 'Gamma', 'Alpha', 'Delta']);
 
     projectOrderState = 'ALPHA|DELTA|BETA|GAMMA';
     rerender(workspaceShellElement(projectOptions));
 
-    expect(boardLabels()).toEqual(['DELTADelta', 'BETABeta', 'GAMMAGamma', 'ALPHAAlpha']);
+    expect(boardLabels()).toEqual(['Delta', 'Beta', 'Gamma', 'Alpha']);
   });
 
   it('defers recent project storage updates until a recent link route settles', () => {
@@ -1174,10 +1170,10 @@ describe('app/components/workspace-shell', () => {
 
     try {
       expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'board-link'), {
-        'min-height': '64px',
-        'padding-top': '8px',
+        'min-height': '52px',
+        'padding-top': '6px',
         'padding-right': '10px',
-        'padding-bottom': '8px',
+        'padding-bottom': '6px',
         'padding-left': '10px',
       });
     } finally {
@@ -1230,7 +1226,7 @@ describe('app/components/workspace-shell', () => {
       rememberedProjectKey: 'ALPHA',
     });
     const navbar = within(getWorkspaceNavbar(container));
-    const currentBoardLink = navbar.getByRole('link', { name: /ALPHA\s*Alpha/ });
+    const currentBoardLink = navbar.getByRole('link', { name: 'Alpha' });
     const focusRule = getCssRuleProperties(
       '.workspace-nav-link:not(.workspace-board-subnav-link):focus-visible',
       ['outline', 'background', 'color', 'box-shadow'],
@@ -1425,16 +1421,14 @@ describe('app/components/workspace-shell', () => {
     }
   });
 
-  it('styles recent project rows as project cards with key badges', () => {
-    expect(workspaceShellSource).toContain('workspace-board-subnav-key');
+  it('styles recent project rows as shorter project cards without key badges', () => {
+    expect(workspaceShellSource).not.toContain('workspace-board-subnav-key');
     expect(workspaceShellSource).not.toContain('workspace-board-subnav-avatar');
     expect(workspaceShellSource).toContain('View all projects');
     expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link\s*\{[^}]*min-height:\s*64px;[^}]*padding:\s*8px 10px;/,
+      /\.workspace-board-subnav-link\s*\{[^}]*min-height:\s*52px;[^}]*padding:\s*6px 10px;/,
     );
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-key\s*\{[^}]*min-width:\s*0;[^}]*max-width:\s*96px;[^}]*border-radius:\s*7px;/,
-    );
+    expect(globalsCss).not.toContain('.workspace-board-subnav-key');
     expect(globalsCss).not.toContain('.workspace-board-subnav-avatar');
     expect(globalsCss).not.toContain('[data-tone');
     expect(globalsCss).toMatch(
@@ -1442,31 +1436,7 @@ describe('app/components/workspace-shell', () => {
     );
   });
 
-  it('keeps the project key badge border inside compact recent project rows', () => {
-    const { fixture, cleanup } = renderWorkspaceCssFixture(`
-      <div class="workspace-shell--sidebar-collapsed">
-        <span class="workspace-board-subnav-key" data-testid="project-key">PQST</span>
-      </div>
-    `);
-
-    try {
-      expect(
-        getCssRuleProperties('.workspace-board-subnav-key', ['border', 'border-radius']),
-      ).toEqual({
-        border: '1px solid var(--ui-workspace-board-card-key-border)',
-        'border-radius': '7px',
-      });
-      expectComputedStyleProperties(getRequiredFixtureElement(fixture, 'project-key'), {
-        'box-sizing': 'border-box',
-        width: '36px',
-        'max-width': '36px',
-      });
-    } finally {
-      cleanup();
-    }
-  });
-
-  it('collapses the desktop sidebar to icons and compact project key rows', () => {
+  it('collapses the desktop sidebar to icons and compact recent project rows', () => {
     expect(workspaceShellSource).toMatch(
       /navbar=\{\{\s*width:\s*desktopOpened\s*\?\s*WORKSPACE_NAVBAR_WIDTH\s*:\s*WORKSPACE_NAVBAR_COLLAPSED_WIDTH,[\s\S]*desktop:\s*false\s*\}/,
     );
@@ -1478,10 +1448,7 @@ describe('app/components/workspace-shell', () => {
       /\.workspace-shell--sidebar-collapsed \.workspace-board-subnav-name,\s*\.workspace-shell--sidebar-collapsed \.workspace-board-subnav-heading,\s*\.workspace-shell--sidebar-collapsed \.workspace-board-subnav-more\s*\{[^}]*display:\s*none;/,
     );
     expect(globalsCss).toMatch(
-      /\.workspace-shell--sidebar-collapsed \.workspace-board-subnav-link\s*\{[^}]*width:\s*48px;[^}]*min-height:\s*48px;[^}]*padding:\s*6px;/,
-    );
-    expect(globalsCss).toMatch(
-      /\.workspace-shell--sidebar-collapsed \.workspace-board-subnav-key\s*\{[^}]*max-width:\s*36px;/,
+      /\.workspace-shell--sidebar-collapsed \.workspace-board-subnav-link\s*\{[^}]*width:\s*48px;[^}]*min-height:\s*44px;[^}]*padding:\s*5px 6px;/,
     );
   });
 
