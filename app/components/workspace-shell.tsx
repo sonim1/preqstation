@@ -27,15 +27,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { outfit } from '@/app/fonts';
 import { getProjectCardBgUrl } from '@/lib/project-backgrounds';
@@ -96,8 +88,6 @@ function initialFromEmail(email: string) {
 
 const PROJECT_KEY_CHANGED_EVENT = 'pm:lastProjectKey:changed';
 const WORKSPACE_NAVBAR_WIDTH = 320;
-const useIsomorphicLayoutEffect =
-  typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 const WORKSPACE_NAVBAR_COLLAPSED_WIDTH = 72;
 const BOARD_SUBNAV_ROW_HEIGHT = 64;
 const BOARD_SUBNAV_COLLAPSED_ROW_HEIGHT = 48;
@@ -107,11 +97,10 @@ const BOARD_RECENT_LINK_LIMIT = 5;
 type BoardNavLinkProps = {
   project: WorkspaceProjectOption;
   isCurrentBoard: boolean;
-  onSelect: (projectKey: string) => void;
-  linkRef?: (projectId: string, node: HTMLElement | null) => void;
+  onSelect: () => void;
 };
 
-function BoardNavLink({ project, isCurrentBoard, onSelect, linkRef }: BoardNavLinkProps) {
+function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) {
   const backgroundUrl = getProjectCardBgUrl(project.bgImage);
   const backgroundStyle = backgroundUrl
     ? ({
@@ -130,12 +119,7 @@ function BoardNavLink({ project, isCurrentBoard, onSelect, linkRef }: BoardNavLi
           <span className="workspace-board-subnav-name">{project.name}</span>
         </span>
       }
-      onClick={() => {
-        onSelect(project.projectKey);
-      }}
-      ref={(node: HTMLAnchorElement | null) => {
-        linkRef?.(project.id, node);
-      }}
+      onClick={onSelect}
       className="workspace-nav-link workspace-board-subnav-link"
       data-current-board={isCurrentBoard ? 'true' : undefined}
       aria-current={isCurrentBoard ? 'page' : undefined}
@@ -222,8 +206,6 @@ export function WorkspaceShell({
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
   const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
   const [commandPaletteRequested, setCommandPaletteRequested] = useState(false);
-  const boardLinkNodesRef = useRef(new Map<string, HTMLElement>());
-  const previousBoardRectsRef = useRef(new Map<string, DOMRect>());
   const projectOrderState = useSyncExternalStore(
     subscribeProjectOrderState,
     readProjectOrderState,
@@ -273,14 +255,6 @@ export function WorkspaceShell({
     () => activeProjectOptions.slice(0, BOARD_RECENT_LINK_LIMIT),
     [activeProjectOptions],
   );
-  const registerBoardLink = useCallback((projectId: string, node: HTMLElement | null) => {
-    if (node) {
-      boardLinkNodesRef.current.set(projectId, node);
-      return;
-    }
-
-    boardLinkNodesRef.current.delete(projectId);
-  }, []);
   const currentBoardIndex = currentActiveBoardProject
     ? visibleBoardOptions.findIndex((project) => project.id === currentActiveBoardProject.id)
     : -1;
@@ -307,13 +281,9 @@ export function WorkspaceShell({
   const navbarClassName = desktopOpened
     ? 'workspace-navbar'
     : 'workspace-navbar workspace-navbar--collapsed';
-  const handleBoardSelect = useCallback(
-    (projectKey: string) => {
-      writeRememberedProjectKey(projectKey);
-      closeMobile();
-    },
-    [closeMobile],
-  );
+  const handleBoardSelect = useCallback(() => {
+    closeMobile();
+  }, [closeMobile]);
   const requestCommandPalette = useCallback(() => {
     setCommandPaletteRequested(true);
   }, []);
@@ -357,45 +327,6 @@ export function WorkspaceShell({
     if (!project) return;
     router.replace(`/board/${project.projectKey}`);
   }, [pathname, rememberedProjectKey, orderedProjectOptions, router]);
-
-  useIsomorphicLayoutEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const nextRects = new Map<string, DOMRect>();
-
-    for (const project of visibleBoardOptions) {
-      const node = boardLinkNodesRef.current.get(project.id);
-      if (!node) continue;
-      nextRects.set(project.id, node.getBoundingClientRect());
-    }
-
-    const previousRects = previousBoardRectsRef.current;
-    previousBoardRectsRef.current = nextRects;
-
-    if (!previousRects.size) return;
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-
-    for (const project of visibleBoardOptions) {
-      const node = boardLinkNodesRef.current.get(project.id);
-      const previousRect = previousRects.get(project.id);
-      const nextRect = nextRects.get(project.id);
-      if (!node || !previousRect || !nextRect) continue;
-
-      const deltaX = previousRect.left - nextRect.left;
-      const deltaY = previousRect.top - nextRect.top;
-      if (Math.abs(deltaX) < 0.5 && Math.abs(deltaY) < 0.5) continue;
-
-      node.getAnimations?.().forEach((anim) => anim.cancel());
-
-      node.animate(
-        [{ transform: `translate(${deltaX}px, ${deltaY}px)` }, { transform: 'translate(0, 0)' }],
-        {
-          duration: 220,
-          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-        },
-      );
-    }
-  }, [visibleBoardOptions]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -641,7 +572,6 @@ export function WorkspaceShell({
                           project={project}
                           isCurrentBoard={currentActiveBoardProject?.id === project.id}
                           onSelect={handleBoardSelect}
-                          linkRef={registerBoardLink}
                         />
                       ))}
                       {desktopBoardShowMoreButton}

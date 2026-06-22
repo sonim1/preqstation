@@ -1009,11 +1009,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
   background-position: center;
   background-size: cover;
   color: var(--ui-workspace-board-card-text);
-  transition:
-    background 140ms ease,
-    border-color 140ms ease,
-    color 140ms ease,
-    box-shadow 140ms ease;
+  transition: none;
 }
 
 .workspace-board-subnav-link:hover,
@@ -1064,7 +1060,7 @@ html[data-mantine-color-scheme='dark'] .command-palette-trigger:hover {
 
 .workspace-board-subnav-link .mantine-NavLink-body {
   border-radius: 10px;
-  transition: background-color 140ms ease;
+  transition: none;
 }
 
 .workspace-board-subnav-label {

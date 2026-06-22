@@ -95,6 +95,7 @@ vi.mock('@/app/components/task-notification-center', () => ({
 
 import { resolveWorkspaceKanbanHref, WorkspaceShell } from '@/app/components/workspace-shell';
 import {
+  LAST_PROJECT_KEY_STORAGE,
   RECENT_PROJECTS_STORAGE,
   type WorkspaceProjectOption,
 } from '@/lib/workspace-project-picker';
@@ -291,49 +292,6 @@ function expectComputedStyleProperties(
   for (const [property, value] of Object.entries(expectedProperties)) {
     expect(style.getPropertyValue(property)).toBe(value);
   }
-}
-
-function installElementAnimateMock() {
-  const animateMock = vi.fn(() => ({ cancel: vi.fn() }));
-
-  Object.defineProperty(Element.prototype, 'animate', {
-    configurable: true,
-    writable: true,
-    value: animateMock,
-  });
-
-  return animateMock;
-}
-
-function mockBoardSubnavRects() {
-  return vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (
-    this: HTMLElement,
-  ) {
-    if (!this.classList.contains('workspace-board-subnav-link')) {
-      return makeDomRect(0);
-    }
-
-    const siblingLinks = Array.from(
-      this.parentElement?.querySelectorAll<HTMLElement>('.workspace-board-subnav-link') ?? [],
-    );
-    const index = siblingLinks.indexOf(this);
-
-    return makeDomRect(Math.max(index, 0) * 72);
-  });
-}
-
-function makeDomRect(top: number) {
-  return {
-    x: 0,
-    y: top,
-    width: 240,
-    height: 64,
-    top,
-    right: 240,
-    bottom: top + 64,
-    left: 0,
-    toJSON: () => ({}),
-  } as DOMRect;
 }
 
 function normalizeCssZeroTokens(value: string) {
@@ -1097,12 +1055,10 @@ describe('app/components/workspace-shell', () => {
     }
   });
 
-  it('animates visible recent project rows when recent project order changes', () => {
+  it('updates visible recent project rows when recent project order changes', () => {
     ensureBrowserObservers();
     ensureMatchMedia();
 
-    const animateMock = installElementAnimateMock();
-    mockBoardSubnavRects();
     const projectOptions = [
       { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
       { id: '2', name: 'Beta', projectKey: 'BETA', status: 'active' },
@@ -1127,66 +1083,52 @@ describe('app/components/workspace-shell', () => {
       );
 
     expect(boardLabels()).toEqual(['BETABeta', 'GAMMAGamma', 'ALPHAAlpha', 'DELTADelta']);
-    expect(animateMock).not.toHaveBeenCalled();
 
     projectOrderState = 'ALPHA|DELTA|BETA|GAMMA';
     rerender(workspaceShellElement(projectOptions));
 
     expect(boardLabels()).toEqual(['DELTADelta', 'BETABeta', 'GAMMAGamma', 'ALPHAAlpha']);
-    expect(animateMock).toHaveBeenCalledWith(
-      [{ transform: 'translate(0px, 216px)' }, { transform: 'translate(0, 0)' }],
-      expect.objectContaining({
-        duration: 220,
-        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-      }),
-    );
-    expect(animateMock).toHaveBeenCalledWith(
-      [{ transform: 'translate(0px, -72px)' }, { transform: 'translate(0, 0)' }],
-      expect.objectContaining({
-        duration: 220,
-        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-      }),
-    );
   });
 
-  it('skips recent project row animation when reduced motion is preferred', () => {
+  it('defers recent project storage updates until a recent link route settles', () => {
     ensureBrowserObservers();
     ensureMatchMedia();
 
-    const animateMock = installElementAnimateMock();
-    mockBoardSubnavRects();
-    vi.mocked(window.matchMedia).mockImplementation((query: string) => ({
-      matches: query === '(prefers-reduced-motion: reduce)',
-      media: query,
-      onchange: null,
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-      addEventListener: vi.fn(),
-      removeEventListener: vi.fn(),
-      dispatchEvent: vi.fn(),
-    }));
     const projectOptions = [
       { id: '1', name: 'Alpha', projectKey: 'ALPHA', status: 'active' },
       { id: '2', name: 'Beta', projectKey: 'BETA', status: 'active' },
-      { id: '3', name: 'Gamma', projectKey: 'GAMMA', status: 'active' },
     ] satisfies WorkspaceProjectOption[];
-    let projectOrderState = 'ALPHA|BETA|GAMMA';
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
 
-    useDisclosureMock.mockReset();
-    useDisclosureMock.mockImplementation((opened = false) => [
-      opened,
-      { toggle: vi.fn(), close: vi.fn() },
-    ]);
-    usePathnameMock.mockReturnValue('/board/ALPHA');
-    useSyncExternalStoreMock.mockReset();
-    useSyncExternalStoreMock.mockImplementation(() => projectOrderState);
+    window.localStorage.setItem(LAST_PROJECT_KEY_STORAGE, 'ALPHA');
+    window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(['ALPHA']));
 
-    const { rerender } = render(workspaceShellElement(projectOptions));
+    try {
+      const { container } = renderWorkspaceShellDom({
+        desktopOpened: true,
+        pathname: '/board/ALPHA',
+        rememberedProjectKey: 'ALPHA|ALPHA',
+        projectOptions,
+      });
+      const betaBoardLink = container.querySelector<HTMLElement>('[href="/board/BETA"]');
 
-    projectOrderState = 'ALPHA|GAMMA|BETA';
-    rerender(workspaceShellElement(projectOptions));
+      setItemSpy.mockClear();
+      expect(betaBoardLink).not.toBeNull();
+      betaBoardLink?.addEventListener('click', (event) => event.preventDefault());
+      fireEvent.click(betaBoardLink as HTMLElement);
 
-    expect(animateMock).not.toHaveBeenCalled();
+      expect(setItemSpy).not.toHaveBeenCalledWith(LAST_PROJECT_KEY_STORAGE, 'BETA');
+      expect(setItemSpy).not.toHaveBeenCalledWith(
+        RECENT_PROJECTS_STORAGE,
+        JSON.stringify(['BETA', 'ALPHA']),
+      );
+      expect(window.localStorage.getItem(LAST_PROJECT_KEY_STORAGE)).toBe('ALPHA');
+      expect(window.localStorage.getItem(RECENT_PROJECTS_STORAGE)).toBe(JSON.stringify(['ALPHA']));
+    } finally {
+      setItemSpy.mockRestore();
+      window.localStorage.removeItem(LAST_PROJECT_KEY_STORAGE);
+      window.localStorage.removeItem(RECENT_PROJECTS_STORAGE);
+    }
   });
 
   it('keeps the board selection surface hidden when no board is selected', () => {
@@ -1360,6 +1302,13 @@ describe('app/components/workspace-shell', () => {
     expect(globalsCss).toMatch(
       /\.workspace-board-subnav-surface\s*\{[^}]*top:\s*0;[^}]*left:\s*0;[^}]*right:\s*0;/,
     );
+    expect(getCssRuleProperties('.workspace-board-subnav-link', ['transition'])?.transition).toBe(
+      'none',
+    );
+    expect(
+      getCssRuleProperties('.workspace-board-subnav-link .mantine-NavLink-body', ['transition'])
+        ?.transition,
+    ).toBe('none');
     expect(globalsCss).not.toContain('.workspace-board-subnav-pulse');
   });
 
