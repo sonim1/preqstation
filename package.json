@@ -36,7 +36,7 @@
     "@lexical/markdown": "^0.45.0",
     "@lexical/react": "^0.45.0",
     "@lexical/rich-text": "^0.45.0",
-    "@mantine/charts": "^9.3.2",
+    "@mantine/charts": "^9.4.0",
     "@mantine/core": "^9.3.2",
     "@mantine/hooks": "^9.3.2",
     "@mantine/notifications": "^9.3.2",
