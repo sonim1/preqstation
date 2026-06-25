@@ -104,6 +104,7 @@ export default async function ProjectBoardPage({ params, searchParams }: Project
               label: { columns: { id: true, name: true, color: true } },
             },
           },
+          workNodes: { columns: { status: true } },
         },
       }),
       client

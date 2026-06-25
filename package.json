@@ -3,6 +3,9 @@
   "version": "0.1.4",
   "private": false,
   "license": "MIT",
+  "bin": {
+    "preqstation": "bin/preqstation.mjs"
+  },
   "scripts": {
     "dev": "eval $(grep '^PORT=' .env.local 2>/dev/null); next dev -p ${PORT:-3000}",
     "build": "node scripts/build.mjs",

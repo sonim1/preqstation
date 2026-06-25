@@ -31,6 +31,34 @@ const RUN_STATE_LABELS: Record<TaskRunState, string> = {
   running: 'Working',
 };
 
+const WORK_GRAPH_BADGE_LABELS = {
+  failed: {
+    label: 'Graph failed',
+    countKey: 'failed_count',
+    countLabel: 'failed',
+  },
+  blocked: {
+    label: 'Graph blocked',
+    countKey: 'blocked_count',
+    countLabel: 'blocked',
+  },
+  waiting_for_user: {
+    label: 'Waiting',
+    countKey: 'waiting_count',
+    countLabel: 'waiting',
+  },
+  running: {
+    label: 'Working',
+    countKey: 'running_count',
+    countLabel: 'working',
+  },
+  ready: {
+    label: 'Ready',
+    countKey: 'ready_count',
+    countLabel: 'ready',
+  },
+} as const;
+
 const KANBAN_CARD_MENU_REQUIRED_RIGHT_SPACE = 220;
 export const STALE_QUEUED_THRESHOLD_MS = 60 * 60 * 1000;
 const STALE_QUEUED_WARNING_LABEL = 'Queued for more than 1 hour';
@@ -98,6 +126,20 @@ export function useStaleQueuedTask(
   }, [isStaleQueued, runState, runStateUpdatedAt]);
 
   return isStaleQueued;
+}
+
+function resolveWorkGraphBadge(summary: KanbanTask['workGraphSummary']) {
+  if (!summary?.root_overlay) return null;
+
+  const config = WORK_GRAPH_BADGE_LABELS[summary.root_overlay];
+  const count = summary[config.countKey];
+
+  return {
+    count,
+    countLabel: `${count} ${config.countLabel}`,
+    label: config.label,
+    state: summary.root_overlay,
+  };
 }
 
 export function resolveLabelHashStyle(swatch: string) {
@@ -434,6 +476,7 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const engineConfig = getEngineConfig(displayEngine);
   const checklistCounts = parseChecklistCounts(task.note);
   const taskPriority = parseTaskPriority(task.taskPriority);
+  const workGraphBadge = resolveWorkGraphBadge(task.workGraphSummary);
   const doneActionLabel =
     task.status === 'done' ? `Already ${doneStatusLabel}` : `Mark as ${doneStatusLabel}`;
   const isStaleQueued = useStaleQueuedTask(task.runState, task.runStateUpdatedAt);
@@ -445,7 +488,13 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const canEditLabels = Boolean(onUpdateTaskLabels) && labelOptions.length > 0;
   const hasUnreadNotification = Boolean(task.hasUnreadNotification);
   const hasFooterMeta = Boolean(
-    task.runState || task.dueAt || engineConfig || checklistCounts || primaryLabel || canEditLabels,
+    task.runState ||
+      task.dueAt ||
+      engineConfig ||
+      checklistCounts ||
+      workGraphBadge ||
+      primaryLabel ||
+      canEditLabels,
   );
 
   const renderLabelInline = (label: (typeof task.labels)[number]) => (
@@ -708,6 +757,21 @@ export const KanbanCardContent = memo(function KanbanCardContent({
                         <IconChecklist size={12} />
                       </span>
                       {checklistCounts.done}/{checklistCounts.total}
+                    </span>
+                  ) : null}
+
+                  {workGraphBadge ? (
+                    <span
+                      className={`${styles.kanbanMetaChip} ${styles.kanbanWorkGraphChip}`}
+                      data-kanban-chip="work-graph"
+                      data-work-graph-state={workGraphBadge.state}
+                      aria-label={`${workGraphBadge.label}: ${workGraphBadge.countLabel}`}
+                    >
+                      <span className={styles.kanbanWorkGraphDot} aria-hidden="true" />
+                      <span className={styles.kanbanMetaChipText}>{workGraphBadge.label}</span>
+                      <span className={styles.kanbanWorkGraphCount}>
+                        {workGraphBadge.countLabel}
+                      </span>
                     </span>
                   ) : null}
                 </div>

@@ -37,6 +37,22 @@ export type SelectProject = typeof schema.projects.$inferSelect;
 export type InsertTask = typeof schema.tasks.$inferInsert;
 export type SelectTask = typeof schema.tasks.$inferSelect;
 
+// ─── Task Work Graph ────────────────────────────────────────────────
+export type InsertTaskWorkNode = typeof schema.taskWorkNodes.$inferInsert;
+export type SelectTaskWorkNode = typeof schema.taskWorkNodes.$inferSelect;
+export type InsertTaskWorkNodeDependency =
+  typeof schema.taskWorkNodeDependencies.$inferInsert;
+export type SelectTaskWorkNodeDependency =
+  typeof schema.taskWorkNodeDependencies.$inferSelect;
+export type InsertTaskWorkNodeEvent = typeof schema.taskWorkNodeEvents.$inferInsert;
+export type SelectTaskWorkNodeEvent = typeof schema.taskWorkNodeEvents.$inferSelect;
+export type InsertTaskWorkNodeEvidence = typeof schema.taskWorkNodeEvidence.$inferInsert;
+export type SelectTaskWorkNodeEvidence = typeof schema.taskWorkNodeEvidence.$inferSelect;
+export type InsertKnowledgeUpdateProposal =
+  typeof schema.knowledgeUpdateProposals.$inferInsert;
+export type SelectKnowledgeUpdateProposal =
+  typeof schema.knowledgeUpdateProposals.$inferSelect;
+
 // ─── Task Label ──────────────────────────────────────────────────────
 export type InsertTaskLabel = typeof schema.taskLabels.$inferInsert;
 export type SelectTaskLabel = typeof schema.taskLabels.$inferSelect;

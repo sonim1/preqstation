@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocked = vi.hoisted(() => ({
   getOwnerUserOrNull: vi.fn(),
   getUserSetting: vi.fn(),
+  knowledgeUpdateProposalsFindMany: vi.fn(),
   listProjectWorkLogYearActivity: vi.fn(),
   listProjectTaskLabels: vi.fn(),
   listProjectTaskLabelUsageCounts: vi.fn(),
@@ -23,6 +24,7 @@ const mocked = vi.hoisted(() => ({
   routerPush: vi.fn(),
   routerReplace: vi.fn(),
   tasksFindMany: vi.fn(),
+  taskWorkNodesFindMany: vi.fn(),
   updateProject: vi.fn(),
   writeAuditLog: vi.fn(),
   db: {
@@ -31,6 +33,12 @@ const mocked = vi.hoisted(() => ({
         findFirst: vi.fn(),
       },
       tasks: {
+        findMany: vi.fn(),
+      },
+      taskWorkNodes: {
+        findMany: vi.fn(),
+      },
+      knowledgeUpdateProposals: {
         findMany: vi.fn(),
       },
     },
@@ -282,8 +290,19 @@ vi.mock('@/lib/db/rls', () => ({
 }));
 
 vi.mock('@/lib/db/schema', () => ({
+  knowledgeUpdateProposals: {
+    createdAt: 'knowledge_update_proposals.created_at',
+    ownerId: 'knowledge_update_proposals.owner_id',
+    projectId: 'knowledge_update_proposals.project_id',
+    status: 'knowledge_update_proposals.status',
+  },
   projects: {},
   tasks: {},
+  taskWorkNodes: {
+    ownerId: 'task_work_nodes.owner_id',
+    projectId: 'task_work_nodes.project_id',
+    updatedAt: 'task_work_nodes.updated_at',
+  },
 }));
 
 vi.mock('@/lib/owner', () => ({
@@ -345,6 +364,8 @@ describe('project detail page', () => {
     vi.clearAllMocks();
     mocked.db.query.projects.findFirst = mocked.projectsFindFirst;
     mocked.db.query.tasks.findMany = mocked.tasksFindMany;
+    mocked.db.query.taskWorkNodes.findMany = mocked.taskWorkNodesFindMany;
+    mocked.db.query.knowledgeUpdateProposals.findMany = mocked.knowledgeUpdateProposalsFindMany;
     mocked.navigationSearch = '';
     mocked.getOwnerUserOrNull.mockResolvedValue({ id: 'owner-1' });
     mocked.requireOwnerUser.mockResolvedValue({ id: 'owner-1' });
@@ -370,6 +391,8 @@ describe('project detail page', () => {
       projectSettings: [],
     });
     mocked.tasksFindMany.mockResolvedValue([]);
+    mocked.taskWorkNodesFindMany.mockResolvedValue([]);
+    mocked.knowledgeUpdateProposalsFindMany.mockResolvedValue([]);
     mocked.getUserSetting.mockImplementation((_ownerId: string, key: string) =>
       Promise.resolve(key === 'timezone' ? 'UTC' : 'false'),
     );

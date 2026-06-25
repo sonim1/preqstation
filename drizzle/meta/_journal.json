@@ -183,6 +183,20 @@
       "when": 1778580001000,
       "tag": "0025_connection_notification_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1778580002000,
+      "tag": "0026_task_work_graph",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1778580003000,
+      "tag": "0027_knowledge_update_proposals",
+      "breakpoints": true
     }
   ]
 }

@@ -50,6 +50,18 @@ type CreateTaskCompletionNotificationParams = TaskNotificationFilter & {
   now?: Date;
 };
 
+export type CreateTaskNotificationParams = {
+  tx: DbClientOrTx;
+  ownerId: string;
+  projectId?: string | null;
+  taskId: string;
+  taskKey: string;
+  taskTitle: string;
+  statusFrom: string;
+  statusTo: string;
+  now?: Date;
+};
+
 type ListTaskNotificationsParams = {
   ownerId: string;
   history?: boolean;
@@ -171,6 +183,20 @@ export async function createTaskCompletionNotification(
     return null;
   }
 
+  return createTaskNotification({
+    tx: params.tx,
+    ownerId: params.ownerId,
+    projectId: params.projectId,
+    taskId: params.taskId,
+    taskKey: params.taskKey,
+    taskTitle: params.taskTitle,
+    statusFrom: normalizeStatus(params.fromStatus),
+    statusTo: normalizeStatus(params.toStatus),
+    now: params.now,
+  });
+}
+
+export async function createTaskNotification(params: CreateTaskNotificationParams) {
   const [notification] = await params.tx
     .insert(taskNotifications)
     .values({
@@ -179,12 +205,14 @@ export async function createTaskCompletionNotification(
       taskId: params.taskId,
       taskKey: params.taskKey,
       taskTitle: params.taskTitle,
-      statusFrom: normalizeStatus(params.fromStatus),
-      statusTo: normalizeStatus(params.toStatus),
+      statusFrom: normalizeStatus(params.statusFrom),
+      statusTo: normalizeStatus(params.statusTo),
       readAt: null,
       createdAt: params.now ?? new Date(),
     })
     .returning();
+
+  if (!notification) return null;
 
   await writeOutboxEvent({
     tx: params.tx,
@@ -237,6 +265,25 @@ export async function safeCreateTaskCompletionNotification(
 
   try {
     return await createTaskCompletionNotification(params);
+  } catch (error) {
+    if (isMissingTaskNotificationsRelationError(error)) {
+      console.error(
+        '[task-notifications] storage unavailable, skipping notification write:',
+        error,
+      );
+      return null;
+    }
+    throw error;
+  }
+}
+
+export async function safeCreateTaskNotification(params: CreateTaskNotificationParams) {
+  if (!(await taskNotificationsStorageAvailable(params.tx))) {
+    return null;
+  }
+
+  try {
+    return await createTaskNotification(params);
   } catch (error) {
     if (isMissingTaskNotificationsRelationError(error)) {
       console.error(

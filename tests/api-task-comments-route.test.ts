@@ -20,6 +20,7 @@ const mocked = vi.hoisted(() => {
       query: {
         tasks: { findFirst: vi.fn() },
         taskComments: { findMany: vi.fn() },
+        taskWorkNodes: { findMany: vi.fn() },
       },
       insert: vi.fn().mockReturnValue({ values: valuesFn }),
       update: vi.fn().mockReturnValue({ set: setFn }),
@@ -113,6 +114,7 @@ describe('app/api/tasks/[id]/comments/route', () => {
     mocked.sendTelegramMessage.mockResolvedValue({ ok: true });
     mocked.writeAuditLog.mockResolvedValue(undefined);
     mocked.db.query.taskComments.findMany.mockResolvedValue([{ runState: 'queued' }]);
+    mocked.db.query.taskWorkNodes.findMany.mockResolvedValue([]);
     mocked.db.update.mockReturnValue({ set: mocked.setFn });
     mocked.setFn.mockReturnValue({ where: mocked.whereFn });
     mocked.whereFn.mockReturnValue({ returning: mocked.returningFn });

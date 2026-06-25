@@ -17,7 +17,12 @@ import {
   PATCH as patchTaskRoute,
 } from '@/app/api/tasks/[id]/route';
 import { PATCH as patchTaskStatusRoute } from '@/app/api/tasks/[id]/status/route';
+import { POST as initWorkGraphRoute } from '@/app/api/tasks/[id]/work-graph/init/route';
+import { POST as createWorkNodeRoute } from '@/app/api/tasks/[id]/work-graph/nodes/route';
+import { GET as getWorkGraphRoute } from '@/app/api/tasks/[id]/work-graph/route';
 import { GET as listTasksRoute, POST as createTaskRoute } from '@/app/api/tasks/route';
+import { POST as attachWorkNodeEvidenceRoute } from '@/app/api/work-nodes/[nodeId]/evidence/route';
+import { PATCH as patchWorkNodeRoute } from '@/app/api/work-nodes/[nodeId]/route';
 import { createInternalApiToken } from '@/lib/api-tokens';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, taskComments, tasks, workLogs } from '@/lib/db/schema';
@@ -640,6 +645,63 @@ async function callReplyTaskComment(
   return readJsonResponse(response, `/api/task-comments/${encodeTaskId(commentId)}/reply`);
 }
 
+async function callGetWorkGraph(context: McpToolContext, taskId: string) {
+  const path = `/api/tasks/${encodeTaskId(taskId)}/work-graph`;
+  const request = await createInternalRequest(context, path);
+  const response = await getWorkGraphRoute(request, {
+    params: Promise.resolve({ id: taskId }),
+  });
+  return readJsonResponse(response, path);
+}
+
+async function callInitWorkGraph(context: McpToolContext, taskId: string) {
+  const path = `/api/tasks/${encodeTaskId(taskId)}/work-graph/init`;
+  const request = await createInternalRequest(context, path, { method: 'POST' });
+  const response = await initWorkGraphRoute(request, {
+    params: Promise.resolve({ id: taskId }),
+  });
+  return readJsonResponse(response, path);
+}
+
+async function callCreateWorkNode(
+  context: McpToolContext,
+  taskId: string,
+  payload: Record<string, unknown>,
+) {
+  const path = `/api/tasks/${encodeTaskId(taskId)}/work-graph/nodes`;
+  const request = await createInternalRequest(context, path, { method: 'POST', body: payload });
+  const response = await createWorkNodeRoute(request, {
+    params: Promise.resolve({ id: taskId }),
+  });
+  return readJsonResponse(response, path);
+}
+
+async function callPatchWorkNode(
+  context: McpToolContext,
+  nodeId: string,
+  payload: Record<string, unknown>,
+) {
+  const path = `/api/work-nodes/${encodeTaskId(nodeId)}`;
+  const request = await createInternalRequest(context, path, { method: 'PATCH', body: payload });
+  const response = await patchWorkNodeRoute(request, {
+    params: Promise.resolve({ nodeId }),
+  });
+  return readJsonResponse(response, path);
+}
+
+async function callAttachWorkNodeEvidence(
+  context: McpToolContext,
+  nodeId: string,
+  payload: Record<string, unknown>,
+) {
+  const path = `/api/work-nodes/${encodeTaskId(nodeId)}/evidence`;
+  const request = await createInternalRequest(context, path, { method: 'POST', body: payload });
+  const response = await attachWorkNodeEvidenceRoute(request, {
+    params: Promise.resolve({ nodeId }),
+  });
+  return readJsonResponse(response, path);
+}
+
 export function registerPreqTools(server: McpServer, context: McpToolContext) {
   server.registerTool(
     'preq_list_projects',
@@ -764,6 +826,144 @@ export function registerPreqTools(server: McpServer, context: McpToolContext) {
       },
     },
     async ({ taskId }) => contentText(await callGetTask(context, taskId)),
+  );
+
+  server.registerTool(
+    'preq_graph_state',
+    {
+      title: 'Get PREQSTATION work graph',
+      description:
+        'Read a task work graph by task key or UUID. Set initialize=true to create the root graph node first.',
+      inputSchema: {
+        taskId: z.string().trim().min(1),
+        initialize: z.boolean().optional(),
+      },
+    },
+    async ({ taskId, initialize }) => {
+      const initialized = initialize ? await callInitWorkGraph(context, taskId) : null;
+      const graph = await callGetWorkGraph(context, taskId);
+
+      return contentText(initialize ? { initialized, graph } : graph);
+    },
+  );
+
+  server.registerTool(
+    'preq_graph_node_create',
+    {
+      title: 'Create PREQSTATION work graph node',
+      description:
+        'Create a child work node for a task graph. Use this to expose runtime-owned plan, implementation, test, review, or decision steps.',
+      inputSchema: {
+        taskId: z.string().trim().min(1),
+        type: z.string().trim().min(1),
+        title: z.string().trim().min(1).max(240),
+        body: z.string().max(50000).optional(),
+        status: z.string().trim().min(1).optional(),
+        parentId: z.string().trim().min(1).optional(),
+        runtimeTarget: z.string().trim().min(1).max(120).optional(),
+        engine: z.string().trim().min(1).max(80).optional(),
+        model: z.string().trim().min(1).max(120).optional(),
+        actorKind: z.string().trim().min(1).max(40).optional(),
+        actorLabel: z.string().trim().min(1).max(120).optional(),
+        idempotencyKey: z.string().trim().min(1).max(160).optional(),
+        sortOrder: z.string().trim().min(1).max(64).optional(),
+        waitingReason: z.string().max(4000).optional(),
+        decisionPrompt: z.string().max(4000).optional(),
+        resultSummary: z.string().max(4000).optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
+        dependencyIds: z.array(z.string().trim().min(1)).max(50).optional(),
+      },
+    },
+    async ({
+      taskId,
+      type,
+      title,
+      body,
+      status,
+      parentId,
+      runtimeTarget,
+      engine,
+      model,
+      actorKind,
+      actorLabel,
+      idempotencyKey,
+      sortOrder,
+      waitingReason,
+      decisionPrompt,
+      resultSummary,
+      metadata,
+      dependencyIds,
+    }) => {
+      const payload: Record<string, unknown> = { type, title };
+      if (typeof body === 'string') payload.body = body;
+      if (status) payload.status = status;
+      if (parentId) payload.parent_id = parentId;
+      if (runtimeTarget) payload.runtime_target = runtimeTarget;
+      if (engine) payload.engine = engine;
+      if (model) payload.model = model;
+      if (actorKind) payload.actor_kind = actorKind;
+      if (actorLabel) payload.actor_label = actorLabel;
+      if (idempotencyKey) payload.idempotency_key = idempotencyKey;
+      if (sortOrder) payload.sort_order = sortOrder;
+      if (typeof waitingReason === 'string') payload.waiting_reason = waitingReason;
+      if (typeof decisionPrompt === 'string') payload.decision_prompt = decisionPrompt;
+      if (typeof resultSummary === 'string') payload.result_summary = resultSummary;
+      if (metadata) payload.metadata = metadata;
+      if (dependencyIds) payload.dependency_ids = dependencyIds;
+
+      return contentText(await callCreateWorkNode(context, taskId, payload));
+    },
+  );
+
+  server.registerTool(
+    'preq_graph_node_update',
+    {
+      title: 'Update PREQSTATION work graph node',
+      description:
+        'Transition a work node through start/complete/fail/cancel/wait/block/ready and attach result or decision metadata.',
+      inputSchema: {
+        nodeId: z.string().trim().min(1),
+        action: z.enum(['start', 'complete', 'fail', 'cancel', 'wait', 'block', 'ready'] as const),
+        resultSummary: z.string().max(4000).optional(),
+        waitingReason: z.string().max(4000).optional(),
+        decisionPrompt: z.string().max(4000).optional(),
+        metadata: z.record(z.string(), z.unknown()).optional(),
+      },
+    },
+    async ({ nodeId, action, resultSummary, waitingReason, decisionPrompt, metadata }) => {
+      const payload: Record<string, unknown> = { action };
+      if (typeof resultSummary === 'string') payload.result_summary = resultSummary;
+      if (typeof waitingReason === 'string') payload.waiting_reason = waitingReason;
+      if (typeof decisionPrompt === 'string') payload.decision_prompt = decisionPrompt;
+      if (metadata) payload.metadata = metadata;
+
+      return contentText(await callPatchWorkNode(context, nodeId, payload));
+    },
+  );
+
+  server.registerTool(
+    'preq_graph_evidence_attach',
+    {
+      title: 'Attach PREQSTATION work graph evidence',
+      description:
+        'Attach command/test/log/artifact evidence to a work node. Keep payloads small; large files should be linked as artifacts.',
+      inputSchema: {
+        nodeId: z.string().trim().min(1),
+        kind: z.string().trim().min(1),
+        title: z.string().trim().min(1).max(160),
+        summary: z.string().max(4000).optional(),
+        payload: z.record(z.string(), z.unknown()).optional(),
+        artifactUrl: z.string().trim().url().optional(),
+      },
+    },
+    async ({ nodeId, kind, title, summary, payload, artifactUrl }) => {
+      const requestPayload: Record<string, unknown> = { kind, title };
+      if (typeof summary === 'string') requestPayload.summary = summary;
+      if (payload) requestPayload.payload = payload;
+      if (artifactUrl) requestPayload.artifact_url = artifactUrl;
+
+      return contentText(await callAttachWorkNodeEvidence(context, nodeId, requestPayload));
+    },
   );
 
   server.registerTool(

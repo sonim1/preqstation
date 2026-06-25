@@ -2,6 +2,8 @@ import type { KanbanTask } from '@/lib/kanban-helpers';
 import type { EditableBoardTask } from '@/lib/kanban-store';
 import type { TaskArtifact } from '@/lib/task-artifacts';
 
+import type { WorkGraphPayload } from './work-graph-tree';
+
 type TaskEditActionState =
   | { ok: true; boardTask?: KanbanTask | null; focusedTask?: EditableBoardTask | null }
   | { ok: false; message: string }
@@ -34,6 +36,7 @@ export type TaskEditPanelProps = {
       createdAt: Date;
       todo?: { engine: string | null } | null;
     }>;
+    workGraph?: WorkGraphPayload | null;
   };
   projects: Array<{ id: string; name: string }>;
   todoLabels: Array<{ id: string; name: string; color: string | null }>;

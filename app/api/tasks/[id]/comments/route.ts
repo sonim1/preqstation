@@ -11,9 +11,10 @@ import { taskComments, tasks } from '@/lib/db/schema';
 import { ENGINE_KEYS, normalizeEngineKey } from '@/lib/engine-icons';
 import { requireOwnerUser } from '@/lib/owner';
 import { assertSameOrigin } from '@/lib/request-security';
-import { serializeTaskComment, syncTaskRunStateFromComments } from '@/lib/task-comments';
+import { serializeTaskComment } from '@/lib/task-comments';
 import { normalizeTaskDispatchTarget } from '@/lib/task-dispatch';
 import { taskWhereByIdentifier } from '@/lib/task-keys';
+import { syncTaskRunStateFromExecutionState } from '@/lib/task-run-state';
 import { buildTaskCommentDispatchMessage } from '@/lib/task-telegram-client';
 import { sendTelegramMessage } from '@/lib/telegram';
 import { decryptTelegramToken } from '@/lib/telegram-crypto';
@@ -61,7 +62,7 @@ async function markTaskCommentDispatchFailed(
       .where(eq(taskComments.id, commentId))
       .returning();
     if (updated) {
-      await syncTaskRunStateFromComments({ client, ownerId, taskId: updated.taskId });
+      await syncTaskRunStateFromExecutionState({ client, ownerId, taskId: updated.taskId });
     }
     return updated;
   });
@@ -200,7 +201,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         .returning();
 
       if (runState) {
-        await syncTaskRunStateFromComments({ client, ownerId: auth.ownerId, taskId: task.id });
+        await syncTaskRunStateFromExecutionState({
+          client,
+          ownerId: auth.ownerId,
+          taskId: task.id,
+        });
       }
 
       return { task, comment, engine, model, dispatchTarget, runState };
