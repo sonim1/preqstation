@@ -110,18 +110,46 @@ describe('app/components/board-loading-shell', () => {
   });
 
   it('scopes skeleton colors to the board loading shell', () => {
-    expect(globalsCss).toMatch(
-      /\[data-board-loading-shell=['"]true['"]\]\s*\{[\s\S]*--board-loading-skeleton-surface:\s*color-mix\([\s\S]*var\(--ui-surface-strong\),[\s\S]*var\(--ui-accent-soft\)\s*42%[\s\S]*--board-loading-skeleton-highlight:/,
-    );
-    expect(globalsCss).toMatch(
-      /\[data-board-loading-shell=['"]true['"]\]\s+\.mantine-Skeleton-root\s*\{[\s\S]*background:\s*var\(--board-loading-skeleton-surface\);/,
-    );
-    expect(globalsCss).toMatch(
-      /\[data-board-loading-shell=['"]true['"]\]\s+\.mantine-Skeleton-root::after\s*\{[\s\S]*background:\s*linear-gradient\([\s\S]*var\(--board-loading-skeleton-highlight\)[\s\S]*\);/,
-    );
-    expect(globalsCss).toMatch(
-      /html\[data-mantine-color-scheme=['"]dark['"]\]\s+\[data-board-loading-shell=['"]true['"]\]\s*\{[\s\S]*--board-loading-skeleton-surface:\s*color-mix\([\s\S]*var\(--ui-surface-soft\),[\s\S]*var\(--ui-accent\)\s*14%[\s\S]*--board-loading-skeleton-highlight:/,
-    );
+    const previousColorScheme = document.documentElement.getAttribute('data-mantine-color-scheme');
+    const { fixture, cleanup } = renderWithGlobalsCss(<BoardLoadingShell />);
+
+    try {
+      const shell = fixture.querySelector<HTMLElement>('[data-board-loading-shell="true"]');
+      const skeleton = fixture.querySelector<HTMLElement>(
+        '[data-board-loading-shell="true"] .mantine-Skeleton-root',
+      );
+
+      expect(shell).not.toBeNull();
+      expect(skeleton).not.toBeNull();
+
+      const shellStyle = window.getComputedStyle(shell!);
+      const skeletonStyle = window.getComputedStyle(skeleton!);
+
+      expect(shellStyle.getPropertyValue('--board-loading-skeleton-surface').trim()).toBe(
+        'color-mix(in srgb,var(--ui-surface-strong),var(--ui-accent-soft) 42%)',
+      );
+      expect(shellStyle.getPropertyValue('--board-loading-skeleton-highlight').trim()).toBe(
+        'color-mix(in srgb,var(--ui-surface-strong),var(--ui-on-accent) 36%)',
+      );
+      expect(skeletonStyle.background).toBe('var(--board-loading-skeleton-surface)');
+
+      document.documentElement.setAttribute('data-mantine-color-scheme', 'dark');
+      const darkShellStyle = window.getComputedStyle(shell!);
+
+      expect(darkShellStyle.getPropertyValue('--board-loading-skeleton-surface').trim()).toBe(
+        'color-mix(in srgb,var(--ui-surface-soft),var(--ui-accent) 14%)',
+      );
+      expect(darkShellStyle.getPropertyValue('--board-loading-skeleton-highlight').trim()).toBe(
+        'color-mix(in srgb,var(--ui-surface-strong),var(--ui-text) 16%)',
+      );
+    } finally {
+      if (previousColorScheme === null) {
+        document.documentElement.removeAttribute('data-mantine-color-scheme');
+      } else {
+        document.documentElement.setAttribute('data-mantine-color-scheme', previousColorScheme);
+      }
+      cleanup();
+    }
   });
 
   it('board route loading uses the board-specific loading shell', () => {

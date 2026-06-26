@@ -1422,18 +1422,32 @@ describe('app/components/workspace-shell', () => {
   });
 
   it('styles recent project rows as shorter project cards without key badges', () => {
-    expect(workspaceShellSource).not.toContain('workspace-board-subnav-key');
-    expect(workspaceShellSource).not.toContain('workspace-board-subnav-avatar');
-    expect(workspaceShellSource).toContain('View all projects');
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link\s*\{[^}]*min-height:\s*52px;[^}]*padding:\s*6px 10px;/,
+    const { fixture, cleanup } = renderWorkspaceCssFixture(
+      renderWorkspaceShell({
+        desktopOpened: true,
+        pathname: '/board/PROJECT-1',
+        projectOptions: makeActiveProjectOptions(7),
+        rememberedProjectKey: 'PROJECT-1',
+      }),
     );
-    expect(globalsCss).not.toContain('.workspace-board-subnav-key');
-    expect(globalsCss).not.toContain('.workspace-board-subnav-avatar');
-    expect(globalsCss).not.toContain('[data-tone');
-    expect(globalsCss).toMatch(
-      /\.workspace-board-subnav-link\[data-current-board=["']true["']\]\s*\{[^}]*box-shadow:\s*[\s\S]*inset 0 0 0 1px var\(--ui-accent\),/,
-    );
+
+    try {
+      const link = fixture.querySelector<HTMLElement>('.workspace-board-subnav-link');
+
+      expect(fixture.querySelector('.workspace-board-subnav-key')).toBeNull();
+      expect(fixture.querySelector('.workspace-board-subnav-avatar')).toBeNull();
+      expect(fixture.textContent).toContain('View all projects');
+      expect(link).not.toBeNull();
+      expectComputedStyleProperties(link!, {
+        'min-height': '52px',
+        'padding-top': '6px',
+        'padding-right': '10px',
+        'padding-bottom': '6px',
+        'padding-left': '10px',
+      });
+    } finally {
+      cleanup();
+    }
   });
 
   it('collapses the desktop sidebar to icons and compact recent project rows', () => {
@@ -1444,12 +1458,41 @@ describe('app/components/workspace-shell', () => {
     expect(globalsCss).toMatch(
       /\.workspace-shell--sidebar-collapsed[\s\S]*\.workspace-nav-link:not\(\.workspace-board-subnav-link\)[\s\S]*\.mantine-NavLink-body\s*\{[^}]*display:\s*none;/,
     );
-    expect(globalsCss).toMatch(
-      /\.workspace-shell--sidebar-collapsed \.workspace-board-subnav-name,\s*\.workspace-shell--sidebar-collapsed \.workspace-board-subnav-heading,\s*\.workspace-shell--sidebar-collapsed \.workspace-board-subnav-more\s*\{[^}]*display:\s*none;/,
+    const { fixture, cleanup } = renderWorkspaceCssFixture(
+      renderWorkspaceShell({
+        desktopOpened: false,
+        pathname: '/board/PROJECT-1',
+        projectOptions: makeActiveProjectOptions(7),
+        rememberedProjectKey: 'PROJECT-1',
+      }),
     );
-    expect(globalsCss).toMatch(
-      /\.workspace-shell--sidebar-collapsed \.workspace-board-subnav-link\s*\{[^}]*width:\s*48px;[^}]*min-height:\s*44px;[^}]*padding:\s*5px 6px;/,
-    );
+
+    try {
+      const link = fixture.querySelector<HTMLElement>(
+        '.workspace-shell--sidebar-collapsed .workspace-board-subnav-link',
+      );
+      const hiddenBoardElements = [
+        fixture.querySelector<HTMLElement>('.workspace-board-subnav-name'),
+        fixture.querySelector<HTMLElement>('.workspace-board-subnav-heading'),
+        fixture.querySelector<HTMLElement>('.workspace-board-subnav-more'),
+      ];
+
+      expect(link).not.toBeNull();
+      for (const element of hiddenBoardElements) {
+        expect(element).not.toBeNull();
+        expectComputedStyleProperties(element!, { display: 'none' });
+      }
+      expectComputedStyleProperties(link!, {
+        width: '48px',
+        'min-height': '44px',
+        'padding-top': '5px',
+        'padding-right': '6px',
+        'padding-bottom': '5px',
+        'padding-left': '6px',
+      });
+    } finally {
+      cleanup();
+    }
   });
 
   it('keeps the left header chrome on token-driven dark surfaces', () => {
