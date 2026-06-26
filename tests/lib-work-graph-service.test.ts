@@ -265,6 +265,9 @@ describe('lib/work-graph-service', () => {
     expect(redactEvidenceValue('/Users/kendrick/projects/preqstation/app/page.tsx')).toBe(
       '~/projects/preqstation/app/page.tsx',
     );
+    expect(redactEvidenceValue('/home/runner/work/preqstation/app/page.tsx')).toBe(
+      '~/work/preqstation/app/page.tsx',
+    );
     expect(
       redactEvidenceValue({
         command: 'cat /Users/kendrick/.env',

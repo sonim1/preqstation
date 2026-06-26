@@ -39,6 +39,7 @@ const SECRET_FILE_PATTERN =
 const PRIVATE_KEY_PATTERN = /-----BEGIN [A-Z ]*PRIVATE KEY-----/;
 const TOKEN_PREFIX_PATTERN =
   /\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9_]{16,}|xox[baprs]-[A-Za-z0-9-]{16,}|preq_[A-Za-z0-9_-]{16,})\b/;
+const USER_HOME_PATH_PATTERN = /(^|[\s'"`])\/(?:Users|home)\/[^/\\\s'"`]+(?=$|[/\\\s'"`])/g;
 
 const TRANSITIONS: Record<WorkNodeStatus, WorkNodeStatus[]> = {
   pending: ['ready', 'running', 'cancelled'],
@@ -572,7 +573,8 @@ function assertSafeEvidenceValue(value: unknown, path = 'evidence') {
 export function redactEvidenceValue<T>(value: T): T {
   const home = os.homedir();
   if (typeof value === 'string') {
-    return value.replaceAll(home, '~') as T;
+    const redactedCurrentHome = home.length > 1 ? value.replaceAll(home, '~') : value;
+    return redactedCurrentHome.replace(USER_HOME_PATH_PATTERN, '$1~') as T;
   }
   if (Array.isArray(value)) {
     return value.map((item) => redactEvidenceValue(item)) as T;
