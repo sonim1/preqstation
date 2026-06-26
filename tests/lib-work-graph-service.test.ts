@@ -1,3 +1,5 @@
+import os from 'node:os';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { DbClientOrTx } from '@/lib/db/types';
@@ -262,13 +264,15 @@ describe('lib/work-graph-service', () => {
   });
 
   it('redacts home-directory paths from evidence payloads', () => {
-    expect(redactEvidenceValue('/Users/kendrick/projects/preqstation/app/page.tsx')).toBe(
+    const home = os.homedir();
+
+    expect(redactEvidenceValue(`${home}/projects/preqstation/app/page.tsx`)).toBe(
       '~/projects/preqstation/app/page.tsx',
     );
     expect(
       redactEvidenceValue({
-        command: 'cat /Users/kendrick/.env',
-        files: ['/Users/kendrick/projects/preqstation/lib/work-graph.ts'],
+        command: `cat ${home}/.env`,
+        files: [`${home}/projects/preqstation/lib/work-graph.ts`],
       }),
     ).toEqual({
       command: 'cat ~/.env',
