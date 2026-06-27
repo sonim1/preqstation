@@ -129,6 +129,33 @@ describe('proxy bearer API allowlist', () => {
     expect(response.headers.get('location')).toBeNull();
   });
 
+  it('allows session-auth work graph task APIs without bearer auth', async () => {
+    mocked.verifySessionToken.mockResolvedValue({ email: 'owner@example.com' });
+    mocked.isOwnerEmail.mockReturnValue(true);
+
+    const response = await proxy(
+      makeRequest('/api/tasks/PQST-181/work-graph', {
+        method: 'GET',
+        cookieValue: 'session-token',
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('location')).toBeNull();
+  });
+
+  it('allows bearer-auth work node APIs without owner session cookies', async () => {
+    const response = await proxy(
+      makeRequest('/api/work-nodes/node-123', {
+        method: 'PATCH',
+        headers: { authorization: 'Bearer preq_test_token' },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('location')).toBeNull();
+  });
+
   it('does not classify browser todo comment APIs as bearer-only', async () => {
     mocked.verifySessionToken.mockResolvedValue({ email: 'owner@example.com' });
     mocked.isOwnerEmail.mockReturnValue(true);

@@ -41,7 +41,7 @@ import { useOfflineStatus } from '@/app/components/offline-status-provider';
 import { StatusHistoryBreadcrumb } from '@/app/components/status-history-breadcrumb';
 import { getSendShortcutLabel, TaskCopyActions } from '@/app/components/task-copy-actions';
 import { TaskMetadataPriorityPicker } from '@/app/components/task-metadata-controls';
-import { type WorkGraphPayload,WorkGraphTree } from '@/app/components/work-graph-tree';
+import { type WorkGraphPayload, WorkGraphTree } from '@/app/components/work-graph-tree';
 import { WorkLogTimeline } from '@/app/components/work-log-timeline';
 import { shouldFlushAutoSaveOnBlur, useAutoSave } from '@/app/hooks/use-auto-save';
 import { useTaskOfflineDraft } from '@/app/hooks/use-task-offline-draft';
@@ -1310,7 +1310,7 @@ function TaskEditFormContent({
               className={`${classes.activityCard} ${classes.mainSectionSurface}`}
               data-panel="task-edit-work-tree"
             >
-                <WorkGraphTree taskKey={taskKey} initialGraph={editableTodo.workGraph ?? null} />
+              <WorkGraphTree taskKey={taskKey} initialGraph={editableTodo.workGraph} />
             </section>
 
             <section
