@@ -170,7 +170,8 @@ See [`architecture.md`](architecture.md) for the current API and workflow contra
 For first-time system onboarding, prefer:
 
 - [PreqStation Guide](https://preqstation.com/guide) for the umbrella guide and recommended reading order
-- [`preqstation-skill`](https://github.com/sonim1/preqstation-skill) for worker/runtime setup
-- [`preqstation-dispatcher`](https://github.com/sonim1/preqstation-dispatcher) for PREQ CLI setup and dispatcher automation
+- [`preqstation-cli`](https://github.com/sonim1/preqstation-cli) for PREQ CLI operator-host setup, project mapping, and dispatch/direct-run workflows
+- the `/mcp` OAuth install commands above when Claude Code or Codex should call PreqStation MCP tools directly
+- [`preqstation-skill`](https://github.com/sonim1/preqstation-skill) only for deprecated legacy token-based worker bridges or shell-helper compatibility
 
 ---

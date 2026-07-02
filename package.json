@@ -43,6 +43,7 @@
     "@mantine/spotlight": "^9.4.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@tabler/icons-react": "^3.44.0",
+    "@xyflow/react": "^12.11.1",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",
     "fractional-indexing": "^3.2.0",

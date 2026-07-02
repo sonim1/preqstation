@@ -269,14 +269,14 @@ export function OnboardingWizard({
                   Connect a worker
                 </Text>
                 <Text c="dimmed" size="xs">
-                  Install the Preqstation skill in your worker runtime, then connect through MCP or
-                  create an API token from Connections.
+                  Run the PREQ CLI installer on the operator host, or connect Claude Code/Codex
+                  directly through the remote MCP OAuth flow.
                 </Text>
                 <Group gap="xs" className="onboarding-action-row">
                   <Code block className="onboarding-code" style={{ flex: 1 }}>
-                    npx skills add sonim1/preqstation-skill -g -a claude-code
+                    npx -y @sonim1/preqstation@latest install
                   </Code>
-                  <CopyButton value="npx skills add sonim1/preqstation-skill -g -a claude-code">
+                  <CopyButton value="npx -y @sonim1/preqstation@latest install">
                     {({ copied, copy }) => (
                       <Button
                         variant="subtle"

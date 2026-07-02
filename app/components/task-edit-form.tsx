@@ -1177,13 +1177,24 @@ function TaskEditFormContent({
             </section>
 
             <section
+              className={`${classes.activityCard} ${classes.mainSectionSurface}`}
+              data-panel="task-edit-work-tree"
+            >
+              <WorkGraphTree
+                taskKey={taskKey}
+                initialGraph={editableTodo.workGraph}
+                rootNoteMarkdown={noteMarkdown}
+              />
+            </section>
+
+            <section
               className={`${classes.notesCard} ${classes.mainSectionSurface}`}
               data-panel="task-edit-notes-primary"
             >
               <Stack gap="md" className={classes.notesContent}>
                 <SectionHeading
                   title="Notes"
-                  helpText={`Markdown notes stay front and center while you edit the ${terminology.task.singularLower}.`}
+                  helpText={`Markdown notes stay attached to this ${terminology.task.singularLower} while the work graph leads the view.`}
                   aside={
                     <Group gap="xs" align="center" wrap="wrap">
                       <SegmentedControl
@@ -1305,13 +1316,6 @@ function TaskEditFormContent({
                 onShortcutActiveChange={setCommentShortcutActive}
               />
             ) : null}
-
-            <section
-              className={`${classes.activityCard} ${classes.mainSectionSurface}`}
-              data-panel="task-edit-work-tree"
-            >
-              <WorkGraphTree taskKey={taskKey} initialGraph={editableTodo.workGraph} />
-            </section>
 
             <section
               className={`${classes.activityCard} ${classes.mainSectionSurface}`}

@@ -298,6 +298,12 @@ Run this after any deploy that changes board shell code, `/sw.js`, or the offlin
 
 ## 11) PREQSTATION Agent Setup
 
+Recommended operator-host setup:
+
+```bash
+npx -y @sonim1/preqstation@latest install
+```
+
 Recommended MCP setup:
 
 ```bash
@@ -322,11 +328,9 @@ The API now separates workflow status from execution state:
 - Workflow status: `inbox`, `todo`, `hold`, `ready`, `done`, `archived`
 - Execution state: `queued`, `running`, or `null`
 
-Install the skill package:
-
-```bash
-npx skills add sonim1/preqstation-skill -g
-```
+The `preqstation-skill` package is deprecated for new installs. Keep it only when maintaining an
+older token-based local MCP bridge or shell-helper flow; new operator hosts should use the PREQ CLI,
+and direct Claude Code/Codex clients should use the `/mcp` OAuth setup above.
 
 ## 12) Operational Recommendations
 
