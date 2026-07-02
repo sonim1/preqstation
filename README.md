@@ -14,8 +14,8 @@
   <a href="https://preqstation.com">Website</a> ·
   <a href="https://preqstation.com/guide">Guide</a> ·
   <a href="https://github.com/sonim1/preqstation">Core App</a> ·
-  <a href="https://github.com/sonim1/preqstation-dispatcher">PREQ CLI</a> ·
-  <a href="https://github.com/sonim1/preqstation-skill">Worker Skill</a>
+  <a href="https://github.com/sonim1/preqstation-cli">PREQ CLI</a> ·
+  <a href="https://github.com/sonim1/preqstation-skill">Legacy Worker Skill</a>
 </p>
 
 <p align="center">
@@ -32,8 +32,8 @@
 PreqStation is a multi-surface system:
 
 - [`preqstation`](https://github.com/sonim1/preqstation) — core app, task lifecycle, API, MCP, and architecture
-- [`preqstation-dispatcher`](https://github.com/sonim1/preqstation-dispatcher) — PREQ CLI for operator-host setup, project mapping, health checks, and direct or integration-based dispatch
-- [`preqstation-skill`](https://github.com/sonim1/preqstation-skill) — worker/runtime setup for Claude Code, Codex, and Gemini
+- [`preqstation-cli`](https://github.com/sonim1/preqstation-cli) — PREQ CLI for operator-host setup, project mapping, health checks, and direct or integration-based dispatch
+- [`preqstation-skill`](https://github.com/sonim1/preqstation-skill) — deprecated legacy worker/runtime support for token-based local MCP or shell-helper flows
 - [`preqstation-landingpage`](https://github.com/sonim1/preqstation-landingpage) — public website and guide
 
 If you are new to the system, start with the [public guide](https://preqstation.com/guide), then return here for core app and architecture details.

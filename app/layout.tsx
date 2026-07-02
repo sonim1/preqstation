@@ -2,6 +2,7 @@ import '@mantine/core/styles.css';
 import '@mantine/charts/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/spotlight/styles.css';
+import '@xyflow/react/dist/style.css';
 import './globals.css';
 
 import { ColorSchemeScript } from '@mantine/core';

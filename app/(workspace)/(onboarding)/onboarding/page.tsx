@@ -63,7 +63,8 @@ export default async function OnboardingPage() {
       } = {
         status: 'missing' as const,
         label: 'Worker not connected',
-        detail: 'Connect a worker through MCP or create an API token before expecting execution.',
+        detail:
+          'Run the PREQ CLI installer or connect a direct MCP client before expecting execution.',
       };
       if (activeConnection) {
         readiness = {
