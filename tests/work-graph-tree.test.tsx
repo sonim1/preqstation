@@ -4,7 +4,12 @@ import { MantineProvider } from '@mantine/core';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { buildGraphElements, groupEvidenceByNode } from '@/app/components/work-graph-model';
+import {
+  buildGraphElements,
+  groupEvidenceByNode,
+  nodeStatusColor,
+  nodeStatusLabel,
+} from '@/app/components/work-graph-model';
 import { type WorkGraphPayload, WorkGraphTree } from '@/app/components/work-graph-tree';
 
 const graph: WorkGraphPayload = {
@@ -295,6 +300,27 @@ describe('WorkGraphTree', () => {
     });
 
     expect(flowEdges.map((edge) => edge.id)).toEqual(['parent:root:child']);
+  });
+
+  it('treats waiting-for-user nodes as waiting state in graph styling', () => {
+    const { flowEdges } = buildGraphElements({
+      nodes: [
+        graph.nodes[0],
+        {
+          id: 'approval',
+          parent_id: 'root',
+          type: 'review',
+          status: 'waiting_for_user',
+          title: 'Approve release',
+        },
+      ],
+      dependencies: [],
+      evidenceByNode: groupEvidenceByNode([]),
+    });
+
+    expect(flowEdges[0]?.style).toMatchObject({ stroke: 'var(--ui-warning)' });
+    expect(nodeStatusColor('waiting_for_user')).toBe('yellow');
+    expect(nodeStatusLabel('waiting_for_user')).toBe('waiting for user');
   });
 
   it('promotes dependency targets into later columns in horizontal graph layouts', () => {

@@ -9,8 +9,10 @@ import { WorkGraphEmptyState } from '@/app/components/work-graph-empty-state';
 import {
   buildGraphElements,
   groupEvidenceByNode,
+  parentIdFor,
   selectPreferredWorkGraphNode,
   type WorkGraphDependencyView,
+  type WorkGraphFlowNode,
   type WorkNodeEvidenceView,
   type WorkNodeView,
 } from '@/app/components/work-graph-model';
@@ -26,6 +28,22 @@ import classes from './work-graph-tree.module.css';
 const EMPTY_NODES: WorkNodeView[] = [];
 const EMPTY_DEPENDENCIES: WorkGraphDependencyView[] = [];
 const EMPTY_EVIDENCE: WorkNodeEvidenceView[] = [];
+
+function attachRootNoteToFlowNodes(
+  flowNodes: WorkGraphFlowNode[],
+  rootNoteMarkdown: string | null | undefined,
+) {
+  if (rootNoteMarkdown === undefined) return flowNodes;
+
+  const rootNodes = flowNodes.filter((node) => !parentIdFor(node.data.node));
+  const rootNodeId =
+    rootNodes.find((node) => node.data.node.type === 'root')?.id ?? rootNodes[0]?.id ?? null;
+  if (!rootNodeId) return flowNodes;
+
+  return flowNodes.map((node) =>
+    node.id === rootNodeId ? { ...node, data: { ...node.data, rootNoteMarkdown } } : node,
+  );
+}
 
 export type WorkGraphPayload = {
   summary?: WorkGraphSummary | null;
@@ -49,7 +67,9 @@ export function WorkGraphTree({
   const [loadedGraph, setLoadedGraph] = useState<WorkGraphPayload | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const isCompactLayout = useMediaQuery('(max-width: 48em)', false);
+  const isCompactLayout = useMediaQuery('(max-width: 48em)', false, {
+    getInitialValueInEffect: true,
+  });
 
   useEffect(() => {
     if (initialGraph !== undefined) return;
@@ -63,8 +83,10 @@ export function WorkGraphTree({
           else setLoadError(payload?.error?.message ?? 'Unable to load work graph.');
         }
       })
-      .catch(() => {
-        if (!cancelled) setLoadError('Unable to load work graph.');
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          setLoadError(error instanceof Error ? error.message : 'Unable to load work graph.');
+        }
       });
 
     return () => {
@@ -82,16 +104,19 @@ export function WorkGraphTree({
   );
 
   const evidenceByNode = useMemo(() => groupEvidenceByNode(graphEvidence), [graphEvidence]);
-  const { flowNodes, flowEdges } = useMemo(
+  const { flowNodes: layoutFlowNodes, flowEdges } = useMemo(
     () =>
       buildGraphElements({
         nodes: graphNodes,
         dependencies: graphDependencies,
         evidenceByNode,
-        rootNoteMarkdown,
         layoutDirection: isCompactLayout ? 'vertical' : 'horizontal',
       }),
-    [evidenceByNode, graphDependencies, graphNodes, isCompactLayout, rootNoteMarkdown],
+    [evidenceByNode, graphDependencies, graphNodes, isCompactLayout],
+  );
+  const flowNodes = useMemo(
+    () => attachRootNoteToFlowNodes(layoutFlowNodes, rootNoteMarkdown),
+    [layoutFlowNodes, rootNoteMarkdown],
   );
   const selectedNode = useMemo(
     () => selectPreferredWorkGraphNode(graphNodes, selectedNodeIdForLookup),
@@ -153,10 +178,9 @@ export function WorkGraphTree({
               nodesConnectable={false}
               elementsSelectable
               onNodeClick={(_, node) => setSelectedNodeId(node.id)}
-              proOptions={{ hideAttribution: true }}
               className={classes.flow}
             >
-              <Background color="color-mix(in srgb, var(--ui-accent), transparent 76%)" gap={22} />
+              <Background color="var(--work-graph-grid-color)" gap={22} />
               <Controls showInteractive={false} className={classes.controls} />
             </ReactFlow>
           </div>

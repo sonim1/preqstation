@@ -224,7 +224,9 @@ function promoteDependencyTargetColumns(
 function edgeColorFor(status: string) {
   if (status === 'completed') return 'var(--ui-success)';
   if (status === 'running') return 'var(--ui-status-running)';
-  if (status === 'waiting' || status === 'blocked') return 'var(--ui-warning)';
+  if (status === 'waiting' || status === 'waiting_for_user' || status === 'blocked') {
+    return 'var(--ui-warning)';
+  }
   if (status === 'failed') return 'var(--ui-danger)';
   return 'var(--ui-accent)';
 }
@@ -233,10 +235,15 @@ export function nodeStatusColor(status: string) {
   if (status === 'completed') return 'green';
   if (status === 'running') return 'blue';
   if (status === 'ready') return 'indigo';
-  if (status === 'waiting') return 'yellow';
+  if (status === 'waiting' || status === 'waiting_for_user') return 'yellow';
   if (status === 'blocked') return 'orange';
   if (status === 'failed') return 'red';
   return 'gray';
+}
+
+export function nodeStatusLabel(status: string) {
+  if (status === 'waiting_for_user') return 'waiting for user';
+  return status;
 }
 
 export function selectPreferredWorkGraphNode(nodes: WorkNodeView[], selectedNodeId: string | null) {

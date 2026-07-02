@@ -6,6 +6,7 @@ import { type KeyboardEvent } from 'react';
 
 import {
   nodeStatusColor,
+  nodeStatusLabel,
   parentIdFor,
   resultSummaryFor,
   runtimeTargetFor,
@@ -46,7 +47,7 @@ export function WorkGraphNode({ data, selected }: NodeProps<WorkGraphFlowNode>) 
   };
 
   return (
-    <article
+    <div
       className={classes.nodeCard}
       data-status={node.status}
       data-root={isRoot ? 'true' : 'false'}
@@ -71,7 +72,7 @@ export function WorkGraphNode({ data, selected }: NodeProps<WorkGraphFlowNode>) 
           </Text>
           <Group gap={4} wrap="wrap">
             <Badge size="xs" color={nodeStatusColor(node.status)} variant="light">
-              {node.status}
+              {nodeStatusLabel(node.status)}
             </Badge>
             <Badge size="xs" variant="outline">
               {node.type}
@@ -124,7 +125,7 @@ export function WorkGraphNode({ data, selected }: NodeProps<WorkGraphFlowNode>) 
           </Badge>
         ) : null}
       </Group>
-    </article>
+    </div>
   );
 }
 

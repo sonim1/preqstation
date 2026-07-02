@@ -5,6 +5,7 @@ import { Badge, Group, Stack, Text } from '@mantine/core';
 import { MarkdownViewer } from '@/app/components/markdown-viewer';
 import {
   nodeStatusColor,
+  nodeStatusLabel,
   parentIdFor,
   resultSummaryFor,
   runtimeTargetFor,
@@ -53,7 +54,7 @@ export function WorkGraphNodeInspector({
           </Text>
           <Group gap={5} wrap="wrap">
             <Badge size="xs" color={nodeStatusColor(node.status)} variant="light">
-              {node.status}
+              {nodeStatusLabel(node.status)}
             </Badge>
             <Badge size="xs" variant="outline">
               {node.type}
