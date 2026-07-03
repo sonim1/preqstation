@@ -1,8 +1,9 @@
 # API
 
-PreqStation exposes two agent integration surfaces.
+PreqStation exposes three agent integration surfaces.
 
 - **REST API** for shell helpers and direct automation
+- **Work Graph API** for v2 agent runtimes that record execution as a graph of work nodes
 - **MCP over HTTP** at `/mcp` for Claude Code / Codex with OAuth login
 
 ### REST API
@@ -76,6 +77,89 @@ Blank, `default`, `__default__`, overlong, or invalid model values are omitted. 
 added to the OpenClaw or Hermes dispatch command only for that dispatch request; they do not update
 the task's saved engine or persist on the QA run record.
 
+### Work Graph API (v2)
+
+The work graph is the primary task view. Each task can hold a graph of typed work nodes that
+records how an agent actually executed the task: planning, implementation, review, decisions,
+waiting-for-user states, and attached evidence.
+
+- Auth: `Authorization: Bearer <token>` or an owner session cookie
+- Envelope: every response is `{ ok, schema_version, request_id, data, warnings }` on success or
+  `{ ok: false, schema_version, request_id, error: { code, message, details } }` on failure
+- `schema_version` is currently `preqstation.v2.0`. This versions the work graph wire contract and
+  is independent of the npm package version.
+- All mutations are written to the audit log with the acting token or session recorded
+
+| Method  | Path                               | Description                                                                        |
+| ------- | ---------------------------------- | ---------------------------------------------------------------------------------- |
+| `GET`   | `/api/tasks/:id/work-graph`        | Get the full graph for a task (task key or UUID)                                   |
+| `POST`  | `/api/tasks/:id/work-graph/init`   | Initialize the graph and its canonical root node                                   |
+| `POST`  | `/api/tasks/:id/work-graph/nodes`  | Create a work node                                                                 |
+| `POST`  | `/api/tasks/:id/work-graph/memory` | Append markdown to the task's shared workflow memory                               |
+| `GET`   | `/api/work-nodes/:nodeId`          | Get one work node                                                                  |
+| `PATCH` | `/api/work-nodes/:nodeId`          | Transition a node: `start`, `complete`, `fail`, `cancel`, `wait`, `block`, `ready` |
+| `POST`  | `/api/work-nodes/:nodeId/evidence` | Attach evidence to a node                                                          |
+
+Node `type` values: `root`, `plan`, `explore`, `analyze`, `research`, `interview`, `implement`,
+`document`, `review`, `test`, `qa`, `deploy`, `decision`, `approval`, `blocked`, `proposal`,
+`result`. Node `status` values: `pending`, `ready`, `running`, `waiting_for_user`, `blocked`,
+`completed`, `failed`, `cancelled`. Evidence `kind` values: `command`, `test`, `log`,
+`changed_file`, `screenshot`, `artifact`, `pull_request`, `deployment`, `summary`, `error`.
+
+Node create accepts both camelCase and snake_case field names, optional `parentId`,
+`dependencyIds`, `idempotencyKey` for safe retries, actor/engine/model attribution fields, and a
+free-form `metadata` object. Node transition (`PATCH`) also accepts `resultSummary`,
+`waitingReason`, `decisionPrompt`, and `metadata`.
+
+Task notes stay attached to the canonical root node only; other nodes carry their own bodies,
+result summaries, and evidence.
+
+#### Workflow profile metadata
+
+Harnesses record how they chose to run the work in the namespaced `metadata.workflow_profile`
+object on work nodes. The default requested profile is `auto`: PreqStation Core never chooses or
+executes a concrete workflow or skill; the harness decides and reports back.
+
+```json
+{
+  "workflow_profile": {
+    "requested": "auto",
+    "manual_command": null,
+    "resolved": "gstack-plan-eng-review",
+    "resolved_command": "/plan-eng-review",
+    "resolved_reason": "Architecture review needed before implementation"
+  }
+}
+```
+
+`requested` is required; `manual_command` must be `null` until a manual override UI exists;
+`resolved`, `resolved_command`, and `resolved_reason` are optional and written by the harness after
+it picks a workflow. See [`workflow-profile-contract.md`](workflow-profile-contract.md) for the
+full contract and rationale.
+
+#### Agent CLI
+
+The core repo ships a `preqstation-agent` CLI that wraps the work graph API for detached agent
+runs. The `preqstation` command remains owned by the dispatcher package (`@sonim1/preqstation`).
+The agent CLI reads `PREQSTATION_API_URL` and `PREQSTATION_API_TOKEN` and emits the same JSON
+envelope.
+
+| Command                                                                                                                        | Description                                              |
+| ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| `preqstation-agent agent guide --json`                                                                                         | Discover runtime rules and the workflow profile contract |
+| `preqstation-agent project resolve PREQ --json`                                                                                | Resolve a project mapping                                |
+| `preqstation-agent context files PREQ --json` / `context doctor PREQ --json`                                                   | Inspect local context files                              |
+| `preqstation-agent run prepare PREQ-123 --json`                                                                                | Fetch the task work graph before starting                |
+| `preqstation-agent graph init PREQ-123 --json`                                                                                 | Initialize the graph                                     |
+| `preqstation-agent graph state PREQ-123 --json`                                                                                | Read the graph                                           |
+| `preqstation-agent graph node create PREQ-123 --type analyze --title "..." --metadata-file metadata.json --json`               | Create a node                                            |
+| `preqstation-agent graph node start\|complete\|fail NODE-ID [--summary-file result.md] [--metadata-file metadata.json] --json` | Transition a node                                        |
+| `preqstation-agent graph evidence attach NODE-ID ... --json`                                                                   | Attach evidence                                          |
+| `preqstation-agent graph memory append PREQ-123 ... --json`                                                                    | Append workflow memory                                   |
+
+`--metadata-file` points at a JSON file whose object is sent as node `metadata`, which is how
+CLI-based harnesses record `workflow_profile`.
+
 ### MCP over HTTP
 
 - Endpoint: `/mcp`
@@ -88,6 +172,7 @@ the task's saved engine or persist on the QA run record.
 - Claude Code install: `claude mcp add --transport http preqstation https://<your-domain>/mcp`
 - Codex install: `codex mcp add preqstation --url https://<your-domain>/mcp`
 - Exposed read tools include `preq_list_projects`, `preq_list_tasks`, `preq_list_project_activity`, `preq_get_task`, and `preq_get_project_settings`
+- Work graph tools: `preq_agent_guide` (runtime rules plus the workflow profile contract), `preq_graph_state`, `preq_graph_node_create`, `preq_graph_node_update`, and `preq_graph_evidence_attach`. Node create and update accept the same `metadata` object as the REST routes, including `metadata.workflow_profile`.
 
 #### `preq_list_project_activity`
 

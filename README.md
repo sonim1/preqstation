@@ -7,7 +7,7 @@
 <h1 align="center">PreqStation Core App</h1>
 
 <p align="center">
-  <strong>Task control plane, Kanban workflow, API, and MCP server for AI-agent execution.</strong>
+  <strong>Task control plane, Work Graph execution, Kanban workflow, API, and MCP server for AI-agent execution.</strong>
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 
 ## What this repo owns
 
-`preqstation` is the core app and system of record in the PreqStation stack. It owns the Kanban board, task lifecycle, work logging, owner workspace, REST API, and HTTP MCP surfaces that coding agents use to read and update tasks programmatically.
+`preqstation` is the core app and system of record in the PreqStation stack. It owns the Work Graph task view, Kanban board, task lifecycle, work logging, owner workspace, REST API, and HTTP MCP surfaces that coding agents use to read and update tasks programmatically.
 
 PreqStation is a multi-surface system:
 
@@ -43,6 +43,8 @@ If you are new to the system, start with the [public guide](https://preqstation.
 ## Features
 
 - **Projects** — create and manage projects with GitHub repo IDs (`owner/repo`) and Vercel URL tracking
+- **Work graph (v2)** — the primary task view: a typed graph of work nodes recording how agents plan, implement, review, wait on decisions, and attach evidence, exposed via REST, MCP tools, and an agent CLI
+- **Workflow profile contract** — harnesses choose the concrete workflow (`auto` by default) and record the resolved choice in `metadata.workflow_profile` on work nodes; Core never picks skills
 - **Kanban board** — drag-and-drop task management across 6 workflow statuses (`inbox`, `todo`, `hold`, `ready`, `done`, `archived`)
 - **Offline workspace workflow** — cached `/`, `/dashboard`, `/board`, visited `/board/:key`, and `/projects` routes with IndexedDB-backed board/projects snapshots, task drafts, plus queued create/edit/move/delete sync when connectivity returns
 - **Execution overlay** — task cards can show `Requested` / `Running` independently from workflow position
@@ -91,8 +93,9 @@ The app runs at `http://localhost:3000` by default. See [docs/INSTALLATION.md](d
 ## Documentation
 
 - [Installation](docs/INSTALLATION.md) — local setup, env vars, first-run onboarding, and development commands
-- [Architecture](docs/architecture.md) — current system structure and workflow contract
-- [API](docs/API.md) — REST and MCP integration surfaces
+- [Architecture](docs/architecture.md) — current system structure, work graph model, and workflow contract
+- [API](docs/API.md) — REST, work graph, and MCP integration surfaces
+- [Workflow Profile Contract](docs/workflow-profile-contract.md) — how harnesses record resolved workflow choices on work nodes
 - [Design System](docs/design-system.md) — product UI direction, token usage, component rules, and contribution checklist
 - [Offline Board](docs/OFFLINE_BOARD.md) — browser offline cache, IndexedDB state, and replay behavior
 - [Project Structure](docs/PROJECT_STRUCTURE.md) — repository layout

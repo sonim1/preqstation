@@ -10,6 +10,7 @@ import {
   resultSummaryFor,
   runtimeTargetFor,
   waitingReasonFor,
+  workflowProfileFor,
   type WorkNodeEvidenceView,
   type WorkNodeView,
 } from '@/app/components/work-graph-model';
@@ -28,6 +29,7 @@ export function WorkGraphNodeInspector({
   const runtimeTarget = runtimeTargetFor(node);
   const resultSummary = resultSummaryFor(node);
   const waitingReason = waitingReasonFor(node);
+  const workflowProfile = workflowProfileFor(node);
   const isRoot = !parentIdFor(node);
   const rootNote = rootNoteMarkdown?.trim() ?? '';
   const hasRootNoteSlot = isRoot && rootNoteMarkdown !== undefined && rootNoteMarkdown !== null;
@@ -35,6 +37,7 @@ export function WorkGraphNodeInspector({
     Boolean(node.body) ||
     Boolean(waitingReason) ||
     Boolean(resultSummary) ||
+    Boolean(workflowProfile) ||
     evidence.length > 0 ||
     hasRootNoteSlot;
 
@@ -117,6 +120,39 @@ export function WorkGraphNodeInspector({
               Result
             </Text>
             <Text size="sm">{resultSummary}</Text>
+          </Stack>
+        ) : null}
+
+        {workflowProfile ? (
+          <Stack gap={5} className={classes.inspectorBlock}>
+            <Text size="xs" fw={800} c="dimmed" tt="uppercase">
+              Workflow
+            </Text>
+            <Group gap={5} wrap="wrap">
+              {workflowProfile.requested ? (
+                <Badge size="xs" variant="light">
+                  requested: {workflowProfile.requested}
+                </Badge>
+              ) : null}
+              {workflowProfile.resolved ? (
+                <Badge size="xs" variant="outline">
+                  resolved: {workflowProfile.resolved}
+                </Badge>
+              ) : null}
+              {workflowProfile.manualCommand ? (
+                <Badge size="xs" variant="dot">
+                  manual: {workflowProfile.manualCommand}
+                </Badge>
+              ) : null}
+            </Group>
+            {workflowProfile.resolvedCommand ? (
+              <Text size="sm">{workflowProfile.resolvedCommand}</Text>
+            ) : null}
+            {workflowProfile.resolvedReason ? (
+              <Text size="xs" c="dimmed">
+                {workflowProfile.resolvedReason}
+              </Text>
+            ) : null}
           </Stack>
         ) : null}
 
