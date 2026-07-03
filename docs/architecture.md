@@ -385,7 +385,7 @@ chooses or executes concrete workflows or skills — the harness resolves the wo
 **Surfaces.** The graph is exposed through bearer-or-session REST routes
 (`/api/tasks/:id/work-graph*`, `/api/work-nodes/:nodeId*`), MCP tools (`preq_graph_state`,
 `preq_graph_node_create`, `preq_graph_node_update`, `preq_graph_evidence_attach`,
-`preq_agent_guide`), and the agent CLI (`preqstation graph ...`). All responses share the
+`preq_agent_guide`), and the agent CLI (`preqstation-agent graph ...`). All responses share the
 `preqstation.v2.0` schema-versioned envelope. See [`API.md`](API.md) for the route and command
 tables.
 

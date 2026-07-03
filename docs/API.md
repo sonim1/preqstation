@@ -139,21 +139,23 @@ full contract and rationale.
 
 #### Agent CLI
 
-The core repo ships a `preqstation` agent CLI that wraps the work graph API for detached agent
-runs. It reads `PREQSTATION_API_URL` and `PREQSTATION_API_TOKEN` and emits the same JSON envelope.
+The core repo ships a `preqstation-agent` CLI that wraps the work graph API for detached agent
+runs. The `preqstation` command remains owned by the dispatcher package (`@sonim1/preqstation`).
+The agent CLI reads `PREQSTATION_API_URL` and `PREQSTATION_API_TOKEN` and emits the same JSON
+envelope.
 
-| Command                                                                                                                  | Description                                              |
-| ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
-| `preqstation agent guide --json`                                                                                         | Discover runtime rules and the workflow profile contract |
-| `preqstation project resolve PREQ --json`                                                                                | Resolve a project mapping                                |
-| `preqstation context files PREQ --json` / `context doctor PREQ --json`                                                   | Inspect local context files                              |
-| `preqstation run prepare PREQ-123 --json`                                                                                | Fetch the task work graph before starting                |
-| `preqstation graph init PREQ-123 --json`                                                                                 | Initialize the graph                                     |
-| `preqstation graph state PREQ-123 --json`                                                                                | Read the graph                                           |
-| `preqstation graph node create PREQ-123 --type analyze --title "..." --metadata-file metadata.json --json`               | Create a node                                            |
-| `preqstation graph node start\|complete\|fail NODE-ID [--summary-file result.md] [--metadata-file metadata.json] --json` | Transition a node                                        |
-| `preqstation graph evidence attach NODE-ID ... --json`                                                                   | Attach evidence                                          |
-| `preqstation graph memory append PREQ-123 ... --json`                                                                    | Append workflow memory                                   |
+| Command                                                                                                                        | Description                                              |
+| ------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| `preqstation-agent agent guide --json`                                                                                         | Discover runtime rules and the workflow profile contract |
+| `preqstation-agent project resolve PREQ --json`                                                                                | Resolve a project mapping                                |
+| `preqstation-agent context files PREQ --json` / `context doctor PREQ --json`                                                   | Inspect local context files                              |
+| `preqstation-agent run prepare PREQ-123 --json`                                                                                | Fetch the task work graph before starting                |
+| `preqstation-agent graph init PREQ-123 --json`                                                                                 | Initialize the graph                                     |
+| `preqstation-agent graph state PREQ-123 --json`                                                                                | Read the graph                                           |
+| `preqstation-agent graph node create PREQ-123 --type analyze --title "..." --metadata-file metadata.json --json`               | Create a node                                            |
+| `preqstation-agent graph node start\|complete\|fail NODE-ID [--summary-file result.md] [--metadata-file metadata.json] --json` | Transition a node                                        |
+| `preqstation-agent graph evidence attach NODE-ID ... --json`                                                                   | Attach evidence                                          |
+| `preqstation-agent graph memory append PREQ-123 ... --json`                                                                    | Append workflow memory                                   |
 
 `--metadata-file` points at a JSON file whose object is sent as node `metadata`, which is how
 CLI-based harnesses record `workflow_profile`.

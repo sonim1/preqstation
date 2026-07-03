@@ -4,11 +4,18 @@
   "private": false,
   "license": "MIT",
   "bin": {
-    "preqstation": "bin/preqstation.mjs"
+    "preqstation-agent": "bin/preqstation.mjs"
   },
+  "files": [
+    "bin/",
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "eval $(grep '^PORT=' .env.local 2>/dev/null); next dev -p ${PORT:-3000}",
     "build": "node scripts/build.mjs",
+    "build:cli": "node scripts/build-cli.mjs",
     "build:cloudflare": "node scripts/build.mjs --cloudflare",
     "deploy:cloudflare": "opennextjs-cloudflare deploy -- --keep-vars",
     "upload:cloudflare": "opennextjs-cloudflare upload -- --keep-vars",
@@ -24,6 +31,7 @@
     "db:studio": "drizzle-kit studio",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "prepack": "npm run build:cli",
     "prepare": "husky"
   },
   "dependencies": {
@@ -79,6 +87,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "drizzle-kit": "^0.31.10",
+    "esbuild": "^0.27.3",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.9",
     "eslint-config-prettier": "^10.1.8",

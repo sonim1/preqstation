@@ -27,8 +27,8 @@ The default user experience should be hands-off: the user dispatches work, the h
 
 - `lib/work-graph-service.ts` already accepts and persists `CreateWorkNodeInput.metadata`.
 - `app/api/tasks/[id]/work-graph/nodes/route.ts` already accepts `metadata` and passes it to `createWorkNode`.
-- `preqstation graph node create` and node transition commands accept `--metadata-file` so CLI-based harnesses can pass the same metadata contract.
-- `preqstation agent guide --json` exposes the workflow profile contract so harnesses can discover the default `auto` profile and resolved metadata fields.
+- `preqstation-agent graph node create` and node transition commands accept `--metadata-file` so CLI-based harnesses can pass the same metadata contract.
+- `preqstation-agent agent guide --json` exposes the workflow profile contract so harnesses can discover the default `auto` profile and resolved metadata fields.
 - `preq_agent_guide` exposes the same workflow profile contract to MCP-based harnesses.
 - `lib/openclaw-command.ts` already supports command metadata, but this slice does not add `workflow_profile` to dispatch messages.
 - `app/components/work-graph-tree.tsx` and existing tests already keep root notes on the canonical root node.
@@ -185,7 +185,7 @@ Sequential implementation, no parallelization opportunity. The slice is small an
   - Files: `lib/cli/commands/graph.ts`, `lib/cli/index.ts`, `tests/cli-preqstation.test.ts`, `tests/api-work-nodes-route.test.ts`
   - Verify: `npm run test:unit -- tests/cli-preqstation.test.ts`
 
-- [x] **T6 (P2, human: ~20min / CC: ~5min)** - Agent Guide - Expose the workflow profile contract through `preqstation agent guide --json`.
+- [x] **T6 (P2, human: ~20min / CC: ~5min)** - Agent Guide - Expose the workflow profile contract through `preqstation-agent agent guide --json`.
   - Surfaced by: DevEx Review - harnesses need a discoverable boundary for auto workflow selection.
   - Files: `lib/cli/commands/agent-guide.ts`, `tests/cli-preqstation.test.ts`
   - Verify: `npm run test:unit -- tests/cli-preqstation.test.ts`

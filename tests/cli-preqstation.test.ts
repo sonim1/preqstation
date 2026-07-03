@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -22,7 +23,37 @@ function makeIo() {
 
 describe('preqstation CLI', () => {
   it('registers the preqstation binary', () => {
-    expect(packageJson.bin).toEqual({ preqstation: 'bin/preqstation.mjs' });
+    expect(packageJson.bin).toEqual({ 'preqstation-agent': 'bin/preqstation.mjs' });
+  });
+
+  it('builds the production bin from the tested CLI source', () => {
+    execFileSync('node', ['scripts/build-cli.mjs'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+
+    const help = execFileSync('node', ['bin/preqstation.mjs', 'help'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+    const guide = execFileSync('node', ['bin/preqstation.mjs', 'agent', 'guide', '--json'], {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+
+    expect(help).toContain('preqstation-agent graph node complete');
+    expect(help).toContain('--metadata-file');
+    expect(JSON.parse(guide)).toMatchObject({
+      ok: true,
+      data: {
+        workflow_profile: {
+          metadata_namespace: 'workflow_profile',
+        },
+      },
+    });
   });
 
   it('prints valid JSON for agent guide without requiring API config', async () => {

@@ -7,7 +7,7 @@
 <h1 align="center">PreqStation Core App</h1>
 
 <p align="center">
-  <strong>Task control plane, Kanban workflow, API, and MCP server for AI-agent execution.</strong>
+  <strong>Task control plane, Work Graph execution, Kanban workflow, API, and MCP server for AI-agent execution.</strong>
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 
 ## What this repo owns
 
-`preqstation` is the core app and system of record in the PreqStation stack. It owns the Kanban board, task lifecycle, work logging, owner workspace, REST API, and HTTP MCP surfaces that coding agents use to read and update tasks programmatically.
+`preqstation` is the core app and system of record in the PreqStation stack. It owns the Work Graph task view, Kanban board, task lifecycle, work logging, owner workspace, REST API, and HTTP MCP surfaces that coding agents use to read and update tasks programmatically.
 
 PreqStation is a multi-surface system:
 
