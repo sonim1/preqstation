@@ -95,6 +95,33 @@ describe('work node API routes', () => {
     );
   });
 
+  it('PATCH passes workflow profile metadata into the transition service payload', async () => {
+    const workflowProfile = {
+      requested: 'auto',
+      manual_command: null,
+      resolved: 'gstack-plan-eng-review',
+      resolved_command: '/plan-eng-review',
+      resolved_reason: 'Architecture review needed before implementation.',
+    };
+
+    const response = await PATCH(
+      request('/api/work-nodes/node-1', {
+        action: 'complete',
+        metadata: { workflow_profile: workflowProfile },
+      }),
+      { params: Promise.resolve({ nodeId: 'node-1' }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect(mocked.transitionWorkNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nodeId: 'node-1',
+        action: 'complete',
+        metadata: { workflow_profile: workflowProfile },
+      }),
+    );
+  });
+
   it('POST evidence attaches bounded evidence payloads', async () => {
     const response = await ATTACH_EVIDENCE(
       request('/api/work-nodes/node-1/evidence', {

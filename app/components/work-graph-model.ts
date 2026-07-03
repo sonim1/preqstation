@@ -15,6 +15,15 @@ export type WorkNodeView = {
   waitingReason?: string | null;
   result_summary?: string | null;
   resultSummary?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
+
+export type WorkflowProfileView = {
+  requested?: string | null;
+  manualCommand?: string | null;
+  resolved?: string | null;
+  resolvedCommand?: string | null;
+  resolvedReason?: string | null;
 };
 
 export type WorkNodeEvidenceView = {
@@ -61,6 +70,32 @@ export function resultSummaryFor(node: WorkNodeView) {
 
 export function waitingReasonFor(node: WorkNodeView) {
   return node.waiting_reason ?? node.waitingReason ?? null;
+}
+
+function objectRecord(value: unknown) {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function stringValue(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
+export function workflowProfileFor(node: WorkNodeView): WorkflowProfileView | null {
+  const metadata = objectRecord(node.metadata);
+  const profile = objectRecord(metadata?.workflow_profile);
+  if (!profile) return null;
+
+  const workflowProfile = {
+    requested: stringValue(profile.requested),
+    manualCommand: stringValue(profile.manual_command ?? profile.manualCommand),
+    resolved: stringValue(profile.resolved),
+    resolvedCommand: stringValue(profile.resolved_command ?? profile.resolvedCommand),
+    resolvedReason: stringValue(profile.resolved_reason ?? profile.resolvedReason),
+  };
+
+  return Object.values(workflowProfile).some(Boolean) ? workflowProfile : null;
 }
 
 function evidenceNodeId(evidence: WorkNodeEvidenceView) {

@@ -44,6 +44,15 @@ const graph: WorkGraphPayload = {
       engine: 'codex',
       runtime_target: 'local',
       result_summary: 'API route wired.',
+      metadata: {
+        workflow_profile: {
+          requested: 'auto',
+          manual_command: null,
+          resolved: 'gstack-plan-eng-review',
+          resolved_command: '/plan-eng-review',
+          resolved_reason: 'Architecture review needed before implementation.',
+        },
+      },
     },
   ],
   dependencies: [],
@@ -137,6 +146,13 @@ describe('WorkGraphTree', () => {
     expect(within(inspector).getByText('Implement API')).toBeTruthy();
     expect(within(inspector).getByText('Create the graph mutation route.')).toBeTruthy();
     expect(within(inspector).getByText('API route wired.')).toBeTruthy();
+    expect(within(inspector).getByText('Workflow')).toBeTruthy();
+    expect(within(inspector).getByText('requested: auto')).toBeTruthy();
+    expect(within(inspector).getByText('resolved: gstack-plan-eng-review')).toBeTruthy();
+    expect(within(inspector).getByText('/plan-eng-review')).toBeTruthy();
+    expect(
+      within(inspector).getByText('Architecture review needed before implementation.'),
+    ).toBeTruthy();
     expect(within(inspector).getByText('Route test')).toBeTruthy();
   });
 

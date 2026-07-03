@@ -157,6 +157,34 @@ describe('task work graph API routes', () => {
     );
   });
 
+  it('POST nodes passes workflow profile metadata into the service payload', async () => {
+    const workflowProfile = {
+      requested: 'auto',
+      manual_command: null,
+      resolved: 'gstack-plan-eng-review',
+      resolved_command: '/plan-eng-review',
+      resolved_reason: 'Architecture review needed before implementation.',
+    };
+
+    const response = await CREATE_NODE(
+      request('/api/tasks/PREQ-1/work-graph/nodes', {
+        type: 'analyze',
+        title: 'Analyze workflow choice',
+        metadata: { workflow_profile: workflowProfile },
+      }),
+      { params: Promise.resolve({ id: 'PREQ-1' }) },
+    );
+
+    expect(response.status).toBe(201);
+    expect(mocked.createWorkNode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({
+          metadata: { workflow_profile: workflowProfile },
+        }),
+      }),
+    );
+  });
+
   it('POST memory appends bounded workflow memory', async () => {
     const response = await MEMORY(
       request('/api/tasks/PREQ-1/work-graph/memory', {

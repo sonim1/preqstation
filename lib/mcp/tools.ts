@@ -23,6 +23,7 @@ import { GET as getWorkGraphRoute } from '@/app/api/tasks/[id]/work-graph/route'
 import { GET as listTasksRoute, POST as createTaskRoute } from '@/app/api/tasks/route';
 import { POST as attachWorkNodeEvidenceRoute } from '@/app/api/work-nodes/[nodeId]/evidence/route';
 import { PATCH as patchWorkNodeRoute } from '@/app/api/work-nodes/[nodeId]/route';
+import { buildAgentGuide } from '@/lib/agent-guide';
 import { createInternalApiToken } from '@/lib/api-tokens';
 import { withOwnerDb } from '@/lib/db/rls';
 import { projects, taskComments, tasks, workLogs } from '@/lib/db/schema';
@@ -703,6 +704,19 @@ async function callAttachWorkNodeEvidence(
 }
 
 export function registerPreqTools(server: McpServer, context: McpToolContext) {
+  server.registerTool(
+    'preq_agent_guide',
+    {
+      title: 'Get PREQSTATION agent guide',
+      description:
+        'Return the runtime-agnostic PREQSTATION agent guide, including the workflow profile metadata contract.',
+      inputSchema: {
+        engine: z.enum(PREQ_ENGINES).optional(),
+      },
+    },
+    async ({ engine }) => contentText(buildAgentGuide(engine || context.getDetectedClientEngine())),
+  );
+
   server.registerTool(
     'preq_list_projects',
     {
