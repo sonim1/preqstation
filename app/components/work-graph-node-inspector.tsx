@@ -131,17 +131,17 @@ export function WorkGraphNodeInspector({
             <Group gap={5} wrap="wrap">
               {workflowProfile.requested ? (
                 <Badge size="xs" variant="light">
-                  {workflowProfile.requested}
+                  requested: {workflowProfile.requested}
                 </Badge>
               ) : null}
               {workflowProfile.resolved ? (
                 <Badge size="xs" variant="outline">
-                  {workflowProfile.resolved}
+                  resolved: {workflowProfile.resolved}
                 </Badge>
               ) : null}
               {workflowProfile.manualCommand ? (
                 <Badge size="xs" variant="dot">
-                  {workflowProfile.manualCommand}
+                  manual: {workflowProfile.manualCommand}
                 </Badge>
               ) : null}
             </Group>

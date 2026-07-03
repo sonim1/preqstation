@@ -14,7 +14,36 @@ function readOptionalFile(path: string | null) {
 }
 
 function readOptionalJsonFile(path: string | null) {
-  return path ? JSON.parse(readFileSync(path, 'utf8')) : undefined;
+  if (!path) return { ok: true as const, value: undefined };
+
+  let raw: string;
+  try {
+    raw = readFileSync(path, 'utf8');
+  } catch {
+    return { ok: false as const, message: `--metadata-file: cannot read file: ${path}` };
+  }
+
+  try {
+    return { ok: true as const, value: JSON.parse(raw) as unknown };
+  } catch {
+    return {
+      ok: false as const,
+      message: `--metadata-file: file does not contain valid JSON: ${path}`,
+    };
+  }
+}
+
+function cliUsageError(message: string) {
+  return {
+    ok: false as const,
+    status: 1,
+    payload: {
+      error: {
+        code: 'usage_error',
+        message,
+      },
+    },
+  };
 }
 
 export async function runGraphCommand(params: {
@@ -46,7 +75,9 @@ export async function runGraphCommand(params: {
 
   if (subcommand === 'node' && subcommand2 === 'create') {
     const taskKey = params.argv[2];
-    const metadata = readOptionalJsonFile(optionValue(params.argv, '--metadata-file'));
+    const metadataResult = readOptionalJsonFile(optionValue(params.argv, '--metadata-file'));
+    if (!metadataResult.ok) return cliUsageError(metadataResult.message);
+    const metadata = metadataResult.value;
     return requestPreqstationApi({
       config: params.config,
       path: `/api/tasks/${encodeURIComponent(taskKey)}/work-graph/nodes`,
@@ -63,7 +94,9 @@ export async function runGraphCommand(params: {
   if (subcommand === 'node' && ['start', 'complete', 'fail'].includes(subcommand2 ?? '')) {
     const nodeId = params.argv[2];
     const action = subcommand2 === 'start' ? 'start' : subcommand2;
-    const metadata = readOptionalJsonFile(optionValue(params.argv, '--metadata-file'));
+    const metadataResult = readOptionalJsonFile(optionValue(params.argv, '--metadata-file'));
+    if (!metadataResult.ok) return cliUsageError(metadataResult.message);
+    const metadata = metadataResult.value;
     const summary =
       subcommand2 === 'complete'
         ? readOptionalFile(optionValue(params.argv, '--summary-file'))

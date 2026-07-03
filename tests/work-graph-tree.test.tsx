@@ -147,7 +147,8 @@ describe('WorkGraphTree', () => {
     expect(within(inspector).getByText('Create the graph mutation route.')).toBeTruthy();
     expect(within(inspector).getByText('API route wired.')).toBeTruthy();
     expect(within(inspector).getByText('Workflow')).toBeTruthy();
-    expect(within(inspector).getByText('gstack-plan-eng-review')).toBeTruthy();
+    expect(within(inspector).getByText('requested: auto')).toBeTruthy();
+    expect(within(inspector).getByText('resolved: gstack-plan-eng-review')).toBeTruthy();
     expect(within(inspector).getByText('/plan-eng-review')).toBeTruthy();
     expect(
       within(inspector).getByText('Architecture review needed before implementation.'),

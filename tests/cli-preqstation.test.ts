@@ -231,6 +231,88 @@ describe('preqstation CLI', () => {
     }
   });
 
+  it('returns a JSON error when a graph metadata file is missing', async () => {
+    const io = makeIo();
+    const fetchImpl = vi.fn();
+    const exitCode = await runPreqstationCli({
+      argv: [
+        'graph',
+        'node',
+        'create',
+        'PREQ-1',
+        '--type',
+        'analyze',
+        '--title',
+        'Analyze',
+        '--metadata-file',
+        '/tmp/preqstation-missing-metadata.json',
+        '--json',
+      ],
+      env: {
+        PREQSTATION_API_URL: 'https://preq.example',
+        PREQSTATION_API_TOKEN: 'preq_token',
+      },
+      fetchImpl,
+      writeStdout: io.writeStdout.bind(io),
+      writeStderr: io.writeStderr.bind(io),
+    });
+
+    expect(exitCode).toBe(1);
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(JSON.parse(io.stdout)).toMatchObject({
+      ok: false,
+      error: {
+        code: 'usage_error',
+        message: '--metadata-file: cannot read file: /tmp/preqstation-missing-metadata.json',
+      },
+    });
+  });
+
+  it('returns a JSON error when a graph metadata file is invalid JSON', async () => {
+    const io = makeIo();
+    const tempDir = mkdtempSync(join(tmpdir(), 'preqstation-cli-'));
+    const metadataPath = join(tempDir, 'metadata.json');
+    writeFileSync(metadataPath, '{', 'utf8');
+    const fetchImpl = vi.fn();
+
+    try {
+      const exitCode = await runPreqstationCli({
+        argv: [
+          'graph',
+          'node',
+          'create',
+          'PREQ-1',
+          '--type',
+          'analyze',
+          '--title',
+          'Analyze',
+          '--metadata-file',
+          metadataPath,
+          '--json',
+        ],
+        env: {
+          PREQSTATION_API_URL: 'https://preq.example',
+          PREQSTATION_API_TOKEN: 'preq_token',
+        },
+        fetchImpl,
+        writeStdout: io.writeStdout.bind(io),
+        writeStderr: io.writeStderr.bind(io),
+      });
+
+      expect(exitCode).toBe(1);
+      expect(fetchImpl).not.toHaveBeenCalled();
+      expect(JSON.parse(io.stdout)).toMatchObject({
+        ok: false,
+        error: {
+          code: 'usage_error',
+          message: `--metadata-file: file does not contain valid JSON: ${metadataPath}`,
+        },
+      });
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  });
+
   it('passes metadata files when completing graph nodes', async () => {
     const io = makeIo();
     const tempDir = mkdtempSync(join(tmpdir(), 'preqstation-cli-'));
