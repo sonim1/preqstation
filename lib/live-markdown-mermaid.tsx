@@ -53,6 +53,10 @@ export class LiveMermaidNode extends DecoratorNode<ReactNode> {
     return false;
   }
 
+  isInline(): false {
+    return false;
+  }
+
   decorate(): ReactNode {
     return (
       <DeferredMermaidDiagram
