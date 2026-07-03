@@ -87,6 +87,7 @@ function initialFromEmail(email: string) {
 }
 
 const PROJECT_KEY_CHANGED_EVENT = 'pm:lastProjectKey:changed';
+const PENDING_BOARD_SELECTION_STORAGE = 'pm:pendingBoardSelection';
 const WORKSPACE_NAVBAR_WIDTH = 320;
 const WORKSPACE_NAVBAR_COLLAPSED_WIDTH = 72;
 const BOARD_SUBNAV_ROW_HEIGHT = 52;
@@ -98,6 +99,11 @@ type BoardNavLinkProps = {
   project: WorkspaceProjectOption;
   isCurrentBoard: boolean;
   onSelect: (projectKey: string) => void;
+};
+
+type PendingBoardSelection = {
+  pathname: string;
+  projectKey: string;
 };
 
 function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) {
@@ -160,6 +166,39 @@ function writeRememberedProjectKey(projectKey: string | null) {
   window.dispatchEvent(new Event(PROJECT_KEY_CHANGED_EVENT));
 }
 
+function readPendingBoardSelection(): PendingBoardSelection | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(PENDING_BOARD_SELECTION_STORAGE);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed.pathname !== 'string' || typeof parsed.projectKey !== 'string') {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function writePendingBoardSelection(selection: PendingBoardSelection) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(PENDING_BOARD_SELECTION_STORAGE, JSON.stringify(selection));
+  } catch {
+    // ignore storage failures
+  }
+}
+
+function clearPendingBoardSelection() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(PENDING_BOARD_SELECTION_STORAGE);
+  } catch {
+    // ignore storage failures
+  }
+}
+
 function readProjectOrderState() {
   if (typeof window === 'undefined') return '';
   const rememberedProjectKey = readRememberedProjectKey();
@@ -205,7 +244,7 @@ export function WorkspaceShell({
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
   const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
   const [commandPaletteRequested, setCommandPaletteRequested] = useState(false);
-  const pendingBoardSelectionRef = useRef<{ pathname: string; projectKey: string } | null>(null);
+  const pendingBoardSelectionRef = useRef<PendingBoardSelection | null>(null);
   const projectOrderState = useSyncExternalStore(
     subscribeProjectOrderState,
     readProjectOrderState,
@@ -283,7 +322,9 @@ export function WorkspaceShell({
     : 'workspace-navbar workspace-navbar--collapsed';
   const handleBoardSelect = useCallback(
     (projectKey: string) => {
-      pendingBoardSelectionRef.current = { pathname, projectKey: projectKey.toUpperCase() };
+      const pendingSelection = { pathname, projectKey: projectKey.toUpperCase() };
+      pendingBoardSelectionRef.current = pendingSelection;
+      writePendingBoardSelection(pendingSelection);
       writeRememberedProjectKey(projectKey);
       closeMobile();
     },
@@ -310,15 +351,18 @@ export function WorkspaceShell({
 
   useEffect(() => {
     if (pickerState.source !== 'path' || !selectedProject) return;
-    const pendingBoardSelection = pendingBoardSelectionRef.current;
+    const pendingBoardSelection = pendingBoardSelectionRef.current ?? readPendingBoardSelection();
     if (pendingBoardSelection) {
       const selectedKey = selectedProject.projectKey.toUpperCase();
       if (pendingBoardSelection.projectKey === selectedKey) {
         pendingBoardSelectionRef.current = null;
+        clearPendingBoardSelection();
       } else if (pendingBoardSelection.pathname === pathname) {
+        pendingBoardSelectionRef.current = pendingBoardSelection;
         return;
       } else {
         pendingBoardSelectionRef.current = null;
+        clearPendingBoardSelection();
       }
     }
     if (

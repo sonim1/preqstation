@@ -1100,7 +1100,7 @@ describe('app/components/workspace-shell', () => {
     window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(['ALPHA']));
 
     try {
-      const { container, rerender } = renderWorkspaceShellDom({
+      const { container, rerender, unmount } = renderWorkspaceShellDom({
         desktopOpened: true,
         pathname: '/board/ALPHA',
         rememberedProjectKey: 'ALPHA|ALPHA',
@@ -1133,10 +1133,24 @@ describe('app/components/workspace-shell', () => {
       expect(window.localStorage.getItem(RECENT_PROJECTS_STORAGE)).toBe(
         JSON.stringify(['BETA', 'ALPHA']),
       );
+
+      unmount();
+      renderWorkspaceShellDom({
+        desktopOpened: true,
+        pathname: '/board/ALPHA',
+        rememberedProjectKey: 'BETA|BETA|ALPHA',
+        projectOptions,
+      });
+
+      expect(window.localStorage.getItem(LAST_PROJECT_KEY_STORAGE)).toBe('BETA');
+      expect(window.localStorage.getItem(RECENT_PROJECTS_STORAGE)).toBe(
+        JSON.stringify(['BETA', 'ALPHA']),
+      );
     } finally {
       setItemSpy.mockRestore();
       window.localStorage.removeItem(LAST_PROJECT_KEY_STORAGE);
       window.localStorage.removeItem(RECENT_PROJECTS_STORAGE);
+      window.sessionStorage.removeItem('pm:pendingBoardSelection');
     }
   });
 
