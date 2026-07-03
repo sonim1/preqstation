@@ -3,6 +3,7 @@ node_modules
 .open-next
 next-env.d.ts
 out
+dist/
 .env
 .env.local
 .env.*.local

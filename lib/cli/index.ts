@@ -30,15 +30,16 @@ function emitHuman(params: RunCliParams, text: string) {
 
 function helpText() {
   return [
-    'preqstation help',
-    'preqstation agent guide --json',
-    'preqstation project resolve PREQ --json',
-    'preqstation context files PREQ --json',
-    'preqstation context doctor PREQ --json',
-    'preqstation run prepare PREQ-123 --json',
-    'preqstation graph init PREQ-123 --json',
-    'preqstation graph state PREQ-123 --json',
-    'preqstation graph node create PREQ-123 --type analyze --title "Inspect CLI" --json',
+    'preqstation-agent help',
+    'preqstation-agent agent guide --json',
+    'preqstation-agent project resolve PREQ --json',
+    'preqstation-agent context files PREQ --json',
+    'preqstation-agent context doctor PREQ --json',
+    'preqstation-agent run prepare PREQ-123 --json',
+    'preqstation-agent graph init PREQ-123 --json',
+    'preqstation-agent graph state PREQ-123 --json',
+    'preqstation-agent graph node create PREQ-123 --type analyze --title "Inspect CLI" --metadata-file metadata.json --json',
+    'preqstation-agent graph node complete NODE-ID --summary-file result.md --metadata-file metadata.json --json',
   ].join('\n');
 }
 

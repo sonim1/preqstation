@@ -147,10 +147,36 @@ describe('registerPreqTools work graph tools', () => {
   it('registers runtime-agnostic work graph tools', () => {
     const { handlers } = registerHandlers();
 
+    expect(handlers.has('preq_agent_guide')).toBe(true);
     expect(handlers.has('preq_graph_state')).toBe(true);
     expect(handlers.has('preq_graph_node_create')).toBe(true);
     expect(handlers.has('preq_graph_node_update')).toBe(true);
     expect(handlers.has('preq_graph_evidence_attach')).toBe(true);
+  });
+
+  it('returns the workflow profile contract from the agent guide tool', async () => {
+    const { handlers } = registerHandlers();
+
+    const result = await handlers.get('preq_agent_guide')!({ engine: 'codex' });
+    const payload = JSON.parse(result.content[0].text);
+
+    expect(payload).toMatchObject({
+      product: 'PreqStation',
+      runtime_agnostic: true,
+      engine: 'codex',
+      workflow_profile: {
+        default: { requested: 'auto', manual_command: null },
+        metadata_namespace: 'workflow_profile',
+        core_chooses_workflow: false,
+        dispatch_command_metadata: false,
+        cli_metadata_file: '--metadata-file',
+        resolved_fields: ['resolved', 'resolved_command', 'resolved_reason'],
+      },
+    });
+    expect(payload.rules).toContain(
+      'When workflow profile is auto, the harness chooses the concrete workflow and records the resolved choice in metadata.workflow_profile.',
+    );
+    expect(mocked.createInternalApiToken).not.toHaveBeenCalled();
   });
 
   it('initializes and reads graph state through internal bearer API routes', async () => {

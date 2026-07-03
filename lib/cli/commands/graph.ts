@@ -13,6 +13,39 @@ function readOptionalFile(path: string | null) {
   return path ? readFileSync(path, 'utf8') : undefined;
 }
 
+function readOptionalJsonFile(path: string | null) {
+  if (!path) return { ok: true as const, value: undefined };
+
+  let raw: string;
+  try {
+    raw = readFileSync(path, 'utf8');
+  } catch {
+    return { ok: false as const, message: `--metadata-file: cannot read file: ${path}` };
+  }
+
+  try {
+    return { ok: true as const, value: JSON.parse(raw) as unknown };
+  } catch {
+    return {
+      ok: false as const,
+      message: `--metadata-file: file does not contain valid JSON: ${path}`,
+    };
+  }
+}
+
+function cliUsageError(message: string) {
+  return {
+    ok: false as const,
+    status: 1,
+    payload: {
+      error: {
+        code: 'usage_error',
+        message,
+      },
+    },
+  };
+}
+
 export async function runGraphCommand(params: {
   config: CliConfig;
   argv: string[];
@@ -42,6 +75,9 @@ export async function runGraphCommand(params: {
 
   if (subcommand === 'node' && subcommand2 === 'create') {
     const taskKey = params.argv[2];
+    const metadataResult = readOptionalJsonFile(optionValue(params.argv, '--metadata-file'));
+    if (!metadataResult.ok) return cliUsageError(metadataResult.message);
+    const metadata = metadataResult.value;
     return requestPreqstationApi({
       config: params.config,
       path: `/api/tasks/${encodeURIComponent(taskKey)}/work-graph/nodes`,
@@ -49,6 +85,7 @@ export async function runGraphCommand(params: {
       body: {
         type: optionValue(params.argv, '--type'),
         title: optionValue(params.argv, '--title'),
+        ...(metadata === undefined ? {} : { metadata }),
       },
       fetchImpl: params.fetchImpl,
     });
@@ -57,6 +94,9 @@ export async function runGraphCommand(params: {
   if (subcommand === 'node' && ['start', 'complete', 'fail'].includes(subcommand2 ?? '')) {
     const nodeId = params.argv[2];
     const action = subcommand2 === 'start' ? 'start' : subcommand2;
+    const metadataResult = readOptionalJsonFile(optionValue(params.argv, '--metadata-file'));
+    if (!metadataResult.ok) return cliUsageError(metadataResult.message);
+    const metadata = metadataResult.value;
     const summary =
       subcommand2 === 'complete'
         ? readOptionalFile(optionValue(params.argv, '--summary-file'))
@@ -74,6 +114,7 @@ export async function runGraphCommand(params: {
         action,
         ...(summary ? { result_summary: summary } : {}),
         ...(error ? { result_summary: error } : {}),
+        ...(metadata === undefined ? {} : { metadata }),
       },
       fetchImpl: params.fetchImpl,
     });
