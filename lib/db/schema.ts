@@ -3,6 +3,7 @@ import {
   type AnyPgColumn,
   bigserial,
   boolean,
+  check,
   customType,
   date,
   index,
@@ -20,7 +21,14 @@ import {
 import { tsvector } from '@/lib/db/pg-types';
 import type { ProjectBackgroundCredit } from '@/lib/project-backgrounds';
 import type { TaskArtifact } from '@/lib/task-artifacts';
+import {
+  WORK_NODE_EVENT_TYPES,
+  WORK_NODE_EVIDENCE_KINDS,
+  WORK_NODE_STATUSES,
+  WORK_NODE_TYPES,
+} from '@/lib/work-graph';
 
+const KNOWLEDGE_PROPOSAL_STATUSES = ['pending', 'applied', 'rejected'] as const;
 const currentAppUserId = sql`nullif(current_setting('app.user_id', true), '')`;
 const binaryVarchar = customType<{ data: string; driverData: string; config: { length: number } }>({
   dataType(config) {
@@ -378,6 +386,11 @@ export const tasks = pgTable(
     dispatchTarget: text('dispatch_target'),
     runState: text('run_state'),
     runStateUpdatedAt: timestamp('run_state_updated_at', { withTimezone: true, precision: 6 }),
+    workflowMemory: text('workflow_memory'),
+    workflowMemoryUpdatedAt: timestamp('workflow_memory_updated_at', {
+      withTimezone: true,
+      precision: 6,
+    }),
     searchVector: tsvector('search_vector'),
     dueAt: timestamp('due_at', { withTimezone: true, precision: 6 }),
     focusedAt: timestamp('focused_at', { withTimezone: true, precision: 6 }),
@@ -457,6 +470,240 @@ export const taskComments = pgTable(
     index('task_comments_task_id_created_at_idx').on(table.taskId, table.createdAt),
     index('task_comments_owner_id_run_state_idx').on(table.ownerId, table.runState),
     index('task_comments_parent_comment_id_idx').on(table.parentCommentId),
+  ],
+).enableRLS();
+
+// ─── Task Work Graph ────────────────────────────────────────────────
+export const taskWorkNodes = pgTable(
+  'task_work_nodes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    taskId: uuid('task_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    parentId: uuid('parent_id').references((): AnyPgColumn => taskWorkNodes.id, {
+      onDelete: 'set null',
+    }),
+    type: text('type').notNull(),
+    status: text('status').notNull().default('pending'),
+    title: text('title').notNull(),
+    body: text('body'),
+    runtimeTarget: text('runtime_target'),
+    engine: text('engine'),
+    model: text('model'),
+    actorKind: text('actor_kind').notNull().default('runtime'),
+    actorLabel: text('actor_label'),
+    idempotencyKey: text('idempotency_key'),
+    sortOrder: binaryVarchar('sort_order', { length: 64 }).notNull().default('a0'),
+    startedAt: timestamp('started_at', { withTimezone: true, precision: 6 }),
+    completedAt: timestamp('completed_at', { withTimezone: true, precision: 6 }),
+    failedAt: timestamp('failed_at', { withTimezone: true, precision: 6 }),
+    waitingReason: text('waiting_reason'),
+    decisionPrompt: text('decision_prompt'),
+    resultSummary: text('result_summary'),
+    metadata: jsonb('metadata').$type<Record<string, unknown> | null>(),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    pgPolicy('task_work_nodes_owner_all', {
+      for: 'all',
+      using: appUserMatches(table.ownerId),
+      withCheck: appUserMatches(table.ownerId),
+    }),
+    check('task_work_nodes_type_check', sql`${table.type} in ${WORK_NODE_TYPES}`),
+    check('task_work_nodes_status_check', sql`${table.status} in ${WORK_NODE_STATUSES}`),
+    check(
+      'task_work_nodes_parent_not_self_check',
+      sql`${table.parentId} is null or ${table.id} <> ${table.parentId}`,
+    ),
+    index('task_work_nodes_owner_id_task_id_idx').on(table.ownerId, table.taskId),
+    index('task_work_nodes_task_id_parent_id_sort_order_idx').on(
+      table.taskId,
+      table.parentId,
+      table.sortOrder,
+    ),
+    index('task_work_nodes_owner_id_status_idx').on(table.ownerId, table.status),
+    index('task_work_nodes_owner_id_engine_idx').on(table.ownerId, table.engine),
+    uniqueIndex('task_work_nodes_owner_id_idempotency_key_unique_idx')
+      .on(table.ownerId, table.idempotencyKey)
+      .where(sql`${table.idempotencyKey} is not null`),
+  ],
+).enableRLS();
+
+export const taskWorkNodeDependencies = pgTable(
+  'task_work_node_dependencies',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    taskId: uuid('task_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    nodeId: uuid('node_id')
+      .notNull()
+      .references(() => taskWorkNodes.id, { onDelete: 'cascade' }),
+    dependsOnNodeId: uuid('depends_on_node_id')
+      .notNull()
+      .references(() => taskWorkNodes.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => [
+    pgPolicy('task_work_node_dependencies_owner_all', {
+      for: 'all',
+      using: appUserMatches(table.ownerId),
+      withCheck: appUserMatches(table.ownerId),
+    }),
+    check(
+      'task_work_node_dependencies_not_self_check',
+      sql`${table.nodeId} <> ${table.dependsOnNodeId}`,
+    ),
+    uniqueIndex('task_work_node_dependencies_node_depends_on_unique_idx').on(
+      table.nodeId,
+      table.dependsOnNodeId,
+    ),
+    index('task_work_node_dependencies_owner_id_task_id_idx').on(table.ownerId, table.taskId),
+  ],
+).enableRLS();
+
+export const taskWorkNodeEvents = pgTable(
+  'task_work_node_events',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    taskId: uuid('task_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    nodeId: uuid('node_id').references(() => taskWorkNodes.id, { onDelete: 'cascade' }),
+    eventType: text('event_type').notNull(),
+    message: text('message'),
+    payload: jsonb('payload').$type<Record<string, unknown> | null>(),
+    createdBy: text('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => [
+    pgPolicy('task_work_node_events_owner_all', {
+      for: 'all',
+      using: appUserMatches(table.ownerId),
+      withCheck: appUserMatches(table.ownerId),
+    }),
+    check(
+      'task_work_node_events_event_type_check',
+      sql`${table.eventType} in ${WORK_NODE_EVENT_TYPES}`,
+    ),
+    index('task_work_node_events_task_id_created_at_idx').on(table.taskId, table.createdAt),
+    index('task_work_node_events_node_id_created_at_idx').on(table.nodeId, table.createdAt),
+    index('task_work_node_events_owner_id_created_at_idx').on(table.ownerId, table.createdAt),
+  ],
+).enableRLS();
+
+export const taskWorkNodeEvidence = pgTable(
+  'task_work_node_evidence',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    taskId: uuid('task_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    nodeId: uuid('node_id')
+      .notNull()
+      .references(() => taskWorkNodes.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    title: text('title').notNull(),
+    summary: text('summary'),
+    payload: jsonb('payload').$type<Record<string, unknown> | null>(),
+    artifactUrl: text('artifact_url'),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+  },
+  (table) => [
+    pgPolicy('task_work_node_evidence_owner_all', {
+      for: 'all',
+      using: appUserMatches(table.ownerId),
+      withCheck: appUserMatches(table.ownerId),
+    }),
+    check('task_work_node_evidence_kind_check', sql`${table.kind} in ${WORK_NODE_EVIDENCE_KINDS}`),
+    check('task_work_node_evidence_title_length_check', sql`char_length(${table.title}) <= 160`),
+    check(
+      'task_work_node_evidence_summary_length_check',
+      sql`${table.summary} is null or char_length(${table.summary}) <= 4000`,
+    ),
+    index('task_work_node_evidence_node_id_created_at_idx').on(table.nodeId, table.createdAt),
+    index('task_work_node_evidence_owner_id_kind_idx').on(table.ownerId, table.kind),
+  ],
+).enableRLS();
+
+export const knowledgeUpdateProposals = pgTable(
+  'knowledge_update_proposals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    ownerId: uuid('owner_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
+    taskId: uuid('task_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    sourceNodeId: uuid('source_node_id').references(() => taskWorkNodes.id, {
+      onDelete: 'set null',
+    }),
+    target: text('target').notNull(),
+    body: text('body').notNull(),
+    rationale: text('rationale'),
+    status: text('status').notNull().default('pending'),
+    metadata: jsonb('metadata').$type<Record<string, unknown> | null>(),
+    createdAt: timestamp('created_at', { withTimezone: true, precision: 6 }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, precision: 6 })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    pgPolicy('knowledge_update_proposals_owner_all', {
+      for: 'all',
+      using: appUserMatches(table.ownerId),
+      withCheck: appUserMatches(table.ownerId),
+    }),
+    check(
+      'knowledge_update_proposals_status_check',
+      sql`${table.status} in ${KNOWLEDGE_PROPOSAL_STATUSES}`,
+    ),
+    check(
+      'knowledge_update_proposals_target_length_check',
+      sql`char_length(${table.target}) <= 500`,
+    ),
+    index('knowledge_update_proposals_owner_id_task_id_status_idx').on(
+      table.ownerId,
+      table.taskId,
+      table.status,
+    ),
+    index('knowledge_update_proposals_source_node_id_idx').on(table.sourceNodeId),
+    index('knowledge_update_proposals_owner_id_status_created_at_idx').on(
+      table.ownerId,
+      table.status,
+      table.createdAt,
+    ),
   ],
 ).enableRLS();
 

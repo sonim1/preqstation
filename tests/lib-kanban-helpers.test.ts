@@ -501,5 +501,68 @@ describe('kanban-helpers', () => {
       expect(unreadTask.hasUnreadNotification).toBe(true);
       expect(readTask.hasUnreadNotification).toBe(false);
     });
+
+    it('serializes work graph status counts from board task nodes', () => {
+      const task = toKanbanTask(
+        {
+          id: 'task-1',
+          taskKey: 'PROJ-1',
+          title: 'Task',
+          note: null,
+          sortOrder: 'a0',
+          taskPriority: 'none',
+          dueAt: null,
+          engine: null,
+          dispatchTarget: null,
+          runState: null,
+          runStateUpdatedAt: null,
+          archivedAt: null,
+          updatedAt: new Date('2026-03-10T12:00:00.000Z'),
+          project: null,
+          labels: [],
+          workNodes: [
+            { status: 'running' },
+            { status: 'waiting_for_user' },
+            { status: 'completed' },
+          ],
+        },
+        'todo',
+      );
+
+      expect(task.workGraphSummary).toEqual({
+        running_count: 1,
+        ready_count: 0,
+        waiting_count: 1,
+        blocked_count: 0,
+        failed_count: 0,
+        completed_count: 1,
+        root_overlay: 'waiting_for_user',
+      });
+    });
+
+    it('preserves absent work graph summaries for offline board snapshots', () => {
+      const task = toKanbanTask(
+        {
+          id: 'task-1',
+          taskKey: 'PROJ-1',
+          title: 'Task',
+          note: null,
+          sortOrder: 'a0',
+          taskPriority: 'none',
+          dueAt: null,
+          engine: null,
+          dispatchTarget: null,
+          runState: null,
+          runStateUpdatedAt: null,
+          archivedAt: null,
+          updatedAt: new Date('2026-03-10T12:00:00.000Z'),
+          project: null,
+          labels: [],
+        },
+        'todo',
+      );
+
+      expect(task.workGraphSummary).toBeNull();
+    });
   });
 });

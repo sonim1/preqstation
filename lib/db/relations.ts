@@ -5,6 +5,7 @@ import {
   auditLogs,
   browserSessions,
   connectionNotificationReads,
+  knowledgeUpdateProposals,
   mcpConnections,
   oauthClients,
   oauthCodes,
@@ -16,6 +17,10 @@ import {
   taskLabelAssignments,
   taskLabels,
   tasks,
+  taskWorkNodeDependencies,
+  taskWorkNodeEvents,
+  taskWorkNodeEvidence,
+  taskWorkNodes,
   users,
   userSettings,
   workLogs,
@@ -31,6 +36,10 @@ export const usersRelations = relations(users, ({ many }) => ({
   projects: many(projects),
   taskLabels: many(taskLabels),
   taskComments: many(taskComments),
+  taskWorkNodes: many(taskWorkNodes),
+  taskWorkNodeDependencies: many(taskWorkNodeDependencies),
+  taskWorkNodeEvents: many(taskWorkNodeEvents),
+  taskWorkNodeEvidence: many(taskWorkNodeEvidence),
   tasks: many(tasks),
   workLogs: many(workLogs),
   auditLogs: many(auditLogs),
@@ -38,6 +47,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   securityEvents: many(securityEvents),
   qaRuns: many(qaRuns),
   connectionNotificationReads: many(connectionNotificationReads),
+  knowledgeUpdateProposals: many(knowledgeUpdateProposals),
 }));
 
 // ─── OAuth Client Relations ──────────────────────────────────────────
@@ -100,6 +110,10 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   tasks: many(tasks),
   taskComments: many(taskComments),
   workLogs: many(workLogs),
+  taskWorkNodes: many(taskWorkNodes),
+  taskWorkNodeEvents: many(taskWorkNodeEvents),
+  taskWorkNodeEvidence: many(taskWorkNodeEvidence),
+  knowledgeUpdateProposals: many(knowledgeUpdateProposals),
   projectSettings: many(projectSettings),
   qaRuns: many(qaRuns),
 }));
@@ -134,6 +148,11 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   }),
   labelAssignments: many(taskLabelAssignments),
   comments: many(taskComments),
+  workNodes: many(taskWorkNodes),
+  workNodeDependencies: many(taskWorkNodeDependencies),
+  workNodeEvents: many(taskWorkNodeEvents),
+  workNodeEvidence: many(taskWorkNodeEvidence),
+  knowledgeUpdateProposals: many(knowledgeUpdateProposals),
   workLogs: many(workLogs),
 }));
 
@@ -153,6 +172,109 @@ export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
   parent: one(taskComments, {
     fields: [taskComments.parentCommentId],
     references: [taskComments.id],
+  }),
+}));
+
+export const taskWorkNodesRelations = relations(taskWorkNodes, ({ one, many }) => ({
+  owner: one(users, {
+    fields: [taskWorkNodes.ownerId],
+    references: [users.id],
+  }),
+  project: one(projects, {
+    fields: [taskWorkNodes.projectId],
+    references: [projects.id],
+  }),
+  task: one(tasks, {
+    fields: [taskWorkNodes.taskId],
+    references: [tasks.id],
+  }),
+  parent: one(taskWorkNodes, {
+    fields: [taskWorkNodes.parentId],
+    references: [taskWorkNodes.id],
+  }),
+  children: many(taskWorkNodes),
+  dependencies: many(taskWorkNodeDependencies, { relationName: 'nodeDependencies' }),
+  dependents: many(taskWorkNodeDependencies, { relationName: 'nodeDependents' }),
+  events: many(taskWorkNodeEvents),
+  evidence: many(taskWorkNodeEvidence),
+  knowledgeUpdateProposals: many(knowledgeUpdateProposals),
+}));
+
+export const knowledgeUpdateProposalsRelations = relations(knowledgeUpdateProposals, ({ one }) => ({
+  owner: one(users, {
+    fields: [knowledgeUpdateProposals.ownerId],
+    references: [users.id],
+  }),
+  project: one(projects, {
+    fields: [knowledgeUpdateProposals.projectId],
+    references: [projects.id],
+  }),
+  task: one(tasks, {
+    fields: [knowledgeUpdateProposals.taskId],
+    references: [tasks.id],
+  }),
+  sourceNode: one(taskWorkNodes, {
+    fields: [knowledgeUpdateProposals.sourceNodeId],
+    references: [taskWorkNodes.id],
+  }),
+}));
+
+export const taskWorkNodeDependenciesRelations = relations(taskWorkNodeDependencies, ({ one }) => ({
+  owner: one(users, {
+    fields: [taskWorkNodeDependencies.ownerId],
+    references: [users.id],
+  }),
+  task: one(tasks, {
+    fields: [taskWorkNodeDependencies.taskId],
+    references: [tasks.id],
+  }),
+  node: one(taskWorkNodes, {
+    fields: [taskWorkNodeDependencies.nodeId],
+    references: [taskWorkNodes.id],
+    relationName: 'nodeDependencies',
+  }),
+  dependsOnNode: one(taskWorkNodes, {
+    fields: [taskWorkNodeDependencies.dependsOnNodeId],
+    references: [taskWorkNodes.id],
+    relationName: 'nodeDependents',
+  }),
+}));
+
+export const taskWorkNodeEventsRelations = relations(taskWorkNodeEvents, ({ one }) => ({
+  owner: one(users, {
+    fields: [taskWorkNodeEvents.ownerId],
+    references: [users.id],
+  }),
+  project: one(projects, {
+    fields: [taskWorkNodeEvents.projectId],
+    references: [projects.id],
+  }),
+  task: one(tasks, {
+    fields: [taskWorkNodeEvents.taskId],
+    references: [tasks.id],
+  }),
+  node: one(taskWorkNodes, {
+    fields: [taskWorkNodeEvents.nodeId],
+    references: [taskWorkNodes.id],
+  }),
+}));
+
+export const taskWorkNodeEvidenceRelations = relations(taskWorkNodeEvidence, ({ one }) => ({
+  owner: one(users, {
+    fields: [taskWorkNodeEvidence.ownerId],
+    references: [users.id],
+  }),
+  project: one(projects, {
+    fields: [taskWorkNodeEvidence.projectId],
+    references: [projects.id],
+  }),
+  task: one(tasks, {
+    fields: [taskWorkNodeEvidence.taskId],
+    references: [tasks.id],
+  }),
+  node: one(taskWorkNodes, {
+    fields: [taskWorkNodeEvidence.nodeId],
+    references: [taskWorkNodes.id],
   }),
 }));
 

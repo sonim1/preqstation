@@ -446,6 +446,46 @@
   max-width: 8.8rem;
 }
 
+.kanbanWorkGraphChip {
+  --kanban-work-graph-color: var(--ui-accent);
+  color: color-mix(in srgb, var(--kanban-work-graph-color), var(--ui-text) 24%);
+  border-color: color-mix(in srgb, var(--kanban-work-graph-color), transparent 58%);
+  background: color-mix(in srgb, var(--kanban-work-graph-color), transparent 90%);
+}
+
+.kanbanWorkGraphChip[data-work-graph-state='failed'] {
+  --kanban-work-graph-color: var(--ui-danger);
+}
+
+.kanbanWorkGraphChip[data-work-graph-state='blocked'] {
+  --kanban-work-graph-color: var(--ui-warning);
+}
+
+.kanbanWorkGraphChip[data-work-graph-state='waiting_for_user'] {
+  --kanban-work-graph-color: var(--ui-accent);
+}
+
+.kanbanWorkGraphChip[data-work-graph-state='running'] {
+  --kanban-work-graph-color: var(--ui-status-running);
+}
+
+.kanbanWorkGraphChip[data-work-graph-state='ready'] {
+  --kanban-work-graph-color: var(--ui-status-queued);
+}
+
+.kanbanWorkGraphDot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--kanban-work-graph-color);
+}
+
+.kanbanWorkGraphCount {
+  color: var(--ui-muted-text);
+  font-weight: 600;
+}
+
 .kanbanMetaChip :global(img),
 .kanbanMetaChip :global(svg) {
   flex: 0 0 auto;

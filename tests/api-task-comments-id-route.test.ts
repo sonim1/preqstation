@@ -14,6 +14,7 @@ const mocked = vi.hoisted(() => {
       query: {
         tasks: { findFirst: vi.fn() },
         taskComments: { findFirst: vi.fn(), findMany: vi.fn() },
+        taskWorkNodes: { findMany: vi.fn() },
       },
       update: vi.fn().mockReturnValue({ set: setFn }),
       insert: vi.fn().mockReturnValue({ values: valuesFn }),
@@ -73,6 +74,7 @@ describe('app/api/task-comments/[id]/route', () => {
     mocked.db.query.taskComments.findFirst.mockResolvedValue(existingComment);
     mocked.db.query.tasks.findFirst.mockResolvedValue({ runState: null });
     mocked.db.query.taskComments.findMany.mockResolvedValue([{ runState: 'working' }]);
+    mocked.db.query.taskWorkNodes.findMany.mockResolvedValue([]);
     mocked.returningFn.mockResolvedValue([{ ...existingComment, runState: 'working' }]);
     mocked.db.update.mockReturnValue({ set: mocked.setFn });
     mocked.setFn.mockReturnValue({ where: mocked.whereFn });

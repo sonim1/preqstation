@@ -26,6 +26,7 @@ import { EmptyState } from '@/app/components/empty-state';
 import { LinkButton } from '@/app/components/link-button';
 import panelStyles from '@/app/components/panels.module.css';
 import { ProjectEditModal } from '@/app/components/project-edit-modal';
+import { ProjectWorkGraphCockpit } from '@/app/components/project-work-graph-cockpit';
 import { ProjectWorkLogTimeline } from '@/app/components/project-work-log-timeline';
 import { SectionTitleWithIcon } from '@/app/components/section-title-with-icon';
 import { TaskStatusBar } from '@/app/components/task-status-bar';
@@ -37,7 +38,13 @@ import {
 import { writeAuditLog } from '@/lib/audit';
 import { TODO_LABEL_NAME_MAX_LENGTH } from '@/lib/content-limits';
 import { withOwnerDb } from '@/lib/db/rls';
-import { projects, taskLabels, tasks } from '@/lib/db/schema';
+import {
+  knowledgeUpdateProposals,
+  projects,
+  taskLabels,
+  tasks,
+  taskWorkNodes,
+} from '@/lib/db/schema';
 import { githubRepoIdToUrl } from '@/lib/github-repo';
 import { getOwnerUserOrNull, requireOwnerUser } from '@/lib/owner';
 import { getProjectActivityStatus } from '@/lib/project-activity';
@@ -50,6 +57,7 @@ import {
 } from '@/lib/project-meta';
 import { resolveProjectByKey } from '@/lib/project-resolve';
 import { resolveAgentInstructions, resolveDeployStrategyConfig } from '@/lib/project-settings';
+import { buildProjectWorkGraphSummary } from '@/lib/project-work-graph-summary';
 import { listProjectTaskLabels, listProjectTaskLabelUsageCounts } from '@/lib/task-labels';
 import { normalizeTaskLabelColor, parseTaskLabelColor } from '@/lib/task-meta';
 import {
@@ -182,6 +190,8 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
     labelUsageCounts,
     projectWorkLogPage,
     projectWorkLogYearActivity,
+    projectWorkGraphNodes,
+    projectKnowledgeProposals,
   ] = await withOwnerDb(owner.id, async (client) => {
     const timeZonePromise = getUserSetting(owner.id, SETTING_KEYS.TIMEZONE, client);
 
@@ -224,6 +234,42 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
           client,
         }),
       ),
+      client.query.taskWorkNodes.findMany({
+        where: and(eq(taskWorkNodes.ownerId, owner.id), eq(taskWorkNodes.projectId, resolved.id)),
+        columns: {
+          id: true,
+          taskId: true,
+          type: true,
+          status: true,
+          title: true,
+          resultSummary: true,
+          updatedAt: true,
+        },
+        orderBy: [desc(taskWorkNodes.updatedAt)],
+        with: {
+          task: { columns: { taskKey: true, title: true, status: true } },
+        },
+      }),
+      client.query.knowledgeUpdateProposals.findMany({
+        where: and(
+          eq(knowledgeUpdateProposals.ownerId, owner.id),
+          eq(knowledgeUpdateProposals.projectId, resolved.id),
+          eq(knowledgeUpdateProposals.status, 'pending'),
+        ),
+        columns: {
+          id: true,
+          taskId: true,
+          status: true,
+          target: true,
+          body: true,
+          createdAt: true,
+        },
+        orderBy: [desc(knowledgeUpdateProposals.createdAt)],
+        limit: 20,
+        with: {
+          task: { columns: { taskKey: true, title: true } },
+        },
+      }),
     ]);
   });
 
@@ -375,6 +421,10 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
       description: recentActivityDescription,
     },
   ];
+  const workGraphSummary = buildProjectWorkGraphSummary({
+    nodes: projectWorkGraphNodes,
+    proposals: projectKnowledgeProposals,
+  });
 
   async function createLabel(_prevState: unknown, formData: FormData) {
     'use server';
@@ -817,6 +867,18 @@ export default async function ProjectDetailPage({ params, searchParams }: Projec
                   {`${terminology.task.plural} · this project`}
                 </SectionTitleWithIcon>
                 <TaskStatusBar tasks={todos} boardHref={boardHref} newTaskHref={newTaskHref} />
+              </Paper>
+
+              <Paper
+                withBorder
+                radius="lg"
+                p={{ base: 'md', sm: 'lg' }}
+                className={panelStyles.sectionPanel}
+              >
+                <SectionTitleWithIcon icon={IconLayoutKanban} mb="sm">
+                  Work graph cockpit
+                </SectionTitleWithIcon>
+                <ProjectWorkGraphCockpit summary={workGraphSummary} />
               </Paper>
 
               <div className={styles.activityEvidence} data-project-detail-activity-panel="true">

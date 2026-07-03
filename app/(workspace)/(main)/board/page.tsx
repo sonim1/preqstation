@@ -59,6 +59,7 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
               label: { columns: { id: true, name: true, color: true } },
             },
           },
+          workNodes: { columns: { status: true } },
         },
       }),
       client

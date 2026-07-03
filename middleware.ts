@@ -29,6 +29,14 @@ function isBearerApiPath(pathname: string, method: string) {
   );
 }
 
+function isHybridSessionBearerApiPath(pathname: string) {
+  return (
+    /^\/api\/tasks\/[^/]+\/work-graph(?:\/.*)?$/.test(pathname) ||
+    /^\/api\/tasks\/[^/]+\/knowledge-proposals$/.test(pathname) ||
+    /^\/api\/work-nodes\/[^/]+(?:\/evidence)?$/.test(pathname)
+  );
+}
+
 function isServerActionRequest(req: NextRequest) {
   return req.headers.has('next-action');
 }
@@ -86,6 +94,31 @@ export default async function middleware(req: NextRequest) {
         return setSecurityHeaders(NextResponse.redirect(new URL('/dashboard', req.url)));
       }
     }
+  }
+
+  if (isHybridSessionBearerApiPath(pathname)) {
+    const authHeader = req.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      return setSecurityHeaders(NextResponse.next({ request: { headers: pathHeaders } }));
+    }
+
+    const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
+    const session = await verifySessionToken(token);
+    if (isOwnerEmail(session?.email)) {
+      return setSecurityHeaders(NextResponse.next({ request: { headers: pathHeaders } }));
+    }
+
+    return setSecurityHeaders(
+      NextResponse.json(
+        { error: 'Unauthorized' },
+        {
+          status: 401,
+          headers: {
+            'WWW-Authenticate': 'Bearer realm="preqstation"',
+          },
+        },
+      ),
+    );
   }
 
   // PREQSTATION bearer-token APIs authenticate in the route handlers.

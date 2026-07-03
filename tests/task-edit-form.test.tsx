@@ -149,11 +149,14 @@ import { KITCHEN_TERMINOLOGY } from '@/lib/terminology';
 
 function taskEditFormElement(
   overrides: Partial<{
+    editableTodo: Partial<React.ComponentProps<typeof TaskEditForm>['editableTodo']>;
     onTaskQueued: (taskKey: string, queuedAt: string) => void;
     onDispatchQueued: () => void;
     onTaskUpdated: (tasks: { boardTask?: unknown; focusedTask?: unknown }) => void;
   }> = {},
 ) {
+  const { editableTodo: editableTodoOverrides, ...formOverrides } = overrides;
+
   return (
     <MantineProvider>
       <TerminologyProvider terminology={KITCHEN_TERMINOLOGY}>
@@ -173,6 +176,8 @@ function taskEditFormElement(
             runState: null,
             runStateUpdatedAt: null,
             workLogs: [],
+            workGraph: null,
+            ...editableTodoOverrides,
           }}
           projects={[{ id: 'project-1', name: 'Project Manager' }]}
           todoLabels={[]}
@@ -180,7 +185,7 @@ function taskEditFormElement(
           updateTodoAction={vi.fn(async () => ({ ok: true as const }))}
           branchName="task/proj-187/openclaw-gineung-uisujeong"
           telegramEnabled
-          {...overrides}
+          {...formOverrides}
         />
       </TerminologyProvider>
     </MantineProvider>
@@ -189,6 +194,7 @@ function taskEditFormElement(
 
 function renderTaskEditForm(
   overrides: Partial<{
+    editableTodo: Partial<React.ComponentProps<typeof TaskEditForm>['editableTodo']>;
     onTaskQueued: (taskKey: string, queuedAt: string) => void;
     onDispatchQueued: () => void;
     onTaskUpdated: (tasks: { boardTask?: unknown; focusedTask?: unknown }) => void;
@@ -199,6 +205,7 @@ function renderTaskEditForm(
 
 function renderTaskEditFormClient(
   overrides: Partial<{
+    editableTodo: Partial<React.ComponentProps<typeof TaskEditForm>['editableTodo']>;
     onTaskQueued: (taskKey: string, queuedAt: string) => void;
     onDispatchQueued: () => void;
     onTaskUpdated: (tasks: { boardTask?: unknown; focusedTask?: unknown }) => void;
@@ -326,6 +333,29 @@ describe('app/components/task-edit-form', () => {
     expect(html).not.toContain('Ctrl+Enter');
   });
 
+  it('fetches the work graph when the edit task payload does not preload it', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      json: async () => ({
+        ok: true,
+        data: {
+          summary: null,
+          nodes: [],
+          dependencies: [],
+          events: [],
+          evidence: [],
+          workflow_memory: null,
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderTaskEditFormClient({ editableTodo: { workGraph: undefined } });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/tasks/PROJ-187/work-graph');
+    });
+  });
+
   it('wires the shared task label picker with the default trigger metadata', () => {
     renderTaskEditForm();
 
@@ -378,6 +408,7 @@ describe('app/components/task-edit-form', () => {
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
+              workGraph: null,
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}
@@ -528,6 +559,7 @@ describe('app/components/task-edit-form', () => {
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
+              workGraph: null,
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}
@@ -584,6 +616,7 @@ describe('app/components/task-edit-form', () => {
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
+              workGraph: null,
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}
@@ -706,6 +739,7 @@ describe('app/components/task-edit-form', () => {
         runState: null,
         runStateUpdatedAt: null,
         workLogs: [],
+        workGraph: null,
       },
     });
     let submitTaskUpdate: ((form: HTMLFormElement) => Promise<void>) | undefined;
@@ -767,6 +801,7 @@ describe('app/components/task-edit-form', () => {
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
+              workGraph: null,
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}
@@ -891,6 +926,7 @@ describe('app/components/task-edit-form', () => {
               runState: 'queued',
               runStateUpdatedAt: null,
               workLogs: [],
+              workGraph: null,
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}
@@ -1000,6 +1036,7 @@ describe('app/components/task-edit-form', () => {
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
+              workGraph: null,
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}
@@ -1139,6 +1176,7 @@ describe('app/components/task-edit-form', () => {
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
+              workGraph: null,
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}
@@ -1253,6 +1291,7 @@ describe('app/components/task-edit-form', () => {
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
+              workGraph: null,
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}
@@ -1355,6 +1394,7 @@ describe('app/components/task-edit-form', () => {
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
+              workGraph: null,
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}
@@ -1460,6 +1500,7 @@ describe('app/components/task-edit-form', () => {
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
+              workGraph: null,
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}
@@ -1608,6 +1649,7 @@ describe('app/components/task-edit-form', () => {
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
+              workGraph: null,
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}
@@ -1669,6 +1711,7 @@ describe('app/components/task-edit-form', () => {
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
+              workGraph: null,
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}
@@ -1745,6 +1788,7 @@ describe('app/components/task-edit-form', () => {
               runState: null,
               runStateUpdatedAt: null,
               workLogs: [],
+              workGraph: null,
             }}
             projects={[{ id: 'project-1', name: 'Project Manager' }]}
             todoLabels={[]}

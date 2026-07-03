@@ -2,19 +2,22 @@
 
 ## Overview
 
-PREQSTATION is a task management platform designed for AI-agent-driven development workflows. It consists of three interconnected systems:
+PREQSTATION is a task management platform designed for AI-agent-driven development workflows. The
+current system centers on the core app plus the PREQ CLI operator-host path; `preqstation-skill`
+remains only as deprecated legacy compatibility for token-based local MCP and shell-helper flows.
 
-| System                     | Role                                                                                                                             | Repository               |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| **preqstation**            | Central web service — task CRUD, Kanban UI, REST API, Telegram notifications                                                     | `preqstation`            |
-| **preqstation-dispatcher** | OpenClaw-native dispatcher layer — receives Telegram/OpenClaw dispatch requests and launches coding agents in isolated worktrees | `preqstation-dispatcher` |
-| **preqstation-skill**      | Agent client — MCP server and shell helpers that coding agents use to call Preq Station APIs (`preqstation`)                     | `preqstation-skill`      |
+| System                | Role                                                                                                               | Repository          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------- |
+| **preqstation**       | Central web service — task CRUD, Kanban UI, REST API, Telegram notifications                                       | `preqstation`       |
+| **preqstation-cli**   | PREQ CLI and operator-host layer — setup, project mapping, health checks, and direct or integration-based dispatch | `preqstation-cli`   |
+| **preqstation-skill** | Deprecated legacy agent client — local MCP server and shell helpers for older token-based integrations             | `preqstation-skill` |
 
 Important naming note:
 
-- the durable public repo/system name is `preqstation-dispatcher`
+- the durable public repo/system name for the CLI surface is `preqstation-cli`
 - some current package/plugin/config identifiers may still use `preqstation-openclaw` for compatibility
-- architecture docs should prefer `preqstation-dispatcher` except when a specific technical identifier is required
+- older docs and plugin identifiers may still say `preqstation-dispatcher`; treat that as a
+  compatibility name, not the preferred setup path
 
 ## System Diagram
 
@@ -59,8 +62,8 @@ Important naming note:
                           │           │                                 │
                           │           │  Runs in isolated worktree      │
                           │           │  Implements code changes        │
-                          ◄───────────│  Uses preqstation-skill MCP     │
-                                      │  to report status & results     │
+                          ◄───────────│  Uses PREQ CLI task commands    │
+                                      │  or /mcp OAuth/direct tools     │
                                       └─────────────────────────────────┘
 ```
 
@@ -414,7 +417,7 @@ Work logs automatically created when agents submit `result` payloads, storing ex
 
 ---
 
-## preqstation-dispatcher
+## preqstation-cli / dispatcher
 
 ### Purpose
 
@@ -422,7 +425,7 @@ Bridges Telegram/OpenClaw dispatch requests to coding agent execution. When a us
 
 Important naming note:
 
-- the durable public repo name is `preqstation-dispatcher`
+- the durable public repo name is `preqstation-cli`
 - some package, plugin, or config identifiers may still use `preqstation-openclaw` for compatibility
 - treat those legacy identifiers as technical implementation details, not the preferred public system name
 
@@ -478,13 +481,18 @@ Important naming note:
 
 ---
 
-## preqstation-skill
+## preqstation-skill (deprecated legacy)
 
 ### Purpose
 
-MCP server and shell helpers that coding agents (Claude, Codex, Gemini) use to interact with the Preq Station REST API during task execution.
+Deprecated local MCP server and shell helpers that older coding-agent setups use to interact with
+the Preq Station REST API through bearer tokens. New operator-host installs should use the PREQ CLI,
+and direct Claude Code/Codex clients should use the core app's `/mcp` OAuth endpoint.
 
 ### Installation
+
+Do not use this package for new installs. Keep the commands below only when maintaining an existing
+token-based local MCP bridge.
 
 ```bash
 # Claude Code
@@ -551,7 +559,7 @@ Optional authenticator-app 2FA stores `two_factor_enabled` plus an AES-GCM encry
 `two_factor_secret`.
 For existing deployments, update the existing owner row in place so related data keeps the same `owner_id`.
 
-### preqstation-skill (agent-side)
+### preqstation-skill (deprecated legacy agent-side)
 
 | Variable              | Required | Purpose                                    |
 | --------------------- | -------- | ------------------------------------------ |
@@ -561,7 +569,7 @@ For existing deployments, update the existing owner row in place so related data
 
 Recommended MCP installs now target `https://<preqstation-domain>/mcp` directly and authenticate with OAuth instead of local REST tokens.
 
-### preqstation-dispatcher
+### preqstation-cli / dispatcher
 
 | Variable                 | Required | Purpose                                                 |
 | ------------------------ | -------- | ------------------------------------------------------- |
@@ -593,7 +601,7 @@ Recommended MCP installs now target `https://<preqstation-domain>/mcp` directly 
 
 ### Agent Isolation
 
-- preqstation-dispatcher enforces worktree-first execution
+- preqstation-cli / dispatcher enforces worktree-first execution
 - Agents never run in primary checkout directories
 - Agents never run in `~/clawd/` or `~/.openclaw/`
 - `dangerously-*` flags allowed only after safety gate validation in resolved worktrees

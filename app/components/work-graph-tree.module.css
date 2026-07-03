@@ -1,0 +1,270 @@
+.root {
+  --work-graph-grid-color: color-mix(in srgb, var(--ui-accent), transparent 76%);
+  --work-graph-node-background: color-mix(in srgb, var(--ui-surface-strong), transparent 4%);
+  --work-graph-node-border: color-mix(in srgb, var(--ui-border), transparent 6%);
+  --work-graph-node-shadow: color-mix(in srgb, var(--ui-text), transparent 58%);
+
+  min-width: 0;
+}
+
+.graphWorkspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem);
+  height: clamp(30rem, 64vh, 46rem);
+  min-height: 30rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 8%);
+  border-radius: 8px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ui-surface-strong), transparent 8%),
+      color-mix(in srgb, var(--ui-surface), transparent 4%)
+    ),
+    var(--ui-surface);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--ui-surface-strong), transparent 52%);
+}
+
+.flowStage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  border-inline-end: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+}
+
+.flow {
+  min-width: 0;
+  color: var(--ui-text);
+}
+
+.flow :global(.react-flow__pane) {
+  cursor: grab;
+}
+
+.flow :global(.react-flow__pane:active) {
+  cursor: grabbing;
+}
+
+.flow :global(.react-flow__node) {
+  cursor: pointer;
+}
+
+.flow :global(.react-flow__node.selected) {
+  box-shadow: none;
+}
+
+.flow :global(.react-flow__edge-path) {
+  filter: drop-shadow(0 1px 3px color-mix(in srgb, var(--ui-text), transparent 88%));
+}
+
+.nodeCard {
+  --node-accent: var(--ui-accent);
+
+  width: 18.5rem;
+  min-width: 18.5rem;
+  max-width: 18.5rem;
+  padding: 0.8rem;
+  border: 1px solid var(--work-graph-node-border);
+  border-radius: 8px;
+  outline: none;
+  background: var(--work-graph-node-background);
+  box-shadow: 0 16px 32px -24px var(--work-graph-node-shadow);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.nodeCard:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--node-accent), var(--ui-border) 42%);
+  background: color-mix(in srgb, var(--ui-surface-strong), var(--ui-accent-soft) 7%);
+}
+
+.nodeCard:focus-visible,
+.nodeCard[data-selected='true'] {
+  border-color: color-mix(in srgb, var(--node-accent), var(--ui-border) 18%);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--node-accent), transparent 74%),
+    0 16px 32px -24px color-mix(in srgb, var(--ui-text), transparent 54%);
+}
+
+.nodeCard[data-root='true'] {
+  width: 19.5rem;
+  min-width: 19.5rem;
+  max-width: 19.5rem;
+  background: color-mix(in srgb, var(--ui-surface-strong), var(--ui-accent-soft) 14%);
+}
+
+.nodeCard[data-status='completed'] {
+  --node-accent: var(--ui-success);
+}
+
+.nodeCard[data-status='running'] {
+  --node-accent: var(--ui-status-running, var(--ui-accent));
+}
+
+.nodeCard[data-status='ready'] {
+  --node-accent: var(--ui-status-queued, var(--ui-accent));
+}
+
+.nodeCard[data-status='waiting'],
+.nodeCard[data-status='waiting_for_user'],
+.nodeCard[data-status='blocked'] {
+  --node-accent: var(--ui-warning);
+}
+
+.nodeCard[data-status='failed'] {
+  --node-accent: var(--ui-danger);
+}
+
+.handle {
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 2px solid var(--ui-surface-strong);
+  background: var(--node-accent);
+}
+
+.nodeStatusDot {
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: 0 0 auto;
+  margin-top: 0.3rem;
+  border-radius: 999px;
+  background: var(--node-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--node-accent), transparent 82%);
+}
+
+.nodeTitleStack {
+  min-width: 0;
+}
+
+.nodeTitle,
+.inspectorTitle {
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.nodePreview {
+  margin-top: 0.625rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.nodeNoteBlock {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+}
+
+.nodeMetaLine {
+  margin-top: 0.65rem;
+}
+
+.inspectorPanel {
+  min-width: 0;
+  overflow: auto;
+  padding: 0.9rem 1rem;
+  background: color-mix(in srgb, var(--ui-surface), var(--ui-surface-strong) 34%);
+}
+
+.inspectorBlock {
+  padding-top: 0.8rem;
+  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+}
+
+.inspectorMarkdown {
+  max-height: 15rem;
+  overflow: auto;
+  color: var(--ui-text);
+  font-size: var(--ui-font-size-small);
+  line-height: 1.5;
+}
+
+.inspectorMarkdown :global(h1),
+.inspectorMarkdown :global(h2),
+.inspectorMarkdown :global(h3) {
+  margin: 0 0 0.4rem;
+  font-size: var(--ui-font-size-regular);
+  line-height: 1.25;
+}
+
+.inspectorMarkdown :global(p),
+.inspectorMarkdown :global(ul),
+.inspectorMarkdown :global(ol) {
+  margin: 0.4rem 0;
+}
+
+.inspectorMarkdown :global(pre),
+.inspectorMarkdown :global(table) {
+  max-width: 100%;
+  overflow: auto;
+}
+
+.evidenceItem {
+  min-width: 0;
+  padding: 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ui-surface-strong), transparent 18%);
+}
+
+.emptyDetail {
+  padding-top: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+}
+
+.controls {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 16%);
+  border-radius: 8px;
+}
+
+.memoryPanel {
+  padding: 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--ui-border), transparent 14%);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ui-surface), transparent 18%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nodeCard {
+    transition: none;
+  }
+
+  .nodeCard:hover {
+    transform: none;
+  }
+
+  .flow :global(.react-flow__edge.animated path) {
+    animation: none;
+  }
+}
+
+@media (max-width: 60em) {
+  .graphWorkspace {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 0;
+  }
+
+  .flowStage {
+    height: clamp(34rem, 82vh, 50rem);
+    border-inline-end: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--ui-border), transparent 18%);
+  }
+
+  .inspectorPanel {
+    max-height: none;
+  }
+}
+
+@media (max-width: 48em) {
+  .nodeCard,
+  .nodeCard[data-root='true'] {
+    width: 17.5rem;
+    min-width: 17.5rem;
+    max-width: 17.5rem;
+  }
+}

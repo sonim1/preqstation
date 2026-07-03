@@ -16,6 +16,8 @@ export const PROJECT_DELETED = 'PROJECT_DELETED';
 export const NOTIFICATION_CREATED = 'NOTIFICATION_CREATED';
 export const SETTING_UPDATED = 'SETTING_UPDATED';
 export const TASK_LABEL_UPDATED = 'TASK_LABEL_UPDATED';
+export const WORK_GRAPH_UPDATED = 'WORK_GRAPH_UPDATED';
+export const WORK_NODE_UPDATED = 'WORK_NODE_UPDATED';
 
 // Entity type constants
 export const ENTITY_TASK = 'task';
@@ -24,6 +26,8 @@ export const ENTITY_PROJECT = 'project';
 export const ENTITY_NOTIFICATION = 'notification';
 export const ENTITY_SETTING = 'setting';
 export const ENTITY_TASK_LABEL = 'task_label';
+export const ENTITY_WORK_GRAPH = 'work_graph';
+export const ENTITY_WORK_NODE = 'work_node';
 
 type WriteOutboxEventParams = {
   tx: DbClientOrTx;

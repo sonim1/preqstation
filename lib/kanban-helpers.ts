@@ -18,6 +18,7 @@ import {
   getTaskStatusLabel,
   type Terminology,
 } from '@/lib/terminology';
+import { buildWorkGraphSummary, type WorkGraphSummary } from '@/lib/work-graph';
 
 export type KanbanStatus = TaskStatus;
 
@@ -36,6 +37,7 @@ export type KanbanTask = {
   dispatchTarget?: TaskDispatchTarget | null;
   runState: TaskRunState | null;
   runStateUpdatedAt: string | null;
+  workGraphSummary?: WorkGraphSummary | null;
   project: { id: string; name: string; projectKey: string } | null;
   updatedAt: string;
   archivedAt: string | null;
@@ -298,6 +300,8 @@ export type TaskForKanban = {
   updatedAt: Date;
   project: { id: string; name: string; projectKey: string } | null;
   hasUnreadNotification?: boolean | null;
+  workGraphSummary?: WorkGraphSummary | null;
+  workNodes?: Array<{ status: string | null }>;
   labels?: Array<{ id: string; name: string; color: string }>;
   label?: { id: string; name: string; color: string } | null;
   labelAssignments?: Array<{
@@ -308,6 +312,9 @@ export type TaskForKanban = {
 
 export function toKanbanTask(task: TaskForKanban, status: KanbanStatus): KanbanTask {
   const labels = extractTaskLabels(task);
+  const workGraphSummary =
+    task.workGraphSummary ??
+    (task.workNodes && task.workNodes.length > 0 ? buildWorkGraphSummary(task.workNodes) : null);
 
   return {
     id: task.id,
@@ -324,6 +331,7 @@ export function toKanbanTask(task: TaskForKanban, status: KanbanStatus): KanbanT
     dispatchTarget: normalizeTaskDispatchTarget(task.dispatchTarget),
     runState: coerceTaskRunState(task.runState),
     runStateUpdatedAt: task.runStateUpdatedAt ? task.runStateUpdatedAt.toISOString() : null,
+    workGraphSummary,
     archivedAt: task.archivedAt ? task.archivedAt.toISOString() : null,
     hasUnreadNotification: Boolean(task.hasUnreadNotification),
     updatedAt: task.updatedAt.toISOString(),

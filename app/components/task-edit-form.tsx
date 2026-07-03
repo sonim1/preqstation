@@ -41,6 +41,7 @@ import { useOfflineStatus } from '@/app/components/offline-status-provider';
 import { StatusHistoryBreadcrumb } from '@/app/components/status-history-breadcrumb';
 import { getSendShortcutLabel, TaskCopyActions } from '@/app/components/task-copy-actions';
 import { TaskMetadataPriorityPicker } from '@/app/components/task-metadata-controls';
+import { type WorkGraphPayload, WorkGraphTree } from '@/app/components/work-graph-tree';
 import { WorkLogTimeline } from '@/app/components/work-log-timeline';
 import { shouldFlushAutoSaveOnBlur, useAutoSave } from '@/app/hooks/use-auto-save';
 import { useTaskOfflineDraft } from '@/app/hooks/use-task-offline-draft';
@@ -93,6 +94,7 @@ export type TaskEditFormProps = {
       createdAt: Date;
       todo?: { engine: string | null } | null;
     }>;
+    workGraph?: WorkGraphPayload | null;
   };
   projects: Array<{ id: string; name: string }>;
   todoLabels: Array<{ id: string; name: string; color: string | null }>;
@@ -1175,13 +1177,24 @@ function TaskEditFormContent({
             </section>
 
             <section
+              className={`${classes.activityCard} ${classes.mainSectionSurface}`}
+              data-panel="task-edit-work-tree"
+            >
+              <WorkGraphTree
+                taskKey={taskKey}
+                initialGraph={editableTodo.workGraph}
+                rootNoteMarkdown={noteMarkdown}
+              />
+            </section>
+
+            <section
               className={`${classes.notesCard} ${classes.mainSectionSurface}`}
               data-panel="task-edit-notes-primary"
             >
               <Stack gap="md" className={classes.notesContent}>
                 <SectionHeading
                   title="Notes"
-                  helpText={`Markdown notes stay front and center while you edit the ${terminology.task.singularLower}.`}
+                  helpText={`Markdown notes stay attached to this ${terminology.task.singularLower} while the work graph leads the view.`}
                   aside={
                     <Group gap="xs" align="center" wrap="wrap">
                       <SegmentedControl

@@ -11,6 +11,7 @@ import {
 } from '@/lib/kanban-helpers';
 import type { TaskArtifact } from '@/lib/task-artifacts';
 import { normalizeTaskDispatchTarget } from '@/lib/task-dispatch';
+import type { WorkGraphSummary } from '@/lib/work-graph';
 
 export type FocusedTaskDetailStatus = 'idle' | 'loading' | 'ready';
 
@@ -30,6 +31,7 @@ export type EditableBoardTask = {
   dispatchTarget: KanbanTask['dispatchTarget'] | null;
   runState: 'queued' | 'running' | null;
   runStateUpdatedAt: string | null;
+  workGraphSummary?: WorkGraphSummary | null;
   workLogs: Array<{
     id: string;
     title: string;
@@ -224,6 +226,7 @@ export function buildEditableBoardTaskPreview(task: KanbanTask): EditableBoardTa
     dispatchTarget: task.dispatchTarget ?? null,
     runState: task.runState,
     runStateUpdatedAt: task.runStateUpdatedAt,
+    workGraphSummary: task.workGraphSummary,
     workLogs: [],
   };
 }
