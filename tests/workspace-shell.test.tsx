@@ -1100,7 +1100,7 @@ describe('app/components/workspace-shell', () => {
     window.localStorage.setItem(RECENT_PROJECTS_STORAGE, JSON.stringify(['ALPHA']));
 
     try {
-      const { container } = renderWorkspaceShellDom({
+      const { container, rerender } = renderWorkspaceShellDom({
         desktopOpened: true,
         pathname: '/board/ALPHA',
         rememberedProjectKey: 'ALPHA|ALPHA',
@@ -1118,6 +1118,17 @@ describe('app/components/workspace-shell', () => {
         RECENT_PROJECTS_STORAGE,
         JSON.stringify(['BETA', 'ALPHA']),
       );
+      expect(window.localStorage.getItem(LAST_PROJECT_KEY_STORAGE)).toBe('BETA');
+      expect(window.localStorage.getItem(RECENT_PROJECTS_STORAGE)).toBe(
+        JSON.stringify(['BETA', 'ALPHA']),
+      );
+
+      useSyncExternalStoreMock.mockImplementation(() => 'BETA|BETA|ALPHA');
+      useDisclosureMock
+        .mockReturnValueOnce([false, { toggle: vi.fn(), close: vi.fn() }])
+        .mockReturnValueOnce([true, { toggle: vi.fn(), close: vi.fn() }]);
+      rerender(workspaceShellElement(projectOptions));
+
       expect(window.localStorage.getItem(LAST_PROJECT_KEY_STORAGE)).toBe('BETA');
       expect(window.localStorage.getItem(RECENT_PROJECTS_STORAGE)).toBe(
         JSON.stringify(['BETA', 'ALPHA']),

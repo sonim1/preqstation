@@ -27,7 +27,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 import { outfit } from '@/app/fonts';
 import { getProjectCardBgUrl } from '@/lib/project-backgrounds';
@@ -205,6 +205,7 @@ export function WorkspaceShell({
   const [mobileOpened, { toggle: toggleMobile, close: closeMobile }] = useDisclosure(false);
   const [desktopOpened, { toggle: toggleDesktop }] = useDisclosure(true);
   const [commandPaletteRequested, setCommandPaletteRequested] = useState(false);
+  const pendingBoardSelectionRef = useRef<{ pathname: string; projectKey: string } | null>(null);
   const projectOrderState = useSyncExternalStore(
     subscribeProjectOrderState,
     readProjectOrderState,
@@ -282,10 +283,11 @@ export function WorkspaceShell({
     : 'workspace-navbar workspace-navbar--collapsed';
   const handleBoardSelect = useCallback(
     (projectKey: string) => {
+      pendingBoardSelectionRef.current = { pathname, projectKey: projectKey.toUpperCase() };
       writeRememberedProjectKey(projectKey);
       closeMobile();
     },
-    [closeMobile],
+    [closeMobile, pathname],
   );
   const requestCommandPalette = useCallback(() => {
     setCommandPaletteRequested(true);
@@ -308,6 +310,17 @@ export function WorkspaceShell({
 
   useEffect(() => {
     if (pickerState.source !== 'path' || !selectedProject) return;
+    const pendingBoardSelection = pendingBoardSelectionRef.current;
+    if (pendingBoardSelection) {
+      const selectedKey = selectedProject.projectKey.toUpperCase();
+      if (pendingBoardSelection.projectKey === selectedKey) {
+        pendingBoardSelectionRef.current = null;
+      } else if (pendingBoardSelection.pathname === pathname) {
+        return;
+      } else {
+        pendingBoardSelectionRef.current = null;
+      }
+    }
     if (
       rememberedProjectKey &&
       rememberedProjectKey.toUpperCase() === selectedProject.projectKey.toUpperCase()
@@ -315,7 +328,7 @@ export function WorkspaceShell({
       return;
     }
     writeRememberedProjectKey(selectedProject.projectKey);
-  }, [pickerState.source, rememberedProjectKey, selectedProject]);
+  }, [pathname, pickerState.source, rememberedProjectKey, selectedProject]);
 
   useEffect(() => {
     if (!rememberedProjectKey) return;
