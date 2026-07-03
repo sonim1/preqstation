@@ -62,20 +62,23 @@
 
 ## Phase 3 — 하류 repo 싱크 (Phase 2 완료 후)
 
-- [ ] **P3-1. `preqstation-cli` 문서 갱신** `[preqstation-cli]`
+- [x] **P3-1. `preqstation-cli` 문서 갱신** `[preqstation-cli]`
   - README/INSTALLATION에 에이전트 런타임에서의 graph 커맨드 관계 설명
   - 내용은 P1-1 결정에 따라 달라짐 (그래서 순서 중요)
-  - 현재 work graph 언급 0건
+  - 완료: PR [preqstation-cli#11](https://github.com/sonim1/preqstation-cli/pull/11)에서 dispatcher `preqstation` vs core `preqstation-agent` 경계와 `metadata.workflow_profile` 기록 기준 문서화
+  - 검증: `rtk npm test` 194개 통과, Work Graph 키워드 검색, `rtk git diff --check`
 
-- [ ] **P3-2. `preqstation-lp` 가이드 갱신 (영/한 미러링)** `[preqstation-lp]`
+- [x] **P3-2. `preqstation-lp` 가이드 갱신 (영/한 미러링)** `[preqstation-lp]`
   - Work Graph 가이드 페이지 신설
   - `web-app/kanban.mdx` → "보드 뷰" 관점으로 재구성 (primary는 work graph)
   - `api/task-lifecycle.mdx` 갱신
   - `skill/` 섹션 4페이지 legacy 표기 강화 또는 축소 검토
-  - 검증: `pnpm build` (guide + landing)
+  - 완료: PR [preqstation-landingpage#8](https://github.com/sonim1/preqstation-landingpage/pull/8)에서 Work Graph EN/KO 페이지, sidebar, Kanban/API/MCP 연결 문서화
+  - 검증: `rtk pnpm install && rtk pnpm build`, `rtk node scripts/landing-content.test.mjs`, `rtk git diff --check`
 
-- [ ] **P3-3. 싱크 progress log 기록** `[preqstation-cli]`
+- [x] **P3-3. 싱크 progress log 기록** `[preqstation-cli]`
   - `docs/cli-first-documentation-sync-plan.md` 포맷 재활용해 "v2 work graph docs sync" 기록 남기기
+  - 완료: PR [preqstation-cli#11](https://github.com/sonim1/preqstation-cli/pull/11)에 2026-07-03 progress log 추가
 
 ---
 
@@ -85,6 +88,9 @@
   - `preqstation/.worktrees/preqstation-v2-clean`, `preqstation-v2-work-graph` (v2 머지 완료 확인 후)
   - `~/projects/_preq_worktrees/proj/` (용도 확인 후)
   - 검증: `git worktree list` / `git worktree prune`
+  - 상태(2026-07-03): `preqstation-v2-clean`은 `main`에 포함되어 worktree와 local branch를 제거함
+  - 보존(2026-07-03): `preqstation-v2-work-graph`는 `main..codex/preqstation-v2-work-graph`에 고유 커밋 3개가 남아 있어 제거하지 않음 (`9e2d4d2`, `12ecbaa`, `036f5ba`)
+  - 확인(2026-07-03): `~/projects/_preq_worktrees/proj/`는 비어 있음
 
 - [x] **P4-2. 스키마 버전 표기 명시**
   - 완료 (PR #288): API.md Work Graph 섹션에 "wire contract 버전, npm 패키지 버전과 별개" 기록
@@ -97,11 +103,13 @@
 
 ## 진행 기록
 
-| 날짜       | 항목                    | 결과                                                                                                                      |
-| ---------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| 2026-07-03 | 리뷰 수행, 이 목록 생성 | typecheck + 2092 테스트 통과 확인                                                                                         |
-| 2026-07-03 | Phase 0 착수            | workflow profile 슬라이스와 `TODOS.md`를 `codex/v2-sync-worklist` PR 범위로 묶음                                          |
-| 2026-07-03 | Phase 0 완료            | 슬라이스 + `TODOS.md` 커밋 (`feat/workflow-profile-contract`, 7b7ba76)                                                    |
-| 2026-07-03 | Phase 2 + P4-2 완료     | core docs 4건 갱신 커밋 (4e69e53), PR #288 오픈                                                                           |
-| 2026-07-03 | Phase 1 완료            | core bin command를 `preqstation-agent`로 변경, production bin을 `lib/cli` 번들 산출물로 단일 소스화, package `files` 추가 |
-| —          | 남은 항목 (codex 예정)  | Phase 3 하류 싱크, P4-1 worktree 정리, P4-3 dogfood                                                                       |
+| 날짜       | 항목                    | 결과                                                                                                                            |
+| ---------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-07-03 | 리뷰 수행, 이 목록 생성 | typecheck + 2092 테스트 통과 확인                                                                                               |
+| 2026-07-03 | Phase 0 착수            | workflow profile 슬라이스와 `TODOS.md`를 `codex/v2-sync-worklist` PR 범위로 묶음                                                |
+| 2026-07-03 | Phase 0 완료            | 슬라이스 + `TODOS.md` 커밋 (`feat/workflow-profile-contract`, 7b7ba76)                                                          |
+| 2026-07-03 | Phase 2 + P4-2 완료     | core docs 4건 갱신 커밋 (4e69e53), PR #288 오픈                                                                                 |
+| 2026-07-03 | Phase 1 완료            | core bin command를 `preqstation-agent`로 변경, production bin을 `lib/cli` 번들 산출물로 단일 소스화, package `files` 추가       |
+| 2026-07-03 | Phase 3 하류 싱크 완료  | `preqstation-cli` PR #11, `preqstation-lp` PR #8 오픈. CLI 194 tests 통과, LP build + landing content test 통과                 |
+| 2026-07-03 | P4-1 worktree 감사      | `preqstation-v2-clean` 제거, `preqstation-v2-work-graph`는 unmerged 고유 커밋 3개 때문에 보존, `_preq_worktrees/proj` 비어 있음 |
+| —          | 남은 항목               | P4-3 dogfood, `preqstation-v2-work-graph` merge/폐기 결정 후 제거                                                               |
