@@ -13,6 +13,10 @@ function readOptionalFile(path: string | null) {
   return path ? readFileSync(path, 'utf8') : undefined;
 }
 
+function readOptionalJsonFile(path: string | null) {
+  return path ? JSON.parse(readFileSync(path, 'utf8')) : undefined;
+}
+
 export async function runGraphCommand(params: {
   config: CliConfig;
   argv: string[];
@@ -42,6 +46,7 @@ export async function runGraphCommand(params: {
 
   if (subcommand === 'node' && subcommand2 === 'create') {
     const taskKey = params.argv[2];
+    const metadata = readOptionalJsonFile(optionValue(params.argv, '--metadata-file'));
     return requestPreqstationApi({
       config: params.config,
       path: `/api/tasks/${encodeURIComponent(taskKey)}/work-graph/nodes`,
@@ -49,6 +54,7 @@ export async function runGraphCommand(params: {
       body: {
         type: optionValue(params.argv, '--type'),
         title: optionValue(params.argv, '--title'),
+        ...(metadata === undefined ? {} : { metadata }),
       },
       fetchImpl: params.fetchImpl,
     });
@@ -57,12 +63,15 @@ export async function runGraphCommand(params: {
   if (subcommand === 'node' && ['start', 'complete', 'fail'].includes(subcommand2 ?? '')) {
     const nodeId = params.argv[2];
     const action = subcommand2 === 'start' ? 'start' : subcommand2;
+    const metadata = readOptionalJsonFile(optionValue(params.argv, '--metadata-file'));
     const summary =
       subcommand2 === 'complete'
         ? readOptionalFile(optionValue(params.argv, '--summary-file'))
         : undefined;
     const error =
-      subcommand2 === 'fail' ? readOptionalFile(optionValue(params.argv, '--error-file')) : undefined;
+      subcommand2 === 'fail'
+        ? readOptionalFile(optionValue(params.argv, '--error-file'))
+        : undefined;
 
     return requestPreqstationApi({
       config: params.config,
@@ -72,6 +81,7 @@ export async function runGraphCommand(params: {
         action,
         ...(summary ? { result_summary: summary } : {}),
         ...(error ? { result_summary: error } : {}),
+        ...(metadata === undefined ? {} : { metadata }),
       },
       fetchImpl: params.fetchImpl,
     });

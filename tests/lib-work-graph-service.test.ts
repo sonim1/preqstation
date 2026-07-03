@@ -96,6 +96,48 @@ describe('lib/work-graph-service', () => {
     expect(mocked.insert).not.toHaveBeenCalled();
   });
 
+  it('preserves namespaced workflow profile metadata when creating a node', async () => {
+    const mocked = makeClient();
+    const workflowProfile = {
+      requested: 'auto',
+      manual_command: null,
+      resolved: 'gstack-plan-eng-review',
+      resolved_command: '/plan-eng-review',
+      resolved_reason: 'Architecture review needed before implementation.',
+    };
+    const createdNode = {
+      id: 'node-1',
+      ownerId: 'owner-1',
+      projectId: 'project-1',
+      taskId: 'task-1',
+      status: 'pending',
+      type: 'analyze',
+      title: 'Analyze',
+    };
+
+    mocked.client.query.tasks.findFirst.mockResolvedValue(task);
+    mocked.client.query.taskWorkNodes.findFirst.mockResolvedValue(null);
+    mocked.returning.mockResolvedValueOnce([createdNode]);
+
+    const result = await createWorkNode({
+      client: asDbClient(mocked.client),
+      ownerId: 'owner-1',
+      taskId: 'task-1',
+      input: {
+        type: 'analyze',
+        title: 'Analyze',
+        metadata: { workflow_profile: workflowProfile },
+      },
+    });
+
+    expect(result.node).toBe(createdNode);
+    expect(mocked.values).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: { workflow_profile: workflowProfile },
+      }),
+    );
+  });
+
   it('rejects dependencies that do not belong to the same task', async () => {
     const mocked = makeClient();
 
@@ -176,6 +218,48 @@ describe('lib/work-graph-service', () => {
     });
   });
 
+  it('preserves workflow profile metadata when transitioning a node', async () => {
+    const mocked = makeClient();
+    const workflowProfile = {
+      requested: 'auto',
+      manual_command: null,
+      resolved: 'gstack-plan-eng-review',
+      resolved_command: '/plan-eng-review',
+      resolved_reason: 'Architecture review needed before implementation.',
+    };
+    const updatedNode = {
+      id: 'node-1',
+      ownerId: 'owner-1',
+      projectId: 'project-1',
+      taskId: 'task-1',
+      status: 'completed',
+      type: 'analyze',
+      title: 'Analyze',
+    };
+
+    mocked.client.query.taskWorkNodes.findFirst.mockResolvedValue({
+      ...updatedNode,
+      status: 'running',
+      startedAt: new Date('2026-07-02T10:00:00.000Z'),
+    });
+    mocked.client.query.tasks.findFirst.mockResolvedValue(task);
+    mocked.returning.mockResolvedValueOnce([updatedNode]);
+
+    await transitionWorkNode({
+      client: asDbClient(mocked.client),
+      ownerId: 'owner-1',
+      nodeId: 'node-1',
+      action: 'complete',
+      metadata: { workflow_profile: workflowProfile },
+    });
+
+    expect(mocked.set).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: { workflow_profile: workflowProfile },
+      }),
+    );
+  });
+
   it('creates task notifications when nodes wait for user input', async () => {
     const mocked = makeClient();
     const waitingNode = {
@@ -193,22 +277,20 @@ describe('lib/work-graph-service', () => {
       status: 'running',
     });
     mocked.client.query.tasks.findFirst.mockResolvedValue(task);
-    mocked.returning
-      .mockResolvedValueOnce([waitingNode])
-      .mockResolvedValueOnce([
-        {
-          id: 'notification-1',
-          ownerId: 'owner-1',
-          projectId: 'project-1',
-          taskId: 'task-1',
-          taskKey: 'PREQ-1',
-          taskTitle: 'Build graph',
-          statusFrom: 'node:running',
-          statusTo: 'node:waiting_for_user',
-          readAt: null,
-          createdAt: new Date('2026-06-25T00:00:00.000Z'),
-        },
-      ]);
+    mocked.returning.mockResolvedValueOnce([waitingNode]).mockResolvedValueOnce([
+      {
+        id: 'notification-1',
+        ownerId: 'owner-1',
+        projectId: 'project-1',
+        taskId: 'task-1',
+        taskKey: 'PREQ-1',
+        taskTitle: 'Build graph',
+        statusFrom: 'node:running',
+        statusTo: 'node:waiting_for_user',
+        readAt: null,
+        createdAt: new Date('2026-06-25T00:00:00.000Z'),
+      },
+    ]);
 
     await transitionWorkNode({
       client: asDbClient(mocked.client),
