@@ -1086,7 +1086,7 @@ describe('app/components/workspace-shell', () => {
     expect(boardLabels()).toEqual(['Delta', 'Beta', 'Gamma', 'Alpha']);
   });
 
-  it('defers recent project storage updates until a recent link route settles', () => {
+  it('records recent project storage when a recent link click is prevented', () => {
     ensureBrowserObservers();
     ensureMatchMedia();
 
@@ -1113,13 +1113,15 @@ describe('app/components/workspace-shell', () => {
       betaBoardLink?.addEventListener('click', (event) => event.preventDefault());
       fireEvent.click(betaBoardLink as HTMLElement);
 
-      expect(setItemSpy).not.toHaveBeenCalledWith(LAST_PROJECT_KEY_STORAGE, 'BETA');
-      expect(setItemSpy).not.toHaveBeenCalledWith(
+      expect(setItemSpy).toHaveBeenCalledWith(LAST_PROJECT_KEY_STORAGE, 'BETA');
+      expect(setItemSpy).toHaveBeenCalledWith(
         RECENT_PROJECTS_STORAGE,
         JSON.stringify(['BETA', 'ALPHA']),
       );
-      expect(window.localStorage.getItem(LAST_PROJECT_KEY_STORAGE)).toBe('ALPHA');
-      expect(window.localStorage.getItem(RECENT_PROJECTS_STORAGE)).toBe(JSON.stringify(['ALPHA']));
+      expect(window.localStorage.getItem(LAST_PROJECT_KEY_STORAGE)).toBe('BETA');
+      expect(window.localStorage.getItem(RECENT_PROJECTS_STORAGE)).toBe(
+        JSON.stringify(['BETA', 'ALPHA']),
+      );
     } finally {
       setItemSpy.mockRestore();
       window.localStorage.removeItem(LAST_PROJECT_KEY_STORAGE);

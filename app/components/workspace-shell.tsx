@@ -97,7 +97,7 @@ const BOARD_RECENT_LINK_LIMIT = 5;
 type BoardNavLinkProps = {
   project: WorkspaceProjectOption;
   isCurrentBoard: boolean;
-  onSelect: () => void;
+  onSelect: (projectKey: string) => void;
 };
 
 function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) {
@@ -118,7 +118,7 @@ function BoardNavLink({ project, isCurrentBoard, onSelect }: BoardNavLinkProps) 
           <span className="workspace-board-subnav-name">{project.name}</span>
         </span>
       }
-      onClick={onSelect}
+      onClick={() => onSelect(project.projectKey)}
       className="workspace-nav-link workspace-board-subnav-link"
       data-current-board={isCurrentBoard ? 'true' : undefined}
       aria-current={isCurrentBoard ? 'page' : undefined}
@@ -280,9 +280,13 @@ export function WorkspaceShell({
   const navbarClassName = desktopOpened
     ? 'workspace-navbar'
     : 'workspace-navbar workspace-navbar--collapsed';
-  const handleBoardSelect = useCallback(() => {
-    closeMobile();
-  }, [closeMobile]);
+  const handleBoardSelect = useCallback(
+    (projectKey: string) => {
+      writeRememberedProjectKey(projectKey);
+      closeMobile();
+    },
+    [closeMobile],
+  );
   const requestCommandPalette = useCallback(() => {
     setCommandPaletteRequested(true);
   }, []);
