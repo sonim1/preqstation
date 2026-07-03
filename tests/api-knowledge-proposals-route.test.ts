@@ -28,11 +28,7 @@ vi.mock('@/lib/knowledge-proposals', () => ({
   updateKnowledgeProposalStatus: mocked.updateKnowledgeProposalStatus,
 }));
 
-import {
-  GET,
-  PATCH,
-  POST,
-} from '@/app/api/tasks/[id]/knowledge-proposals/route';
+import { GET, PATCH, POST } from '@/app/api/tasks/[id]/knowledge-proposals/route';
 
 const client = {
   query: {
@@ -45,8 +41,8 @@ const client = {
 describe('task knowledge proposals route', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocked.withOwnerDb.mockImplementation(async (_ownerId: string, callback: (db: unknown) => unknown) =>
-      callback(client),
+    mocked.withOwnerDb.mockImplementation(
+      async (_ownerId: string, callback: (db: unknown) => unknown) => callback(client),
     );
     mocked.tasksFindFirst.mockResolvedValue({
       id: 'task-1',

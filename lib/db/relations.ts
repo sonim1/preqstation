@@ -200,51 +200,45 @@ export const taskWorkNodesRelations = relations(taskWorkNodes, ({ one, many }) =
   knowledgeUpdateProposals: many(knowledgeUpdateProposals),
 }));
 
-export const knowledgeUpdateProposalsRelations = relations(
-  knowledgeUpdateProposals,
-  ({ one }) => ({
-    owner: one(users, {
-      fields: [knowledgeUpdateProposals.ownerId],
-      references: [users.id],
-    }),
-    project: one(projects, {
-      fields: [knowledgeUpdateProposals.projectId],
-      references: [projects.id],
-    }),
-    task: one(tasks, {
-      fields: [knowledgeUpdateProposals.taskId],
-      references: [tasks.id],
-    }),
-    sourceNode: one(taskWorkNodes, {
-      fields: [knowledgeUpdateProposals.sourceNodeId],
-      references: [taskWorkNodes.id],
-    }),
+export const knowledgeUpdateProposalsRelations = relations(knowledgeUpdateProposals, ({ one }) => ({
+  owner: one(users, {
+    fields: [knowledgeUpdateProposals.ownerId],
+    references: [users.id],
   }),
-);
+  project: one(projects, {
+    fields: [knowledgeUpdateProposals.projectId],
+    references: [projects.id],
+  }),
+  task: one(tasks, {
+    fields: [knowledgeUpdateProposals.taskId],
+    references: [tasks.id],
+  }),
+  sourceNode: one(taskWorkNodes, {
+    fields: [knowledgeUpdateProposals.sourceNodeId],
+    references: [taskWorkNodes.id],
+  }),
+}));
 
-export const taskWorkNodeDependenciesRelations = relations(
-  taskWorkNodeDependencies,
-  ({ one }) => ({
-    owner: one(users, {
-      fields: [taskWorkNodeDependencies.ownerId],
-      references: [users.id],
-    }),
-    task: one(tasks, {
-      fields: [taskWorkNodeDependencies.taskId],
-      references: [tasks.id],
-    }),
-    node: one(taskWorkNodes, {
-      fields: [taskWorkNodeDependencies.nodeId],
-      references: [taskWorkNodes.id],
-      relationName: 'nodeDependencies',
-    }),
-    dependsOnNode: one(taskWorkNodes, {
-      fields: [taskWorkNodeDependencies.dependsOnNodeId],
-      references: [taskWorkNodes.id],
-      relationName: 'nodeDependents',
-    }),
+export const taskWorkNodeDependenciesRelations = relations(taskWorkNodeDependencies, ({ one }) => ({
+  owner: one(users, {
+    fields: [taskWorkNodeDependencies.ownerId],
+    references: [users.id],
   }),
-);
+  task: one(tasks, {
+    fields: [taskWorkNodeDependencies.taskId],
+    references: [tasks.id],
+  }),
+  node: one(taskWorkNodes, {
+    fields: [taskWorkNodeDependencies.nodeId],
+    references: [taskWorkNodes.id],
+    relationName: 'nodeDependencies',
+  }),
+  dependsOnNode: one(taskWorkNodes, {
+    fields: [taskWorkNodeDependencies.dependsOnNodeId],
+    references: [taskWorkNodes.id],
+    relationName: 'nodeDependents',
+  }),
+}));
 
 export const taskWorkNodeEventsRelations = relations(taskWorkNodeEvents, ({ one }) => ({
   owner: one(users, {

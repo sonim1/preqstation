@@ -73,10 +73,7 @@ function byRecentUpdatedAt(left: ProjectWorkGraphNodeRow, right: ProjectWorkGrap
   return toTime(right.updatedAt) - toTime(left.updatedAt);
 }
 
-function byRecentCreatedAt(
-  left: ProjectKnowledgeProposalRow,
-  right: ProjectKnowledgeProposalRow,
-) {
+function byRecentCreatedAt(left: ProjectKnowledgeProposalRow, right: ProjectKnowledgeProposalRow) {
   return toTime(right.createdAt) - toTime(left.createdAt);
 }
 
@@ -91,9 +88,7 @@ function nodeSummary(node: ProjectWorkGraphNodeRow): ProjectWorkGraphNodeSummary
   };
 }
 
-function proposalSummary(
-  proposal: ProjectKnowledgeProposalRow,
-): ProjectKnowledgeProposalSummary {
+function proposalSummary(proposal: ProjectKnowledgeProposalRow): ProjectKnowledgeProposalSummary {
   return {
     id: proposal.id,
     taskKey: proposal.task?.taskKey ?? null,

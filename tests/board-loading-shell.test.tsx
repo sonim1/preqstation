@@ -109,6 +109,49 @@ describe('app/components/board-loading-shell', () => {
     }
   });
 
+  it('scopes skeleton colors to the board loading shell', () => {
+    const previousColorScheme = document.documentElement.getAttribute('data-mantine-color-scheme');
+    const { fixture, cleanup } = renderWithGlobalsCss(<BoardLoadingShell />);
+
+    try {
+      const shell = fixture.querySelector<HTMLElement>('[data-board-loading-shell="true"]');
+      const skeleton = fixture.querySelector<HTMLElement>(
+        '[data-board-loading-shell="true"] .mantine-Skeleton-root',
+      );
+
+      expect(shell).not.toBeNull();
+      expect(skeleton).not.toBeNull();
+
+      const shellStyle = window.getComputedStyle(shell!);
+      const skeletonStyle = window.getComputedStyle(skeleton!);
+
+      expect(shellStyle.getPropertyValue('--board-loading-skeleton-surface').trim()).toBe(
+        'color-mix(in srgb,var(--ui-surface-strong),var(--ui-accent-soft) 42%)',
+      );
+      expect(shellStyle.getPropertyValue('--board-loading-skeleton-highlight').trim()).toBe(
+        'color-mix(in srgb,var(--ui-surface-strong),var(--ui-on-accent) 36%)',
+      );
+      expect(skeletonStyle.background).toBe('var(--board-loading-skeleton-surface)');
+
+      document.documentElement.setAttribute('data-mantine-color-scheme', 'dark');
+      const darkShellStyle = window.getComputedStyle(shell!);
+
+      expect(darkShellStyle.getPropertyValue('--board-loading-skeleton-surface').trim()).toBe(
+        'color-mix(in srgb,var(--ui-surface-soft),var(--ui-accent) 14%)',
+      );
+      expect(darkShellStyle.getPropertyValue('--board-loading-skeleton-highlight').trim()).toBe(
+        'color-mix(in srgb,var(--ui-surface-strong),var(--ui-text) 16%)',
+      );
+    } finally {
+      if (previousColorScheme === null) {
+        document.documentElement.removeAttribute('data-mantine-color-scheme');
+      } else {
+        document.documentElement.setAttribute('data-mantine-color-scheme', previousColorScheme);
+      }
+      cleanup();
+    }
+  });
+
   it('board route loading uses the board-specific loading shell', () => {
     const html = render(<BoardLoading />);
 

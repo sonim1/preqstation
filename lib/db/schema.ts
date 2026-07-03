@@ -522,7 +522,10 @@ export const taskWorkNodes = pgTable(
     }),
     check('task_work_nodes_type_check', sql`${table.type} in ${WORK_NODE_TYPES}`),
     check('task_work_nodes_status_check', sql`${table.status} in ${WORK_NODE_STATUSES}`),
-    check('task_work_nodes_parent_not_self_check', sql`${table.parentId} is null or ${table.id} <> ${table.parentId}`),
+    check(
+      'task_work_nodes_parent_not_self_check',
+      sql`${table.parentId} is null or ${table.id} <> ${table.parentId}`,
+    ),
     index('task_work_nodes_owner_id_task_id_idx').on(table.ownerId, table.taskId),
     index('task_work_nodes_task_id_parent_id_sort_order_idx').on(
       table.taskId,
@@ -561,7 +564,10 @@ export const taskWorkNodeDependencies = pgTable(
       using: appUserMatches(table.ownerId),
       withCheck: appUserMatches(table.ownerId),
     }),
-    check('task_work_node_dependencies_not_self_check', sql`${table.nodeId} <> ${table.dependsOnNodeId}`),
+    check(
+      'task_work_node_dependencies_not_self_check',
+      sql`${table.nodeId} <> ${table.dependsOnNodeId}`,
+    ),
     uniqueIndex('task_work_node_dependencies_node_depends_on_unique_idx').on(
       table.nodeId,
       table.dependsOnNodeId,
@@ -596,7 +602,10 @@ export const taskWorkNodeEvents = pgTable(
       using: appUserMatches(table.ownerId),
       withCheck: appUserMatches(table.ownerId),
     }),
-    check('task_work_node_events_event_type_check', sql`${table.eventType} in ${WORK_NODE_EVENT_TYPES}`),
+    check(
+      'task_work_node_events_event_type_check',
+      sql`${table.eventType} in ${WORK_NODE_EVENT_TYPES}`,
+    ),
     index('task_work_node_events_task_id_created_at_idx').on(table.taskId, table.createdAt),
     index('task_work_node_events_node_id_created_at_idx').on(table.nodeId, table.createdAt),
     index('task_work_node_events_owner_id_created_at_idx').on(table.ownerId, table.createdAt),
@@ -676,7 +685,10 @@ export const knowledgeUpdateProposals = pgTable(
       using: appUserMatches(table.ownerId),
       withCheck: appUserMatches(table.ownerId),
     }),
-    check('knowledge_update_proposals_status_check', sql`${table.status} in ${KNOWLEDGE_PROPOSAL_STATUSES}`),
+    check(
+      'knowledge_update_proposals_status_check',
+      sql`${table.status} in ${KNOWLEDGE_PROPOSAL_STATUSES}`,
+    ),
     check(
       'knowledge_update_proposals_target_length_check',
       sql`char_length(${table.target}) <= 500`,

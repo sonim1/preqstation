@@ -88,9 +88,7 @@ export function normalizeWorkNodeEvidenceKind(value: string | null | undefined) 
     : null;
 }
 
-export function buildWorkGraphSummary(
-  nodes: Array<{ status: string | null }>,
-): WorkGraphSummary {
+export function buildWorkGraphSummary(nodes: Array<{ status: string | null }>): WorkGraphSummary {
   const counts = {
     running_count: 0,
     ready_count: 0,

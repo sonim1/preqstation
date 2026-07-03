@@ -14,13 +14,7 @@ function taskLabel(item: { taskKey: string | null; taskTitle: string | null }) {
   return [item.taskKey, item.taskTitle].filter(Boolean).join(' · ');
 }
 
-function NodeList({
-  empty,
-  items,
-}: {
-  empty: string;
-  items: ProjectWorkGraphNodeSummary[];
-}) {
+function NodeList({ empty, items }: { empty: string; items: ProjectWorkGraphNodeSummary[] }) {
   if (items.length === 0) {
     return (
       <Text size="sm" c="dimmed">

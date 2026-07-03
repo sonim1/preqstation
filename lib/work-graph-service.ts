@@ -128,11 +128,7 @@ function requireEvidenceKind(value: string): WorkNodeEvidenceKind {
   return kind;
 }
 
-async function findTaskOrThrow(params: {
-  client: DbClientOrTx;
-  ownerId: string;
-  taskId: string;
-}) {
+async function findTaskOrThrow(params: { client: DbClientOrTx; ownerId: string; taskId: string }) {
   const task = await params.client.query.tasks.findFirst({
     where: and(eq(tasks.ownerId, params.ownerId), eq(tasks.id, params.taskId)),
     columns: {
@@ -152,8 +148,15 @@ async function findTaskOrThrow(params: {
   return task;
 }
 
-function assertSameTaskNode(node: { taskId: string; projectId: string; ownerId: string }, task: WorkGraphTask) {
-  if (node.ownerId !== task.ownerId || node.projectId !== task.projectId || node.taskId !== task.id) {
+function assertSameTaskNode(
+  node: { taskId: string; projectId: string; ownerId: string },
+  task: WorkGraphTask,
+) {
+  if (
+    node.ownerId !== task.ownerId ||
+    node.projectId !== task.projectId ||
+    node.taskId !== task.id
+  ) {
     throw new WorkGraphServiceError(
       'invalid_dependency',
       'Work graph nodes must belong to the same task.',
@@ -398,9 +401,10 @@ export async function createWorkNode({
   return { node, created: true };
 }
 
-function transitionToStatus(
-  action: TransitionWorkNodeAction,
-): { status: WorkNodeStatus; eventType: WorkNodeEventType } {
+function transitionToStatus(action: TransitionWorkNodeAction): {
+  status: WorkNodeStatus;
+  eventType: WorkNodeEventType;
+} {
   if (action === 'start') return { status: 'running', eventType: 'node.started' };
   if (action === 'complete') return { status: 'completed', eventType: 'node.completed' };
   if (action === 'fail') return { status: 'failed', eventType: 'node.failed' };
@@ -416,7 +420,8 @@ function shouldCreateAttentionNotification(params: {
   action: TransitionWorkNodeAction;
 }) {
   if (params.status === 'waiting_for_user' || params.status === 'failed') return true;
-  if (params.type === 'approval' && (params.status === 'ready' || params.action === 'wait')) return true;
+  if (params.type === 'approval' && (params.status === 'ready' || params.action === 'wait'))
+    return true;
   return false;
 }
 
@@ -464,8 +469,8 @@ export async function transitionWorkNode({
       status,
       startedAt: status === 'running' && !existing.startedAt ? now : existing.startedAt,
       completedAt:
-        status === 'completed' || status === 'cancelled' ? now : existing.completedAt ?? null,
-      failedAt: status === 'failed' ? now : existing.failedAt ?? null,
+        status === 'completed' || status === 'cancelled' ? now : (existing.completedAt ?? null),
+      failedAt: status === 'failed' ? now : (existing.failedAt ?? null),
       waitingReason: waitingReason ?? existing.waitingReason ?? null,
       decisionPrompt: decisionPrompt ?? existing.decisionPrompt ?? null,
       resultSummary: resultSummary ?? existing.resultSummary ?? null,
@@ -680,7 +685,10 @@ export async function appendWorkflowMemory({
   const append = appendMarkdown.trim();
   if (!append) throw new WorkGraphServiceError('invalid_memory', 'Workflow memory is required.');
   if (append.length > WORKFLOW_MEMORY_APPEND_MAX_CHARS) {
-    throw new WorkGraphServiceError('memory_append_too_large', 'Memory append exceeds 4,000 chars.');
+    throw new WorkGraphServiceError(
+      'memory_append_too_large',
+      'Memory append exceeds 4,000 chars.',
+    );
   }
 
   const nextMemory = [task.workflowMemory?.trim(), append].filter(Boolean).join('\n\n');

@@ -49,13 +49,19 @@ describe('drizzle knowledge update proposals migration', () => {
   });
 
   it('creates the proposal table, indexes, checks, and RLS policy', () => {
-    const migrationPath = path.join(process.cwd(), 'drizzle', '0027_knowledge_update_proposals.sql');
+    const migrationPath = path.join(
+      process.cwd(),
+      'drizzle',
+      '0027_knowledge_update_proposals.sql',
+    );
     const sql = readFileSync(migrationPath, 'utf8');
 
     expect(sql).toContain('CREATE TABLE IF NOT EXISTS "knowledge_update_proposals"');
     expect(sql).toContain('"status" text DEFAULT \'pending\' NOT NULL');
     expect(sql).toContain('CONSTRAINT "knowledge_update_proposals_status_check"');
-    expect(sql).toContain('"source_node_id" uuid REFERENCES "task_work_nodes"("id") ON DELETE set null');
+    expect(sql).toContain(
+      '"source_node_id" uuid REFERENCES "task_work_nodes"("id") ON DELETE set null',
+    );
 
     for (const name of [
       'knowledge_update_proposals_owner_id_task_id_status_idx',

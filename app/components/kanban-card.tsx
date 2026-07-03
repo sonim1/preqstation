@@ -489,12 +489,12 @@ export const KanbanCardContent = memo(function KanbanCardContent({
   const hasUnreadNotification = Boolean(task.hasUnreadNotification);
   const hasFooterMeta = Boolean(
     task.runState ||
-      task.dueAt ||
-      engineConfig ||
-      checklistCounts ||
-      workGraphBadge ||
-      primaryLabel ||
-      canEditLabels,
+    task.dueAt ||
+    engineConfig ||
+    checklistCounts ||
+    workGraphBadge ||
+    primaryLabel ||
+    canEditLabels,
   );
 
   const renderLabelInline = (label: (typeof task.labels)[number]) => (

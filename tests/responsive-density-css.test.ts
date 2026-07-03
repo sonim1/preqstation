@@ -76,7 +76,7 @@ describe('responsive density audit fixes', () => {
     expect(taskNotificationCenterSource).toContain('size={44}');
     expect(mobileProjectPickerRule).toMatch(/height:\s*var\(--ui-hit-touch-min\);/);
     expect(mobileProjectPickerRule).toMatch(/min-height:\s*var\(--ui-hit-touch-min\);/);
-    expect(globalsCss).toMatch(/\.workspace-board-subnav-link\s*\{[^}]*min-height:\s*64px;/);
+    expect(globalsCss).toMatch(/\.workspace-board-subnav-link\s*\{[^}]*min-height:\s*52px;/);
   });
 
   it('replaces the worst fixed board and connections widths with more adaptive sizing', () => {

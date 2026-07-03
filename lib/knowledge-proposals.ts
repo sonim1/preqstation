@@ -34,11 +34,7 @@ function requireProposalStatus(value: string): KnowledgeProposalStatus {
   throw new KnowledgeProposalError('invalid_status', 'Invalid proposal status.');
 }
 
-async function findTaskOrThrow(params: {
-  client: DbClientOrTx;
-  ownerId: string;
-  taskId: string;
-}) {
+async function findTaskOrThrow(params: { client: DbClientOrTx; ownerId: string; taskId: string }) {
   const task = await params.client.query.tasks.findFirst({
     where: and(eq(tasks.ownerId, params.ownerId), eq(tasks.id, params.taskId)),
     columns: { id: true, ownerId: true, projectId: true },
@@ -82,10 +78,7 @@ export async function createKnowledgeProposal({
   const body = input.body.trim();
 
   if (!target || target.length > 500) {
-    throw new KnowledgeProposalError(
-      'invalid_target',
-      'Proposal target must be 1-500 characters.',
-    );
+    throw new KnowledgeProposalError('invalid_target', 'Proposal target must be 1-500 characters.');
   }
   if (!body) throw new KnowledgeProposalError('invalid_body', 'Proposal body is required.');
 
@@ -157,6 +150,7 @@ export async function updateKnowledgeProposalStatus({
     )
     .returning();
 
-  if (!proposal) throw new KnowledgeProposalError('not_found', 'Knowledge proposal not found.', 404);
+  if (!proposal)
+    throw new KnowledgeProposalError('not_found', 'Knowledge proposal not found.', 404);
   return proposal;
 }
