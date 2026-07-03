@@ -180,6 +180,12 @@ Coding agent checks task status via preq_get_task, then:
 
 Canonical workflow statuses are `inbox`, `todo`, `hold`, `ready`, `done`, and `archived`. External task payloads can also include `run_state` (`queued` / `running` / `null`) plus `run_state_updated_at`. Task APIs reject legacy status aliases, and internal todo APIs accept `labelIds` only.
 
+Work graph routes (`GET /api/tasks/:id/work-graph`, `POST .../work-graph/init`,
+`POST .../work-graph/nodes`, `POST .../work-graph/memory`, `GET`/`PATCH /api/work-nodes/:nodeId`,
+and `POST /api/work-nodes/:nodeId/evidence`) accept either a Bearer token or an owner session and
+return a `preqstation.v2.0` schema-versioned envelope. See the Work Graph section below and
+[`API.md`](API.md).
+
 #### Artifacts
 
 Tasks and QA runs persist structured artifacts in a JSON `artifacts` field. Full task responses include `artifacts`; compact task lists omit it. `POST /api/tasks`, `PATCH /api/tasks/:id`, and `PATCH /api/qa-runs/:id` accept up to 50 artifacts, and MCP tools forward artifacts through `preq_update_task_note`, `preq_complete_task`, and `preq_update_qa_run`.
@@ -336,6 +342,52 @@ execution overlay on top of workflow:
 todo + queued   → Telegram dispatched, agent not yet started
 todo + running  → agent actively executing
 ```
+
+Workflow status tracks where a task sits on the board. How the work itself is executed is recorded
+separately in the task's work graph (below), which is the primary task view in the workspace UI.
+
+### Work Graph (v2)
+
+Each task can hold a work graph: a tree of typed work nodes that records how an agent actually
+executed the task. The graph is the primary task view; the Kanban board remains the workflow
+position view on top of the same tasks.
+
+**Data model.** `task_work_nodes` rows are owner-scoped and belong to one task. Each node has a
+`type` (`root`, `plan`, `explore`, `analyze`, `research`, `interview`, `implement`, `document`,
+`review`, `test`, `qa`, `deploy`, `decision`, `approval`, `blocked`, `proposal`, `result`), a
+`status` (`pending`, `ready`, `running`, `waiting_for_user`, `blocked`, `completed`, `failed`,
+`cancelled`), an optional parent node, optional dependency links, actor/engine/model attribution,
+and a free-form JSON `metadata` object. Graph events (`graph.initialized`, `node.created`,
+`node.started`, `node.completed`, `node.failed`, `node.cancelled`, `node.waiting_for_user`,
+`node.evidence.attached`, `workflow_memory.appended`) provide an append-only history.
+
+**Canonical root node.** Initializing a graph creates one root node per task. Task notes stay
+attached only to that canonical root node; child nodes carry their own bodies, result summaries,
+and evidence. Node creation supports idempotency keys so detached agents can retry safely.
+
+**Status transitions.** Nodes move through `start`, `complete`, `fail`, `cancel`, `wait`, `block`,
+and `ready` actions. Waiting nodes carry a `waitingReason` and optional `decisionPrompt` so the
+owner can answer decision points from the UI. A summary roll-up computes per-status counts and a
+single `root_overlay` badge (`failed` > `blocked` > `waiting_for_user` > `running` > `ready`) for
+board and dashboard surfaces.
+
+**Evidence and workflow memory.** Nodes accept bounded evidence records (`command`, `test`, `log`,
+`changed_file`, `screenshot`, `artifact`, `pull_request`, `deployment`, `summary`, `error`) with
+size validation and secret redaction. Tasks also carry a shared markdown `workflow_memory` that
+agents append to for concise cross-run context.
+
+**Workflow profile.** Harnesses record how they chose to run the work in
+`metadata.workflow_profile` on work nodes. The default requested profile is `auto`; Core never
+chooses or executes concrete workflows or skills — the harness resolves the workflow and reports
+`resolved`, `resolved_command`, and `resolved_reason` back. See
+[`workflow-profile-contract.md`](workflow-profile-contract.md).
+
+**Surfaces.** The graph is exposed through bearer-or-session REST routes
+(`/api/tasks/:id/work-graph*`, `/api/work-nodes/:nodeId*`), MCP tools (`preq_graph_state`,
+`preq_graph_node_create`, `preq_graph_node_update`, `preq_graph_evidence_attach`,
+`preq_agent_guide`), and the agent CLI (`preqstation graph ...`). All responses share the
+`preqstation.v2.0` schema-versioned envelope. See [`API.md`](API.md) for the route and command
+tables.
 
 ### Deployment Strategy Contract
 
