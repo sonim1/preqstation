@@ -6,7 +6,7 @@ Thanks for your interest in contributing. Browse [open issues](https://github.co
 
 ## Prerequisites
 
-- Node.js 22+
+- Node.js 22.22.1+
 - npm
 - PostgreSQL
 
