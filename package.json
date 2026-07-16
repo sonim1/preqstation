@@ -37,7 +37,7 @@
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
     "@js-temporal/polyfill": "^0.5.1",
-    "@lexical/code": "^0.46.0",
+    "@lexical/code": "^0.47.0",
     "@lexical/code-core": "^0.46.0",
     "@lexical/link": "^0.46.0",
     "@lexical/list": "^0.46.0",
