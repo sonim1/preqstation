@@ -91,7 +91,7 @@
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.10",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-simple-import-sort": "^13.0.0",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
     "eslint-plugin-unused-imports": "^4.4.1",
     "fake-indexeddb": "^6.2.5",
     "husky": "^9.1.7",
