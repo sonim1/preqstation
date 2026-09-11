@@ -58,7 +58,7 @@
     "idb": "^8.0.3",
     "lexical": "^0.46.0",
     "mermaid": "^11.16.0",
-    "next": "^16.2.10",
+    "next": "^16.3.4",
     "otpauth": "^9.5.1",
     "postgres": "^3.4.8",
     "re-resizable": "^6.11.2",
@@ -101,6 +101,6 @@
     "prettier": "^3.9.5",
     "typescript": "^6.0.3",
     "vitest": "^4.1.10",
-    "wrangler": "^4.102.0"
+    "wrangler": "^4.131.0"
   }
 }
